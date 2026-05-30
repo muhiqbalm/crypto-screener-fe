@@ -14,11 +14,12 @@ RUN apk add --no-cache libc6-compat
 
 WORKDIR /app
 
-# Copy lockfile + manifests first for better layer caching
-COPY package.json package-lock.json ./
+# Copy package manifests — lockfile is optional (copied if present)
+COPY package.json package-lock.json* ./
 
 # Install ALL deps (including devDeps needed for the build step)
-RUN npm ci
+# npm install is used instead of npm ci to handle missing/mismatched lockfile
+RUN npm install
 
 
 # ---- Stage 2: build ---------------------------------------------------------

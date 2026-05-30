@@ -18,6 +18,12 @@ echo "==> [1/4] Pulling latest code from main..."
 git -C "$REPO_DIR" fetch --prune origin
 git -C "$REPO_DIR" reset --hard origin/main
 
+# Show what files are present so build failures are easier to diagnose
+echo "--- repo root files ---"
+ls -la "$REPO_DIR"
+echo "--- git status ---"
+git -C "$REPO_DIR" log --oneline -3
+
 echo "==> [2/4] Building new image (no cache)..."
 $COMPOSE -f "$REPO_DIR/docker-compose.yml" build --no-cache app
 
