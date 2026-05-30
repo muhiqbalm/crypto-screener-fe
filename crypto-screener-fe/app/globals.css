@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+/* ============================================================
+   Tailwind v4 @theme block — shadcn/ui new-york zinc dark
+   Default token set is DARK (dark-mode-first per Req 3.1).
+   Light-mode overrides live in :root.light below.
+   ============================================================ */
+@theme {
+  /* --- Font stacks (Geist variables wired in layout.tsx) --- */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* --- Domain-specific tokens (crypto dashboard) --- */
+  /* Bullish green — OKLCH L=72% gives ~7.8:1 contrast on dark bg (WCAG AA ✓) */
+  --color-bullish:            oklch(0.72 0.17 142);
+  --color-bullish-foreground: oklch(0.15 0.02 142);
+
+  /* Bearish red — OKLCH L=65% gives ~6.3:1 contrast on dark bg (WCAG AA ✓) */
+  --color-bearish:            oklch(0.65 0.22 25);
+  --color-bearish-foreground: oklch(0.98 0.01 25);
+
+  /* --- shadcn/ui new-york zinc DARK tokens (default) --- */
+  --color-background:          oklch(0.145 0 0);
+  --color-foreground:          oklch(0.985 0 0);
+
+  --color-card:                oklch(0.205 0 0);
+  --color-card-foreground:     oklch(0.985 0 0);
+
+  --color-popover:             oklch(0.205 0 0);
+  --color-popover-foreground:  oklch(0.985 0 0);
+
+  --color-primary:             oklch(0.985 0 0);
+  --color-primary-foreground:  oklch(0.205 0 0);
+
+  --color-secondary:           oklch(0.269 0 0);
+  --color-secondary-foreground: oklch(0.985 0 0);
+
+  --color-muted:               oklch(0.269 0 0);
+  --color-muted-foreground:    oklch(0.708 0 0);
+
+  --color-accent:              oklch(0.269 0 0);
+  --color-accent-foreground:   oklch(0.985 0 0);
+
+  --color-destructive:         oklch(0.704 0.191 22.216);
+  --color-destructive-foreground: oklch(0.985 0 0);
+
+  --color-border:              oklch(1 0 0 / 10%);
+  --color-input:               oklch(1 0 0 / 15%);
+  --color-ring:                oklch(0.556 0 0);
+
+  /* --- Radius --- */
+  --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* ============================================================
+   Light-mode token overrides — applied when next-themes sets
+   class="light" on <html> (storageKey: "crypto-screener-theme")
+   ============================================================ */
+:root.light {
+  --color-background:          oklch(1 0 0);
+  --color-foreground:          oklch(0.141 0.005 285.823);
+
+  --color-card:                oklch(1 0 0);
+  --color-card-foreground:     oklch(0.141 0.005 285.823);
+
+  --color-popover:             oklch(1 0 0);
+  --color-popover-foreground:  oklch(0.141 0.005 285.823);
+
+  --color-primary:             oklch(0.21 0.006 285.885);
+  --color-primary-foreground:  oklch(0.985 0 0);
+
+  --color-secondary:           oklch(0.967 0.001 286.375);
+  --color-secondary-foreground: oklch(0.21 0.006 285.885);
+
+  --color-muted:               oklch(0.967 0.001 286.375);
+  --color-muted-foreground:    oklch(0.552 0.016 285.938);
+
+  --color-accent:              oklch(0.967 0.001 286.375);
+  --color-accent-foreground:   oklch(0.21 0.006 285.885);
+
+  --color-destructive:         oklch(0.577 0.245 27.325);
+  --color-destructive-foreground: oklch(0.985 0 0);
+
+  --color-border:              oklch(0.92 0.004 286.32);
+  --color-input:               oklch(0.92 0.004 286.32);
+  --color-ring:                oklch(0.705 0.015 286.067);
+
+  /* Bullish/bearish in light mode — darker shades for 4.5:1 on white bg */
+  /* Bullish on white: L=0.45 → ~0.14 luminance → contrast ≈ (1.05)/(0.14+0.05) ≈ 5.5:1 ✓ */
+  --color-bullish:            oklch(0.45 0.17 142);
+  --color-bullish-foreground: oklch(0.98 0.01 142);
+
+  /* Bearish on white: L=0.48 → ~0.17 luminance → contrast ≈ (1.05)/(0.17+0.05) ≈ 4.8:1 ✓ */
+  --color-bearish:            oklch(0.48 0.22 25);
+  --color-bearish-foreground: oklch(0.98 0.01 25);
+}
+
+/* ============================================================
+   Base styles
+   ============================================================ */
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Ensure dark mode is the default rendering — next-themes adds
+     class="dark" to <html>; the @theme block above already defines
+     dark tokens as the baseline so no extra selector is needed.
+     The :root.light block above handles the light override. */
+}
