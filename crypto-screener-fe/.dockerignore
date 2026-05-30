@@ -1,0 +1,30 @@
+# Dependencies — reinstalled inside the image
+node_modules
+
+# Next.js build output — rebuilt inside the image
+.next
+out
+build
+
+# Local env files — injected at runtime via docker-compose env_file / environment
+.env
+.env.local
+.env.*.local
+
+# Dev / test artefacts
+coverage
+.hypothesis
+
+# Editor & OS noise
+.DS_Store
+*.pem
+.vscode
+.idea
+
+# Git
+.git
+.gitignore
+
+# Kiro / CI
+.kiro
+.github

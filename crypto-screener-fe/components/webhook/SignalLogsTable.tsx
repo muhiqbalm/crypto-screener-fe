@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { useTradeLog } from '@/lib/queries/webhook'
 import { formatTimestamp, formatPrice } from '@/lib/utils/format'
 import { notify } from '@/lib/utils/toast'
@@ -121,7 +121,7 @@ export function SignalLogsTable() {
 
           {/* Data rows */}
           {!isPending && data && data.length > 0 && data.map(row => (
-            <>
+            <Fragment key={row.id}>
               <TableRow
                 key={row.id}
                 onClick={() => handleRowClick(row)}
@@ -175,7 +175,7 @@ export function SignalLogsTable() {
                   </TableCell>
                 </TableRow>
               )}
-            </>
+            </Fragment>
           ))}
         </TableBody>
       </Table>

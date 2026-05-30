@@ -7,6 +7,12 @@ import type {
   WebhookConfigUpdateRequest,
 } from './types/webhook'
 import type { TradeLogResponse } from './types/trades'
+import type {
+  LoginRequest,
+  RegisterRequest,
+  TokenResponse,
+  UserProfileResponse,
+} from './types/auth'
 import { getToken } from '@/lib/utils/auth-store'
 
 // ---------------------------------------------------------------------------
@@ -130,5 +136,25 @@ export const api = {
 
   getTradeLog(signal?: AbortSignal): Promise<TradeLogResponse[]> {
     return request<TradeLogResponse[]>('GET', PATHS.trades, undefined, signal)
+  },
+
+  // ---------------------------------------------------------------------------
+  // Auth
+  // ---------------------------------------------------------------------------
+
+  login(body: LoginRequest): Promise<TokenResponse> {
+    return request<TokenResponse>('POST', PATHS.authLogin, body)
+  },
+
+  register(body: RegisterRequest): Promise<UserProfileResponse> {
+    return request<UserProfileResponse>('POST', PATHS.authRegister, body)
+  },
+
+  logout(): Promise<void> {
+    return request<void>('POST', PATHS.authLogout)
+  },
+
+  getMe(signal?: AbortSignal): Promise<UserProfileResponse> {
+    return request<UserProfileResponse>('GET', PATHS.userMe, undefined, signal)
   },
 }

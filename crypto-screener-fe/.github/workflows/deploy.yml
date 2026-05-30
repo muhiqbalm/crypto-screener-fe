@@ -1,0 +1,38 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Prevent concurrent deploys — never cancel an in-progress deploy
+concurrency:
+  group: deploy-fe-vps
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Redeploy Frontend on VPS
+    runs-on: ubuntu-latest
+
+    steps:
+      # ------------------------------------------------------------------
+      # 1. Trigger redeploy via SSH
+      #    The VPS must have the repo cloned at ~/crypto-screener-fe and
+      #    deploy.sh present (committed in this repo).
+      # ------------------------------------------------------------------
+      - name: Trigger redeploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script_stop: true
+          command_timeout: 20m
+          script: |
+            set -e
+            cd ~/crypto-screener-fe
+            chmod +x ./deploy.sh
+            ./deploy.sh
