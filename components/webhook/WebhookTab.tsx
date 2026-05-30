@@ -1,6 +1,6 @@
 import { WebhookConfigCard } from './WebhookConfigCard'
 import { AlertPayloadTemplate } from './AlertPayloadTemplate'
-import { AutomationToggle } from './AutomationToggle'
+import { TestWebhookCard } from './TestWebhookCard'
 import { SignalLogsTable } from './SignalLogsTable'
 
 /**
@@ -10,7 +10,10 @@ import { SignalLogsTable } from './SignalLogsTable'
  *   Mobile  : single-column vertical stack (Req 14.5)
  *   lg+     : 2-column grid, each card 50 % width (Req 14.6)
  *
- * Below    — AutomationToggle and SignalLogsTable, both full-width (Req 14.8)
+ * Middle   — TestWebhookCard, full-width
+ *
+ * Below    — SignalLogsTable, full-width (Req 14.8)
+ * Automation toggle is in the WebhookConfigCard header (top-right button).
  */
 export function WebhookTab() {
   return (
@@ -22,10 +25,8 @@ export function WebhookTab() {
         <AlertPayloadTemplate />
       </div>
 
-      {/* Automation toggle — full width (Req 14.6) */}
-      <div className="flex items-center gap-4 rounded-lg border border-border bg-card p-4">
-        <AutomationToggle />
-      </div>
+      {/* Test webhook — full width */}
+      <TestWebhookCard />
 
       {/* Signal logs table — full width (Req 14.8) */}
       <SignalLogsTable />

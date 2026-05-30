@@ -1,6 +1,7 @@
 'use client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api/client'
+import { ApiError } from '@/lib/api/errors'
 import { generatePassphrase } from '@/lib/utils/random'
 
 export const webhookKeys = {
@@ -35,15 +36,24 @@ export function useAutomationToggle() {
 
   return useMutation({
     mutationFn: async ({ nextEnabled, hasExisting }: ToggleArgs) => {
+      if (!nextEnabled) {
+        // Turn OFF → deactivate via DELETE (sets is_active=false, preserves passphrase)
+        return api.deleteWebhookConfig()
+      }
       if (nextEnabled && !hasExisting) {
-        return api.createWebhookConfig({ passphrase: generatePassphrase() })
+        // Turn ON, no active config → try reactivate existing inactive record first.
+        // Falls back to creating a new one only if no inactive record exists (404).
+        try {
+          return await api.reactivateWebhookConfig()
+        } catch (err) {
+          if (err instanceof ApiError && err.kind === 'not_found') {
+            return api.createWebhookConfig({ passphrase: generatePassphrase() })
+          }
+          throw err
+        }
       }
-      if (nextEnabled && hasExisting) {
-        // no-op — already enabled
-        return Promise.resolve(undefined)
-      }
-      // nextEnabled = false → delete
-      return api.deleteWebhookConfig()
+      // Turn ON but config already active → no-op (should not happen in normal flow)
+      return Promise.resolve(undefined)
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: webhookKeys.config() })

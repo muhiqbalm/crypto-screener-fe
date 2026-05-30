@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BarChart2, Webhook, LogOut, User, Loader2 } from 'lucide-react'
+import { BarChart2, Webhook, Settings, LogOut, User, Loader2, Wallet, LineChart } from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils/cn'
@@ -11,7 +11,10 @@ import { useLogout } from '@/lib/queries/auth'
 
 const NAV_LINKS = [
   { href: '/screener', label: 'Screener', icon: BarChart2 },
-  { href: '/webhook', label: 'Webhook', icon: Webhook },
+  { href: '/chart',    label: 'Chart',    icon: LineChart  },
+  { href: '/webhook',  label: 'Webhook',  icon: Webhook    },
+  { href: '/balance',  label: 'Balance',  icon: Wallet     },
+  { href: '/settings', label: 'Settings', icon: Settings   },
 ]
 
 export function Navbar() {

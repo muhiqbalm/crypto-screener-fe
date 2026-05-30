@@ -4,11 +4,13 @@ import { api } from '@/lib/api/client'
 import { ApiError } from '@/lib/api/errors'
 import {
   setSession,
+  setUser,
   clearSession,
   getToken,
+  getSession,
   isLoggedIn,
 } from '@/lib/utils/auth-store'
-import type { LoginRequest, RegisterRequest } from '@/lib/api/types/auth'
+import type { LoginRequest, ProfileUpdateRequest, RegisterRequest } from '@/lib/api/types/auth'
 
 // ---------------------------------------------------------------------------
 // Query keys
@@ -48,11 +50,11 @@ export function useLogin() {
   return useMutation({
     mutationFn: async (body: LoginRequest) => {
       const tokens = await api.login(body)
-      // Immediately fetch the user profile with the new token
-      // We temporarily set the token so getMe() can use it
+      // Temporarily set session so getMe() can use the new token
       setSession({
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token,
+        expiresAt: Date.now() + tokens.expires_in * 1000,
         // Placeholder — will be replaced by getMe() below
         user: { id: '', email: body.email, name: '', telegram_chat_id: null, is_active: true, created_at: '' },
       })
@@ -60,6 +62,7 @@ export function useLogin() {
       setSession({
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token,
+        expiresAt: Date.now() + tokens.expires_in * 1000,
         user,
       })
       return user
@@ -86,6 +89,24 @@ export function useRegister() {
     mutationFn: (body: RegisterRequest) => api.register(body),
     onSuccess: () => {
       router.push('/login')
+    },
+  })
+}
+
+// ---------------------------------------------------------------------------
+// useUpdateProfile
+// ---------------------------------------------------------------------------
+
+export function useUpdateProfile() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (body: ProfileUpdateRequest) => api.patchMe(body),
+    onSuccess: (updatedUser) => {
+      // Keep query cache and auth-store in sync
+      queryClient.setQueryData(authKeys.me, updatedUser)
+      const session = getSession()
+      if (session) setUser(updatedUser)
     },
   })
 }

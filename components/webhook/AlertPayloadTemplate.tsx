@@ -1,27 +1,14 @@
 'use client'
 
-import { Copy } from 'lucide-react'
+import { Copy, FileCode2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { useWebhookConfig } from '@/lib/queries/webhook'
 import { notify } from '@/lib/utils/toast'
 
-/**
- * Renders the TradingView alert payload template as a formatted JSON code block.
- *
- * - Substitutes `passphrase` with the resolved value when `useWebhookConfig()`
- *   succeeds, otherwise falls back to `<your-passphrase>` (Req 9.4, 9.5).
- * - Serialises with `JSON.stringify(template, null, 2)` for 2-space indentation
- *   (Req 9.6) ensuring `JSON.parse` round-trip always succeeds (Req 9.9).
- * - "Copy template" button writes the rendered string to the clipboard and
- *   emits `notify.success("Template copied")` (Req 9.7, 9.8).
- *
- * Requirements: 9.1–9.9, 14.5
- */
 export function AlertPayloadTemplate() {
   const { data } = useWebhookConfig()
 
-  // Build the template object with all required keys (Req 9.1–9.3)
   const template = {
     action: '{{strategy.order.action}}',
     symbol: '{{ticker}}',
@@ -42,24 +29,58 @@ export function AlertPayloadTemplate() {
       .catch((err: Error) => notify.error('Copy failed: ' + err.message))
   }
 
+  // Syntax-highlight keys vs string values for readability
+  function renderHighlighted(json: string) {
+    return json.split('\n').map((line, i) => {
+      const keyMatch = line.match(/^(\s*)("[\w]+")(\s*:\s*)(.+)$/)
+      if (!keyMatch) {
+        return <div key={i}>{line}</div>
+      }
+      const [, indent, key, colon, value] = keyMatch
+      const isString = value.startsWith('"')
+      const isTvVar = value.includes('{{')
+      return (
+        <div key={i}>
+          <span>{indent}</span>
+          <span className="text-blue-400">{key}</span>
+          <span className="text-muted-foreground">{colon}</span>
+          <span className={isTvVar ? 'text-yellow-400' : isString ? 'text-bullish/90' : 'text-orange-400'}>
+            {value}
+          </span>
+        </div>
+      )
+    })
+  }
+
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium">Alert Payload Template</CardTitle>
+    <Card className="overflow-hidden">
+      <div className="h-0.5 w-full bg-muted" />
+      <CardHeader className="flex flex-row items-center justify-between gap-4 pb-3 pt-4">
+        <div className="flex items-center gap-2">
+          <FileCode2 className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+          <CardTitle className="text-base">Alert Payload Template</CardTitle>
+        </div>
         <Button
-          variant="ghost"
-          size="icon"
+          variant="outline"
+          size="sm"
           onClick={handleCopy}
-          className="cursor-pointer h-7 w-7"
+          className="gap-1.5 rounded-lg transition-colors duration-200"
           aria-label="Copy template"
         >
           <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+          Copy
         </Button>
       </CardHeader>
-      <CardContent>
-        <pre className="rounded-md bg-muted p-3 text-xs font-mono overflow-x-auto">
-          <code>{templateStr}</code>
-        </pre>
+      <CardContent className="pt-0">
+        <div className="rounded-lg bg-muted/50 border border-border/50 p-4">
+          <pre className="text-xs font-mono overflow-x-auto leading-relaxed">
+            <code>{renderHighlighted(templateStr)}</code>
+          </pre>
+        </div>
+        <p className="mt-2.5 text-[11px] text-muted-foreground">
+          Paste this into your TradingView alert message.{' '}
+          <span className="text-yellow-500/80">{'{{variables}}'}</span> are replaced by TradingView at runtime.
+        </p>
       </CardContent>
     </Card>
   )

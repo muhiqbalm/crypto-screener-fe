@@ -1,7 +1,7 @@
 /**
  * Client-side session store.
  *
- * Persists access_token, refresh_token, and user profile to localStorage
+ * Persists access_token, refresh_token, expiry, and user profile to localStorage
  * so the session survives page reloads. All writes are wrapped in try/catch
  * so a storage failure (private browsing quota, etc.) never crashes the app.
  *
@@ -16,6 +16,8 @@ const STORAGE_KEY = 'crypto-screener-session'
 export interface Session {
   accessToken: string
   refreshToken: string
+  /** Unix timestamp (ms) when the access token expires. */
+  expiresAt: number
   user: UserProfileResponse
 }
 
@@ -88,6 +90,15 @@ export function isLoggedIn(): boolean {
   return _session !== null
 }
 
+/**
+ * Returns true when the access token is expired or will expire within the
+ * given threshold (default 60 s). Used for proactive refresh before requests.
+ */
+export function isTokenExpired(thresholdMs = 60_000): boolean {
+  if (!_session) return false
+  return Date.now() >= _session.expiresAt - thresholdMs
+}
+
 /** Saves a new session (called after login). */
 export function setSession(session: Session): void {
   _session = session
@@ -95,10 +106,14 @@ export function setSession(session: Session): void {
   _notify()
 }
 
-/** Updates only the access token (called after token refresh). */
-export function setToken(token: string): void {
+/** Updates only the access token and its expiry (called after token refresh). */
+export function setToken(token: string, expiresIn: number): void {
   if (!_session) return
-  _session = { ..._session, accessToken: token }
+  _session = {
+    ..._session,
+    accessToken: token,
+    expiresAt: Date.now() + expiresIn * 1000,
+  }
   _persist(_session)
   _notify()
 }
