@@ -18,7 +18,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # Install ALL deps (including devDeps needed for the build step)
-RUN npm ci --frozen-lockfile
+RUN npm ci
 
 
 # ---- Stage 2: build ---------------------------------------------------------
