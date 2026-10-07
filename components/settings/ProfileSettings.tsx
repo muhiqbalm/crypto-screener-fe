@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Loader2, User, Eye, EyeOff } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -13,25 +13,6 @@ import { ApiError } from '@/lib/api/errors'
 
 export function ProfileSettings() {
   const { data: user, isPending } = useMe()
-  const update = useUpdateProfile()
-
-  // Form state — synced from user data on load
-  const [name, setName] = useState('')
-  const [telegramChatId, setTelegramChatId] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-
-  // Errors
-  const [nameError, setNameError] = useState('')
-  const [passwordError, setPasswordError] = useState('')
-
-  // Sync form when user data arrives
-  useEffect(() => {
-    if (!user) return
-    setName(user.name ?? '')
-    setTelegramChatId(user.telegram_chat_id ?? '')
-  }, [user])
 
   // ── Pending ──────────────────────────────────────────────────────────────
   if (isPending) {
@@ -58,6 +39,23 @@ export function ProfileSettings() {
 
   if (!user) return null
 
+  return <ProfileForm key={user.id} user={user} />
+}
+
+function ProfileForm({ user }: { user: NonNullable<ReturnType<typeof useMe>['data']> }) {
+  const update = useUpdateProfile()
+
+  // Form state initialized directly from user prop
+  const [name, setName] = useState(user.name ?? '')
+  const [telegramChatId, setTelegramChatId] = useState(user.telegram_chat_id ?? '')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+
+  // Errors
+  const [nameError, setNameError] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+
   function validate(): boolean {
     let valid = true
     if (!name.trim()) {
@@ -78,7 +76,7 @@ export function ProfileSettings() {
   function handleSave() {
     setNameError('')
     setPasswordError('')
-    if (!validate()) return
+    if (!user || !validate()) return
 
     // Only send fields that actually changed
     const patch: Parameters<typeof update.mutate>[0] = {}
@@ -160,7 +158,7 @@ export function ProfileSettings() {
         {/* Telegram Chat ID */}
         <div className="space-y-1.5">
           <Label htmlFor="profile-telegram" className="text-xs">
-            Telegram Chat ID
+            Telegram Chat ID / Group ID
             <span className="ml-1.5 text-muted-foreground font-normal">(optional)</span>
           </Label>
           <Input
@@ -168,12 +166,12 @@ export function ProfileSettings() {
             type="text"
             value={telegramChatId}
             onChange={e => setTelegramChatId(e.target.value)}
-            placeholder="e.g. 123456789"
+            placeholder="e.g. -5231848624 (group) or 123456789"
             disabled={update.isPending}
             className="font-mono"
           />
           <p className="text-[11px] text-muted-foreground">
-            Used to receive trade notifications via Telegram bot.
+            For groups, ensure the ID starts with a minus sign (e.g. <span className="font-mono font-semibold text-primary">-5231848624</span>). The bot will dispatch live execution alerts with PnL directly to your group.
           </p>
         </div>
 

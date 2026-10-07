@@ -161,13 +161,14 @@ const columns: ColumnDef<AssetDetail>[] = [
 interface ScreenerTableProps {
   data: AssetDetail[]
   filters: ScreenerFilterState
+  onSelectAsset?: (asset: AssetDetail) => void
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export function ScreenerTable({ data, filters }: ScreenerTableProps) {
+export function ScreenerTable({ data, filters, onSelectAsset }: ScreenerTableProps) {
   const visibleColumns = useColumnVisibility()
 
   // Build TanStack column visibility state from the Set<ColumnId> (Req 14.1–14.3)
@@ -307,7 +308,8 @@ export function ScreenerTable({ data, filters }: ScreenerTableProps) {
             // we add it explicitly here for clarity and spec compliance)
             <TableRow
               key={row.id}
-              className="hover:bg-muted/50 transition-colors duration-200"
+              onClick={() => onSelectAsset?.(row.original)}
+              className="hover:bg-muted/70 transition-colors duration-200 cursor-pointer"
             >
               {row.getVisibleCells().map((cell) => (
                 <TableCell key={cell.id}>

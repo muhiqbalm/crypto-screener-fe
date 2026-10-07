@@ -5,7 +5,6 @@ import { Eye, EyeOff, Copy, Loader2, PlusCircle, Trash2, RefreshCw } from 'lucid
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useWebhookConfig, useAutomationToggle } from '@/lib/queries/webhook'

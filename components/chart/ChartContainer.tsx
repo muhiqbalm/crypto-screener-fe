@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { TrendingUp, TrendingDown, RefreshCw, Wifi, WifiOff } from 'lucide-react'
+import { TrendingUp, TrendingDown, RefreshCw, WifiOff } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -15,12 +15,15 @@ import { cn } from '@/lib/utils/cn'
 // ---------------------------------------------------------------------------
 
 const SYMBOLS = [
-  { value: 'BTCUSDT',  label: 'BTC/USDT' },
-  { value: 'ETHUSDT',  label: 'ETH/USDT' },
-  { value: 'SOLUSDT',  label: 'SOL/USDT' },
-  { value: 'BNBUSDT',  label: 'BNB/USDT' },
-  { value: 'XRPUSDT',  label: 'XRP/USDT' },
-  { value: 'DOGEUSDT', label: 'DOGE/USDT' },
+  { value: 'BTCUSDT',  label: 'BTC' },
+  { value: 'ETHUSDT',  label: 'ETH' },
+  { value: 'SOLUSDT',  label: 'SOL' },
+  { value: 'ZECUSDT',  label: 'ZEC' },
+  { value: 'LINKUSDT', label: 'LINK' },
+  { value: 'AAVEUSDT', label: 'AAVE' },
+  { value: 'AVAXUSDT', label: 'AVAX' },
+  { value: 'DOGEUSDT', label: 'DOGE' },
+  { value: 'HYPEUSDT', label: 'HYPE' },
 ]
 
 const INTERVALS = [
@@ -66,11 +69,9 @@ function SegBtn({
 // ---------------------------------------------------------------------------
 
 function PriceTicker({
-  symbol,
   lastCandle,
   prevClose,
 }: {
-  symbol: string
   lastCandle: Kline | null
   prevClose: number | null
 }) {
@@ -113,40 +114,45 @@ export function ChartContainer() {
   const [error,     setError]     = useState<string | null>(null)
   const [lastCandle, setLastCandle] = useState<Kline | null>(null)
   const [prevClose,  setPrevClose]  = useState<number | null>(null)
-  const [wsConnected, setWsConnected] = useState(false)
+
+  // Derived WS connection indicator
+  const wsConnected = !isLoading && !error
+
+  const [reloadKey, setReloadKey] = useState(0)
+
+  const handleReload = useCallback(() => {
+    setIsLoading(true)
+    setReloadKey((k) => k + 1)
+  }, [])
 
   // Load historical klines
-  const loadKlines = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const data = await fetchBinanceKlines(symbol, interval, 500)
-      setKlines(data)
-      if (data.length >= 2) {
-        setLastCandle(data[data.length - 1])
-        setPrevClose(data[data.length - 2].close)
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load chart data')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [symbol, interval])
-
   useEffect(() => {
-    loadKlines()
-  }, [loadKlines])
+    let cancelled = false
 
-  // Track WS connection state via a ping interval
-  useEffect(() => {
-    // We optimistically set connected after data loads; the chart component
-    // manages the actual WS. We just show a visual indicator.
-    if (!isLoading && !error) {
-      setWsConnected(true)
-    } else {
-      setWsConnected(false)
+    fetchBinanceKlines(symbol, interval, 500)
+      .then((data) => {
+        if (cancelled) return
+        setKlines(data)
+        if (data.length >= 2) {
+          setLastCandle(data[data.length - 1])
+          setPrevClose(data[data.length - 2].close)
+        }
+        setError(null)
+      })
+      .catch((err) => {
+        if (cancelled) return
+        setError(err instanceof Error ? err.message : 'Failed to load chart data')
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoading(false)
+        }
+      })
+
+    return () => {
+      cancelled = true
     }
-  }, [isLoading, error])
+  }, [symbol, interval, reloadKey])
 
   const handleTick = useCallback((candle: Kline) => {
     setLastCandle(candle)
@@ -164,7 +170,10 @@ export function ChartContainer() {
             <SegBtn
               key={s.value}
               active={symbol === s.value}
-              onClick={() => setSymbol(s.value)}
+              onClick={() => {
+                setSymbol(s.value)
+                setIsLoading(true)
+              }}
             >
               {s.label}
             </SegBtn>
@@ -177,7 +186,10 @@ export function ChartContainer() {
             <SegBtn
               key={i.value}
               active={interval === i.value}
-              onClick={() => setInterval(i.value)}
+              onClick={() => {
+                setInterval(i.value)
+                setIsLoading(true)
+              }}
             >
               {i.label}
             </SegBtn>
@@ -195,7 +207,6 @@ export function ChartContainer() {
                 {symbolMeta?.label ?? symbol}
               </p>
               <PriceTicker
-                symbol={symbol}
                 lastCandle={lastCandle}
                 prevClose={prevClose}
               />
@@ -230,7 +241,7 @@ export function ChartContainer() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={loadKlines}
+              onClick={handleReload}
               disabled={isLoading}
               className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
               aria-label="Reload chart data"
@@ -257,7 +268,7 @@ export function ChartContainer() {
                 <div className="flex flex-col items-center gap-3 text-center px-6">
                   <WifiOff className="h-8 w-8 text-muted-foreground/40" aria-hidden="true" />
                   <p className="text-sm text-muted-foreground">{error}</p>
-                  <Button variant="outline" size="sm" onClick={loadKlines}>
+                  <Button variant="outline" size="sm" onClick={handleReload}>
                     Retry
                   </Button>
                 </div>

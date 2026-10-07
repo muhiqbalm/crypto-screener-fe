@@ -1,19 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useSyncExternalStore } from 'react'
 import { useTheme } from 'next-themes'
 import { Sun, Moon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-export function ThemeToggle() {
-  const [mounted, setMounted] = useState(false)
-  const { theme, setTheme } = useTheme()
+const emptySubscribe = () => () => {}
 
-  // useEffect hanya berjalan di client-side, 
-  // sehingga kita tahu komponen sudah aman dari SSR
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+export function ThemeToggle() {
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false)
+  const { theme, setTheme } = useTheme()
 
   function handleToggle() {
     const next = theme === 'dark' ? 'light' : 'dark'

@@ -317,4 +317,19 @@ export const api = {
   getPositionsHistory(signal?: AbortSignal): Promise<ClosedPositionResponse[]> {
     return request<ClosedPositionResponse[]>('GET', PATHS.positionsHistory, undefined, signal)
   },
+
+  // ---------------------------------------------------------------------------
+  // Real Market Intelligence (Binance FAPI + Live Sentiment)
+  // ---------------------------------------------------------------------------
+
+  getIntelWhales(signal?: AbortSignal): Promise<any> {
+    return request<any>('GET', PATHS.intelWhales, undefined, signal)
+  },
+
+  getIntelNews(signal?: AbortSignal): Promise<any> {
+    return request<any>('GET', PATHS.intelNews, undefined, signal)
+  },
 }
+
+export const apiClient = api
+

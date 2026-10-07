@@ -47,21 +47,34 @@ export async function fetchBinanceKlines(
   interval: string,
   limit = 500,
 ): Promise<Kline[]> {
-  const url =
-    `https://api.binance.com/api/v3/klines` +
-    `?symbol=${symbol.toUpperCase()}&interval=${interval}&limit=${limit}`
+  const sym = symbol.toUpperCase()
+  // Use Binance Vision public API first (unblocked in Indonesia & globally without VPN)
+  // Fall back to standard api.binance.com
+  const endpoints = [
+    `https://data-api.binance.vision/api/v3/klines?symbol=${sym}&interval=${interval}&limit=${limit}`,
+    `https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${interval}&limit=${limit}`,
+  ]
 
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`Binance klines error: ${res.status}`)
+  let lastError: Error | null = null
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url)
+      if (res.ok) {
+        const raw: unknown[][] = await res.json()
+        return raw.map((k) => ({
+          time:  Math.floor(Number(k[0]) / 1000),
+          open:  parseFloat(k[1] as string),
+          high:  parseFloat(k[2] as string),
+          low:   parseFloat(k[3] as string),
+          close: parseFloat(k[4] as string),
+        }))
+      }
+    } catch (err) {
+      lastError = err as Error
+    }
+  }
 
-  const raw: unknown[][] = await res.json()
-  return raw.map((k) => ({
-    time:  Math.floor(Number(k[0]) / 1000),
-    open:  parseFloat(k[1] as string),
-    high:  parseFloat(k[2] as string),
-    low:   parseFloat(k[3] as string),
-    close: parseFloat(k[4] as string),
-  }))
+  throw lastError ?? new Error('Failed to fetch candlestick data from Binance endpoints')
 }
 
 // ---------------------------------------------------------------------------
@@ -85,6 +98,7 @@ export function TradingChart({ symbol, interval, klines, onTick }: TradingChartP
   const chartRef     = useRef<IChartApi | null>(null)
   const seriesRef    = useRef<ISeriesApi<'Candlestick'> | null>(null)
   const wsRef        = useRef<WebSocket | null>(null)
+  const connectWsRef = useRef<() => void>(() => {})
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme !== 'light'
 
@@ -111,11 +125,9 @@ export function TradingChart({ symbol, interval, klines, onTick }: TradingChartP
       },
       rightPriceScale: {
         borderColor: colors.border,
-        textColor: colors.text,
       },
       timeScale: {
         borderColor: colors.border,
-        textColor: colors.text,
         timeVisible: true,
         secondsVisible: interval === '1s',
       },
@@ -177,7 +189,8 @@ export function TradingChart({ symbol, interval, klines, onTick }: TradingChartP
     }
 
     const stream = `${symbol.toLowerCase()}@kline_${interval}`
-    const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${stream}`)
+    // Binance Vision public stream is accessible in regions where stream.binance.com is blocked
+    const ws = new WebSocket(`wss://data-stream.binance.vision/ws/${stream}`)
 
     ws.onmessage = (event: MessageEvent) => {
       try {
@@ -211,12 +224,16 @@ export function TradingChart({ symbol, interval, klines, onTick }: TradingChartP
     ws.onclose = () => {
       // Auto-reconnect after 3 s if component is still mounted
       setTimeout(() => {
-        if (wsRef.current === ws) connectWs()
+        if (wsRef.current === ws) connectWsRef.current()
       }, 3000)
     }
 
     wsRef.current = ws
   }, [symbol, interval, onTick])
+
+  useEffect(() => {
+    connectWsRef.current = connectWs
+  }, [connectWs])
 
   useEffect(() => {
     connectWs()

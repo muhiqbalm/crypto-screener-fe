@@ -2,8 +2,9 @@
 
 import { useCredentials } from '@/lib/queries/credentials'
 import { ExchangeCredentialCard } from '@/components/settings/ExchangeCredentialCard'
+import { WebhookConfigSettings } from '@/components/settings/WebhookConfigSettings'
 import { ProfileSettings } from '@/components/settings/ProfileSettings'
-import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card'
+import { Card, CardHeader, CardFooter } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { Exchange } from '@/lib/api/types/credentials'
 
@@ -37,16 +38,16 @@ export default function SettingsPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Manage your account and exchange credentials.
+          Manage your exchange credentials, TradingView automated webhooks, and Telegram alerts.
         </p>
       </div>
 
-      {/* Exchange Credentials */}
+      {/* 1. Exchange Credentials */}
       <section className="mb-8">
         <div className="mb-4">
           <h2 className="text-base font-semibold">Exchange Credentials</h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            API keys are encrypted before storage. Secrets are never returned by the API.
+            API keys are encrypted using AES-256 before storage. Secrets are never exposed.
           </p>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -63,12 +64,23 @@ export default function SettingsPage() {
         </div>
       </section>
 
-       {/* Account / Profile */}
+      {/* 2. TradingView Webhook Configuration */}
+      <section className="mb-8">
+        <div className="mb-4">
+          <h2 className="text-base font-semibold">TradingView Webhook Integration</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Connect your TradingView Pine Script alerts to execute auto-trades on Binance.
+          </p>
+        </div>
+        <WebhookConfigSettings />
+      </section>
+
+      {/* 3. Account / Profile & Telegram */}
       <section>
         <div className="mb-4">
-          <h2 className="text-base font-semibold">Account</h2>
+          <h2 className="text-base font-semibold">Account & Telegram Notifications</h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Update your display name, Telegram notifications, and password.
+            Update your profile and Telegram Chat ID for instant trade execution alerts.
           </p>
         </div>
         <ProfileSettings />

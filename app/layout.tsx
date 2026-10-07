@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Crypto Screener',
-  description: 'Real-time crypto market screener and webhook automation',
+  title: 'BMTM MoonTrade — Screener & Trade System',
+  description: 'Institutional-grade crypto screener, TradingView webhook automation, and Binance trade execution system.',
 }
 
 export default function RootLayout({

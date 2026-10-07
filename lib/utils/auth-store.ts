@@ -107,12 +107,36 @@ export function setSession(session: Session): void {
 }
 
 /** Updates only the access token and its expiry (called after token refresh). */
-export function setToken(token: string, expiresIn: number): void {
-  if (!_session) return
-  _session = {
-    ..._session,
-    accessToken: token,
-    expiresAt: Date.now() + expiresIn * 1000,
+export function setToken(token: string, expiresIn = 1800): void {
+  if (!token) {
+    if (_session) {
+      _session = { ..._session, accessToken: '' }
+      _persist(_session)
+      _notify()
+    }
+    return
+  }
+
+  if (!_session) {
+    _session = {
+      accessToken: token,
+      refreshToken: '',
+      expiresAt: Date.now() + expiresIn * 1000,
+      user: {
+        id: '',
+        email: '',
+        name: '',
+        telegram_chat_id: null,
+        is_active: true,
+        created_at: new Date().toISOString(),
+      },
+    }
+  } else {
+    _session = {
+      ..._session,
+      accessToken: token,
+      expiresAt: Date.now() + expiresIn * 1000,
+    }
   }
   _persist(_session)
   _notify()

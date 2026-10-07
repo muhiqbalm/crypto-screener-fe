@@ -26,4 +26,8 @@ export const PATHS = {
   // Positions
   positions: '/trading/users/me/positions',
   positionsHistory: '/trading/users/me/positions/history',
+
+  // Real Market Intelligence
+  intelWhales: '/api/v1/intel/whales',
+  intelNews: '/api/v1/intel/news',
 } as const
