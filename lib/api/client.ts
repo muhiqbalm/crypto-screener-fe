@@ -1,6 +1,7 @@
 import { ApiError } from './errors'
 import { PATHS } from './paths'
 import type { ScreenerResponse } from './types/screener'
+import type { IntelNewsResponse, IntelWhalesResponse } from './types/intel'
 import type {
   WebhookConfigResponse,
   WebhookConfigCreateRequest,
@@ -325,12 +326,12 @@ export const api = {
   // Real Market Intelligence (Binance FAPI + Live Sentiment)
   // ---------------------------------------------------------------------------
 
-  getIntelWhales(signal?: AbortSignal): Promise<any> {
-    return request<any>('GET', PATHS.intelWhales, undefined, signal)
+  getIntelWhales(signal?: AbortSignal): Promise<IntelWhalesResponse> {
+    return request<IntelWhalesResponse>('GET', PATHS.intelWhales, undefined, signal)
   },
 
-  getIntelNews(signal?: AbortSignal): Promise<any> {
-    return request<any>('GET', PATHS.intelNews, undefined, signal)
+  getIntelNews(signal?: AbortSignal): Promise<IntelNewsResponse> {
+    return request<IntelNewsResponse>('GET', PATHS.intelNews, undefined, signal)
   },
 }
 

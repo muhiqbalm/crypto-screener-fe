@@ -61,4 +61,9 @@ export interface UserProfileResponse {
   telegram_chat_id: string | null
   is_active: boolean
   created_at: string // ISO 8601
+  /**
+   * users.role — not returned by the backend's UserProfileResponse today.
+   * Optional so the UI can show it once the backend exposes it.
+   */
+  role?: string | null
 }

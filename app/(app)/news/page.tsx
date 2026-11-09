@@ -1,8 +1,8 @@
 import { CryptoNewsView } from '@/components/news/CryptoNewsView'
 
 export const metadata = {
-  title: 'AI News & Catalyst Intelligence | BMTM MoonTrade',
-  description: 'Real-time crypto macro news, AI sentiment scoring, and high-impact trading catalysts.',
+  title: 'Crypto News & Sentiment | BMTM MoonTrade',
+  description: 'CoinTelegraph headlines with keyword sentiment tagging and the Fear & Greed index.',
 }
 
 export default function NewsPage() {

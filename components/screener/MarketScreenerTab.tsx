@@ -69,42 +69,11 @@ export function MarketScreenerTab() {
     return <EmptyPanel message="No assets available" ctaLabel="Retry" onCta={handleRetry} />
   }
 
-  // Derive dynamic signals if backend threshold (> 0.5) left compressed scores as NEUTRAL
-  const assets: AssetDetail[] = rawAssets.map((a) => {
-    let effectiveSignal = a.signal
-    if (effectiveSignal === 'NEUTRAL' || !effectiveSignal) {
-      const score = a.composite_score ?? 0
-      if (score >= 0.015) effectiveSignal = 'BULLISH'
-      else if (score <= -0.015) effectiveSignal = 'BEARISH'
-      else effectiveSignal = 'NEUTRAL'
-    }
-    return { ...a, signal: effectiveSignal }
-  })
-
-  // Recalculate market bias summary if all assets were classified as neutral
-  const effectiveSummary = (() => {
-    if (!data?.summary) return null
-    const baseSummary = data.summary
-    if (
-      baseSummary.market_overview.bullish_count === 0 &&
-      baseSummary.market_overview.bearish_count === 0 &&
-      assets.length > 0
-    ) {
-      const bullCount = assets.filter((a) => a.signal === 'BULLISH').length
-      const bearCount = assets.filter((a) => a.signal === 'BEARISH').length
-      const neutCount = assets.length - bullCount - bearCount
-      return {
-        ...baseSummary,
-        market_overview: {
-          ...baseSummary.market_overview,
-          bullish_count: bullCount,
-          neutral_count: neutCount,
-          bearish_count: bearCount,
-        },
-      }
-    }
-    return baseSummary
-  })()
+  // Signals and bull/bear/neutral counts come straight from the backend
+  // (response_builder._derive_signal, threshold ±0.02 on risk_adjusted_score).
+  // The FE must not re-classify scores with its own thresholds.
+  const assets: AssetDetail[] = rawAssets
+  const summary = data?.summary ?? null
 
   function handleSelectSymbol(symbol: string) {
     const found = assets.find((a) => a.symbol === symbol || a.symbol.startsWith(symbol))
@@ -117,9 +86,9 @@ export function MarketScreenerTab() {
   return (
     <div className="space-y-6">
       {/* 1. Market Overview KPI Cards */}
-      {effectiveSummary && (
+      {summary && (
         <MarketOverviewCards
-          summary={effectiveSummary}
+          summary={summary}
           onSelectCoin={handleSelectSymbol}
         />
       )}

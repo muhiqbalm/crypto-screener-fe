@@ -46,6 +46,10 @@ ENV NEXT_PUBLIC_USE_MOCK_DATA=$NEXT_PUBLIC_USE_MOCK_DATA
 # Disable Next.js telemetry during build
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Opt in to output:"standalone" (see next.config.ts). The PM2/VPS deploy uses
+# `next start` and must NOT build standalone.
+ENV NEXT_OUTPUT_STANDALONE=1
+
 RUN npm run build
 
 
@@ -73,5 +77,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-# next.config.ts output:"standalone" generates server.js at the root
+# NEXT_OUTPUT_STANDALONE=1 makes next.config.ts emit output:"standalone" (server.js at the root)
 CMD ["node", "server.js"]

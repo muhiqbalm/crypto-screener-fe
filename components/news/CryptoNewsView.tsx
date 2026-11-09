@@ -5,76 +5,40 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
+import { ErrorPanel } from '@/components/shell/ErrorPanel'
 import { useIntelNews } from '@/lib/queries/intel'
+import { ApiError } from '@/lib/api/errors'
+import type { NewsItem } from '@/lib/api/types/intel'
 import {
-  Newspaper,
   TrendingUp,
   TrendingDown,
   Sparkles,
   Search,
   RefreshCw,
-  ExternalLink,
   Gauge,
   Zap,
   Globe2,
-  CalendarClock,
   ArrowUpRight
 } from 'lucide-react'
 
-interface NewsItem {
-  id: string
-  title: string
-  summary: string
-  source: string
-  sourceType: 'tier1' | 'chain' | 'macro'
-  timestamp: string
-  category: 'Macro' | 'Whale' | 'DeFi' | 'Regulatory' | 'Catalyst'
-  sentiment: 'BULLISH' | 'BEARISH' | 'NEUTRAL'
-  impactScore: number
-  affectedSymbols: string[]
-  readTime: string
-  linkUrl: string
-}
-
-const FALLBACK_NEWS: NewsItem[] = [
-  {
-    id: 'news-01',
-    title: 'Fed Liquidity Pivot Injects $14B into Overnight Repo; Crypto Markets React with High Beta Inflows',
-    summary: 'Federal Reserve balance sheet adjustments signal an easing cycle acceleration. Historical correlation points to aggressive altcoin expansion following similar liquidity injections in Q1.',
-    source: 'Bloomberg Terminal / MacroDesk',
-    sourceType: 'tier1',
-    timestamp: '8 mins ago',
-    category: 'Macro',
-    sentiment: 'BULLISH',
-    impactScore: 92,
-    affectedSymbols: ['BTC', 'ETH', 'SOL'],
-    readTime: '2 min read',
-    linkUrl: 'https://cointelegraph.com'
-  },
-  {
-    id: 'news-02',
-    title: 'Spot Ethereum & Solana ETF Combined Net Inflow Hits Record $410M in Single Daily Session',
-    summary: 'BlackRock and Fidelity report unprecedented institutional volume. Institutional basis trading arbitrage spreads widen to 8.2% annualized, fueling spot demand.',
-    source: 'CoinDesk Institutional',
-    sourceType: 'tier1',
-    timestamp: '24 mins ago',
-    category: 'Catalyst',
-    sentiment: 'BULLISH',
-    impactScore: 88,
-    affectedSymbols: ['ETH', 'SOL'],
-    readTime: '3 min read',
-    linkUrl: 'https://cointelegraph.com'
-  }
-]
-
 export function CryptoNewsView() {
-  const { data: intel, isLoading, isFetching, refetch } = useIntelNews()
+  const { data: intel, isPending, error, isFetching, refetch } = useIntelNews()
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL')
   const [selectedSentiment, setSelectedSentiment] = useState<string>('ALL')
 
-  const fng = intel?.fearAndGreed ?? { value: 72, classification: 'Greed' }
-  const newsList: NewsItem[] = intel?.news ?? FALLBACK_NEWS
+  // Zero Static Mocking: no invented fallback numbers or headlines. Items with
+  // ids "fallback-*" are the backend's static placeholder and are dropped.
+  const fng = intel?.fearAndGreed ?? null
+  const newsList: NewsItem[] = (intel?.news ?? []).filter((n) => !n.id.startsWith('fallback-'))
+  const bullishCount = newsList.filter((n) => n.sentiment === 'BULLISH').length
+  const bearishCount = newsList.filter((n) => n.sentiment === 'BEARISH').length
+  const bullShare = newsList.length > 0 ? Math.round((bullishCount / newsList.length) * 100) : null
+  const snapshotTime =
+    typeof intel?.cachedAt === 'number'
+      ? new Date(intel.cachedAt * 1000).toLocaleTimeString()
+      : null
 
   const filteredNews = newsList.filter((item) => {
     const matchCategory = selectedCategory === 'ALL' || item.category === selectedCategory
@@ -93,20 +57,22 @@ export function CryptoNewsView() {
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono font-medium shadow-sm">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            AI NEWS &amp; CATALYST INTELLIGENCE
+            NEWS &amp; SENTIMENT
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
             Market News &amp; Macro Catalysts
           </h1>
           <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
-            Real-time macroeconomic feeds, Fear &amp; Greed telemetry, and AI catalyst classification powered by {intel?.source ?? 'Alternative.me & CoinTelegraph RSS'}.
+            CoinTelegraph RSS headlines with keyword-based sentiment tagging, plus the Alternative.me Fear &amp; Greed index.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/10 px-3 py-1.5 font-mono text-xs">
-            Live RSS &amp; NLP Engine
-          </Badge>
+          {snapshotTime && (
+            <Badge variant="outline" className="border-border/80 px-3 py-1.5 font-mono text-xs">
+              Snapshot {snapshotTime}
+            </Badge>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -120,6 +86,23 @@ export function CryptoNewsView() {
         </div>
       </div>
 
+      {isPending ? (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-32 w-full rounded-xl" />
+            ))}
+          </div>
+          <Skeleton className="h-64 w-full rounded-xl" />
+        </div>
+      ) : error ? (
+        <ErrorPanel
+          kind={error instanceof ApiError ? error.kind : 'server'}
+          onRetry={() => refetch()}
+          messageOverride="News feed is unavailable right now."
+        />
+      ) : (
+      <>
       {/* Intelligence Metric Banner */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Fear & Greed Index */}
@@ -134,16 +117,18 @@ export function CryptoNewsView() {
           </CardHeader>
           <CardContent className="p-5 pt-1">
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-mono font-black text-emerald-400">{fng.value}</span>
+              <span className="text-3xl font-mono font-black text-emerald-400">{fng ? fng.value : '—'}</span>
               <span className="text-xs font-mono text-muted-foreground">/ 100</span>
-              <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30 ml-auto font-mono text-[11px] px-2 py-0.5">
-                {fng.classification}
-              </Badge>
+              {fng && (
+                <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30 ml-auto font-mono text-[11px] px-2 py-0.5">
+                  {fng.classification}
+                </Badge>
+              )}
             </div>
             <div className="w-full bg-muted/40 rounded-full h-1.5 mt-3 overflow-hidden">
               <div
                 className="bg-gradient-to-r from-amber-500 via-emerald-400 to-cyan-400 h-1.5 rounded-full"
-                style={{ width: `${Math.min(fng.value, 100)}%` }}
+                style={{ width: `${fng ? Math.min(fng.value, 100) : 0}%` }}
               />
             </div>
             <p className="text-[11px] text-muted-foreground mt-2 font-mono">
@@ -156,7 +141,7 @@ export function CryptoNewsView() {
         <Card className="border-border/60 bg-gradient-to-b from-card/90 to-card/40 backdrop-blur-md shadow-sm hover:border-cyan-500/30 transition-all">
           <CardHeader className="p-5 pb-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-mono font-medium uppercase tracking-wider text-muted-foreground">24h Catalyst Bias</span>
+              <span className="text-xs font-mono font-medium uppercase tracking-wider text-muted-foreground">Headline Sentiment</span>
               <div className="h-8 w-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
                 <Sparkles className="h-4 w-4 text-cyan-400" />
               </div>
@@ -165,17 +150,15 @@ export function CryptoNewsView() {
           <CardContent className="p-5 pt-1">
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-mono font-black text-cyan-400">
-                {intel?.catalystBias ?? '+80%'}
+                {bullShare === null ? '—' : `${bullShare}%`}
               </span>
-              <Badge className="bg-cyan-500/15 text-cyan-300 border-cyan-500/30 ml-auto font-mono text-[11px] px-2 py-0.5">
-                Bullish Drift
-              </Badge>
+              <span className="text-xs font-mono text-muted-foreground">bullish</span>
             </div>
             <div className="w-full bg-muted/40 rounded-full h-1.5 mt-3 overflow-hidden">
-              <div className="bg-cyan-400 h-1.5 rounded-full" style={{ width: '80%' }} />
+              <div className="bg-cyan-400 h-1.5 rounded-full" style={{ width: `${bullShare ?? 0}%` }} />
             </div>
             <p className="text-[11px] text-muted-foreground mt-2 font-mono">
-              NLP Financial Sentiment Engine
+              {bullishCount} bullish / {bearishCount} bearish headlines (keyword tagging)
             </p>
           </CardContent>
         </Card>
@@ -194,15 +177,9 @@ export function CryptoNewsView() {
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-mono font-black text-foreground">{newsList.length}</span>
               <span className="text-xs font-mono text-muted-foreground">Articles</span>
-              <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30 ml-auto font-mono text-[11px] px-2 py-0.5">
-                Live Feed
-              </Badge>
-            </div>
-            <div className="w-full bg-muted/40 rounded-full h-1.5 mt-3 overflow-hidden">
-              <div className="bg-emerald-400 h-1.5 rounded-full" style={{ width: '85%' }} />
             </div>
             <p className="text-[11px] text-muted-foreground mt-2 font-mono">
-              CoinTelegraph Wire Dispatch
+              CoinTelegraph RSS
             </p>
           </CardContent>
         </Card>
@@ -211,7 +188,7 @@ export function CryptoNewsView() {
         <Card className="border-border/60 bg-gradient-to-b from-card/90 to-card/40 backdrop-blur-md shadow-sm hover:border-purple-500/30 transition-all">
           <CardHeader className="p-5 pb-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-mono font-medium uppercase tracking-wider text-muted-foreground">Pipeline Latency</span>
+              <span className="text-xs font-mono font-medium uppercase tracking-wider text-muted-foreground">Data Snapshot</span>
               <div className="h-8 w-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
                 <Globe2 className="h-4 w-4 text-purple-400" />
               </div>
@@ -219,16 +196,10 @@ export function CryptoNewsView() {
           </CardHeader>
           <CardContent className="p-5 pt-1">
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-mono font-black text-purple-400">sub-5ms</span>
-              <Badge className="bg-purple-500/15 text-purple-300 border-purple-500/30 ml-auto font-mono text-[11px] px-2 py-0.5">
-                FastAPI TTL
-              </Badge>
-            </div>
-            <div className="w-full bg-muted/40 rounded-full h-1.5 mt-3 overflow-hidden">
-              <div className="bg-purple-400 h-1.5 rounded-full" style={{ width: '98%' }} />
+              <span className="text-2xl font-mono font-black text-purple-400">{snapshotTime ?? '—'}</span>
             </div>
             <p className="text-[11px] text-muted-foreground mt-2 font-mono">
-              In-Memory RAM Cache Active
+              Backend cache refreshes at most every 60s
             </p>
           </CardContent>
         </Card>
@@ -304,26 +275,22 @@ export function CryptoNewsView() {
                   <Badge variant="outline" className="font-mono text-[10px] font-semibold tracking-wider uppercase bg-muted/60 border-border/80 px-2 py-0.5">
                     {item.category}
                   </Badge>
-                  <span className="text-[11px] text-muted-foreground flex items-center gap-1 font-mono">
-                    <CalendarClock className="h-3 w-3" />
-                    {item.timestamp}
-                  </span>
                 </div>
 
                 <div>
                   {item.sentiment === 'BULLISH' ? (
                     <Badge className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 gap-1 text-[11px] font-mono px-2 py-0.5">
                       <TrendingUp className="h-3 w-3" />
-                      BULLISH • {item.impactScore}%
+                      BULLISH
                     </Badge>
                   ) : item.sentiment === 'BEARISH' ? (
                     <Badge className="bg-rose-500/15 text-rose-400 border border-rose-500/30 gap-1 text-[11px] font-mono px-2 py-0.5">
                       <TrendingDown className="h-3 w-3" />
-                      BEARISH • {item.impactScore}%
+                      BEARISH
                     </Badge>
                   ) : (
                     <Badge className="bg-muted/30 text-muted-foreground border border-border gap-1 text-[11px] font-mono px-2 py-0.5">
-                      NEUTRAL • {item.impactScore}%
+                      NEUTRAL
                     </Badge>
                   )}
                 </div>
@@ -372,10 +339,16 @@ export function CryptoNewsView() {
 
         {filteredNews.length === 0 && (
           <div className="col-span-full py-16 text-center text-muted-foreground border border-dashed border-border/60 rounded-xl bg-card/30">
-            <p className="text-sm">No live news matching your filter criteria.</p>
+            <p className="text-sm">
+              {newsList.length === 0
+                ? 'No live headlines available right now.'
+                : 'No live news matching your filter criteria.'}
+            </p>
           </div>
         )}
       </div>
+      </>
+      )}
     </div>
   )
 }

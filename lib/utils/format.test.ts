@@ -71,6 +71,13 @@ describe('formatPrice', () => {
     expect(result).toContain('0.000123')
   })
 
+  it('keeps significant digits for tiny prices', () => {
+    expect(formatPrice(0.00001234)).toBe('$0.00001234')
+    expect(formatPrice(0.0000098765)).toBe('$0.000009877')
+    expect(formatPrice(0.5)).toBe('$0.50')
+    expect(formatPrice(0)).toBe('$0.00')
+  })
+
   it('formats exactly 1.00', () => {
     expect(formatPrice(1)).toBe('$1.00')
   })
@@ -176,12 +183,16 @@ describe('formatFunding', () => {
     expect(formatFunding(NaN)).toBe(DASH)
   })
 
-  it('formats positive funding rate with "+" prefix', () => {
-    expect(formatFunding(0.0001)).toBe('+0.0100%')
+  it('formats positive funding rate (already in percent) with "+" prefix', () => {
+    expect(formatFunding(0.01)).toBe('+0.0100%')
   })
 
-  it('formats negative funding rate with "-" prefix', () => {
-    expect(formatFunding(-0.0001)).toBe('-0.0100%')
+  it('formats negative funding rate (already in percent) with "-" prefix', () => {
+    expect(formatFunding(-0.01)).toBe('-0.0100%')
+  })
+
+  it('does not scale the value by 100', () => {
+    expect(formatFunding(0.0525)).toBe('+0.0525%')
   })
 
   it('ends with "%"', () => {

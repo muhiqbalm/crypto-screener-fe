@@ -1,6 +1,7 @@
 export const PATHS = {
   // Screener
   screenerSummary: '/api/v1/screener/summary',
+  health: '/api/v1/health',
 
   // Auth
   authRegister: '/trading/auth/register',

@@ -134,7 +134,7 @@ const columns: ColumnDef<AssetDetail>[] = [
     enableSorting: true,
     cell: ({ getValue }) => (
       <span className="font-mono tabular-nums">
-        {formatScore(getValue<number | null>())}
+        {formatScore(getValue<number | null>(), 4)}
       </span>
     ),
   },

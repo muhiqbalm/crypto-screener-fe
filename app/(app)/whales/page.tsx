@@ -1,8 +1,8 @@
 import { WhaleRadarView } from '@/components/whales/WhaleRadarView'
 
 export const metadata = {
-  title: 'Whale Radar & Smart Money Flow | BMTM MoonTrade',
-  description: 'Track institutional exchange inflows, cold storage accumulation, and Binance Top Trader long/short ratios in real time.',
+  title: 'Whale Radar | BMTM MoonTrade',
+  description: 'Binance Futures top trader long/short ratios and large perpetual trades.',
 }
 
 export default function WhalesPage() {

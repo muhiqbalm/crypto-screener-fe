@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import type { SummaryData, AssetSummary } from '@/lib/api/types/screener'
 import { cn } from '@/lib/utils/cn'
+import { formatFunding, formatScore } from '@/lib/utils/format'
 
 interface MarketOverviewCardsProps {
   summary: SummaryData
@@ -34,8 +35,13 @@ export function MarketOverviewCards({ summary, onSelectCoin }: MarketOverviewCar
   const neutralPct = Math.round(((market_overview?.neutral_count ?? 0) / totalAssets) * 100)
   const bearishPct = Math.max(0, 100 - bullishPct - neutralPct)
 
-  const avgFunding = market_overview?.avg_funding_rate ?? 0
-  const isFundingPositive = avgFunding >= 0
+  // avg_funding_rate is already in PERCENT units (backend fetcher multiplies
+  // Binance's raw rate by 100). 0.01 = the 0.01% / 8h Binance baseline.
+  const avgFunding = market_overview?.avg_funding_rate ?? null
+  const hasFunding = avgFunding !== null && !isNaN(avgFunding)
+  const isFundingPositive = hasFunding && avgFunding >= 0
+  // > 0.05% per 8h (5x the baseline) is treated as an elevated long premium.
+  const HIGH_FUNDING_PCT = 0.05
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -131,22 +137,27 @@ export function MarketOverviewCards({ summary, onSelectCoin }: MarketOverviewCar
             <span
               className={cn(
                 'text-2xl font-bold font-mono tracking-tight',
-                isFundingPositive ? 'text-bullish' : 'text-bearish',
+                !hasFunding
+                  ? 'text-muted-foreground'
+                  : isFundingPositive
+                    ? 'text-bullish'
+                    : 'text-bearish',
               )}
             >
-              {isFundingPositive ? '+' : ''}
-              {(avgFunding * 100).toFixed(4)}%
+              {formatFunding(avgFunding)}
             </span>
             <span className="text-xs text-muted-foreground">/ 8h cycle</span>
           </div>
           <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
             <span className="inline-block h-2 w-2 rounded-full bg-primary/40" />
             <span>
-              {avgFunding > 0.0005
-                ? 'High long premium (contrarian risk)'
-                : avgFunding < 0
-                  ? 'Negative funding (short squeeze potential)'
-                  : 'Normal healthy swap baseline'}
+              {!hasFunding
+                ? 'Funding data unavailable'
+                : avgFunding > HIGH_FUNDING_PCT
+                  ? 'High long premium (contrarian risk)'
+                  : avgFunding < 0
+                    ? 'Negative funding (short squeeze potential)'
+                    : 'Normal healthy swap baseline'}
             </span>
           </div>
         </CardContent>
@@ -181,27 +192,38 @@ export function MarketOverviewCards({ summary, onSelectCoin }: MarketOverviewCar
                       <span className="font-semibold text-foreground">{label}</span>
                     </div>
                     <div className="flex items-center gap-1.5 font-mono">
-                      <Badge
-                        variant="secondary"
+                      {asset.confidence_tier && (
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            'text-[9px] px-1.5 py-0 font-medium',
+                            asset.confidence_tier === 'HIGH'
+                              ? 'bg-emerald-500/10 text-emerald-500'
+                              : 'bg-muted text-muted-foreground',
+                          )}
+                        >
+                          {asset.confidence_tier}
+                        </Badge>
+                      )}
+                      <span
                         className={cn(
-                          'text-[9px] px-1.5 py-0 font-medium',
-                          asset.confidence_tier === 'HIGH'
-                            ? 'bg-emerald-500/10 text-emerald-500'
-                            : 'bg-muted text-muted-foreground',
+                          'text-xs font-bold',
+                          asset.composite_score === null
+                            ? 'text-muted-foreground'
+                            : asset.composite_score >= 0
+                              ? 'text-bullish'
+                              : 'text-bearish',
                         )}
                       >
-                        {asset.confidence_tier ?? 'MED'}
-                      </Badge>
-                      <span className="text-xs font-bold text-bullish">
-                        {(asset.composite_score ?? 0) > 0 ? '+' : ''}
-                        {(asset.composite_score ?? 0).toFixed(3)}
+                        {asset.composite_score !== null && asset.composite_score > 0 ? '+' : ''}
+                        {formatScore(asset.composite_score, 3)}
                       </span>
                     </div>
                   </button>
                 )
               })
             ) : (
-              <span className="text-xs text-muted-foreground">Calculating scores...</span>
+              <span className="text-xs text-muted-foreground">No ranked assets in this snapshot</span>
             )}
           </div>
         </CardContent>

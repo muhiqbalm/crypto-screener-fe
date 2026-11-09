@@ -18,6 +18,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { AssetDetail } from '@/lib/api/types/screener'
 import { cn } from '@/lib/utils/cn'
+import { formatFunding, formatPrice, formatScore } from '@/lib/utils/format'
+import type { SignalDirection } from '@/lib/api/types/screener'
 
 interface CoinDetailDrawerProps {
   asset: AssetDetail | null
@@ -28,15 +30,18 @@ function cleanSymbol(sym: string): string {
   return sym.replace('/USDT:USDT', '').replace(':USDT', '')
 }
 
-function formatCurrency(val: number | null | undefined): string {
-  if (val === null || val === undefined || isNaN(val)) return 'N/A'
-  if (val >= 1000) return `$${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-  if (val >= 1) return `$${val.toFixed(2)}`
-  return `$${val.toFixed(4)}`
+function isNum(v: number | null | undefined): v is number {
+  return v !== null && v !== undefined && !isNaN(v)
+}
+
+function subSignalClass(sig: SignalDirection | null | undefined): string {
+  if (sig === 'BULLISH') return 'text-bullish'
+  if (sig === 'BEARISH') return 'text-bearish'
+  return 'text-muted-foreground'
 }
 
 function formatVolume(val: number | null | undefined): string {
-  if (val === null || val === undefined || isNaN(val)) return 'N/A'
+  if (val === null || val === undefined || isNaN(val)) return '—'
   if (val >= 1e9) return `$${(val / 1e9).toFixed(2)}B`
   if (val >= 1e6) return `$${(val / 1e6).toFixed(2)}M`
   return `$${val.toLocaleString('en-US')}`
@@ -56,7 +61,12 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
   if (!asset) return null
 
   const symbolClean = cleanSymbol(asset.symbol)
-  const isUp = (asset.change_24h ?? 0) >= 0
+  const change24h = asset.change_24h
+  const hasChange = isNum(change24h)
+  const isUp = hasChange && change24h >= 0
+  const score = asset.composite_score
+  const hasScore = isNum(score)
+  const lsr = asset.long_short_ratio
 
   return (
     <div
@@ -79,37 +89,43 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
               </span>
               <h2 className="text-xl font-bold tracking-tight">{symbolClean}</h2>
               <span className="text-xs text-muted-foreground font-mono">/USDT Perp</span>
-              <Badge
-                className={cn(
-                  'text-xs font-bold',
-                  asset.tier === 'A'
-                    ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                    : asset.tier === 'B'
-                      ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                      : 'bg-muted text-muted-foreground',
-                )}
-              >
-                Tier {asset.tier ?? 'B'}
-              </Badge>
+              {asset.tier && (
+                <Badge
+                  className={cn(
+                    'text-xs font-bold',
+                    asset.tier === 'A'
+                      ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                      : asset.tier === 'B'
+                        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                        : 'bg-muted text-muted-foreground',
+                  )}
+                >
+                  Tier {asset.tier}
+                </Badge>
+              )}
             </div>
             <div className="mt-2 flex items-baseline gap-3">
               <span className="text-2xl font-bold font-mono tracking-tight">
-                {formatCurrency(asset.price)}
+                {formatPrice(asset.price)}
               </span>
-              <span
-                className={cn(
-                  'flex items-center text-sm font-semibold font-mono',
-                  isUp ? 'text-bullish' : 'text-bearish',
-                )}
-              >
-                {isUp ? (
-                  <TrendingUp className="mr-0.5 h-4 w-4" aria-hidden="true" />
-                ) : (
-                  <TrendingDown className="mr-0.5 h-4 w-4" aria-hidden="true" />
-                )}
-                {isUp ? '+' : ''}
-                {(asset.change_24h ?? 0).toFixed(2)}%
-              </span>
+              {hasChange ? (
+                <span
+                  className={cn(
+                    'flex items-center text-sm font-semibold font-mono',
+                    isUp ? 'text-bullish' : 'text-bearish',
+                  )}
+                >
+                  {isUp ? (
+                    <TrendingUp className="mr-0.5 h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <TrendingDown className="mr-0.5 h-4 w-4" aria-hidden="true" />
+                  )}
+                  {isUp ? '+' : ''}
+                  {change24h.toFixed(2)}%
+                </span>
+              ) : (
+                <span className="text-sm font-mono text-muted-foreground">—</span>
+              )}
             </div>
           </div>
 
@@ -136,34 +152,31 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
                 variant="outline"
                 className={cn(
                   'font-mono text-xs font-bold',
-                  (asset.composite_score ?? 0) >= 0 ? 'text-bullish border-bullish/30' : 'text-bearish border-bearish/30',
+                  !hasScore
+                    ? 'text-muted-foreground'
+                    : score >= 0
+                      ? 'text-bullish border-bullish/30'
+                      : 'text-bearish border-bearish/30',
                 )}
               >
-                {(asset.composite_score ?? 0) >= 0 ? '+' : ''}
-                {(asset.composite_score ?? 0).toFixed(4)}
+                {hasScore && score >= 0 ? '+' : ''}
+                {formatScore(score, 4)}
               </Badge>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
               <div className="rounded-lg bg-card p-2.5 border border-border/60">
                 <span className="text-muted-foreground block text-[11px]">Confidence Level</span>
                 <span className="font-semibold text-sm">
-                  {asset.confidence_pct ? `${asset.confidence_pct.toFixed(1)}%` : 'N/A'}{' '}
-                  <span className="text-[10px] text-muted-foreground">({asset.confidence_tier ?? 'MED'})</span>
+                  {isNum(asset.confidence_pct) ? `${asset.confidence_pct.toFixed(1)}%` : '—'}
+                  {asset.confidence_tier && (
+                    <span className="text-[10px] text-muted-foreground"> ({asset.confidence_tier})</span>
+                  )}
                 </span>
               </div>
               <div className="rounded-lg bg-card p-2.5 border border-border/60">
-                <span className="text-muted-foreground block text-[11px]">MACD Momentum</span>
-                <span
-                  className={cn(
-                    'font-semibold text-sm',
-                    asset.macd_signal === 'BUY'
-                      ? 'text-bullish'
-                      : asset.macd_signal === 'SELL'
-                        ? 'text-bearish'
-                        : 'text-muted-foreground',
-                  )}
-                >
-                  {asset.macd_signal ?? 'HOLD'}
+                <span className="text-muted-foreground block text-[11px]">Composite Signal</span>
+                <span className={cn('font-semibold text-sm', subSignalClass(asset.signal))}>
+                  {asset.signal ?? '—'}
                 </span>
               </div>
             </div>
@@ -185,8 +198,18 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
                     <span className="text-[11px] text-muted-foreground">Weight: 30% • MA50 exhaustion check</span>
                   </div>
                 </div>
-                <Badge variant="outline" className="font-mono text-xs">
-                  {asset.signal ?? 'NEUTRAL'}
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    'font-mono text-xs',
+                    asset.macd_signal === 'BUY'
+                      ? 'text-bullish'
+                      : asset.macd_signal === 'SELL'
+                        ? 'text-bearish'
+                        : 'text-muted-foreground',
+                  )}
+                >
+                  {asset.macd_signal ?? '—'}
                 </Badge>
               </div>
 
@@ -201,17 +224,10 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
                 </div>
                 <div className="text-right font-mono">
                   <span className="font-semibold block">
-                    {asset.funding_rate !== null && asset.funding_rate !== undefined
-                      ? `${(asset.funding_rate * 100).toFixed(4)}%`
-                      : 'N/A'}
+                    {formatFunding(asset.funding_rate)}
                   </span>
-                  <span
-                    className={cn(
-                      'text-[10px] font-bold',
-                      asset.funding_rate_signal === 'BULLISH' ? 'text-bullish' : 'text-bearish',
-                    )}
-                  >
-                    {asset.funding_rate_signal ?? 'NEUTRAL'}
+                  <span className={cn('text-[10px] font-bold', subSignalClass(asset.funding_rate_signal))}>
+                    {asset.funding_rate_signal ?? '—'}
                   </span>
                 </div>
               </div>
@@ -227,17 +243,10 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
                 </div>
                 <div className="text-right font-mono">
                   <span className="font-semibold block">
-                    {asset.open_interest !== null && asset.open_interest !== undefined
-                      ? formatVolume(asset.open_interest)
-                      : 'N/A'}
+                    {formatVolume(asset.open_interest)}
                   </span>
-                  <span
-                    className={cn(
-                      'text-[10px] font-bold',
-                      asset.oi_signal === 'BULLISH' ? 'text-bullish' : 'text-bearish',
-                    )}
-                  >
-                    {asset.oi_signal ?? 'NEUTRAL'}
+                  <span className={cn('text-[10px] font-bold', subSignalClass(asset.oi_signal))}>
+                    {asset.oi_signal ?? '—'}
                   </span>
                 </div>
               </div>
@@ -253,10 +262,10 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
                 </div>
                 <div className="text-right font-mono">
                   <span className="font-semibold block">
-                    {asset.long_short_ratio ? asset.long_short_ratio.toFixed(2) : '1.00'}
+                    {isNum(lsr) ? lsr.toFixed(2) : '—'}
                   </span>
                   <span className="text-[10px] text-muted-foreground">
-                    {(asset.long_short_ratio ?? 1) > 1.5 ? 'Crowded Long' : (asset.long_short_ratio ?? 1) < 0.8 ? 'Crowded Short' : 'Balanced'}
+                    {!isNum(lsr) ? 'No data' : lsr > 1.5 ? 'Crowded Long' : lsr < 0.8 ? 'Crowded Short' : 'Balanced'}
                   </span>
                 </div>
               </div>
@@ -271,7 +280,7 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
                   </div>
                 </div>
                 <span className="font-mono font-semibold">
-                  {asset.reversal_score ? asset.reversal_score.toFixed(1) : '50.0'}
+                  {isNum(asset.reversal_score) ? asset.reversal_score.toFixed(1) : '—'}
                 </span>
               </div>
             </div>
@@ -287,7 +296,7 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
               <div className="rounded-lg bg-card p-3 border border-border/60">
                 <span className="text-muted-foreground block text-[11px]">Suggested Allocation</span>
                 <span className="font-bold text-lg font-mono text-primary">
-                  {asset.suggested_position_pct ? `${asset.suggested_position_pct.toFixed(2)}%` : '0%'}
+                  {isNum(asset.suggested_position_pct) ? `${asset.suggested_position_pct.toFixed(2)}%` : '—'}
                 </span>
                 <span className="text-[10px] text-muted-foreground block mt-0.5">
                   of allocated portfolio capital
@@ -296,7 +305,7 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
               <div className="rounded-lg bg-card p-3 border border-border/60">
                 <span className="text-muted-foreground block text-[11px]">Volatility (ATR %)</span>
                 <span className="font-bold text-lg font-mono">
-                  {asset.volatility ? `${asset.volatility.toFixed(2)}%` : 'N/A'}
+                  {isNum(asset.volatility) ? `${asset.volatility.toFixed(2)}%` : '—'}
                 </span>
                 <span className="text-[10px] text-muted-foreground block mt-0.5">
                   Normalized risk factor

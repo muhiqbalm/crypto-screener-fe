@@ -13,10 +13,8 @@ import {
   Settings,
   LogOut,
   ChevronDown,
-  ShieldCheck,
   Zap,
   Activity,
-  User,
   Loader2,
   Sun,
   Moon
@@ -27,6 +25,7 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils/cn'
 import { useSession } from '@/lib/utils/use-session'
 import { useLogout } from '@/lib/queries/auth'
+import { useApiHealth } from '@/lib/queries/health'
 
 export function Navbar() {
   const pathname = usePathname()
@@ -34,6 +33,7 @@ export function Navbar() {
   const logout = useLogout()
   const { theme, setTheme } = useTheme()
   const isMock = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true'
+  const { data: health, isPending: healthPending } = useApiHealth()
 
   // Dropdown states
   const [intelOpen, setIntelOpen] = useState(false)
@@ -55,12 +55,15 @@ export function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Close dropdowns on route change
-  useEffect(() => {
+  // Close dropdowns on route change (state adjustment during render instead
+  // of setState inside an effect — avoids a cascading re-render).
+  const [menuPath, setMenuPath] = useState(pathname)
+  if (menuPath !== pathname) {
+    setMenuPath(pathname)
     setIntelOpen(false)
     setEngineOpen(false)
     setUserOpen(false)
-  }, [pathname])
+  }
 
   const isIntelActive = ['/screener', '/chart', '/whales', '/news'].some((p) =>
     pathname.startsWith(p)
@@ -71,6 +74,36 @@ export function Navbar() {
 
   const userDisplayName = session?.user?.name || session?.user?.email?.split('@')[0] || 'Member'
   const userInitial = userDisplayName.charAt(0).toUpperCase()
+  // Role badge only when the backend actually returns a role for this user.
+  // GET /trading/users/me does not currently include `role`, so the badge
+  // stays hidden rather than claiming a role we cannot verify.
+  const userRole = session?.user?.role?.trim() || null
+  const roleLabel = userRole
+    ? userRole
+        .split(/[_\s]+/)
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(' ')
+    : null
+
+  // Real backend health: GET /api/v1/health with browser-measured latency.
+  const statusDot = isMock
+    ? 'bg-amber-400'
+    : healthPending
+      ? 'bg-muted-foreground/50'
+      : health?.status === 'healthy'
+        ? 'bg-emerald-500 animate-pulse'
+        : health?.status === 'degraded'
+          ? 'bg-amber-400'
+          : 'bg-rose-500'
+  const statusText = isMock
+    ? 'Mock Mode'
+    : healthPending
+      ? 'Checking API…'
+      : health?.status === 'healthy'
+        ? `API Online • ${health.latencyMs}ms`
+        : health?.status === 'degraded'
+          ? `API Degraded (stale data) • ${health.latencyMs}ms`
+          : 'API Offline'
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/90 backdrop-blur-md">
@@ -145,8 +178,8 @@ export function Navbar() {
                     </div>
                     <div>
                       <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                        News &amp; AI Catalysts
-                        <span className="text-[9px] px-1 py-0.2 rounded bg-purple-500/20 text-purple-300 font-mono">NLP</span>
+                        News &amp; Sentiment
+                        <span className="text-[9px] px-1 py-0.2 rounded bg-purple-500/20 text-purple-300 font-mono">RSS</span>
                       </div>
                       <div className="text-[11px] text-muted-foreground">Fear &amp; Greed + breaking crypto wires</div>
                     </div>
@@ -167,7 +200,7 @@ export function Navbar() {
                         Whale Radar
                         <span className="text-[9px] px-1 py-0.2 rounded bg-cyan-500/20 text-cyan-300 font-mono">Live FAPI</span>
                       </div>
-                      <div className="text-[11px] text-muted-foreground">Binance top trader L/S &amp; $1M orders</div>
+                      <div className="text-[11px] text-muted-foreground">Binance top trader L/S &amp; large trades</div>
                     </div>
                   </Link>
 
@@ -280,14 +313,9 @@ export function Navbar() {
         <div className="flex items-center gap-3">
           {/* Engine Status Badge */}
           <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-muted/50 border border-border/60">
-            <span
-              className={cn(
-                'h-2 w-2 rounded-full',
-                isMock ? 'bg-amber-400' : 'bg-emerald-500 animate-pulse'
-              )}
-            />
+            <span className={cn('h-2 w-2 rounded-full', statusDot)} />
             <span className="text-[11px] font-medium text-foreground">
-              {isMock ? 'Mock Mode' : 'Engine Live • 12ms'}
+              {statusText}
             </span>
           </div>
 
@@ -323,16 +351,14 @@ export function Navbar() {
                   <div className="p-2 border-b border-border/60 mb-1">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-xs text-foreground">{userDisplayName}</span>
-                      <Badge className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[9px] font-mono font-bold tracking-wide">
-                        Super Admin
-                      </Badge>
+                      {roleLabel && (
+                        <Badge className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[9px] font-mono font-bold tracking-wide">
+                          {roleLabel}
+                        </Badge>
+                      )}
                     </div>
                     <div className="text-[11px] text-muted-foreground truncate mt-0.5">
                       {session.user.email}
-                    </div>
-                    <div className="mt-2 text-[10px] font-mono text-emerald-400/90 bg-emerald-500/5 px-2 py-1 rounded border border-emerald-500/20 flex items-center gap-1.5">
-                      <ShieldCheck className="h-3 w-3 text-emerald-400" />
-                      Super Admin License • Hook Token Active
                     </div>
                   </div>
 

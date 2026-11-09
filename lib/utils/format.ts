@@ -16,14 +16,15 @@ export function valueOrDash(v: unknown): string {
 
 /**
  * Formats a price as USD.
- * - Values >= 1: 2 decimal places (e.g. "$1,234.56")
- * - Values < 1: up to 6 significant decimal places (e.g. "$0.000123")
+ * - |v| >= 1: 2 decimal places (e.g. "$1,234.56")
+ * - |v| < 1: 4 significant digits so tiny prices (SHIB, PEPE, GALA) are not
+ *   rounded away (e.g. 0.00001234 -> "$0.00001234", 0.5 -> "$0.50")
  * - Returns "—" for null/undefined/NaN.
  */
 export function formatPrice(v: number | null | undefined): string {
   if (v === null || v === undefined || isNaN(v)) return DASH;
 
-  if (Math.abs(v) >= 1) {
+  if (Math.abs(v) >= 1 || v === 0) {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
@@ -32,12 +33,11 @@ export function formatPrice(v: number | null | undefined): string {
     }).format(v);
   }
 
-  // For values < 1, use up to 6 decimal places
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 6,
+    minimumSignificantDigits: 2,
+    maximumSignificantDigits: 4,
   }).format(v);
 }
 
@@ -83,28 +83,30 @@ export function formatVolume(v: number | null | undefined): string {
 }
 
 /**
- * Formats a funding rate as a percentage with 4 decimal places and a sign.
- * - Example: formatFunding(0.0001) → "+0.0100%"
+ * Formats a funding rate with 4 decimal places and a sign.
+ * The backend (src/data/fetcher.py fetch_funding_rate) already returns the
+ * rate in PERCENT units (Binance 0.0001 -> 0.01), so no scaling is applied.
+ * - Example: formatFunding(0.01) → "+0.0100%"
  * - Returns "—" for null/undefined/NaN.
  */
 export function formatFunding(v: number | null | undefined): string {
   if (v === null || v === undefined || isNaN(v)) return DASH;
 
-  // Funding rate is typically expressed as a decimal (e.g. 0.0001 = 0.01%)
-  // Multiply by 100 to get percentage value
-  const pct = v * 100;
-  const sign = pct > 0 ? "+" : pct < 0 ? "-" : "+";
-  return `${sign}${Math.abs(pct).toFixed(4)}%`;
+  const sign = v > 0 ? "+" : v < 0 ? "-" : "+";
+  return `${sign}${Math.abs(v).toFixed(4)}%`;
 }
 
 /**
- * Formats a composite score as a fixed 2 decimal places number.
+ * Formats a composite score as a fixed-decimal number (default 2 places).
  * - Example: formatScore(7.5) → "7.50"
  * - Returns "—" for null/undefined/NaN.
  */
-export function formatScore(v: number | null | undefined): string {
+export function formatScore(
+  v: number | null | undefined,
+  fractionDigits = 2
+): string {
   if (v === null || v === undefined || isNaN(v)) return DASH;
-  return v.toFixed(2);
+  return v.toFixed(fractionDigits);
 }
 
 /**
