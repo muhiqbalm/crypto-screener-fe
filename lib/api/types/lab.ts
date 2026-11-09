@@ -248,3 +248,122 @@ export interface LabWatchState {
   recent_trades: LabWatchTrade[]
   last_signal: LabWatchSignal | null
 }
+
+// ---------------------------------------------------------------------------
+// Paper trading + journal (PAPER ONLY — never a real order)
+// ---------------------------------------------------------------------------
+
+export interface PaperAccountCreateRequest {
+  name: string
+  starting_balance: number
+  risk_pct: number
+  leverage_max: number
+}
+
+export interface PaperAccountCreateResponse {
+  id: string
+}
+
+export interface PaperPosition {
+  id: string
+  symbol: string
+  side: 'long' | 'short'
+  entry_price: number
+  entry_time?: string
+  qty: number
+  sl: number | null
+  tp: number | null
+  watch_id?: string | null
+}
+
+export interface PaperAccount {
+  id: string
+  name: string
+  balance: number
+  equity: number
+  /** Contract says `open_positions`; may be a count or a list. */
+  open_positions: number | PaperPosition[]
+  realized_pnl: number
+  created_at: string
+  /** Not in the list contract; used for the size preview when present. */
+  risk_pct?: number | null
+  leverage_max?: number | null
+  starting_balance?: number | null
+}
+
+export type PaperSide = 'long' | 'short'
+
+export interface PaperOrderRequest {
+  account_id: string
+  symbol: string
+  side: PaperSide
+  sl: number
+  tp?: number
+  qty?: number
+  note?: string
+  watch_id?: string
+}
+
+export interface AutopaperRequest {
+  account_id: string
+  enabled: boolean
+}
+
+export type JournalSource = 'paper_manual' | 'paper_auto' | 'bot'
+
+export interface JournalEntry {
+  id: string
+  account_id: string | null
+  source: JournalSource
+  watch_id: string | null
+  run_id: string | null
+  symbol: string
+  side: string
+  entry_time: string
+  entry_price: number
+  exit_time: string | null
+  exit_price: number | null
+  qty: number | null
+  fees: number | null
+  funding: number | null
+  sl: number | null
+  tp: number | null
+  risk_amount: number | null
+  pnl: number | null
+  r_multiple: number | null
+  exit_reason: string | null
+  notes: string | null
+  tags: string[] | null
+}
+
+export interface JournalFilters {
+  account_id?: string
+  source?: JournalSource | ''
+  symbol?: string
+  from?: string
+  to?: string
+}
+
+export interface JournalPatchRequest {
+  notes: string
+  tags: string[]
+}
+
+export type BreakdownRow = Record<string, number | string | null>
+
+export interface JournalStats {
+  trades: number
+  winrate: number | null
+  avg_r: number | null
+  expectancy_r: number | null
+  profit_factor: number | null
+  net_pnl: number | null
+  max_dd_pct: number | null
+  equity_curve: { t: string; equity: number }[]
+  /** Shape not pinned down: either a list of rows or a map keyed by name. */
+  by_symbol: BreakdownRow[] | Record<string, BreakdownRow> | null
+  by_source: BreakdownRow[] | Record<string, BreakdownRow> | null
+}
+
+/** Paper vs backtest comparison for a watch; shape not pinned down. */
+export type WatchCompare = Record<string, unknown>

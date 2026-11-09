@@ -28,6 +28,16 @@ import type {
   LabWatchCreateRequest,
   LabWatchCreateResponse,
   LabWatchState,
+  AutopaperRequest,
+  JournalEntry,
+  JournalFilters,
+  JournalPatchRequest,
+  JournalStats,
+  PaperAccount,
+  PaperAccountCreateRequest,
+  PaperAccountCreateResponse,
+  PaperOrderRequest,
+  WatchCompare,
 } from './types/lab'
 import type {
   AccessTokenResponse,
@@ -449,6 +459,45 @@ export const api = {
 
   getLabWatchState(id: string, signal?: AbortSignal): Promise<LabWatchState> {
     return request<LabWatchState>('GET', PATHS.labWatchState(id), undefined, signal)
+  },
+
+  setWatchAutopaper(id: string, body: AutopaperRequest): Promise<unknown> {
+    return request<unknown>('POST', PATHS.labWatchAutopaper(id), body)
+  },
+
+  getWatchCompare(id: string, signal?: AbortSignal): Promise<WatchCompare> {
+    return request<WatchCompare>('GET', PATHS.labWatchCompare(id), undefined, signal)
+  },
+
+  // Paper trading (PAPER ONLY — the backend never sends these to an exchange)
+  getPaperAccounts(signal?: AbortSignal): Promise<PaperAccount[]> {
+    return request<PaperAccount[]>('GET', PATHS.paperAccounts, undefined, signal)
+  },
+
+  createPaperAccount(body: PaperAccountCreateRequest): Promise<PaperAccountCreateResponse> {
+    return request<PaperAccountCreateResponse>('POST', PATHS.paperAccounts, body)
+  },
+
+  createPaperOrder(body: PaperOrderRequest): Promise<unknown> {
+    return request<unknown>('POST', PATHS.paperOrders, body)
+  },
+
+  closePaperPosition(id: string): Promise<unknown> {
+    return request<unknown>('POST', PATHS.paperPositionClose(id))
+  },
+
+  getJournal(filters: JournalFilters, signal?: AbortSignal): Promise<JournalEntry[]> {
+    const qs = new URLSearchParams()
+    for (const [k, v] of Object.entries(filters)) if (v) qs.set(k, String(v))
+    return request<JournalEntry[]>('GET', PATHS.journal(qs.toString()), undefined, signal)
+  },
+
+  patchJournalEntry(id: string, body: JournalPatchRequest): Promise<JournalEntry> {
+    return request<JournalEntry>('PATCH', PATHS.journalEntry(id), body)
+  },
+
+  getJournalStats(accountId?: string, signal?: AbortSignal): Promise<JournalStats> {
+    return request<JournalStats>('GET', PATHS.journalStats(accountId), undefined, signal)
   },
 }
 

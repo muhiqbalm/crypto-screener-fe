@@ -18,6 +18,11 @@ import type {
   LabTrade,
   LabWatch,
   LabWatchCreateRequest,
+  JournalEntry,
+  JournalStats,
+  PaperAccount,
+  PaperAccountCreateRequest,
+  PaperOrderRequest,
 } from '@/lib/api/types/lab'
 
 export const MOCK_LAB_TEMPLATES: LabTemplate[] = [
@@ -62,6 +67,32 @@ function hash(str: string): number {
 
 const runs = new Map<string, LabRunDetail>()
 const watches = new Map<string, LabWatch>()
+const paperAccounts = new Map<string, PaperAccount>()
+const journal = new Map<string, JournalEntry>()
+
+// Mock fills use a fixed placeholder price — mock mode only, never real.
+const MOCK_FILL_PRICE = 100
+
+function mockStats(accountId?: string): JournalStats {
+  const closed = [...journal.values()].filter((j) => j.exit_time && (!accountId || j.account_id === accountId))
+  const wins = closed.filter((j) => (j.pnl ?? 0) > 0)
+  const gross = (f: (n: number) => boolean) => closed.reduce((a, j) => a + (f(j.pnl ?? 0) ? Math.abs(j.pnl ?? 0) : 0), 0)
+  const net = closed.reduce((a, j) => a + (j.pnl ?? 0), 0)
+  const avgR = closed.length ? closed.reduce((a, j) => a + (j.r_multiple ?? 0), 0) / closed.length : null
+  let eq = 10_000
+  return {
+    trades: closed.length,
+    winrate: closed.length ? wins.length / closed.length : null,
+    avg_r: avgR,
+    expectancy_r: avgR,
+    profit_factor: gross((n) => n < 0) > 0 ? gross((n) => n > 0) / gross((n) => n < 0) : null,
+    net_pnl: net,
+    max_dd_pct: 0,
+    equity_curve: closed.map((j) => ({ t: j.exit_time!, equity: (eq += j.pnl ?? 0) })),
+    by_symbol: [],
+    by_source: [],
+  }
+}
 const scans = new Map<string, LabScanDetail>()
 let counter = 0
 
@@ -316,6 +347,14 @@ export async function getLabMock(method: string, fullPath: string, body?: unknow
       watches.delete(seg[1])
       return undefined
     }
+    if (method === 'POST' && seg[2] === 'autopaper') {
+      const req = body as { account_id: string; enabled: boolean }
+      watches.set(w.id, { ...w, autopaper: { account_id: req.account_id, enabled: req.enabled } })
+      return { ok: true }
+    }
+    if (method === 'GET' && seg[2] === 'compare') {
+      return { paper: { trades: 0 }, backtest: { trades: 0 } }
+    }
     if (method === 'GET' && seg[2] === 'state') {
       const now = Date.now()
       return {
@@ -326,6 +365,58 @@ export async function getLabMock(method: string, fullPath: string, body?: unknow
         recent_trades: [],
         last_signal: null,
       }
+    }
+  }
+
+  if (seg[0] === 'paper') {
+    if (seg[1] === 'accounts' && method === 'GET') return [...paperAccounts.values()]
+    if (seg[1] === 'accounts' && method === 'POST') {
+      const req = body as PaperAccountCreateRequest
+      const id = `mock-acct-${++counter}`
+      paperAccounts.set(id, { id, name: req.name, balance: req.starting_balance, equity: req.starting_balance, open_positions: 0, realized_pnl: 0, created_at: new Date().toISOString(), risk_pct: req.risk_pct, leverage_max: req.leverage_max, starting_balance: req.starting_balance })
+      return { id }
+    }
+    if (seg[1] === 'orders' && method === 'POST') {
+      const req = body as PaperOrderRequest
+      const id = `mock-j-${++counter}`
+      const dist = Math.abs(MOCK_FILL_PRICE - req.sl) || 1
+      journal.set(id, {
+        id, account_id: req.account_id, source: 'paper_manual', watch_id: req.watch_id ?? null, run_id: null,
+        symbol: req.symbol, side: req.side, entry_time: new Date().toISOString(), entry_price: MOCK_FILL_PRICE,
+        exit_time: null, exit_price: null, qty: req.qty ?? 100 / dist, fees: 0, funding: 0, sl: req.sl, tp: req.tp ?? null,
+        risk_amount: 100, pnl: null, r_multiple: null, exit_reason: null, notes: req.note ?? null, tags: [],
+      })
+      return { position_id: id }
+    }
+    if (seg[1] === 'positions' && seg[3] === 'close' && method === 'POST') {
+      const j = journal.get(seg[2])
+      if (!j) notFound()
+      journal.set(j.id, { ...j, exit_time: new Date().toISOString(), exit_price: j.entry_price, pnl: 0, r_multiple: 0, exit_reason: 'manual' })
+      return { ok: true }
+    }
+  }
+
+  if (seg[0] === 'journal') {
+    if (method === 'GET' && seg[1] === 'stats') {
+      const qs = new URLSearchParams(fullPath.split('?')[1] ?? '')
+      return mockStats(qs.get('account_id') ?? undefined)
+    }
+    if (method === 'GET' && seg.length === 1) {
+      const qs = new URLSearchParams(fullPath.split('?')[1] ?? '')
+      return [...journal.values()].filter(
+        (j) =>
+          (!qs.get('account_id') || j.account_id === qs.get('account_id')) &&
+          (!qs.get('symbol') || j.symbol === qs.get('symbol')) &&
+          (!qs.get('source') || j.source === qs.get('source')),
+      )
+    }
+    if (method === 'PATCH' && seg.length === 2) {
+      const j = journal.get(seg[1])
+      if (!j) notFound()
+      const patch = body as { notes: string; tags: string[] }
+      const next = { ...j, notes: patch.notes, tags: patch.tags }
+      journal.set(j.id, next)
+      return next
     }
   }
 

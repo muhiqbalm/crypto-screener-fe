@@ -16,12 +16,15 @@ import {
   type KlineSource,
 } from './TradingChart'
 import { StrategyOverlayPanel } from './StrategyOverlayPanel'
+import { PaperTradePanel, EMPTY_DRAFT, type PaperDraft } from './PaperTradePanel'
 import { formatPrice } from '@/lib/utils/format'
 import { cn } from '@/lib/utils/cn'
 import { api } from '@/lib/api/client'
 import { useLabMe, useLabRun, useLabRunTrades } from '@/lib/queries/lab'
 import { useLabWatches, useLabWatchState } from '@/lib/queries/lab-live'
-import { positionLines, tradesToMarkers, type OverlayPriceLine } from '@/lib/lab/overlay'
+import { OVERLAY_COLORS, positionLines, tradesToMarkers, type OverlayPriceLine } from '@/lib/lab/overlay'
+import { openPaperPositions } from '@/lib/lab/paper'
+import { useJournal, usePaperAccounts } from '@/lib/queries/paper'
 import { useSession } from '@/lib/utils/use-session'
 
 // ---------------------------------------------------------------------------
@@ -229,10 +232,35 @@ export function ChartContainer() {
     return base
   }, [overlayTrades, barTimes, watchId, watchStateQ.data?.position])
 
-  const priceLines: OverlayPriceLine[] = useMemo(
-    () => (watchId ? positionLines('watch', watchStateQ.data?.position) : []),
-    [watchId, watchStateQ.data?.position],
+  // ── Paper trading (PAPER ONLY) ───────────────────────────────────────────
+  const paperAccountsQ = usePaperAccounts(isAdmin)
+  const [pickedAccountId, setAccountId] = useState<string | null>(null)
+  const paperAccounts = paperAccountsQ.data ?? []
+  const paperAccount = paperAccounts.find((a) => a.id === pickedAccountId) ?? paperAccounts[0] ?? null
+  const needJournal = Boolean(paperAccount) && !Array.isArray(paperAccount?.open_positions)
+  const openJournalQ = useJournal(
+    { account_id: paperAccount?.id, symbol },
+    { enabled: isAdmin && needJournal, poll: 15_000 },
   )
+  const paperPositions = useMemo(
+    () => openPaperPositions(paperAccount, openJournalQ.data, symbol),
+    [paperAccount, openJournalQ.data, symbol],
+  )
+  // Draft is tied to a symbol so an SL typed for BTC never carries over to ETH.
+  const [draftState, setDraftState] = useState<{ symbol: string; draft: PaperDraft }>({ symbol, draft: EMPTY_DRAFT })
+  const draft = draftState.symbol === symbol ? draftState.draft : EMPTY_DRAFT
+
+  const priceLines: OverlayPriceLine[] = useMemo(() => {
+    const lines: OverlayPriceLine[] = watchId ? positionLines('watch', watchStateQ.data?.position, 'Strategi ') : []
+    for (const pos of paperPositions) lines.push(...positionLines(`paper-${pos.id}`, pos, 'PAPER '))
+    const sl = Number(draft.sl)
+    const tp = Number(draft.tp)
+    if (draft.sl.trim() && Number.isFinite(sl) && sl > 0)
+      lines.push({ id: 'draft-sl', price: sl, color: OVERLAY_COLORS.paper, title: 'Draft SL', dashed: true })
+    if (draft.tp.trim() && Number.isFinite(tp) && tp > 0)
+      lines.push({ id: 'draft-tp', price: tp, color: OVERLAY_COLORS.paper, title: 'Draft TP', dashed: true })
+    return lines
+  }, [watchId, watchStateQ.data?.position, paperPositions, draft.sl, draft.tp])
 
   const symbolOptions = SYMBOLS.some((s) => s.value === symbol)
     ? SYMBOLS
@@ -414,7 +442,22 @@ export function ChartContainer() {
             priceSource={source}
             markersOffscreen={dropped}
             markerCount={markers.length}
-          />
+          >
+            <PaperTradePanel
+              symbol={symbol}
+              lastPrice={lastCandle?.close ?? null}
+              accounts={paperAccountsQ}
+              account={paperAccount}
+              onAccountChange={setAccountId}
+              positions={paperPositions}
+              positionsLoading={needJournal && openJournalQ.isPending}
+              draft={draft}
+              onDraftChange={(d) => setDraftState({ symbol, draft: d })}
+              watchId={watchId}
+              watch={watch}
+              strategyPosition={watchId ? (watchStateQ.data?.position ?? null) : null}
+            />
+          </StrategyOverlayPanel>
         )}
       </div>
     </div>

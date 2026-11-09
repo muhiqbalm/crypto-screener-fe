@@ -19,6 +19,7 @@ import {
   Sun,
   Moon,
   FlaskConical,
+  BookOpen,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
@@ -325,6 +326,21 @@ export function Navbar() {
               >
                 <FlaskConical className="h-3.5 w-3.5 text-violet-400" />
                 <span>Lab</span>
+              </Link>
+            )}
+
+            {showLab && (
+              <Link
+                href="/journal"
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors duration-150',
+                  pathname.startsWith('/journal')
+                    ? 'bg-accent/80 text-foreground font-bold shadow-xs'
+                    : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+                )}
+              >
+                <BookOpen className="h-3.5 w-3.5 text-amber-400" />
+                <span>Jurnal</span>
               </Link>
             )}
           </nav>

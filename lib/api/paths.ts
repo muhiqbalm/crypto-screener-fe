@@ -52,4 +52,15 @@ export const PATHS = {
   labWatches: '/api/v1/lab/watches',
   labWatch: (id: string) => `/api/v1/lab/watches/${encodeURIComponent(id)}`,
   labWatchState: (id: string) => `/api/v1/lab/watches/${encodeURIComponent(id)}/state`,
+  labWatchAutopaper: (id: string) => `/api/v1/lab/watches/${encodeURIComponent(id)}/autopaper`,
+  labWatchCompare: (id: string) => `/api/v1/lab/watches/${encodeURIComponent(id)}/compare`,
+
+  // Paper trading + journal (PAPER ONLY)
+  paperAccounts: '/api/v1/lab/paper/accounts',
+  paperOrders: '/api/v1/lab/paper/orders',
+  paperPositionClose: (id: string) => `/api/v1/lab/paper/positions/${encodeURIComponent(id)}/close`,
+  journal: (query: string) => `/api/v1/lab/journal${query ? `?${query}` : ''}`,
+  journalEntry: (id: string) => `/api/v1/lab/journal/${encodeURIComponent(id)}`,
+  journalStats: (accountId?: string) =>
+    `/api/v1/lab/journal/stats${accountId ? `?account_id=${encodeURIComponent(accountId)}` : ''}`,
 } as const
