@@ -16,6 +16,8 @@ import type {
   LabSymbol,
   LabTemplate,
   LabTrade,
+  LabWatch,
+  LabWatchCreateRequest,
 } from '@/lib/api/types/lab'
 
 export const MOCK_LAB_TEMPLATES: LabTemplate[] = [
@@ -59,6 +61,7 @@ function hash(str: string): number {
 }
 
 const runs = new Map<string, LabRunDetail>()
+const watches = new Map<string, LabWatch>()
 const scans = new Map<string, LabScanDetail>()
 let counter = 0
 
@@ -291,6 +294,39 @@ export async function getLabMock(method: string, fullPath: string, body?: unknow
     const scan = scans.get(seg[1])
     if (!scan) notFound()
     return scan
+  }
+
+  if (method === 'GET' && path === '/klines') {
+    // Klines are never mocked: the chart must show real Binance prices or an
+    // error. Throwing makes the chart fall through to the next real source.
+    throw new ApiError('not_found', 404)
+  }
+
+  if (seg[0] === 'watches') {
+    if (method === 'POST' && seg.length === 1) {
+      const req = body as LabWatchCreateRequest
+      const id = `mock-watch-${++counter}`
+      watches.set(id, { id, template_id: req.template_id, symbol: req.symbol, timeframe: req.timeframe, params: req.params, created_at: new Date().toISOString(), autopaper: null })
+      return { watch_id: id }
+    }
+    if (method === 'GET' && seg.length === 1) return [...watches.values()]
+    const w = watches.get(seg[1])
+    if (!w) notFound()
+    if (method === 'DELETE') {
+      watches.delete(seg[1])
+      return undefined
+    }
+    if (method === 'GET' && seg[2] === 'state') {
+      const now = Date.now()
+      return {
+        watch_id: w.id,
+        computed_at: new Date(now).toISOString(),
+        last_bar: new Date(now - 3_600_000).toISOString(),
+        position: null,
+        recent_trades: [],
+        last_signal: null,
+      }
+    }
   }
 
   if (seg[0] === 'jobs') {

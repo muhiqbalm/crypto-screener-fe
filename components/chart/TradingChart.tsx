@@ -4,12 +4,16 @@ import { useEffect, useRef, useCallback } from 'react'
 import {
   createChart,
   type IChartApi,
+  type IPriceLine,
   type ISeriesApi,
   type CandlestickData,
+  type SeriesMarker,
   type Time,
   ColorType,
   CrosshairMode,
+  LineStyle,
 } from 'lightweight-charts'
+import type { OverlayMarker, OverlayPriceLine } from '@/lib/lab/overlay'
 import { useTheme } from 'next-themes'
 
 // ---------------------------------------------------------------------------
@@ -42,39 +46,74 @@ export interface Kline {
   close: number
 }
 
-export async function fetchBinanceKlines(
+export type KlineSource = 'perp' | 'lab' | 'spot'
+
+export const KLINE_SOURCE_LABEL: Record<KlineSource, string> = {
+  perp: 'Binance Perp (USDⓈ-M)',
+  lab: 'Binance Perp via server Lab',
+  spot: 'Binance Spot (fallback)',
+}
+
+function parseBinanceKlines(raw: unknown[][]): Kline[] {
+  return raw.map((k) => ({
+    time:  Math.floor(Number(k[0]) / 1000),
+    open:  parseFloat(k[1] as string),
+    high:  parseFloat(k[2] as string),
+    low:   parseFloat(k[3] as string),
+    close: parseFloat(k[4] as string),
+  }))
+}
+
+/**
+ * Loads historical candles, preferring USD-M perpetual data (what the
+ * strategies actually trade):
+ *   1. fapi.binance.com (perp, direct)
+ *   2. optional `labFallback` — perp klines proxied by the Lab backend
+ *      (useful where fapi is blocked; admin only)
+ *   3. spot (data-api.binance.vision, then api.binance.com) — labelled as
+ *      fallback so the user knows the prices are NOT perp prices.
+ */
+export async function fetchChartKlines(
   symbol: string,
   interval: string,
   limit = 500,
-): Promise<Kline[]> {
+  labFallback?: () => Promise<Kline[]>,
+): Promise<{ klines: Kline[]; source: KlineSource }> {
   const sym = symbol.toUpperCase()
-  // Use Binance Vision public API first (unblocked in Indonesia & globally without VPN)
-  // Fall back to standard api.binance.com
-  const endpoints = [
+  try {
+    const res = await fetch(`https://fapi.binance.com/fapi/v1/klines?symbol=${sym}&interval=${interval}&limit=${limit}`)
+    if (res.ok) {
+      const klines = parseBinanceKlines((await res.json()) as unknown[][])
+      if (klines.length > 0) return { klines, source: 'perp' }
+    }
+  } catch {
+    // fall through
+  }
+
+  if (labFallback) {
+    try {
+      const klines = await labFallback()
+      if (klines.length > 0) return { klines, source: 'lab' }
+    } catch {
+      // fall through
+    }
+  }
+
+  const spotEndpoints = [
     `https://data-api.binance.vision/api/v3/klines?symbol=${sym}&interval=${interval}&limit=${limit}`,
     `https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${interval}&limit=${limit}`,
   ]
-
   let lastError: Error | null = null
-  for (const url of endpoints) {
+  for (const url of spotEndpoints) {
     try {
       const res = await fetch(url)
-      if (res.ok) {
-        const raw: unknown[][] = await res.json()
-        return raw.map((k) => ({
-          time:  Math.floor(Number(k[0]) / 1000),
-          open:  parseFloat(k[1] as string),
-          high:  parseFloat(k[2] as string),
-          low:   parseFloat(k[3] as string),
-          close: parseFloat(k[4] as string),
-        }))
-      }
+      if (res.ok) return { klines: parseBinanceKlines((await res.json()) as unknown[][]), source: 'spot' }
     } catch (err) {
       lastError = err as Error
     }
   }
 
-  throw lastError ?? new Error('Failed to fetch candlestick data from Binance endpoints')
+  throw lastError ?? new Error('Gagal mengambil data candle dari Binance (perp maupun spot)')
 }
 
 // ---------------------------------------------------------------------------
@@ -87,18 +126,34 @@ interface TradingChartProps {
   klines: Kline[]
   /** Called when a new live tick arrives so the parent can update state */
   onTick?: (candle: Kline) => void
+  /** Which feed the klines came from; picks the matching websocket. */
+  source?: KlineSource
+  /** Strategy overlay: entry/exit markers (times snapped to bar opens). */
+  markers?: OverlayMarker[]
+  /** Strategy overlay: horizontal lines (entry / SL / TP). */
+  priceLines?: OverlayPriceLine[]
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export function TradingChart({ symbol, interval, klines, onTick }: TradingChartProps) {
+export function TradingChart({
+  symbol,
+  interval,
+  klines,
+  onTick,
+  source = 'spot',
+  markers,
+  priceLines,
+}: TradingChartProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const chartRef     = useRef<IChartApi | null>(null)
   const seriesRef    = useRef<ISeriesApi<'Candlestick'> | null>(null)
   const wsRef        = useRef<WebSocket | null>(null)
   const connectWsRef = useRef<() => void>(() => {})
+  const priceLineRefs = useRef<IPriceLine[]>([])
+
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme !== 'light'
 
@@ -163,11 +218,14 @@ export function TradingChart({ symbol, interval, klines, onTick }: TradingChartP
       chart.remove()
       chartRef.current  = null
       seriesRef.current = null
+      priceLineRefs.current = []
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDark])   // recreate chart when theme changes
 
-  // ── Load historical data ──────────────────────────────────────────────────
+  // ── Load historical data ──
+  // (isDark in deps: the chart is recreated on theme change, so data and
+  // overlays must be re-applied to the new series; effects run in order.)────────────────────────────────────────────────
   useEffect(() => {
     if (!seriesRef.current || klines.length === 0) return
     const data: CandlestickData<Time>[] = klines.map((k) => ({
@@ -179,7 +237,40 @@ export function TradingChart({ symbol, interval, klines, onTick }: TradingChartP
     }))
     seriesRef.current.setData(data)
     chartRef.current?.timeScale().fitContent()
-  }, [klines])
+  }, [klines, isDark])
+
+  // ── Strategy overlay: markers ─────────────────────────────────────────────
+  useEffect(() => {
+    const series = seriesRef.current
+    if (!series) return
+    const m: SeriesMarker<Time>[] = (markers ?? []).map((x) => ({
+      time: x.time as Time,
+      position: x.position,
+      color: x.color,
+      shape: x.shape,
+      text: x.text,
+    }))
+    series.setMarkers(m)
+  }, [markers, klines, isDark])
+
+  // ── Strategy overlay: price lines ─────────────────────────────────────────
+  useEffect(() => {
+    const series = seriesRef.current
+    if (!series) return
+    for (const l of priceLineRefs.current) series.removePriceLine(l)
+    priceLineRefs.current = (priceLines ?? [])
+      .filter((l) => Number.isFinite(l.price))
+      .map((l) =>
+        series.createPriceLine({
+          price: l.price,
+          color: l.color,
+          lineWidth: 1,
+          lineStyle: l.dashed ? LineStyle.Dashed : LineStyle.Solid,
+          axisLabelVisible: true,
+          title: l.title,
+        }),
+      )
+  }, [priceLines, isDark])
 
   // ── WebSocket live feed ───────────────────────────────────────────────────
   const connectWs = useCallback(() => {
@@ -189,8 +280,13 @@ export function TradingChart({ symbol, interval, klines, onTick }: TradingChartP
     }
 
     const stream = `${symbol.toLowerCase()}@kline_${interval}`
-    // Binance Vision public stream is accessible in regions where stream.binance.com is blocked
-    const ws = new WebSocket(`wss://data-stream.binance.vision/ws/${stream}`)
+    // Perp candles (direct or via Lab) stream from USD-M futures; spot
+    // fallback uses Binance Vision, which works where stream.binance.com is blocked.
+    const url =
+      source === 'spot'
+        ? `wss://data-stream.binance.vision/ws/${stream}`
+        : `wss://fstream.binance.com/ws/${stream}`
+    const ws = new WebSocket(url)
 
     ws.onmessage = (event: MessageEvent) => {
       try {
@@ -229,7 +325,7 @@ export function TradingChart({ symbol, interval, klines, onTick }: TradingChartP
     }
 
     wsRef.current = ws
-  }, [symbol, interval, onTick])
+  }, [symbol, interval, onTick, source])
 
   useEffect(() => {
     connectWsRef.current = connectWs

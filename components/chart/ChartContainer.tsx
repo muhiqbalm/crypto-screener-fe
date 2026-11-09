@@ -1,14 +1,28 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { TrendingUp, TrendingDown, RefreshCw, WifiOff } from 'lucide-react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
+import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
+import { TrendingUp, TrendingDown, RefreshCw, WifiOff, X } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { TradingChart, fetchBinanceKlines, type Kline } from './TradingChart'
+import {
+  TradingChart,
+  fetchChartKlines,
+  KLINE_SOURCE_LABEL,
+  type Kline,
+  type KlineSource,
+} from './TradingChart'
+import { StrategyOverlayPanel } from './StrategyOverlayPanel'
 import { formatPrice } from '@/lib/utils/format'
 import { cn } from '@/lib/utils/cn'
+import { api } from '@/lib/api/client'
+import { useLabMe, useLabRun, useLabRunTrades } from '@/lib/queries/lab'
+import { useLabWatches, useLabWatchState } from '@/lib/queries/lab-live'
+import { positionLines, tradesToMarkers, type OverlayPriceLine } from '@/lib/lab/overlay'
+import { useSession } from '@/lib/utils/use-session'
 
 // ---------------------------------------------------------------------------
 // Config
@@ -42,18 +56,21 @@ const INTERVALS = [
 function SegBtn({
   active,
   onClick,
+  disabled,
   children,
 }: {
   active: boolean
   onClick: () => void
+  disabled?: boolean
   children: React.ReactNode
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={cn(
-        'px-3 py-1 text-xs font-medium rounded-md transition-colors duration-150 cursor-pointer',
+        'px-3 py-1 text-xs font-medium rounded-md transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50',
         active
           ? 'bg-primary text-primary-foreground'
           : 'text-muted-foreground hover:text-foreground hover:bg-muted/60',
@@ -106,74 +123,160 @@ function PriceTicker({
 // Main component
 // ---------------------------------------------------------------------------
 
-export function ChartContainer() {
-  const [symbol,    setSymbol]    = useState('BTCUSDT')
-  const [interval,  setInterval]  = useState('1m')
-  const [klines,    setKlines]    = useState<Kline[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error,     setError]     = useState<string | null>(null)
-  const [lastCandle, setLastCandle] = useState<Kline | null>(null)
-  const [prevClose,  setPrevClose]  = useState<number | null>(null)
+interface LoadResult {
+  key: string
+  klines: Kline[]
+  source: KlineSource | null
+  error: string | null
+}
 
-  // Derived WS connection indicator
-  const wsConnected = !isLoading && !error
+export function ChartContainer() {
+  const search = useSearchParams()
+  const watchId = search.get('watch')
+  const runId = watchId ? null : search.get('run')
+
+  const session = useSession()
+  const { data: labMe } = useLabMe(Boolean(session?.accessToken))
+  const isAdmin = labMe?.is_admin === true
+
+  // Strategy overlay sources (admin only; backend enforces it too)
+  const watchesQ = useLabWatches(isAdmin)
+  const watchStateQ = useLabWatchState(isAdmin ? watchId : null)
+  const runQ = useLabRun(isAdmin ? runId : null)
+  const runTradesQ = useLabRunTrades(runId ?? '', isAdmin && Boolean(runId) && runQ.data?.status === 'done')
+
+  const watch = watchId ? watchesQ.data?.find((w) => w.id === watchId) ?? null : null
+  const overlay = watch
+    ? { kind: 'watch' as const, symbol: watch.symbol, timeframe: watch.timeframe }
+    : runQ.data
+      ? { kind: 'run' as const, symbol: runQ.data.symbol, timeframe: runQ.data.timeframe }
+      : null
+
+  const [pickedSymbol,   setSymbol]    = useState('BTCUSDT')
+  const [pickedInterval, setInterval]  = useState('1m')
+  const symbol = overlay?.symbol ?? pickedSymbol
+  const interval = overlay?.timeframe ?? pickedInterval
 
   const [reloadKey, setReloadKey] = useState(0)
+  const loadKey = `${symbol}|${interval}|${reloadKey}`
+  const [result, setResult] = useState<LoadResult | null>(null)
+  const [tick, setTick] = useState<{ key: string; candle: Kline } | null>(null)
+
+  // Lab proxy fallback is only attempted for admins; read through a ref so a
+  // late admin check does not trigger a reload.
+  const adminRef = useRef(isAdmin)
+  useEffect(() => {
+    adminRef.current = isAdmin
+  }, [isAdmin])
 
   const handleReload = useCallback(() => {
-    setIsLoading(true)
     setReloadKey((k) => k + 1)
   }, [])
 
-  // Load historical klines
+  // Load historical klines (perp first, labelled fallbacks)
   useEffect(() => {
     let cancelled = false
+    const [sym, tf] = loadKey.split('|')
+    const labFallback = adminRef.current
+      ? () =>
+          api.getLabKlines(sym, tf, 500).then((rows) =>
+            rows.map((r) => ({ time: Math.floor(Date.parse(r.t) / 1000), open: r.o, high: r.h, low: r.l, close: r.c })),
+          )
+      : undefined
 
-    fetchBinanceKlines(symbol, interval, 500)
-      .then((data) => {
-        if (cancelled) return
-        setKlines(data)
-        if (data.length >= 2) {
-          setLastCandle(data[data.length - 1])
-          setPrevClose(data[data.length - 2].close)
-        }
-        setError(null)
+    fetchChartKlines(sym, tf, 500, labFallback)
+      .then(({ klines, source }) => {
+        if (!cancelled) setResult({ key: loadKey, klines, source, error: null })
       })
       .catch((err) => {
-        if (cancelled) return
-        setError(err instanceof Error ? err.message : 'Failed to load chart data')
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoading(false)
-        }
+        if (!cancelled)
+          setResult({ key: loadKey, klines: [], source: null, error: err instanceof Error ? err.message : 'Gagal memuat data chart' })
       })
 
     return () => {
       cancelled = true
     }
-  }, [symbol, interval, reloadKey])
+  }, [loadKey])
 
-  const handleTick = useCallback((candle: Kline) => {
-    setLastCandle(candle)
-  }, [])
+  const isLoading = result?.key !== loadKey
+  const klines = useMemo(() => (!isLoading && result ? result.klines : []), [isLoading, result])
+  const error = !isLoading ? (result?.error ?? null) : null
+  const source = !isLoading ? (result?.source ?? null) : null
 
-  const symbolMeta = SYMBOLS.find(s => s.value === symbol)
+  const handleTick = useCallback(
+    (candle: Kline) => setTick({ key: loadKey, candle }),
+    [loadKey],
+  )
+
+  const wsLive = tick?.key === loadKey
+  const lastCandle = wsLive ? tick.candle : (klines[klines.length - 1] ?? null)
+  const prevClose = klines.length >= 2 ? klines[klines.length - 2].close : null
+
+  // ── Overlay data ─────────────────────────────────────────────────────────
+  const barTimes = useMemo(() => klines.map((k) => k.time), [klines])
+  const overlayTrades = useMemo(
+    () => (watchId ? (watchStateQ.data?.recent_trades ?? []) : runId ? (runTradesQ.data ?? []) : []),
+    [watchId, runId, watchStateQ.data, runTradesQ.data],
+  )
+  const { markers, dropped } = useMemo(() => {
+    const base = tradesToMarkers(overlayTrades, barTimes)
+    // Open strategy position: add its entry marker too.
+    const pos = watchId ? watchStateQ.data?.position : null
+    if (pos) {
+      const extra = tradesToMarkers([{ ...pos, exit_time: null, exit_price: null, exit_reason: null }], barTimes)
+      return { markers: [...base.markers, ...extra.markers].sort((a, b) => a.time - b.time), dropped: base.dropped + extra.dropped }
+    }
+    return base
+  }, [overlayTrades, barTimes, watchId, watchStateQ.data?.position])
+
+  const priceLines: OverlayPriceLine[] = useMemo(
+    () => (watchId ? positionLines('watch', watchStateQ.data?.position) : []),
+    [watchId, watchStateQ.data?.position],
+  )
+
+  const symbolOptions = SYMBOLS.some((s) => s.value === symbol)
+    ? SYMBOLS
+    : [...SYMBOLS, { value: symbol, label: symbol.replace(/USDT$/, '') }]
+  const intervalOptions = INTERVALS.some((i) => i.value === interval)
+    ? INTERVALS
+    : [...INTERVALS, { value: interval, label: interval }]
+  const symbolMeta = symbolOptions.find(s => s.value === symbol)
+  const overlayLocked = Boolean(overlay)
+  const showSidePanel = isAdmin
 
   return (
     <div className="flex flex-col gap-4">
+      {overlay && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-violet-500/30 bg-violet-500/10 px-4 py-2 text-xs text-violet-200">
+          <span>
+            Mode overlay strategi:{' '}
+            <span className="font-mono font-bold">
+              {overlay.kind === 'watch' ? `watch ${watchId}` : `run ${runId}`} · {overlay.symbol} {overlay.timeframe}
+            </span>
+            . Symbol &amp; timeframe dikunci ke strategi.
+          </span>
+          <Link href="/chart" className="inline-flex items-center gap-1 font-semibold hover:underline">
+            <X className="h-3.5 w-3.5" /> Tutup overlay
+          </Link>
+        </div>
+      )}
+      {(watchId || runId) && !overlay && isAdmin && (watchesQ.isError || runQ.isError || (watchId && watchesQ.isSuccess)) && (
+        <div role="alert" className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs text-amber-300">
+          {watchId ? `Watch ${watchId} tidak ditemukan.` : `Run ${runId} tidak bisa dimuat.`}{' '}
+          <Link href="/chart" className="underline">Kembali ke chart biasa</Link>
+        </div>
+      )}
+
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Symbol selector */}
-        <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/30 p-1">
-          {SYMBOLS.map(s => (
+        <div className="flex flex-wrap items-center gap-1 rounded-lg border border-border bg-muted/30 p-1">
+          {symbolOptions.map(s => (
             <SegBtn
               key={s.value}
               active={symbol === s.value}
-              onClick={() => {
-                setSymbol(s.value)
-                setIsLoading(true)
-              }}
+              disabled={overlayLocked}
+              onClick={() => setSymbol(s.value)}
             >
               {s.label}
             </SegBtn>
@@ -182,14 +285,12 @@ export function ChartContainer() {
 
         {/* Interval selector */}
         <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/30 p-1">
-          {INTERVALS.map(i => (
+          {intervalOptions.map(i => (
             <SegBtn
               key={i.value}
               active={interval === i.value}
-              onClick={() => {
-                setInterval(i.value)
-                setIsLoading(true)
-              }}
+              disabled={overlayLocked}
+              onClick={() => setInterval(i.value)}
             >
               {i.label}
             </SegBtn>
@@ -197,95 +298,125 @@ export function ChartContainer() {
         </div>
       </div>
 
-      {/* Chart card */}
-      <Card className="overflow-hidden">
-        {/* Card header — price + status */}
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <div className="flex items-center gap-4">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">
-                {symbolMeta?.label ?? symbol}
-              </p>
-              <PriceTicker
-                lastCandle={lastCandle}
-                prevClose={prevClose}
-              />
-            </div>
-            {lastCandle && (
-              <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground font-mono">
-                <span>O <span className="text-foreground">{formatPrice(lastCandle.open)}</span></span>
-                <span>H <span className="text-bullish">{formatPrice(lastCandle.high)}</span></span>
-                <span>L <span className="text-bearish">{formatPrice(lastCandle.low)}</span></span>
-                <span>C <span className="text-foreground">{formatPrice(lastCandle.close)}</span></span>
+      <div className={cn('grid gap-4', showSidePanel && 'lg:grid-cols-[minmax(0,1fr)_340px]')}>
+        {/* Chart card */}
+        <Card className="overflow-hidden">
+          {/* Card header — price + status */}
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <div className="flex items-center gap-4">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">
+                  {symbolMeta?.label ?? symbol}
+                  {source && (
+                    <span
+                      className={cn(
+                        'ml-2 rounded px-1.5 py-0.5 font-mono text-[10px]',
+                        source === 'spot' ? 'bg-amber-500/15 text-amber-400' : 'bg-muted text-muted-foreground',
+                      )}
+                    >
+                      {KLINE_SOURCE_LABEL[source]}
+                    </span>
+                  )}
+                </p>
+                <PriceTicker
+                  lastCandle={lastCandle}
+                  prevClose={prevClose}
+                />
               </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Live indicator */}
-            <Badge
-              variant="outline"
-              className={cn(
-                'gap-1.5 text-[10px] px-2 py-0.5',
-                wsConnected
-                  ? 'border-bullish/30 bg-bullish/10 text-bullish'
-                  : 'text-muted-foreground',
+              {lastCandle && (
+                <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground font-mono">
+                  <span>O <span className="text-foreground">{formatPrice(lastCandle.open)}</span></span>
+                  <span>H <span className="text-bullish">{formatPrice(lastCandle.high)}</span></span>
+                  <span>L <span className="text-bearish">{formatPrice(lastCandle.low)}</span></span>
+                  <span>C <span className="text-foreground">{formatPrice(lastCandle.close)}</span></span>
+                </div>
               )}
-            >
-              {wsConnected
-                ? <><span className="h-1.5 w-1.5 rounded-full bg-bullish animate-pulse" aria-hidden="true" />Live</>
-                : <><WifiOff className="h-3 w-3" aria-hidden="true" />Offline</>
-              }
-            </Badge>
+            </div>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleReload}
-              disabled={isLoading}
-              className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-              aria-label="Reload chart data"
-            >
-              <RefreshCw className={cn('h-3 w-3', isLoading && 'animate-spin')} aria-hidden="true" />
-            </Button>
+            <div className="flex items-center gap-2">
+              {/* Live indicator: only "Live" once a websocket tick has actually arrived */}
+              <Badge
+                variant="outline"
+                className={cn(
+                  'gap-1.5 text-[10px] px-2 py-0.5',
+                  wsLive
+                    ? 'border-bullish/30 bg-bullish/10 text-bullish'
+                    : 'text-muted-foreground',
+                )}
+              >
+                {wsLive
+                  ? <><span className="h-1.5 w-1.5 rounded-full bg-bullish animate-pulse" aria-hidden="true" />Live</>
+                  : <><WifiOff className="h-3 w-3" aria-hidden="true" />{isLoading ? 'Memuat' : 'Menunggu tick'}</>
+                }
+              </Badge>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleReload}
+                disabled={isLoading}
+                className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                aria-label="Reload chart data"
+              >
+                <RefreshCw className={cn('h-3 w-3', isLoading && 'animate-spin')} aria-hidden="true" />
+              </Button>
+            </div>
           </div>
-        </div>
 
-        {/* Chart area */}
-        <CardContent className="p-0">
-          <div className="relative h-[480px] w-full">
-            {isLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-card z-10">
-                <div className="flex flex-col items-center gap-3">
-                  <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" aria-hidden="true" />
-                  <p className="text-sm text-muted-foreground">Loading chart…</p>
+          {/* Chart area */}
+          <CardContent className="p-0">
+            <div className="relative h-[480px] w-full">
+              {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-card z-10">
+                  <div className="flex flex-col items-center gap-3">
+                    <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" aria-hidden="true" />
+                    <p className="text-sm text-muted-foreground">Loading chart…</p>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {error && (
-              <div className="absolute inset-0 flex items-center justify-center bg-card z-10">
-                <div className="flex flex-col items-center gap-3 text-center px-6">
-                  <WifiOff className="h-8 w-8 text-muted-foreground/40" aria-hidden="true" />
-                  <p className="text-sm text-muted-foreground">{error}</p>
-                  <Button variant="outline" size="sm" onClick={handleReload}>
-                    Retry
-                  </Button>
+              {error && (
+                <div className="absolute inset-0 flex items-center justify-center bg-card z-10">
+                  <div className="flex flex-col items-center gap-3 text-center px-6">
+                    <WifiOff className="h-8 w-8 text-muted-foreground/40" aria-hidden="true" />
+                    <p className="text-sm text-muted-foreground">{error}</p>
+                    <Button variant="outline" size="sm" onClick={handleReload}>
+                      Retry
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {!isLoading && !error && klines.length > 0 && (
-              <TradingChart
-                symbol={symbol}
-                interval={interval}
-                klines={klines}
-                onTick={handleTick}
-              />
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              {!isLoading && !error && klines.length > 0 && source && (
+                <TradingChart
+                  symbol={symbol}
+                  interval={interval}
+                  klines={klines}
+                  onTick={handleTick}
+                  source={source}
+                  markers={markers}
+                  priceLines={priceLines}
+                />
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {showSidePanel && (
+          <StrategyOverlayPanel
+            watchId={watchId}
+            runId={runId}
+            watches={watchesQ}
+            watchState={watchStateQ}
+            run={runQ}
+            runTrades={runTradesQ}
+            lastPrice={lastCandle?.close ?? null}
+            priceSource={source}
+            markersOffscreen={dropped}
+            markerCount={markers.length}
+          />
+        )}
+      </div>
     </div>
   )
 }
