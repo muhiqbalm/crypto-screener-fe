@@ -67,6 +67,8 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
   const score = asset.composite_score
   const hasScore = isNum(score)
   const lsr = asset.long_short_ratio
+  // Prefer momentum_signal; macd_signal is the backend's deprecated alias.
+  const momentum = asset.momentum_signal ?? asset.macd_signal ?? null
 
   return (
     <div
@@ -194,7 +196,7 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
                 <div className="flex items-center gap-2">
                   <Compass className="h-4 w-4 text-blue-400" />
                   <div>
-                    <span className="font-semibold block">Trend Momentum (30H)</span>
+                    <span className="font-semibold block">Trend Momentum (30D)</span>
                     <span className="text-[11px] text-muted-foreground">Weight: 30% • MA50 exhaustion check</span>
                   </div>
                 </div>
@@ -202,14 +204,14 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
                   variant="outline"
                   className={cn(
                     'font-mono text-xs',
-                    asset.macd_signal === 'BUY'
+                    momentum === 'BUY'
                       ? 'text-bullish'
-                      : asset.macd_signal === 'SELL'
+                      : momentum === 'SELL'
                         ? 'text-bearish'
                         : 'text-muted-foreground',
                   )}
                 >
-                  {asset.macd_signal ?? '—'}
+                  {momentum ?? '—'}
                 </Badge>
               </div>
 
@@ -238,7 +240,7 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
                   <Layers className="h-4 w-4 text-emerald-400" />
                   <div>
                     <span className="font-semibold block">Open Interest Momentum</span>
-                    <span className="text-[11px] text-muted-foreground">Weight: 20% • Volume delta matrix</span>
+                    <span className="text-[11px] text-muted-foreground">Weight: 20% • USD notional, OI-price matrix</span>
                   </div>
                 </div>
                 <div className="text-right font-mono">

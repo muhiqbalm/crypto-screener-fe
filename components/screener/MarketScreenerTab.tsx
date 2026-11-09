@@ -74,6 +74,10 @@ export function MarketScreenerTab() {
   // The FE must not re-classify scores with its own thresholds.
   const assets: AssetDetail[] = rawAssets
   const summary = data?.summary ?? null
+  const dataAge = data?.metadata?.data_age_seconds ?? null
+  // stale_data_warning is set by the backend when data is older than 300s
+  // (e.g. last good snapshot served after a failed refresh).
+  const isStale = data?.metadata?.stale_data_warning === true || (dataAge !== null && dataAge > 300)
 
   function handleSelectSymbol(symbol: string) {
     const found = assets.find((a) => a.symbol === symbol || a.symbol.startsWith(symbol))
@@ -102,7 +106,17 @@ export function MarketScreenerTab() {
       <div className="rounded-xl border border-border overflow-hidden bg-card shadow-xs">
         <div className="px-4 py-2.5 border-b border-border bg-muted/20 flex items-center justify-between text-xs text-muted-foreground">
           <span>Click on any asset row to view 5-factor quant breakdown & live chart</span>
-          <span className="font-mono">{assets.length} perpetuals tracked</span>
+          <span className="flex items-center gap-3 font-mono">
+            {isStale && (
+              <span
+                className="rounded border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-amber-500"
+                title="Backend is serving the last good snapshot because the latest refresh failed or is overdue"
+              >
+                stale ({Math.round(dataAge ?? 0)}s)
+              </span>
+            )}
+            <span>{assets.length} perpetuals tracked</span>
+          </span>
         </div>
         <ScreenerTable
           data={assets}

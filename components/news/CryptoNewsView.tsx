@@ -19,6 +19,7 @@ import {
   Gauge,
   Zap,
   Globe2,
+  CalendarClock,
   ArrowUpRight
 } from 'lucide-react'
 
@@ -28,10 +29,13 @@ export function CryptoNewsView() {
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL')
   const [selectedSentiment, setSelectedSentiment] = useState<string>('ALL')
 
-  // Zero Static Mocking: no invented fallback numbers or headlines. Items with
-  // ids "fallback-*" are the backend's static placeholder and are dropped.
+  // Zero Static Mocking: no invented fallback numbers or headlines. The
+  // backend returns null + `unavailableFields` for anything it cannot source.
   const fng = intel?.fearAndGreed ?? null
-  const newsList: NewsItem[] = (intel?.news ?? []).filter((n) => !n.id.startsWith('fallback-'))
+  const newsList: NewsItem[] = intel?.news ?? []
+  const status = intel?.status ?? null
+  const missing = intel?.unavailableFields ?? []
+  const catalystBias = intel?.catalystBias ?? null
   const bullishCount = newsList.filter((n) => n.sentiment === 'BULLISH').length
   const bearishCount = newsList.filter((n) => n.sentiment === 'BEARISH').length
   const bullShare = newsList.length > 0 ? Math.round((bullishCount / newsList.length) * 100) : null
@@ -101,8 +105,23 @@ export function CryptoNewsView() {
           onRetry={() => refetch()}
           messageOverride="News feed is unavailable right now."
         />
+      ) : status === 'unavailable' ? (
+        <ErrorPanel
+          kind="server"
+          onRetry={() => refetch()}
+          messageOverride="News and Fear & Greed sources are unavailable right now (upstream fetch failed)."
+        />
       ) : (
       <>
+      {status === 'partial' && (
+        <div
+          role="status"
+          className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-500"
+        >
+          Partial snapshot — unavailable: {missing.length > 0 ? missing.join(', ') : 'some sources'}.
+        </div>
+      )}
+
       {/* Intelligence Metric Banner */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Fear & Greed Index */}
@@ -119,7 +138,7 @@ export function CryptoNewsView() {
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-mono font-black text-emerald-400">{fng ? fng.value : '—'}</span>
               <span className="text-xs font-mono text-muted-foreground">/ 100</span>
-              {fng && (
+              {fng?.classification && (
                 <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30 ml-auto font-mono text-[11px] px-2 py-0.5">
                   {fng.classification}
                 </Badge>
@@ -149,10 +168,19 @@ export function CryptoNewsView() {
           </CardHeader>
           <CardContent className="p-5 pt-1">
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-mono font-black text-cyan-400">
-                {bullShare === null ? '—' : `${bullShare}%`}
+              <span
+                className={`text-3xl font-mono font-black ${
+                  catalystBias === null
+                    ? 'text-muted-foreground'
+                    : catalystBias.startsWith('-')
+                      ? 'text-rose-400'
+                      : 'text-cyan-400'
+                }`}
+                title={intel?.catalystBiasBasis ?? undefined}
+              >
+                {catalystBias ?? '—'}
               </span>
-              <span className="text-xs font-mono text-muted-foreground">bullish</span>
+              <span className="text-xs font-mono text-muted-foreground">net bias</span>
             </div>
             <div className="w-full bg-muted/40 rounded-full h-1.5 mt-3 overflow-hidden">
               <div className="bg-cyan-400 h-1.5 rounded-full" style={{ width: `${bullShare ?? 0}%` }} />
@@ -275,6 +303,16 @@ export function CryptoNewsView() {
                   <Badge variant="outline" className="font-mono text-[10px] font-semibold tracking-wider uppercase bg-muted/60 border-border/80 px-2 py-0.5">
                     {item.category}
                   </Badge>
+                  {item.timestamp && (
+                    <time
+                      dateTime={item.publishedAt ?? undefined}
+                      title={item.publishedAt ? new Date(item.publishedAt).toLocaleString() : undefined}
+                      className="text-[11px] text-muted-foreground flex items-center gap-1 font-mono"
+                    >
+                      <CalendarClock className="h-3 w-3" />
+                      {item.timestamp}
+                    </time>
+                  )}
                 </div>
 
                 <div>
@@ -323,15 +361,17 @@ export function CryptoNewsView() {
                   </div>
                 </div>
 
-                <a
-                  href={item.linkUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
-                >
-                  Source Feed
-                  <ArrowUpRight className="h-3.5 w-3.5" />
-                </a>
+                {item.linkUrl && (
+                  <a
+                    href={item.linkUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+                  >
+                    Read article
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  </a>
+                )}
               </div>
             </CardContent>
           </Card>

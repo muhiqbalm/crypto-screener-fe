@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorPanel } from '@/components/shell/ErrorPanel'
 import { useIntelWhales } from '@/lib/queries/intel'
+import { cn } from '@/lib/utils/cn'
 import { ApiError } from '@/lib/api/errors'
 import type { TopTraderRatio, WhaleTrade } from '@/lib/api/types/intel'
 import {
@@ -23,14 +24,11 @@ import {
 } from 'lucide-react'
 
 /**
- * Zero Static Mocking: the backend's /api/v1/intel/whales response mixes live
- * Binance data with hardcoded placeholders. Only live-derived values are shown:
- * - topTraderRatios entries flagged `updated: "Cached"` are the backend's
- *   static fallback and are dropped.
- * - whaleTransactions are only real when built from Binance aggTrades
- *   (ids prefixed "tx-fapi-"); the static fallback rows are dropped.
- * - whaleVolume24h / whaleVolumeChange / exchangeNetFlow are constant strings
- *   in the backend and are not rendered.
+ * Zero Static Mocking: only live values from /api/v1/intel/whales are shown.
+ * The backend returns null + lists `unavailableFields` for anything it cannot
+ * source (whaleVolume24h / whaleVolumeChange / exchangeNetFlow have no source
+ * and are never rendered). The filters below are defensive guards against
+ * older backend builds that still sent static placeholder rows.
  */
 function liveRatios(ratios: TopTraderRatio[] | undefined): TopTraderRatio[] {
   return (ratios ?? []).filter((r) => r.updated !== 'Cached')
@@ -40,22 +38,35 @@ function liveTrades(trades: WhaleTrade[] | undefined): WhaleTrade[] {
   return (trades ?? []).filter((t) => t.id.startsWith('tx-fapi-'))
 }
 
-function parseUsd(v: string): number {
-  const n = Number(v.replace(/[^0-9.-]/g, ''))
-  return Number.isFinite(n) ? n : 0
+function formatUsdCompact(v: number | null | undefined, signed = false): string {
+  if (v === null || v === undefined || !Number.isFinite(v)) return '—'
+  const sign = v < 0 ? '-' : signed && v > 0 ? '+' : ''
+  const a = Math.abs(v)
+  if (a >= 1e9) return `${sign}$${(a / 1e9).toFixed(2)}B`
+  if (a >= 1e6) return `${sign}$${(a / 1e6).toFixed(2)}M`
+  if (a >= 1e3) return `${sign}$${(a / 1e3).toFixed(1)}K`
+  return `${sign}$${a.toFixed(0)}`
 }
 
-function formatUsdCompact(v: number): string {
-  if (v >= 1e9) return `$${(v / 1e9).toFixed(2)}B`
-  if (v >= 1e6) return `$${(v / 1e6).toFixed(2)}M`
-  if (v >= 1e3) return `$${(v / 1e3).toFixed(1)}K`
-  return `$${v.toFixed(0)}`
+function formatWindow(seconds: number | null | undefined): string | null {
+  if (seconds === null || seconds === undefined || !Number.isFinite(seconds)) return null
+  if (seconds < 120) return `${Math.round(seconds)}s`
+  return `${Math.round(seconds / 60)}m`
 }
 
-// "outflow" in the backend payload = aggressive (taker) buy; "inflow" = taker sell.
+// `side` is authoritative; legacy payloads only had type ("outflow" = taker buy).
 function isTakerBuy(tx: WhaleTrade): boolean {
-  return tx.type === 'outflow'
+  return tx.side ? tx.side === 'BUY' : tx.type === 'outflow'
 }
+
+const STANCE_CLASS: Record<string, string> = {
+  bullish: 'text-emerald-400',
+  bearish: 'text-rose-400',
+  neutral: 'text-muted-foreground',
+}
+
+// Fields with no data source at all; not worth flagging on every snapshot.
+const NEVER_SOURCED = new Set(['whaleVolume24h', 'whaleVolumeChange', 'exchangeNetFlow'])
 
 export function WhaleRadarView() {
   const { data: intel, isPending, error, isFetching, refetch } = useIntelWhales()
@@ -65,12 +76,13 @@ export function WhaleRadarView() {
   const ratios = liveRatios(intel?.topTraderRatios)
   const transactions = liveTrades(intel?.whaleTransactions)
 
-  const avgLong =
-    ratios.length > 0 ? ratios.reduce((sum, r) => sum + r.longPct, 0) / ratios.length : null
-  const takerBuyUsd = transactions.filter(isTakerBuy).reduce((s, t) => s + parseUsd(t.usdValue), 0)
-  const takerSellUsd = transactions
-    .filter((t) => !isTakerBuy(t))
-    .reduce((s, t) => s + parseUsd(t.usdValue), 0)
+  const status = intel?.status ?? null
+  const missing = (intel?.unavailableFields ?? []).filter((f) => !NEVER_SOURCED.has(f))
+  const windowLabel = formatWindow(intel?.largeTradeWindowSeconds)
+  const minUsd = intel?.largeTradeMinUsd ?? null
+  const minUsdLabel = minUsd !== null ? formatUsdCompact(minUsd) : '$50K'
+  const netUsd = intel?.largeTradeNetUsd ?? null
+  const stanceCode = intel?.smartMoneyStanceCode ?? null
   const snapshotTime =
     typeof intel?.cachedAt === 'number'
       ? new Date(intel.cachedAt * 1000).toLocaleTimeString()
@@ -98,8 +110,8 @@ export function WhaleRadarView() {
             Whale Radar &amp; Top Trader Positioning
           </h1>
           <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
-            Binance Futures top-trader long/short ratios and large BTCUSDT perpetual trades
-            (≥ $50k) from the most recent aggregated trades.
+            Binance Futures top-trader long/short ratios and large BTC / ETH / SOL perpetual
+            trades (≥ {minUsdLabel}) from the most recent aggregated trades.
           </p>
         </div>
 
@@ -137,44 +149,57 @@ export function WhaleRadarView() {
           onRetry={() => refetch()}
           messageOverride="Whale radar data is unavailable right now."
         />
+      ) : status === 'unavailable' ? (
+        <ErrorPanel
+          kind="server"
+          onRetry={() => refetch()}
+          messageOverride="Binance whale data is unavailable right now (upstream fetch failed). No numbers are shown rather than stale or invented ones."
+        />
       ) : (
         <>
-          {/* Overview Stat Cards — all derived from live data in this response */}
+          {status === 'partial' && (
+            <div
+              role="status"
+              className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-500"
+            >
+              Partial snapshot — unavailable: {missing.length > 0 ? missing.join(', ') : 'some sources'}.
+            </div>
+          )}
+
+          {/* Overview Stat Cards — all values come from live data in this response */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
-              title="Large Trades Captured"
-              icon={<Activity className="h-4 w-4 text-cyan-400" />}
-              value={String(transactions.length)}
-              caption="BTCUSDT perp trades ≥ $50k in latest 60 aggTrades"
-            />
-            <StatCard
-              title="Taker Buy Notional"
+              title="Large Taker Buys"
               icon={<CircleDollarSign className="h-4 w-4 text-emerald-400" />}
-              value={transactions.length > 0 ? formatUsdCompact(takerBuyUsd) : '—'}
+              value={formatUsdCompact(intel?.largeTradeBuyUsd)}
               valueClass="text-emerald-400"
-              caption="Sum of large aggressive buys"
+              caption={windowLabel ? `Trades ≥ ${minUsdLabel}, last ${windowLabel}` : `Trades ≥ ${minUsdLabel}`}
             />
             <StatCard
-              title="Taker Sell Notional"
+              title="Large Taker Sells"
               icon={<Layers className="h-4 w-4 text-rose-400" />}
-              value={transactions.length > 0 ? formatUsdCompact(takerSellUsd) : '—'}
+              value={formatUsdCompact(intel?.largeTradeSellUsd)}
               valueClass="text-rose-400"
-              caption="Sum of large aggressive sells"
+              caption={windowLabel ? `Trades ≥ ${minUsdLabel}, last ${windowLabel}` : `Trades ≥ ${minUsdLabel}`}
             />
             <StatCard
-              title="Top Trader Bias"
-              icon={<TrendingUp className="h-4 w-4 text-emerald-400" />}
-              value={
-                avgLong === null
-                  ? '—'
-                  : avgLong >= 50
-                    ? `${avgLong.toFixed(1)}% Long`
-                    : `${(100 - avgLong).toFixed(1)}% Short`
+              title="Large Trade Net Flow"
+              icon={<Activity className="h-4 w-4 text-cyan-400" />}
+              value={formatUsdCompact(netUsd, true)}
+              valueClass={
+                netUsd === null ? undefined : netUsd >= 0 ? 'text-emerald-400' : 'text-rose-400'
               }
+              caption="Taker buys minus taker sells (BTC/ETH/SOL perps)"
+            />
+            <StatCard
+              title="Top Trader Stance"
+              icon={<TrendingUp className="h-4 w-4 text-emerald-400" />}
+              value={intel?.smartMoneyStance ?? '—'}
+              valueClass={`text-base ${stanceCode ? STANCE_CLASS[stanceCode] : 'text-muted-foreground'}`}
               caption={
-                avgLong === null
-                  ? 'No live ratio data'
-                  : `Average across ${ratios.length} symbol${ratios.length === 1 ? '' : 's'}`
+                intel?.topTraderBias
+                  ? `${intel.topTraderBias} avg across ${ratios.length} symbol${ratios.length === 1 ? '' : 's'}`
+                  : 'No live ratio data'
               }
             />
           </div>
@@ -235,7 +260,11 @@ export function WhaleRadarView() {
                               {item.lsRatio ?? (item.shortPct ? (item.longPct / item.shortPct).toFixed(2) : '—')}
                             </strong>
                           </span>
-                          <span>{item.updated}</span>
+                          <span>
+                            {typeof item.timestamp === 'number'
+                              ? new Date(item.timestamp).toLocaleTimeString()
+                              : item.updated}
+                          </span>
                         </div>
                       </div>
                     )
@@ -253,7 +282,7 @@ export function WhaleRadarView() {
                   Large Perpetual Trades
                 </CardTitle>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Binance BTCUSDT perpetual aggregated trades with notional ≥ $50,000.
+                  Binance USDT-M BTC / ETH / SOL perpetual aggregated trades with notional ≥ {minUsdLabel}.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-3">
@@ -290,13 +319,14 @@ export function WhaleRadarView() {
             <CardContent className="p-0">
               {transactions.length === 0 ? (
                 <p className="py-10 text-center text-sm text-muted-foreground">
-                  No trades ≥ $50k in the latest Binance snapshot.
+                  No trades ≥ {minUsdLabel} in the latest Binance snapshot.
                 </p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="border-b border-border/60 bg-muted/20 text-muted-foreground text-[11px] font-mono uppercase text-left">
+                        <th className="py-3 px-5 font-semibold">Time</th>
                         <th className="py-3 px-5 font-semibold">Asset</th>
                         <th className="py-3 px-5 font-semibold">Size</th>
                         <th className="py-3 px-5 font-semibold text-right">Notional</th>
@@ -306,6 +336,12 @@ export function WhaleRadarView() {
                     <tbody className="divide-y divide-border/40">
                       {filteredTxs.map((tx) => (
                         <tr key={tx.id} className="hover:bg-muted/30 transition-colors">
+                          <td
+                            className="py-3.5 px-5 font-mono text-muted-foreground whitespace-nowrap"
+                            title={typeof tx.tradeTime === 'number' ? new Date(tx.tradeTime).toLocaleString() : undefined}
+                          >
+                            {tx.timestamp ?? '—'}
+                          </td>
                           <td className="py-3.5 px-5 font-mono">
                             <span className="px-2 py-0.5 rounded-md bg-muted/70 text-[11px] font-semibold border border-border/50">
                               {tx.symbol}
@@ -330,7 +366,7 @@ export function WhaleRadarView() {
                       ))}
                       {filteredTxs.length === 0 && (
                         <tr>
-                          <td colSpan={4} className="py-8 text-center text-muted-foreground">
+                          <td colSpan={5} className="py-8 text-center text-muted-foreground">
                             No trades match your filter.
                           </td>
                         </tr>
@@ -371,7 +407,7 @@ function StatCard({
         </div>
       </CardHeader>
       <CardContent className="p-5 pt-1">
-        <div className={`text-2xl font-bold font-mono tracking-tight ${valueClass ?? 'text-foreground'}`}>
+        <div className={cn('text-2xl font-bold font-mono tracking-tight text-foreground', valueClass)}>
           {value}
         </div>
         <p className="text-xs text-muted-foreground mt-1.5 leading-tight">{caption}</p>

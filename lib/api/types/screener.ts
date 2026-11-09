@@ -30,9 +30,15 @@ export interface AssetDetail extends AssetSummary {
   change_24h: number | null
   volume_24h: number | null
   funding_rate: number | null
+  /** Open interest as USD notional (backend: open_interest_coins x price). */
   open_interest: number | null
+  /** Open interest in base-asset units as reported by Binance. */
+  open_interest_coins?: number | null
   long_short_ratio: number | null
   reversal_score: number | null
+  /** 30-day momentum z-score label (not a MACD). */
+  momentum_signal?: 'BUY' | 'SELL' | 'HOLD' | null
+  /** @deprecated alias of momentum_signal kept by the backend for old clients. */
   macd_signal: 'BUY' | 'SELL' | 'HOLD' | null
   volatility: number | null
   ic_weight: number | null
