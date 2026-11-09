@@ -1,38 +1,20 @@
-#!/usr/bin/env bash
-# =============================================================================
-# deploy.sh — Crypto Screener FE deployment script (runs on VPS)
-# =============================================================================
-# Called by the GitHub Actions workflow after SSH-ing into the VPS.
-# Assumes:
-#   - The repo is cloned at ~/crypto-screener-fe
-#   - A .env file exists at ~/crypto-screener-fe/.env with production values
-#   - Docker and Docker Compose v2 are installed
-# =============================================================================
-
+#!/bin/bash
+# Rebuild bmtm-web on the VPS and restart it through PM2.
 set -euo pipefail
+cd "$(dirname "$0")"
 
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-COMPOSE="docker compose"
+git pull --ff-only
+npm ci
+npm run build
+pm2 restart bmtm-web
 
-echo "==> [1/4] Pulling latest code from main..."
-git -C "$REPO_DIR" fetch --prune origin
-git -C "$REPO_DIR" reset --hard origin/main
+for _ in {1..15}; do
+  if curl -fs -m 3 -o /dev/null http://127.0.0.1:3000/login; then
+    echo "bmtm-web healthy"
+    exit 0
+  fi
+  sleep 2
+done
 
-# Show what files are present so build failures are easier to diagnose
-echo "--- repo root files ---"
-ls -la "$REPO_DIR"
-echo "--- git status ---"
-git -C "$REPO_DIR" log --oneline -3
-
-echo "==> [2/4] Building new image (no cache)..."
-$COMPOSE -f "$REPO_DIR/docker-compose.yml" build --no-cache app
-
-echo "==> [3/4] Restarting container..."
-$COMPOSE -f "$REPO_DIR/docker-compose.yml" up -d --force-recreate --remove-orphans app
-
-echo "==> [4/4] Cleaning up dangling images..."
-docker image prune -f
-
-echo ""
-echo "✓ Deployment complete."
-echo "  Container : $($COMPOSE -f "$REPO_DIR/docker-compose.yml" ps --format 'table {{.Name}}\t{{.Status}}' app)"
+echo "bmtm-web failed its health check" >&2
+exit 1
