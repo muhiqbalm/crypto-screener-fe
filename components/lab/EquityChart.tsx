@@ -8,9 +8,9 @@ import type { LabEquityPoint, LabSegment } from '@/lib/api/types/lab'
 // Validated categorical palette (dataviz validator: lightness band, CVD and
 // contrast pass on both surfaces). Order is fixed: IS, OOS, holdout.
 export const SEGMENT_META: Record<LabSegment, { label: string; light: string; dark: string }> = {
-  is: { label: 'In-sample', light: '#0284c7', dark: '#0284c7' },
+  is: { label: 'In-sample (pengembangan)', light: '#0284c7', dark: '#0284c7' },
   oos: { label: 'Out-of-sample', light: '#d97706', dark: '#d97706' },
-  holdout: { label: 'Holdout', light: '#7c3aed', dark: '#8b5cf6' },
+  holdout: { label: 'Holdout (ujian terkunci)', light: '#7c3aed', dark: '#8b5cf6' },
 }
 const SEGMENT_ORDER: LabSegment[] = ['is', 'oos', 'holdout']
 
@@ -48,7 +48,7 @@ export function splitSegments(points: LabEquityPoint[]): SegmentSeries[] {
   return out
 }
 
-export function EquityChart({ points }: { points: LabEquityPoint[] }) {
+export function EquityChart({ points, holdoutStart }: { points: LabEquityPoint[]; holdoutStart?: string | null }) {
   const ref = useRef<HTMLDivElement>(null)
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme !== 'light'
@@ -57,7 +57,6 @@ export function EquityChart({ points }: { points: LabEquityPoint[] }) {
   useEffect(() => {
     if (!ref.current) return
     const chart: IChartApi = createChart(ref.current, {
-      height: 320,
       autoSize: true,
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
@@ -71,21 +70,30 @@ export function EquityChart({ points }: { points: LabEquityPoint[] }) {
       },
       rightPriceScale: { borderVisible: false },
       timeScale: { borderVisible: false },
+      handleScroll: false,
+      handleScale: false,
     })
+    const hsTs = holdoutStart ? Math.floor(Date.parse(holdoutStart) / 1000) : NaN
     for (const seg of splitSegments(points)) {
       const meta = SEGMENT_META[seg.segment]
+      const color = isDark ? meta.dark : meta.light
       const series = chart.addLineSeries({
-        color: isDark ? meta.dark : meta.light,
+        color,
         lineWidth: 2,
         priceLineVisible: false,
         lastValueVisible: false,
         title: '',
       })
       series.setData(seg.data)
+      // Mark where the locked holdout begins (first holdout bar).
+      if (seg.segment === 'holdout' && seg.data.length > 0) {
+        const first = seg.data.find((d) => !Number.isFinite(hsTs) || d.time >= hsTs) ?? seg.data[0]
+        series.setMarkers([{ time: first.time, position: 'aboveBar', shape: 'arrowDown', color, text: 'Mulai holdout' }])
+      }
     }
     chart.timeScale().fitContent()
     return () => chart.remove()
-  }, [points, isDark])
+  }, [points, isDark, holdoutStart])
 
   return (
     <div className="space-y-2">
@@ -101,7 +109,7 @@ export function EquityChart({ points }: { points: LabEquityPoint[] }) {
           </li>
         ))}
       </ul>
-      <div ref={ref} className="h-[320px] w-full" role="img" aria-label="Kurva equity per segmen" />
+      <div ref={ref} className="h-[260px] w-full sm:h-[360px]" role="img" aria-label="Kurva equity per segmen" />
     </div>
   )
 }

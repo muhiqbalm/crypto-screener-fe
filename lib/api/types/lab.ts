@@ -4,6 +4,13 @@
  * typed `| null` so the UI renders "—" instead of inventing a value.
  */
 
+/** Backend ids are integers today; accept strings so URL params compare via sameId(). */
+export type LabId = string | number
+
+export function sameId(a: LabId | null | undefined, b: LabId | null | undefined): boolean {
+  return a !== null && a !== undefined && b !== null && b !== undefined && String(a) === String(b)
+}
+
 export type LabParamType = 'int' | 'float' | 'bool' | 'choice'
 export type LabParamValue = number | boolean | string
 
@@ -17,6 +24,8 @@ export interface LabParamSpec {
   step?: number | null
   choices?: string[] | null
   group: string
+  /** Real backend: true for the 12 "main" params the optimizer may search. */
+  tunable?: boolean
 }
 
 export interface LabTemplate {
@@ -48,6 +57,11 @@ export interface LabCosts {
   funding: boolean
 }
 
+export interface LabOptimizeSearch {
+  params: string[]
+  ranges: Record<string, [number, number]>
+}
+
 export interface LabRunCreateRequest {
   template_id: string
   symbol: string
@@ -57,15 +71,19 @@ export interface LabRunCreateRequest {
   params: Record<string, LabParamValue>
   costs: LabCosts
   mode: LabRunMode
+  /** Optimize only (backend max 60). */
+  n_trials?: number
+  /** Optimize only: restrict the search to these keys / ranges. */
+  search?: LabOptimizeSearch
 }
 
 export interface LabRunCreateResponse {
-  run_id: string
-  job_id: string
+  run_id: LabId
+  job_id: LabId
 }
 
 export interface LabRunSummary {
-  id: string
+  id: LabId
   template_id: string
   symbol: string
   timeframe: string
@@ -101,8 +119,50 @@ export interface LabRunDetail extends LabRunSummary {
   engine_commit: string | null
   error: string | null
   best_params?: Record<string, LabParamValue> | null
-  /** Not in the written contract; used for the cancel button when present. */
-  job_id?: string | null
+  job_id?: LabId | null
+  holdout_start?: string | null
+  honesty_version?: string | null
+  finished_at?: string | null
+  sensitivity?: LabSensitivity | null
+  // optimize-only (backend e8b6353)
+  search?: LabOptimizeSearch | null
+  n_trials?: number | null
+  trials_done?: number | null
+  objective?: string | null
+  top_trials?: LabTopTrial[] | null
+}
+
+export interface LabTopTrial {
+  rank: number
+  trial: number
+  score: number | null
+  /** Searched keys only. */
+  params: Record<string, LabParamValue>
+  metrics: {
+    net_return_pct?: number | null
+    profit_factor?: number | null
+    max_dd_pct?: number | null
+    trades?: number | null
+    sharpe?: number | null
+    profitable_segments?: number | null
+    segments?: number | null
+  } | null
+  error?: string | null
+}
+
+export interface LabSensitivityRow {
+  param: string
+  base: number | string | boolean | null
+  stability: number | null
+  profitable_fraction: number | null
+  fragile: boolean
+}
+
+export interface LabSensitivity {
+  params: LabSensitivityRow[]
+  unstable: number
+  threshold?: number
+  steps?: number[]
 }
 
 export type LabSegment = 'is' | 'oos' | 'holdout'
@@ -131,16 +191,18 @@ export interface LabScanCreateRequest {
   params?: Record<string, LabParamValue>
   costs: LabCosts
   mode: LabScanMode
+  n_trials?: number
+  search?: LabOptimizeSearch
 }
 
 export interface LabScanCreateResponse {
-  scan_id: string
+  scan_id: LabId
 }
 
 export interface LabScanRow {
   symbol: string
   timeframe: string
-  run_id: string | null
+  run_id: LabId | null
   status: LabStatus
   verdict: LabVerdict
   oos_net_return_pct: number | null
@@ -155,7 +217,7 @@ export interface LabProgress {
 }
 
 export interface LabScanDetail {
-  id: string
+  id: LabId
   status: LabStatus
   progress: LabProgress
   rows: LabScanRow[]
@@ -165,10 +227,18 @@ export interface LabScanDetail {
   created_at?: string
 }
 
+export interface LabJobProgress {
+  stage?: string | null
+  done?: number | null
+  total?: number | null
+  trials_done?: number | null
+  trials_total?: number | null
+}
+
 export interface LabJob {
-  id: string
+  id: LabId
   status: LabStatus
-  progress?: LabProgress | number | null
+  progress?: LabJobProgress | number | null
   error?: string | null
 }
 
@@ -202,18 +272,18 @@ export interface LabWatchCreateRequest {
 }
 
 export interface LabWatchCreateResponse {
-  watch_id: string
+  watch_id: LabId
 }
 
 /** List shape is not pinned down in the contract; extra fields are optional. */
 export interface LabWatch {
-  id: string
+  id: LabId
   template_id: string
   symbol: string
   timeframe: string
   params?: Record<string, LabParamValue>
   created_at?: string
-  autopaper?: { account_id: string | null; enabled: boolean } | null
+  autopaper?: { account_id: LabId | null; enabled: boolean } | null
 }
 
 export interface LabWatchPosition {
@@ -241,7 +311,7 @@ export interface LabWatchSignal {
 }
 
 export interface LabWatchState {
-  watch_id: string
+  watch_id: LabId
   computed_at: string
   last_bar: string | null
   position: LabWatchPosition | null
@@ -261,11 +331,11 @@ export interface PaperAccountCreateRequest {
 }
 
 export interface PaperAccountCreateResponse {
-  id: string
+  id: LabId
 }
 
 export interface PaperPosition {
-  id: string
+  id: LabId
   symbol: string
   side: 'long' | 'short'
   entry_price: number
@@ -273,11 +343,13 @@ export interface PaperPosition {
   qty: number
   sl: number | null
   tp: number | null
-  watch_id?: string | null
+  watch_id?: LabId | null
+  mark_price?: number | null
+  unrealized_pnl?: number | null
 }
 
 export interface PaperAccount {
-  id: string
+  id: LabId
   name: string
   balance: number
   equity: number
@@ -294,29 +366,29 @@ export interface PaperAccount {
 export type PaperSide = 'long' | 'short'
 
 export interface PaperOrderRequest {
-  account_id: string
+  account_id: LabId
   symbol: string
   side: PaperSide
   sl: number
   tp?: number
   qty?: number
   note?: string
-  watch_id?: string
+  watch_id?: LabId
 }
 
 export interface AutopaperRequest {
-  account_id: string
+  account_id: LabId
   enabled: boolean
 }
 
 export type JournalSource = 'paper_manual' | 'paper_auto' | 'bot'
 
 export interface JournalEntry {
-  id: string
-  account_id: string | null
+  id: LabId
+  account_id: LabId | null
   source: JournalSource
-  watch_id: string | null
-  run_id: string | null
+  watch_id: LabId | null
+  run_id: LabId | null
   symbol: string
   side: string
   entry_time: string
@@ -337,7 +409,7 @@ export interface JournalEntry {
 }
 
 export interface JournalFilters {
-  account_id?: string
+  account_id?: LabId
   source?: JournalSource | ''
   symbol?: string
   from?: string

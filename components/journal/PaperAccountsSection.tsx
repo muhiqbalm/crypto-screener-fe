@@ -75,7 +75,7 @@ export function PaperAccountsSection() {
   return (
     <Card className="border-border/60">
       <CardHeader className="flex-row items-center justify-between gap-2 pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-tight">
           <Wallet className="h-4 w-4 text-amber-400" />
           Akun paper
         </CardTitle>

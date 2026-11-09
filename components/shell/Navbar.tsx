@@ -116,10 +116,10 @@ export function Navbar() {
     <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/90 backdrop-blur-md">
       <div
         ref={navRef}
-        className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6"
+        className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-2 px-3 sm:px-6"
       >
         {/* Left: Brand Identity */}
-        <div className="flex items-center gap-6">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-6">
           <Link
             href="/screener"
             className="flex items-center gap-2.5 tracking-tight transition-opacity hover:opacity-85"
@@ -131,17 +131,17 @@ export function Navbar() {
               <span className="font-extrabold tracking-wider bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
                 BMTM
               </span>
-              <span className="font-bold tracking-tight text-foreground text-sm">
+              <span className="hidden font-bold tracking-tight text-foreground text-sm lg:inline">
                 MOONTRADE
               </span>
-              <span className="hidden sm:inline-flex text-[9px] font-mono font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 text-emerald-400">
+              <span className="hidden xl:inline-flex text-[9px] font-mono font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 text-emerald-400">
                 TRADE SYSTEM
               </span>
             </div>
           </Link>
 
           {/* Center: Clustered Category Dropdowns */}
-          <nav className="flex items-center gap-2" aria-label="Main navigation">
+          <nav className="flex items-center gap-0.5 sm:gap-2" aria-label="Main navigation">
             {/* 1. Market Intel Cluster */}
             <div className="relative">
               <button
@@ -152,24 +152,24 @@ export function Navbar() {
                   setUserOpen(false)
                 }}
                 className={cn(
-                  'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors duration-150 cursor-pointer',
+                  'inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors duration-150 md:px-3 cursor-pointer',
                   isIntelActive
                     ? 'bg-accent/80 text-foreground font-bold shadow-xs'
                     : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                 )}
               >
                 <Activity className="h-3.5 w-3.5 text-emerald-400" />
-                <span>Market Intel</span>
+                <span className="sr-only md:not-sr-only">Market Intel</span>
                 <ChevronDown
                   className={cn(
-                    'h-3.5 w-3.5 transition-transform duration-200 opacity-70',
+                    'hidden h-3.5 w-3.5 transition-transform duration-200 opacity-70 md:block',
                     intelOpen && 'rotate-180'
                   )}
                 />
               </button>
 
               {intelOpen && (
-                <div className="absolute left-0 mt-2 w-72 rounded-xl border border-border/80 bg-card/95 p-2 shadow-xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-150">
+                <div className="fixed inset-x-2 top-14 mt-1 rounded-xl md:absolute md:inset-x-auto md:left-0 md:top-auto md:mt-2 md:w-72 border border-border/80 bg-card/95 p-2 shadow-xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-150">
                   <div className="px-2 py-1.5 text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-wider">
                     Quantitative &amp; Market Intelligence
                   </div>
@@ -257,24 +257,24 @@ export function Navbar() {
                     setUserOpen(false)
                   }}
                   className={cn(
-                    'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors duration-150 cursor-pointer',
+                    'inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors duration-150 md:px-3 cursor-pointer',
                     isEngineActive
                       ? 'bg-accent/80 text-foreground font-bold shadow-xs'
                       : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                   )}
                 >
                   <Zap className="h-3.5 w-3.5 text-amber-400" />
-                  <span>Trade Engine</span>
+                  <span className="sr-only md:not-sr-only">Trade Engine</span>
                   <ChevronDown
                     className={cn(
-                      'h-3.5 w-3.5 transition-transform duration-200 opacity-70',
+                      'hidden h-3.5 w-3.5 transition-transform duration-200 opacity-70 md:block',
                       engineOpen && 'rotate-180'
                     )}
                   />
                 </button>
 
                 {engineOpen && (
-                  <div className="absolute left-0 mt-2 w-64 rounded-xl border border-border/80 bg-card/95 p-2 shadow-xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-150">
+                  <div className="fixed inset-x-2 top-14 mt-1 rounded-xl md:absolute md:inset-x-auto md:left-0 md:top-auto md:mt-2 md:w-64 border border-border/80 bg-card/95 p-2 shadow-xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-150">
                     <div className="px-2 py-1.5 text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-wider">
                       Automated Execution Gateway
                     </div>
@@ -318,14 +318,14 @@ export function Navbar() {
               <Link
                 href="/lab"
                 className={cn(
-                  'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors duration-150',
+                  'inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors duration-150 md:px-3',
                   pathname.startsWith('/lab')
                     ? 'bg-accent/80 text-foreground font-bold shadow-xs'
                     : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                 )}
               >
                 <FlaskConical className="h-3.5 w-3.5 text-violet-400" />
-                <span>Lab</span>
+                <span className="sr-only md:not-sr-only">Lab</span>
               </Link>
             )}
 
@@ -333,14 +333,14 @@ export function Navbar() {
               <Link
                 href="/journal"
                 className={cn(
-                  'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors duration-150',
+                  'inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors duration-150 md:px-3',
                   pathname.startsWith('/journal')
                     ? 'bg-accent/80 text-foreground font-bold shadow-xs'
                     : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                 )}
               >
                 <BookOpen className="h-3.5 w-3.5 text-amber-400" />
-                <span>Jurnal</span>
+                <span className="sr-only md:not-sr-only">Jurnal</span>
               </Link>
             )}
           </nav>
@@ -371,7 +371,7 @@ export function Navbar() {
                 <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-mono font-bold text-xs border border-emerald-500/30">
                   {userInitial}
                 </div>
-                <span className="max-w-[100px] truncate text-xs font-semibold text-foreground">
+                <span className="hidden max-w-[100px] truncate text-xs font-semibold text-foreground sm:inline">
                   {userDisplayName}
                 </span>
                 <ChevronDown

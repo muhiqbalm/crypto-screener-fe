@@ -27,6 +27,7 @@ export function SymbolPicker({ symbols, value, onChange, invalid }: SymbolPicker
     return () => document.removeEventListener('mousedown', onDown)
   }, [])
 
+  const selected = symbols.find((s) => s.symbol === value)
   const term = q.trim().toUpperCase()
   const filtered = symbols.filter((s) => s.symbol.includes(term)).slice(0, 200)
 
@@ -39,12 +40,15 @@ export function SymbolPicker({ symbols, value, onChange, invalid }: SymbolPicker
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          'flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 text-sm font-mono shadow-sm hover:bg-accent cursor-pointer',
-          invalid && 'border-rose-500',
+          'flex h-9 w-full items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 text-sm font-mono shadow-sm hover:bg-accent cursor-pointer',
+          invalid && 'border-bearish',
         )}
       >
-        <span className={cn(!value && 'text-muted-foreground')}>{value || 'Pilih symbol…'}</span>
-        <ChevronDown className="h-4 w-4 opacity-50" />
+        <span className={cn('truncate', !value && 'text-muted-foreground')}>{value || 'Pilih symbol…'}</span>
+        <span className="flex items-center gap-2">
+          {selected && <DataTag hasData={selected.has_data} />}
+          <ChevronDown className="h-4 w-4 opacity-50" />
+        </span>
       </button>
       {open && (
         <div className="absolute z-50 mt-1 w-full rounded-md border border-border/80 bg-popover p-2 shadow-xl">
@@ -80,9 +84,7 @@ export function SymbolPicker({ symbols, value, onChange, invalid }: SymbolPicker
                   )}
                 >
                   {s.symbol}
-                  {!s.has_data && (
-                    <span className="text-[10px] text-amber-400">belum ada data</span>
-                  )}
+                  <DataTag hasData={s.has_data} />
                 </button>
               </li>
             ))}
@@ -92,3 +94,16 @@ export function SymbolPicker({ symbols, value, onChange, invalid }: SymbolPicker
     </div>
   )
 }
+
+/** "siap" when the backend already has candles; otherwise it downloads on first use. */
+export function DataTag({ hasData }: { hasData: boolean }) {
+  return hasData ? (
+    <span className="rounded-full bg-bullish/10 px-1.5 py-px font-sans text-[10px] font-medium text-bullish">siap</span>
+  ) : (
+    <span className="font-sans text-[10px] text-muted-foreground" title="Data akan diunduh saat dipakai (±1 menit)">
+      diunduh ±1 mnt
+    </span>
+  )
+}
+
+export const DOWNLOAD_HINT = 'Data koin ini akan diunduh saat dipakai (±1 menit).'

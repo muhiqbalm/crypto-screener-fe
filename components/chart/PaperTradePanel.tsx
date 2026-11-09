@@ -20,6 +20,7 @@ import {
   validatePaperOrder,
 } from '@/lib/lab/paper'
 import { useClosePaperPosition, useCreatePaperOrder, useSetAutopaper } from '@/lib/queries/paper'
+import { sameId, type LabId } from '@/lib/api/types/lab'
 import type { LabWatch, LabWatchPosition, PaperAccount, PaperPosition, PaperSide } from '@/lib/api/types/lab'
 
 export interface PaperDraft {
@@ -63,7 +64,7 @@ export function PaperBadge({ className }: { className?: string }) {
 export function PaperTradePanel(p: Props) {
   const [confirming, setConfirming] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [closingId, setClosingId] = useState<string | null>(null)
+  const [closingId, setClosingId] = useState<LabId | null>(null)
   const order = useCreatePaperOrder()
   const close = useClosePaperPosition()
   const autopaper = useSetAutopaper()
@@ -123,12 +124,12 @@ export function PaperTradePanel(p: Props) {
     )
   }
 
-  const autoOn = Boolean(p.watch?.autopaper?.enabled && (!account || p.watch?.autopaper?.account_id === account.id))
+  const autoOn = Boolean(p.watch?.autopaper?.enabled && (!account || sameId(p.watch?.autopaper?.account_id, account.id)))
 
   return (
     <Card className="border-amber-500/30">
       <CardHeader className="space-y-2 pb-2">
-        <CardTitle className="flex items-center justify-between gap-2 text-xs font-bold uppercase tracking-wider">
+        <CardTitle className="flex items-center justify-between gap-2 text-sm font-semibold tracking-tight">
           <span>Paper Trade</span>
           <Link href="/journal" className="inline-flex items-center gap-1 text-[10px] font-semibold normal-case text-sky-400 hover:underline">
             <FileText className="h-3 w-3" /> Jurnal
@@ -159,7 +160,7 @@ export function PaperTradePanel(p: Props) {
               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-xs shadow-sm"
             >
               {(p.accounts.data ?? []).map((a) => (
-                <option key={a.id} value={a.id} className="bg-popover">
+                <option key={String(a.id)} value={String(a.id)} className="bg-popover">
                   {a.name} · equity {formatPrice(a.equity)}
                 </option>
               ))}
@@ -323,7 +324,7 @@ export function PaperTradePanel(p: Props) {
               ) : (
                 <ul className="space-y-1.5">
                   {p.positions.map((pos) => {
-                    const upnl = unrealisedPnl(pos, p.lastPrice)
+                    const upnl = unrealisedPnl(pos, p.lastPrice) ?? pos.unrealized_pnl ?? null
                     return (
                       <li key={pos.id} className="flex items-center justify-between gap-2 rounded border border-border/50 px-2 py-1.5 font-mono text-[11px]">
                         <span>
@@ -333,7 +334,7 @@ export function PaperTradePanel(p: Props) {
                             {upnl === null ? '—' : `${upnl >= 0 ? '+' : '-'}${formatPrice(Math.abs(upnl))}`}
                           </span>
                         </span>
-                        {closingId === pos.id ? (
+                        {sameId(closingId, pos.id) ? (
                           <span className="flex gap-1">
                             <Button
                               size="sm"

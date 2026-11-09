@@ -4,7 +4,9 @@
  * sorting). Kept free of React so they can be unit-tested directly.
  */
 import type {
+  LabCheck,
   LabCosts,
+  LabOptimizeSearch,
   LabParamSpec,
   LabParamValue,
   LabRunCreateRequest,
@@ -213,8 +215,15 @@ export function validateRunForm(f: RunFormState): Record<string, string> {
   return errors
 }
 
-/** Empty dates are omitted (backend then uses all available data). */
-export function buildRunRequest(f: RunFormState, mode: LabRunMode): LabRunCreateRequest {
+/**
+ * Empty dates are omitted (backend then uses all available data). For
+ * optimize, `optimize` adds n_trials and the restricted search space.
+ */
+export function buildRunRequest(
+  f: RunFormState,
+  mode: LabRunMode,
+  optimize?: OptimizeConfig | null,
+): LabRunCreateRequest {
   const req: LabRunCreateRequest = {
     template_id: f.template.id,
     symbol: f.symbol,
@@ -225,6 +234,11 @@ export function buildRunRequest(f: RunFormState, mode: LabRunMode): LabRunCreate
   }
   if (f.start) req.start = f.start
   if (f.end) req.end = f.end
+  if (mode === 'optimize' && optimize) {
+    req.n_trials = optimize.nTrials
+    const search = buildSearch(f.template, optimize)
+    if (search.params.length > 0) req.search = search
+  }
   return req
 }
 
@@ -235,6 +249,7 @@ export function buildScanRequest(args: {
   params: ParamFormValues | null
   costs: CostFormValues
   mode: LabScanMode
+  nTrials?: number
 }): LabScanCreateRequest {
   const req: LabScanCreateRequest = {
     template_id: args.template.id,
@@ -244,6 +259,7 @@ export function buildScanRequest(args: {
     mode: args.mode,
   }
   if (args.params) req.params = toParamsPayload(args.template, args.params)
+  if (args.mode === 'optimize' && args.nTrials) req.n_trials = args.nTrials
   return req
 }
 
@@ -297,6 +313,23 @@ export const TOP_30_SYMBOLS = [
   'AAVEUSDT', 'WLDUSDT', 'SEIUSDT', 'TIAUSDT', 'HBARUSDT', 'XLMUSDT',
 ] as const
 
+/** Quick-select groups for the scan picker (intersected with /symbols). */
+export const MAJORS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT']
+export const MEMES = ['DOGEUSDT', '1000PEPEUSDT', '1000SHIBUSDT', 'WIFUSDT', '1000BONKUSDT', '1000FLOKIUSDT', 'PEPEUSDT', 'SHIBUSDT', 'BONKUSDT', 'FLOKIUSDT']
+
+/**
+ * First N symbols in backend order (the backend lists the screener
+ * universe first, ordered by liquidity).
+ */
+export function topN(available: string[], n: number): string[] {
+  return available.slice(0, n)
+}
+
+export function pickAvailable(list: readonly string[], available: string[]): string[] {
+  const set = new Set(available)
+  return list.filter((s) => set.has(s))
+}
+
 export function top30Available(available: string[]): string[] {
   const set = new Set(available)
   return TOP_30_SYMBOLS.filter((s) => set.has(s))
@@ -322,33 +355,32 @@ export interface VerdictCopy {
 }
 
 export function verdictCopy(verdict: LabVerdict, mode: LabRunMode, status: LabStatus): VerdictCopy {
+  if (status === 'queued' || status === 'running') {
+    return { tone: 'none', title: 'Sedang diuji…', body: 'Rapor LOLOS/GAGAL muncul setelah run selesai.' }
+  }
   if (status !== 'done') {
-    return {
-      tone: 'none',
-      title: 'Belum ada verdict',
-      body: 'Verdict baru muncul setelah run selesai.',
-    }
+    return { tone: 'none', title: 'Tidak ada rapor', body: 'Run tidak selesai, jadi tidak ada rapor kejujuran.' }
   }
   if (verdict === 'PASS') {
     return {
       tone: 'pass',
-      title: 'PASS — lolos semua cek kejujuran',
-      body: 'Strategi lolos uji out-of-sample. Tetap bukan jaminan profit; forward-test dulu sebelum live.',
+      title: 'LOLOS',
+      body: 'Lolos semua cek di periode holdout yang dikunci. Tetap bukan jaminan profit — paper trade dulu sebelum live.',
     }
   }
   if (verdict === 'FAIL') {
     return {
       tone: 'fail',
-      title: 'FAIL — jangan dipakai live',
-      body: 'Minimal satu cek kejujuran gagal. Hasil backtest yang bagus di sini kemungkinan besar kebetulan atau overfit.',
+      title: 'GAGAL',
+      body: 'Jangan dipakai live. Minimal satu cek kejujuran gagal di periode holdout.',
     }
   }
   return {
     tone: 'none',
-    title: mode === 'backtest' ? 'Backtest saja — belum divalidasi' : 'Tanpa verdict',
+    title: mode === 'backtest' ? 'Belum divalidasi' : 'Tanpa rapor',
     body:
       mode === 'backtest'
-        ? 'Backtest in-sample bukan bukti. Jalankan mode Validate untuk dapat verdict PASS/FAIL.'
+        ? 'Ini backtest cepat (in-sample) — bukan bukti. Klik Validasi untuk dapat rapor LOLOS/GAGAL.'
         : 'Backend tidak mengembalikan verdict untuk run ini.',
   }
 }
@@ -385,4 +417,275 @@ export function metricLabel(key: string): string {
   if (METRIC_LABELS[key]) return METRIC_LABELS[key]
   const base = key.replace(/_pct$/, '').replace(/_/g, ' ')
   return base.charAt(0).toUpperCase() + base.slice(1)
+}
+
+// ---------------------------------------------------------------------------
+// Main ("tunable") vs advanced params
+// ---------------------------------------------------------------------------
+
+/**
+ * Indonesian copy for the 12 tunable Rosyade params. Anything not listed
+ * falls back to the backend label.
+ */
+export const PARAM_COPY: Record<string, { label: string; help: string }> = {
+  swing_len: { label: 'Panjang swing', help: 'Berapa bar kiri/kanan untuk menandai swing high/low. Kecil = lebih sering entry.' },
+  long_sl_pct: { label: 'Stop loss long (%)', help: 'Jarak SL dari harga entry untuk posisi long.' },
+  short_sl_pct: { label: 'Stop loss short (%)', help: 'Jarak SL dari harga entry untuk posisi short.' },
+  ema_exit_len: { label: 'EMA exit', help: 'Panjang EMA untuk exit saat harga menembus balik EMA.' },
+  structure_pivot_len: { label: 'Pivot struktur', help: 'Panjang pivot untuk deteksi break of structure (exit).' },
+  atr_mult_medium_long: { label: 'Trailing ATR long', help: 'Pengali ATR untuk trailing stop long di regime volatilitas sedang.' },
+  atr_mult_medium_short: { label: 'Trailing ATR short', help: 'Pengali ATR untuk trailing stop short di regime volatilitas sedang.' },
+  adx_strong_threshold: { label: 'Batas ADX trend kuat', help: 'ADX di atas angka ini dianggap trend kuat.' },
+  entry_vol_mult: { label: 'Filter volume entry', help: 'Volume bar entry minimal sekian kali rata-rata volume.' },
+  ema_htf_len: { label: 'EMA timeframe besar', help: 'Panjang EMA filter trend di timeframe lebih besar.' },
+  chop_limit: { label: 'Batas choppiness', help: 'Di atas angka ini pasar dianggap sideways — entry diblokir.' },
+  cooldown_bars: { label: 'Jeda antar trade (bar)', help: 'Berapa bar menunggu setelah exit sebelum boleh entry lagi.' },
+}
+
+export const GROUP_COPY: Record<string, string> = {
+  Direction: 'Arah',
+  'TP / SL': 'TP / SL',
+  'TP check': 'Cek TP (exhaustion)',
+  Exits: 'Exit',
+  'ATR trailing': 'Trailing ATR',
+  Regime: 'Regime volatilitas',
+  'Entry filters': 'Filter entry',
+  'Anti-sideways': 'Anti-sideways',
+  'Short filters': 'Filter short',
+  'Breakeven lock': 'Kunci breakeven',
+  'Order blocks': 'Order block',
+  'Risk & sizing': 'Risiko & ukuran posisi',
+  Engine: 'Engine',
+}
+
+export function paramLabel(spec: LabParamSpec): string {
+  return PARAM_COPY[spec.key]?.label ?? spec.label
+}
+
+export function groupLabel(group: string): string {
+  return GROUP_COPY[group] ?? group
+}
+
+/** Main = params flagged tunable; advanced = the rest, grouped. */
+export function splitParams(template: LabTemplate): { main: LabParamSpec[]; advanced: ParamGroup[] } {
+  const main = template.params.filter((p) => p.tunable === true)
+  const rest = template.params.filter((p) => p.tunable !== true)
+  return { main, advanced: groupParams(rest) }
+}
+
+function sameValue(spec: LabParamSpec, a: ParamFormValue | LabParamValue | undefined, b: ParamFormValue | LabParamValue | undefined): boolean {
+  if (spec.type === 'int' || spec.type === 'float') return Number(a) === Number(b)
+  if (spec.type === 'bool') return (a === true || a === 'true') === (b === true || b === 'true')
+  return String(a) === String(b)
+}
+
+/** Keys whose current value differs from the template (live) default. */
+export function changedKeys(template: LabTemplate, values: ParamFormValues): string[] {
+  return template.params.filter((p) => !sameValue(p, values[p.key], p.default)).map((p) => p.key)
+}
+
+export interface ParamDiffRow {
+  key: string
+  label: string
+  group: string
+  def: LabParamValue
+  value: LabParamValue
+}
+
+/** Params in `values` that differ from template defaults (for run detail). */
+export function diffFromDefaults(
+  template: LabTemplate | null | undefined,
+  values: Record<string, LabParamValue> | null | undefined,
+): ParamDiffRow[] {
+  if (!template || !values) return []
+  return template.params
+    .filter((p) => p.key in values && !sameValue(p, values[p.key], p.default))
+    .map((p) => ({ key: p.key, label: paramLabel(p), group: p.group, def: p.default, value: values[p.key] }))
+}
+
+// ---------------------------------------------------------------------------
+// Date presets
+// ---------------------------------------------------------------------------
+
+export type DatePreset = '1y' | '3y' | 'since2020' | 'custom'
+
+export const DATE_PRESETS: { id: DatePreset; label: string }[] = [
+  { id: '1y', label: '1 tahun' },
+  { id: '3y', label: '3 tahun' },
+  { id: 'since2020', label: 'Sejak 2020' },
+  { id: 'custom', label: 'Custom' },
+]
+
+function isoDate(d: Date): string {
+  return d.toISOString().slice(0, 10)
+}
+
+/** Preset → {start, end}. End is left empty (= latest data). */
+export function presetRange(preset: DatePreset, today: Date = new Date()): { start: string; end: string } | null {
+  if (preset === 'custom') return null
+  if (preset === 'since2020') return { start: '2020-01-01', end: '' }
+  const d = new Date(Date.UTC(today.getUTCFullYear() - (preset === '1y' ? 1 : 3), today.getUTCMonth(), today.getUTCDate()))
+  return { start: isoDate(d), end: '' }
+}
+
+/** Which preset (if any) a start/end pair corresponds to. */
+export function detectPreset(start: string, end: string, today: Date = new Date()): DatePreset {
+  for (const p of ['1y', '3y', 'since2020'] as const) {
+    const r = presetRange(p, today)!
+    if (r.start === start && r.end === end) return p
+  }
+  return 'custom'
+}
+
+// ---------------------------------------------------------------------------
+// Optimize config (n_trials + search space)
+// ---------------------------------------------------------------------------
+
+export const TRIAL_OPTIONS = [10, 30, 60] as const
+export type TrialCount = (typeof TRIAL_OPTIONS)[number]
+
+/** Measured backend timing: 10 trials ≈ 3 min, 30 ≈ 8 min, 60 ≈ 15 min. */
+const TRIAL_MINUTES: Record<number, number> = { 10: 3, 30: 8, 60: 15 }
+
+export function estimateMinutes(nTrials: number): number {
+  return TRIAL_MINUTES[nTrials] ?? Math.round(nTrials / 4)
+}
+
+export interface SearchRange {
+  enabled: boolean
+  min: string
+  max: string
+}
+
+export interface OptimizeConfig {
+  nTrials: TrialCount
+  ranges: Record<string, SearchRange>
+}
+
+export function defaultOptimizeConfig(template: LabTemplate): OptimizeConfig {
+  const ranges: Record<string, SearchRange> = {}
+  for (const p of template.params) {
+    if (p.tunable !== true) continue
+    ranges[p.key] = { enabled: true, min: String(p.min ?? ''), max: String(p.max ?? '') }
+  }
+  return { nTrials: 30, ranges }
+}
+
+export function validateOptimize(template: LabTemplate, cfg: OptimizeConfig): Record<string, string> {
+  const errors: Record<string, string> = {}
+  let enabled = 0
+  for (const p of template.params) {
+    const r = cfg.ranges[p.key]
+    if (!r || !r.enabled) continue
+    enabled++
+    const lo = Number(r.min)
+    const hi = Number(r.max)
+    if (r.min.trim() === '' || r.max.trim() === '' || !Number.isFinite(lo) || !Number.isFinite(hi)) {
+      errors[`search.${p.key}`] = 'Min/maks harus angka'
+    } else if (lo >= hi) {
+      errors[`search.${p.key}`] = 'Min harus lebih kecil dari maks'
+    } else if ((p.min !== null && p.min !== undefined && lo < p.min) || (p.max !== null && p.max !== undefined && hi > p.max)) {
+      errors[`search.${p.key}`] = `Di luar batas ${p.min}–${p.max}`
+    }
+  }
+  if (enabled === 0) errors.search = 'Pilih minimal 1 parameter untuk dicari'
+  return errors
+}
+
+export function buildSearch(template: LabTemplate, cfg: OptimizeConfig): LabOptimizeSearch {
+  const params: string[] = []
+  const ranges: Record<string, [number, number]> = {}
+  for (const p of template.params) {
+    const r = cfg.ranges[p.key]
+    if (!r || !r.enabled) continue
+    params.push(p.key)
+    ranges[p.key] = [Number(r.min), Number(r.max)]
+  }
+  return { params, ranges }
+}
+
+// ---------------------------------------------------------------------------
+// Honesty checks → plain-language reasons
+// ---------------------------------------------------------------------------
+
+/** First number in a threshold like ">= 1.2" or "> -50.0". */
+export function thresholdNumber(t: LabCheck['threshold']): number | null {
+  if (typeof t === 'number') return t
+  if (typeof t !== 'string') return null
+  const m = t.match(/-?\d+(\.\d+)?/)
+  return m ? Number(m[0]) : null
+}
+
+function fmtNum(v: number, digits = 2): string {
+  return Number.isInteger(v) ? String(v) : v.toFixed(digits)
+}
+
+function fmtSignedPct(v: number): string {
+  return `${v > 0 ? '+' : v < 0 ? '−' : ''}${fmtNum(Math.abs(v), 1)}%`
+}
+
+export const CHECK_LABEL: Record<string, string> = {
+  oos_profit_factor: 'Profit factor holdout',
+  oos_net_return: 'Return bersih holdout',
+  mc_dd_p95: 'Drawdown terburuk (Monte Carlo 95%)',
+  min_oos_trades: 'Jumlah trade holdout',
+  cost_stress: 'Tahan biaya 2×',
+  sensitivity: 'Parameter rapuh',
+  no_liquidation: 'Likuidasi',
+}
+
+export function checkLabel(c: LabCheck): string {
+  return CHECK_LABEL[c.name] ?? c.label
+}
+
+/** One plain-language Indonesian sentence describing a check result. */
+export function checkReason(c: LabCheck): string {
+  const v = typeof c.value === 'number' && Number.isFinite(c.value) ? c.value : null
+  const t = thresholdNumber(c.threshold)
+  if (v === null) return `${checkLabel(c)}: tidak ada data (dihitung GAGAL)`
+  switch (c.name) {
+    case 'oos_profit_factor':
+      return `Profit factor di periode holdout ${v >= 999 ? 'tak terhingga (tanpa rugi)' : fmtNum(v)} (minimal ${t ?? 1.2})`
+    case 'oos_net_return':
+      return `Return bersih holdout setelah biaya ${fmtSignedPct(v)} (harus di atas ${t ?? 0}%)`
+    case 'mc_dd_p95':
+      return `Drawdown terburuk 95% bisa ${fmtSignedPct(v)} (batas ${fmtSignedPct(t ?? -50)})`
+    case 'min_oos_trades':
+      return `${fmtNum(v, 0)} trade di holdout (minimal ${t ?? 30} supaya hasilnya bermakna)`
+    case 'cost_stress':
+      return `Kalau biaya 2× lipat, return holdout jadi ${fmtSignedPct(v)} (harus di atas 0%)`
+    case 'sensitivity':
+      return `${fmtNum(v, 0)} parameter rapuh — hasil berubah drastis kalau digeser sedikit (maks ${t ?? 3})`
+    case 'no_liquidation':
+      return `${fmtNum(v, 0)} kali kena likuidasi (harus 0)`
+    default:
+      return `${checkLabel(c)}: ${fmtNum(v)} (syarat ${String(c.threshold ?? '—')})`
+  }
+}
+
+/** Reasons for the hero card: failed checks first. */
+export function verdictReasons(checks: LabCheck[]): { failed: string[]; passed: string[] } {
+  return {
+    failed: checks.filter((c) => !c.passed).map(checkReason),
+    passed: checks.filter((c) => c.passed).map(checkReason),
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Relative time ("5 mnt lalu")
+// ---------------------------------------------------------------------------
+
+export function relativeTime(iso: string | null | undefined, now: number = Date.now()): string {
+  if (!iso) return '—'
+  const t = Date.parse(iso)
+  if (!Number.isFinite(t)) return '—'
+  const s = Math.round((now - t) / 1000)
+  if (s < 45) return 'baru saja'
+  const m = Math.round(s / 60)
+  if (m < 60) return `${m} mnt lalu`
+  const h = Math.round(m / 60)
+  if (h < 24) return `${h} jam lalu`
+  const d = Math.round(h / 24)
+  if (d < 30) return `${d} hari lalu`
+  return new Date(t).toISOString().slice(0, 10)
 }

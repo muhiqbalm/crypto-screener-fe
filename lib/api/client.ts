@@ -28,6 +28,7 @@ import type {
   LabWatchCreateRequest,
   LabWatchCreateResponse,
   LabWatchState,
+  LabId,
   AutopaperRequest,
   JournalEntry,
   JournalFilters,
@@ -270,8 +271,15 @@ async function _executeRequest<T>(
     throw new ApiError('server', status)
   }
 
-  // Other 4xx (422, 400, etc.) — treat as server error
-  throw new ApiError('server', status)
+  // Other 4xx (422, 400, etc.) — treat as server error, keeping the JSON body
+  // (e.g. FastAPI {detail}) as `cause` so forms can show the reason.
+  let detailBody: unknown = undefined
+  try {
+    detailBody = await response.json()
+  } catch {
+    // no JSON body
+  }
+  throw new ApiError('server', status, detailBody)
 }
 
 // ---------------------------------------------------------------------------
@@ -405,15 +413,15 @@ export const api = {
     return request<LabRunSummary[]>('GET', PATHS.labRunsList(limit), undefined, signal)
   },
 
-  getLabRun(id: string, signal?: AbortSignal): Promise<LabRunDetail> {
+  getLabRun(id: LabId, signal?: AbortSignal): Promise<LabRunDetail> {
     return request<LabRunDetail>('GET', PATHS.labRun(id), undefined, signal)
   },
 
-  getLabRunEquity(id: string, signal?: AbortSignal): Promise<LabEquityPoint[]> {
+  getLabRunEquity(id: LabId, signal?: AbortSignal): Promise<LabEquityPoint[]> {
     return request<LabEquityPoint[]>('GET', PATHS.labRunEquity(id), undefined, signal)
   },
 
-  getLabRunTrades(id: string, signal?: AbortSignal): Promise<LabTrade[]> {
+  getLabRunTrades(id: LabId, signal?: AbortSignal): Promise<LabTrade[]> {
     return request<LabTrade[]>('GET', PATHS.labRunTrades(id), undefined, signal)
   },
 
@@ -425,15 +433,15 @@ export const api = {
     return request<LabScanDetail[]>('GET', PATHS.labScans, undefined, signal)
   },
 
-  getLabScan(id: string, signal?: AbortSignal): Promise<LabScanDetail> {
+  getLabScan(id: LabId, signal?: AbortSignal): Promise<LabScanDetail> {
     return request<LabScanDetail>('GET', PATHS.labScan(id), undefined, signal)
   },
 
-  getLabJob(id: string, signal?: AbortSignal): Promise<LabJob> {
+  getLabJob(id: LabId, signal?: AbortSignal): Promise<LabJob> {
     return request<LabJob>('GET', PATHS.labJob(id), undefined, signal)
   },
 
-  cancelLabJob(id: string): Promise<LabJob> {
+  cancelLabJob(id: LabId): Promise<LabJob> {
     return request<LabJob>('POST', PATHS.labJobCancel(id))
   },
 
@@ -453,19 +461,19 @@ export const api = {
     return request<LabWatch[]>('GET', PATHS.labWatches, undefined, signal)
   },
 
-  deleteLabWatch(id: string): Promise<void> {
+  deleteLabWatch(id: LabId): Promise<void> {
     return request<void>('DELETE', PATHS.labWatch(id))
   },
 
-  getLabWatchState(id: string, signal?: AbortSignal): Promise<LabWatchState> {
+  getLabWatchState(id: LabId, signal?: AbortSignal): Promise<LabWatchState> {
     return request<LabWatchState>('GET', PATHS.labWatchState(id), undefined, signal)
   },
 
-  setWatchAutopaper(id: string, body: AutopaperRequest): Promise<unknown> {
+  setWatchAutopaper(id: LabId, body: AutopaperRequest): Promise<unknown> {
     return request<unknown>('POST', PATHS.labWatchAutopaper(id), body)
   },
 
-  getWatchCompare(id: string, signal?: AbortSignal): Promise<WatchCompare> {
+  getWatchCompare(id: LabId, signal?: AbortSignal): Promise<WatchCompare> {
     return request<WatchCompare>('GET', PATHS.labWatchCompare(id), undefined, signal)
   },
 
@@ -482,7 +490,7 @@ export const api = {
     return request<unknown>('POST', PATHS.paperOrders, body)
   },
 
-  closePaperPosition(id: string): Promise<unknown> {
+  closePaperPosition(id: LabId): Promise<unknown> {
     return request<unknown>('POST', PATHS.paperPositionClose(id))
   },
 
@@ -492,7 +500,7 @@ export const api = {
     return request<JournalEntry[]>('GET', PATHS.journal(qs.toString()), undefined, signal)
   },
 
-  patchJournalEntry(id: string, body: JournalPatchRequest): Promise<JournalEntry> {
+  patchJournalEntry(id: LabId, body: JournalPatchRequest): Promise<JournalEntry> {
     return request<JournalEntry>('PATCH', PATHS.journalEntry(id), body)
   },
 

@@ -17,7 +17,7 @@ import { ApiError } from '@/lib/api/errors'
 import { formatPrice, formatScore, formatTimestamp, valueOrDash } from '@/lib/utils/format'
 import { notify } from '@/lib/utils/toast'
 import { cn } from '@/lib/utils/cn'
-import { compareRows, normalizeBreakdown, parseTags, winratePct, type NormalizedBreakdown } from '@/lib/lab/paper'
+import { COMPARE_LABEL, compareRows, normalizeBreakdown, parseTags, winratePct, type NormalizedBreakdown } from '@/lib/lab/paper'
 import { useJournal, useJournalStats, usePaperAccounts, usePatchJournal, useWatchCompare } from '@/lib/queries/paper'
 import { useLabWatches } from '@/lib/queries/lab-live'
 import type { JournalEntry, JournalFilters, JournalSource } from '@/lib/api/types/lab'
@@ -39,14 +39,14 @@ export function JournalView() {
   const [filters, setFilters] = useState<JournalFilters>({})
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div className="flex flex-col gap-4 border-b border-border/40 pb-6 md:flex-row md:items-end md:justify-between">
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-xs font-mono font-medium text-amber-400">
             <BookOpen className="h-3.5 w-3.5" />
             TRADING JOURNAL
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Jurnal trading</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Jurnal trading</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
             Semua trade paper (manual &amp; auto-follow strategi) tercatat di sini, lengkap dengan R-multiple, catatan dan tag.
           </p>
@@ -64,7 +64,7 @@ export function JournalView() {
             <select id="f-account" value={draft.account_id} onChange={(e) => setDraft({ ...draft, account_id: e.target.value })} className="flex h-8 w-full rounded-md border border-input bg-transparent px-2 text-xs">
               <option value="" className="bg-popover">Semua akun</option>
               {(accountsQ.data ?? []).map((a) => (
-                <option key={a.id} value={a.id} className="bg-popover">{a.name}</option>
+                <option key={String(a.id)} value={String(a.id)} className="bg-popover">{a.name}</option>
               ))}
             </select>
           </div>
@@ -107,18 +107,19 @@ export function JournalView() {
         </CardContent>
       </Card>
 
-      <StatsSection accountId={filters.account_id} />
+      <StatsSection accountId={filters.account_id ? String(filters.account_id) : undefined} />
       <JournalTable filters={filters} />
       <LiveVsBacktest />
     </div>
   )
 }
 
-function StatCard({ label, value, className }: { label: string; value: string; className?: string }) {
+function StatCard({ label, value, hint, className }: { label: string; value: string; hint?: string; className?: string }) {
   return (
-    <div className="rounded-lg border border-border/60 bg-card/50 p-3">
-      <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className={cn('mt-1 font-mono text-lg font-bold tabular-nums', className)}>{value}</div>
+    <div className="flex min-h-[92px] flex-col justify-between rounded-xl border border-border/60 bg-card p-3 shadow-sm">
+      <div className="truncate text-[10px] font-mono font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className={cn('truncate font-mono text-xl font-bold tabular-nums', className)}>{value}</div>
+      <div className="truncate text-[10px] text-muted-foreground">{hint ?? '\u00a0'}</div>
     </div>
   )
 }
@@ -141,7 +142,7 @@ function StatsSection({ accountId }: { accountId?: string }) {
 
   return (
     <section className="space-y-4" aria-labelledby="stats-h">
-      <h2 id="stats-h" className="text-sm font-bold uppercase tracking-wider">
+      <h2 id="stats-h" className="text-sm font-semibold tracking-tight">
         Statistik <span className="font-mono text-xs font-normal text-muted-foreground">({s.trades} trade{accountId ? ', akun terpilih' : ', semua akun'})</span>
       </h2>
       {s.trades === 0 ? (
@@ -149,16 +150,16 @@ function StatsSection({ accountId }: { accountId?: string }) {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            <StatCard label="Winrate" value={wr === null ? '—' : `${wr.toFixed(1)}%`} />
-            <StatCard label="Avg R" value={fmtR(s.avg_r)} className={signClass(s.avg_r)} />
-            <StatCard label="Expectancy" value={fmtR(s.expectancy_r)} className={signClass(s.expectancy_r)} />
-            <StatCard label="Profit factor" value={formatScore(s.profit_factor)} />
-            <StatCard label="Net P&L" value={fmtUsdSigned(s.net_pnl)} className={signClass(s.net_pnl)} />
-            <StatCard label="Max DD" value={s.max_dd_pct === null ? '—' : `${formatScore(Math.abs(s.max_dd_pct))}%`} className="text-bearish" />
+            <StatCard label="Winrate" value={wr === null ? '—' : `${wr.toFixed(1)}%`} hint="trade untung" />
+            <StatCard label="Avg R" value={fmtR(s.avg_r)} className={signClass(s.avg_r)} hint="rata-rata per trade" />
+            <StatCard label="Expectancy" value={fmtR(s.expectancy_r)} className={signClass(s.expectancy_r)} hint="harapan per trade" />
+            <StatCard label="Profit factor" value={formatScore(s.profit_factor)} hint="untung ÷ rugi" />
+            <StatCard label="Net P&L" value={fmtUsdSigned(s.net_pnl)} className={signClass(s.net_pnl)} hint="setelah biaya" />
+            <StatCard label="Max DD" value={s.max_dd_pct === null ? '—' : `−${formatScore(Math.abs(s.max_dd_pct), 1)}%`} className="text-bearish" hint="turun terdalam" />
           </div>
           <Card className="border-border/60">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-bold uppercase tracking-wider">Kurva equity paper</CardTitle>
+              <CardTitle className="text-sm font-semibold tracking-tight">Kurva equity paper</CardTitle>
             </CardHeader>
             <CardContent>
               {s.equity_curve?.length ? (
@@ -182,7 +183,7 @@ function BreakdownTable({ title, rows }: { title: string; rows: NormalizedBreakd
   return (
     <Card className="border-border/60">
       <CardHeader className="pb-2">
-        <CardTitle className="text-xs font-bold uppercase tracking-wider">{title}</CardTitle>
+        <CardTitle className="text-sm font-semibold tracking-tight">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         {rows.length === 0 ? (
@@ -220,7 +221,7 @@ function JournalTable({ filters }: { filters: JournalFilters }) {
   return (
     <Card className="border-border/60">
       <CardHeader className="flex-row items-center justify-between gap-2 pb-2">
-        <CardTitle className="text-sm font-bold uppercase tracking-wider">
+        <CardTitle className="text-sm font-semibold tracking-tight">
           Daftar trade <span className="font-mono text-xs font-normal text-muted-foreground">({rows.length})</span>
         </CardTitle>
         <Button variant="outline" size="sm" onClick={() => q.refetch()} disabled={q.isFetching} className="gap-1.5">
@@ -332,8 +333,9 @@ export function JournalRow({ entry: r }: { entry: JournalEntry }) {
   )
 }
 
-function fmtCompare(v: unknown): string {
+function fmtCompare(v: unknown, metric?: string): string {
   if (v === null || v === undefined) return '—'
+  if (typeof v === 'number' && metric === 'winrate') return `${v.toFixed(1)}%`
   if (typeof v === 'number') return Number.isInteger(v) ? String(v) : formatScore(v)
   if (typeof v === 'boolean') return v ? 'ya' : 'tidak'
   if (typeof v === 'string') return v
@@ -350,7 +352,7 @@ function LiveVsBacktest() {
   return (
     <Card className="border-border/60">
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-2 pb-2">
-        <CardTitle className="text-sm font-bold uppercase tracking-wider">Live (paper) vs backtest per watch</CardTitle>
+        <CardTitle className="text-sm font-semibold tracking-tight">Live (paper) vs backtest per watch</CardTitle>
         {(watchesQ.data ?? []).length > 0 && (
           <select
             aria-label="Pilih watch"
@@ -389,9 +391,9 @@ function LiveVsBacktest() {
             <TableBody>
               {rows.map((r) => (
                 <TableRow key={r.metric}>
-                  <TableCell className="py-1.5 text-xs">{r.metric}</TableCell>
-                  <TableCell className="py-1.5 text-right font-mono text-xs font-bold">{fmtCompare(r.paper)}</TableCell>
-                  <TableCell className="py-1.5 text-right font-mono text-xs">{fmtCompare(r.backtest)}</TableCell>
+                  <TableCell className="py-1.5 text-xs">{COMPARE_LABEL[r.metric] ?? r.metric}</TableCell>
+                  <TableCell className="py-1.5 text-right font-mono text-xs font-bold">{fmtCompare(r.metric === 'winrate' ? winratePct(r.paper as number) : r.paper, r.metric)}</TableCell>
+                  <TableCell className="py-1.5 text-right font-mono text-xs">{fmtCompare(r.metric === 'winrate' ? winratePct(r.backtest as number) : r.backtest, r.metric)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

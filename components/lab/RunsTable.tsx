@@ -1,181 +1,160 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import Link from 'next/link'
-import {
-  type ColumnDef,
-  type SortingState,
-  flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from '@tanstack/react-table'
-import { ArrowDown, ArrowUp, ArrowUpDown, RefreshCw } from 'lucide-react'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { useRouter } from 'next/navigation'
+import { FlaskConical, RefreshCw, Search } from 'lucide-react'
+import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { ErrorPanel } from '@/components/shell/ErrorPanel'
-import { EmptyPanel } from '@/components/shell/EmptyPanel'
-import { ModeBadge, StatusBadge, VerdictBadge, signClass } from '@/components/lab/LabBadges'
+import { Chip, EmptyState, Section } from '@/components/lab/Section'
+import { MODE_LABEL, RunStateChip, signClass } from '@/components/lab/LabBadges'
 import { formatPercent, formatScore, formatTimestamp, valueOrDash } from '@/lib/utils/format'
 import { ApiError } from '@/lib/api/errors'
+import { cn } from '@/lib/utils/cn'
 import { useLabRuns } from '@/lib/queries/lab'
-import { isActiveStatus } from '@/lib/lab/form'
-import type { LabRunSummary } from '@/lib/api/types/lab'
+import { isActiveStatus, relativeTime } from '@/lib/lab/form'
+import type { LabRunMode, LabRunSummary } from '@/lib/api/types/lab'
 
-const columns: ColumnDef<LabRunSummary>[] = [
-  {
-    id: 'created_at',
-    accessorKey: 'created_at',
-    header: 'Waktu',
-    cell: ({ row }) => (
-      <Link href={`/lab/runs/${encodeURIComponent(row.original.id)}`} className="font-mono text-xs text-sky-400 hover:underline">
-        {formatTimestamp(row.original.created_at)}
-      </Link>
-    ),
-  },
-  {
-    id: 'market',
-    accessorFn: (r) => `${r.symbol} ${r.timeframe}`,
-    header: 'Market',
-    cell: ({ row }) => (
-      <span className="font-mono text-xs font-semibold">
-        {row.original.symbol} <span className="text-muted-foreground">{row.original.timeframe}</span>
-      </span>
-    ),
-  },
-  { id: 'template', accessorKey: 'template_id', header: 'Template', cell: ({ getValue }) => <span className="text-xs">{getValue<string>()}</span> },
-  { id: 'mode', accessorKey: 'mode', header: 'Mode', cell: ({ row }) => <ModeBadge mode={row.original.mode} /> },
-  { id: 'status', accessorKey: 'status', header: 'Status', cell: ({ row }) => <StatusBadge status={row.original.status} /> },
-  {
-    id: 'verdict',
-    accessorFn: (r) => (r.verdict === 'PASS' ? 0 : r.verdict === 'FAIL' ? 1 : 2),
-    header: 'Verdict',
-    cell: ({ row }) => <VerdictBadge verdict={row.original.verdict} />,
-  },
-  {
-    id: 'net',
-    accessorKey: 'net_return_pct',
-    header: 'Net return',
-    sortUndefined: 'last',
-    cell: ({ row }) => (
-      <span className={`font-mono tabular-nums ${signClass(row.original.net_return_pct)}`}>
-        {formatPercent(row.original.net_return_pct)}
-      </span>
-    ),
-  },
-  {
-    id: 'pf',
-    accessorKey: 'profit_factor',
-    header: 'PF',
-    cell: ({ row }) => <span className="font-mono tabular-nums">{formatScore(row.original.profit_factor)}</span>,
-  },
-  {
-    id: 'dd',
-    accessorKey: 'max_dd_pct',
-    header: 'Max DD',
-    cell: ({ row }) => (
-      <span className="font-mono tabular-nums text-bearish">
-        {row.original.max_dd_pct === null ? '—' : `${formatScore(Math.abs(row.original.max_dd_pct))}%`}
-      </span>
-    ),
-  },
-  {
-    id: 'trades',
-    accessorKey: 'trades',
-    header: 'Trades',
-    cell: ({ row }) => <span className="font-mono tabular-nums">{valueOrDash(row.original.trades)}</span>,
-  },
-]
+type VerdictFilter = 'all' | 'PASS' | 'FAIL' | 'none'
+type ModeFilter = 'all' | LabRunMode
+
+export function filterRuns(rows: LabRunSummary[], f: { q: string; mode: ModeFilter; verdict: VerdictFilter }): LabRunSummary[] {
+  const q = f.q.trim().toUpperCase()
+  return rows.filter(
+    (r) =>
+      (!q || r.symbol.toUpperCase().includes(q)) &&
+      (f.mode === 'all' || r.mode === f.mode) &&
+      (f.verdict === 'all' || (f.verdict === 'none' ? !r.verdict : r.verdict === f.verdict)),
+  )
+}
+
+const th = 'px-3 py-2 text-left text-[11px] font-medium uppercase tracking-wide text-muted-foreground'
+const td = 'px-3 py-2.5'
 
 export function RunsTable() {
+  const router = useRouter()
   const { data, isPending, error, refetch, isFetching } = useLabRuns(50)
-  const [sorting, setSorting] = useState<SortingState>([{ id: 'created_at', desc: true }])
-  const rows = useMemo(() => data ?? [], [data])
-  const active = rows.filter((r) => isActiveStatus(r.status)).length
-
-  const table = useReactTable({
-    data: rows,
-    columns,
-    state: { sorting },
-    onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-  })
+  const [q, setQ] = useState('')
+  const [mode, setMode] = useState<ModeFilter>('all')
+  const [verdict, setVerdict] = useState<VerdictFilter>('all')
+  const rows = useMemo(
+    () => filterRuns([...(data ?? [])].sort((a, b) => b.created_at.localeCompare(a.created_at)), { q, mode, verdict }),
+    [data, q, mode, verdict],
+  )
+  const total = data?.length ?? 0
+  const active = (data ?? []).filter((r) => isActiveStatus(r.status)).length
+  const go = (r: LabRunSummary) => router.push(`/lab/runs/${encodeURIComponent(String(r.id))}`)
 
   return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <h2 className="text-sm font-bold uppercase tracking-wider">Riwayat run</h2>
-          <p className="text-[11px] text-muted-foreground">
-            50 run terakhir.{active > 0 && ` ${active} masih jalan — update otomatis tiap 3 detik.`}
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="gap-1.5">
-          <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
+    <Section
+      title="Riwayat run"
+      description={active > 0 ? `${active} run masih jalan — update otomatis tiap 3 detik.` : '50 run terakhir. Klik baris untuk lihat detail.'}
+      action={
+        <Button variant="ghost" size="sm" onClick={() => refetch()} disabled={isFetching} className="h-8 gap-1.5 text-xs">
+          <RefreshCw className={cn('h-3.5 w-3.5', isFetching && 'animate-spin')} />
           Refresh
         </Button>
-      </div>
+      }
+    >
+      {total > 0 && (
+        <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center">
+          <div className="relative lg:w-48">
+            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari koin" aria-label="Filter koin" className="h-8 pl-8 font-mono text-xs" />
+          </div>
+          <div className="flex flex-wrap gap-1.5" aria-label="Filter mode">
+            {(['all', 'backtest', 'validate', 'optimize'] as const).map((m) => (
+              <Chip key={m} active={mode === m} onClick={() => setMode(m)} className="h-7 px-2.5">
+                {m === 'all' ? 'Semua mode' : MODE_LABEL[m]}
+              </Chip>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-1.5 lg:ml-auto" aria-label="Filter rapor">
+            {([['all', 'Semua'], ['PASS', 'LOLOS'], ['FAIL', 'GAGAL'], ['none', 'Tanpa rapor']] as const).map(([v, label]) => (
+              <Chip key={v} active={verdict === v} onClick={() => setVerdict(v)} className="h-7 px-2.5">
+                {label}
+              </Chip>
+            ))}
+          </div>
+        </div>
+      )}
 
       {isPending ? (
         <div className="space-y-2" aria-busy="true">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-9 w-full" />
-          ))}
+          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
         </div>
       ) : error ? (
-        <ErrorPanel
-          kind={error instanceof ApiError ? error.kind : 'server'}
-          onRetry={() => refetch()}
-          messageOverride="Gagal memuat daftar run dari server Lab."
+        <ErrorPanel kind={error instanceof ApiError ? error.kind : 'server'} onRetry={() => refetch()} messageOverride="Gagal memuat daftar run dari server Lab." />
+      ) : total === 0 ? (
+        <EmptyState
+          icon={<FlaskConical className="h-8 w-8" />}
+          title="Belum ada run"
+          description="Mulai dengan Validasi pakai setting default — hasilnya jadi patokan sebelum mengubah parameter."
+          action={
+            <Button size="sm" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+              Atur run di atas
+            </Button>
+          }
         />
       ) : rows.length === 0 ? (
-        <EmptyPanel message="Belum ada run. Atur parameter di atas lalu klik Backtest / Validate / Optimize." />
+        <EmptyState
+          title="Tidak ada run yang cocok"
+          action={<Button variant="outline" size="sm" onClick={() => { setQ(''); setMode('all'); setVerdict('all') }}>Hapus filter</Button>}
+        />
       ) : (
-        <div className="rounded-xl border border-border/60">
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((hg) => (
-                <TableRow key={hg.id}>
-                  {hg.headers.map((h) => {
-                    const sorted = h.column.getIsSorted()
-                    return (
-                      <TableHead key={h.id} className="text-[11px] uppercase tracking-wider">
-                        <button
-                          type="button"
-                          onClick={h.column.getToggleSortingHandler()}
-                          className="inline-flex items-center gap-1 cursor-pointer hover:text-foreground"
-                        >
-                          {flexRender(h.column.columnDef.header, h.getContext())}
-                          {sorted === 'asc' ? (
-                            <ArrowUp className="h-3 w-3" />
-                          ) : sorted === 'desc' ? (
-                            <ArrowDown className="h-3 w-3" />
-                          ) : (
-                            <ArrowUpDown className="h-3 w-3 opacity-40" />
-                          )}
-                        </button>
-                      </TableHead>
-                    )
-                  })}
-                </TableRow>
+        <div className="-mx-4 overflow-x-auto sm:mx-0 sm:rounded-lg sm:border sm:border-border/60">
+          <table className="w-full text-sm sm:min-w-[560px]">
+            <thead className="border-b border-border/60 bg-muted/30">
+              <tr>
+                <th className={th}>Koin</th>
+                <th className={cn(th, 'hidden sm:table-cell')}>Mode</th>
+                <th className={th}>Hasil</th>
+                <th className={cn(th, 'text-right')} title="Net return in-sample">Net (IS)</th>
+                <th className={cn(th, 'hidden text-right sm:table-cell')}>PF</th>
+                <th className={cn(th, 'hidden text-right md:table-cell')}>Max DD</th>
+                <th className={cn(th, 'hidden text-right md:table-cell')}>Trade</th>
+                <th className={cn(th, 'text-right')}>Waktu</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/50">
+              {rows.map((r) => (
+                <tr
+                  key={String(r.id)}
+                  tabIndex={0}
+                  role="link"
+                  aria-label={`Run ${r.symbol} ${r.timeframe}`}
+                  onClick={() => go(r)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      go(r)
+                    }
+                  }}
+                  className="cursor-pointer transition-colors hover:bg-accent/50 focus-visible:bg-accent/50 focus-visible:outline-none"
+                >
+                  <td className={td}>
+                    <span className="font-mono text-xs font-semibold">{r.symbol}</span>{' '}
+                    <span className="font-mono text-xs text-muted-foreground">{r.timeframe}</span>
+                    <span className="block text-[10px] text-muted-foreground sm:hidden">{MODE_LABEL[r.mode]}</span>
+                  </td>
+                  <td className={cn(td, 'hidden text-xs text-muted-foreground sm:table-cell')}>{MODE_LABEL[r.mode]}</td>
+                  <td className={td}><RunStateChip status={r.status} verdict={r.verdict} mode={r.mode} /></td>
+                  <td className={cn(td, 'text-right font-mono text-xs tabular-nums', signClass(r.net_return_pct))}>{formatPercent(r.net_return_pct, 1)}</td>
+                  <td className={cn(td, 'hidden text-right font-mono text-xs tabular-nums sm:table-cell')}>{formatScore(r.profit_factor)}</td>
+                  <td className={cn(td, 'hidden text-right font-mono text-xs tabular-nums text-bearish md:table-cell')}>
+                    {r.max_dd_pct === null ? '—' : `−${formatScore(Math.abs(r.max_dd_pct), 1)}%`}
+                  </td>
+                  <td className={cn(td, 'hidden text-right font-mono text-xs tabular-nums md:table-cell')}>{valueOrDash(r.trades)}</td>
+                  <td className={cn(td, 'whitespace-nowrap text-right text-xs text-muted-foreground')} title={formatTimestamp(r.created_at)}>
+                    {relativeTime(r.created_at)}
+                  </td>
+                </tr>
               ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="py-2">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
         </div>
       )}
-    </section>
+    </Section>
   )
 }

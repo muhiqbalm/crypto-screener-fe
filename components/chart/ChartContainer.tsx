@@ -20,6 +20,7 @@ import { PaperTradePanel, EMPTY_DRAFT, type PaperDraft } from './PaperTradePanel
 import { formatPrice } from '@/lib/utils/format'
 import { cn } from '@/lib/utils/cn'
 import { api } from '@/lib/api/client'
+import { sameId } from '@/lib/api/types/lab'
 import { useLabMe, useLabRun, useLabRunTrades } from '@/lib/queries/lab'
 import { useLabWatches, useLabWatchState } from '@/lib/queries/lab-live'
 import { OVERLAY_COLORS, positionLines, tradesToMarkers, type OverlayPriceLine } from '@/lib/lab/overlay'
@@ -148,7 +149,7 @@ export function ChartContainer() {
   const runQ = useLabRun(isAdmin ? runId : null)
   const runTradesQ = useLabRunTrades(runId ?? '', isAdmin && Boolean(runId) && runQ.data?.status === 'done')
 
-  const watch = watchId ? watchesQ.data?.find((w) => w.id === watchId) ?? null : null
+  const watch = watchId ? watchesQ.data?.find((w) => sameId(w.id, watchId)) ?? null : null
   const overlay = watch
     ? { kind: 'watch' as const, symbol: watch.symbol, timeframe: watch.timeframe }
     : runQ.data
@@ -236,7 +237,7 @@ export function ChartContainer() {
   const paperAccountsQ = usePaperAccounts(isAdmin)
   const [pickedAccountId, setAccountId] = useState<string | null>(null)
   const paperAccounts = paperAccountsQ.data ?? []
-  const paperAccount = paperAccounts.find((a) => a.id === pickedAccountId) ?? paperAccounts[0] ?? null
+  const paperAccount = paperAccounts.find((a) => sameId(a.id, pickedAccountId)) ?? paperAccounts[0] ?? null
   const needJournal = Boolean(paperAccount) && !Array.isArray(paperAccount?.open_positions)
   const openJournalQ = useJournal(
     { account_id: paperAccount?.id, symbol },
@@ -326,7 +327,7 @@ export function ChartContainer() {
         </div>
       </div>
 
-      <div className={cn('grid gap-4', showSidePanel && 'lg:grid-cols-[minmax(0,1fr)_340px]')}>
+      <div className={cn('grid items-start gap-4', showSidePanel && 'lg:grid-cols-[minmax(0,1fr)_340px]')}>
         {/* Chart card */}
         <Card className="overflow-hidden">
           {/* Card header — price + status */}
@@ -393,7 +394,7 @@ export function ChartContainer() {
 
           {/* Chart area */}
           <CardContent className="p-0">
-            <div className="relative h-[480px] w-full">
+            <div className="relative h-[360px] w-full sm:h-[480px]">
               {isLoading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-card z-10">
                   <div className="flex flex-col items-center gap-3">

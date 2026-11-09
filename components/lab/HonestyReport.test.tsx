@@ -1,20 +1,32 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { ChecksList, HoldoutWarning, VerdictBanner } from './HonestyReport'
+import type { LabCheck } from '@/lib/api/types/lab'
+
+// Real backend shapes (crypto-screener src/lab/honesty.py)
+const CHECKS: LabCheck[] = [
+  { name: 'oos_profit_factor', label: 'Holdout profit factor', value: 1.41, threshold: '>= 1.2', passed: true },
+  { name: 'mc_dd_p95', label: 'Monte Carlo 95th-pct drawdown (%)', value: -62.3, threshold: '> -50.0', passed: false },
+  { name: 'min_oos_trades', label: 'Holdout trades', value: 18, threshold: '>= 30', passed: false },
+]
 
 describe('VerdictBanner', () => {
-  it('renders PASS with no dismiss control', () => {
-    render(<VerdictBanner verdict="PASS" mode="validate" status="done" />)
+  it('renders LOLOS with no dismiss control', () => {
+    render(<VerdictBanner verdict="PASS" mode="validate" status="done" checks={CHECKS.slice(0, 1)} />)
     const banner = screen.getByTestId('verdict-banner')
     expect(banner).toHaveAttribute('data-tone', 'pass')
-    expect(banner).toHaveTextContent('PASS')
+    expect(banner).toHaveTextContent('LOLOS')
     expect(screen.queryByRole('button')).toBeNull()
   })
 
-  it('renders FAIL', () => {
-    render(<VerdictBanner verdict="FAIL" mode="optimize" status="done" />)
+  it('renders GAGAL with plain-language reasons from failed checks', () => {
+    render(<VerdictBanner verdict="FAIL" mode="optimize" status="done" checks={CHECKS} />)
     expect(screen.getByTestId('verdict-banner')).toHaveAttribute('data-tone', 'fail')
-    expect(screen.getByText(/jangan dipakai live/i)).toBeInTheDocument()
+    expect(screen.getByText('GAGAL')).toBeInTheDocument()
+    const reasons = screen.getByTestId('verdict-reasons')
+    expect(reasons).toHaveTextContent('Gagal karena drawdown terburuk 95% bisa −62.3% (batas −50%)')
+    expect(reasons).toHaveTextContent('18 trade di holdout (minimal 30')
+    expect(reasons).not.toHaveTextContent('Profit factor')
   })
 
   it('backtest without verdict says it is not validated', () => {
@@ -36,19 +48,12 @@ describe('HoldoutWarning', () => {
 })
 
 describe('ChecksList', () => {
-  it('shows value vs threshold and pass/fail', () => {
-    render(
-      <ChecksList
-        checks={[
-          { name: 'pf', label: 'Profit factor OOS', value: 1.05, threshold: 1.2, passed: false },
-          { name: 'n', label: 'Jumlah trade', value: 42, threshold: 30, passed: true },
-        ]}
-      />,
-    )
-    expect(screen.getByText('Profit factor OOS')).toBeInTheDocument()
-    expect(screen.getByText('1.05')).toBeInTheDocument()
-    expect(screen.getByText('batas 1.20')).toBeInTheDocument()
-    expect(screen.getByText('GAGAL')).toBeInTheDocument()
-    expect(screen.getByText('LOLOS')).toBeInTheDocument()
+  it('shows Indonesian label, value and requirement per check', () => {
+    render(<ChecksList checks={CHECKS} />)
+    expect(screen.getByText('Profit factor holdout')).toBeInTheDocument()
+    expect(screen.getByText('1.41')).toBeInTheDocument()
+    expect(screen.getByText('>= 1.2')).toBeInTheDocument()
+    expect(screen.getAllByLabelText('gagal')).toHaveLength(2)
+    expect(screen.getAllByLabelText('lolos')).toHaveLength(1)
   })
 })

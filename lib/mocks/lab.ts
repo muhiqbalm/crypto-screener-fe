@@ -3,12 +3,23 @@
  * (lazy-imported from lib/api/client.ts, tree-shaken out of production).
  * Navbar shows "Mock Mode" whenever this is active, so these synthetic numbers
  * are never presented as real results.
+ *
+ * Shapes mirror the real backend (crypto-screener src/api/lab_routes.py):
+ * integer ids, the real rosyade_family schema (lab-template.json is a dump of
+ * src/lab/templates/rosyade_family.py), honesty check names/thresholds,
+ * metrics = in-sample (+ nested extras), oos_metrics = locked holdout,
+ * equity segments is/holdout only, paper accounts with open_positions list.
+ * Candles (/klines) are never mocked.
  */
 import { ApiError } from '@/lib/api/errors'
+import templateJson from './lab-template.json'
 import type {
+  JournalEntry,
+  JournalStats,
   LabCheck,
   LabDataStatus,
   LabEquityPoint,
+  LabParamValue,
   LabRunCreateRequest,
   LabRunDetail,
   LabScanCreateRequest,
@@ -18,41 +29,29 @@ import type {
   LabTrade,
   LabWatch,
   LabWatchCreateRequest,
-  JournalEntry,
-  JournalStats,
   PaperAccount,
   PaperAccountCreateRequest,
   PaperOrderRequest,
+  PaperPosition,
 } from '@/lib/api/types/lab'
 
-export const MOCK_LAB_TEMPLATES: LabTemplate[] = [
-  {
-    id: 'rosyade_v1',
-    name: 'Rosyade (ETH 4H live)',
-    description: 'Logika sama dengan strategi live Rosyade di TradingView. Default = setting live ETH 4H.',
-    timeframes: ['15m', '30m', '1h', '2h', '4h', '1d'],
-    params: [
-      { key: 'ema_fast', label: 'EMA cepat', type: 'int', default: 21, min: 2, max: 200, step: 1, group: 'Trend' },
-      { key: 'ema_slow', label: 'EMA lambat', type: 'int', default: 55, min: 5, max: 400, step: 1, group: 'Trend' },
-      { key: 'use_htf_filter', label: 'Filter trend HTF', type: 'bool', default: true, group: 'Trend' },
-      { key: 'rsi_len', label: 'Panjang RSI', type: 'int', default: 14, min: 2, max: 50, step: 1, group: 'Momentum' },
-      { key: 'rsi_ob', label: 'RSI overbought', type: 'float', default: 70, min: 50, max: 95, step: 0.5, group: 'Momentum' },
-      { key: 'atr_mult_sl', label: 'SL (x ATR)', type: 'float', default: 1.5, min: 0.5, max: 6, step: 0.1, group: 'Risk' },
-      { key: 'rr', label: 'Risk:Reward', type: 'float', default: 2, min: 0.5, max: 6, step: 0.1, group: 'Risk' },
-      { key: 'side', label: 'Arah', type: 'choice', default: 'both', choices: ['both', 'long', 'short'], group: 'Risk' },
-    ],
-  },
+export const MOCK_LAB_TEMPLATES: LabTemplate[] = [templateJson as unknown as LabTemplate]
+const TPL = MOCK_LAB_TEMPLATES[0]
+const DEFAULTS: Record<string, LabParamValue> = Object.fromEntries(TPL.params.map((p) => [p.key, p.default]))
+
+// Same order as the backend screener universe (settings.symbols).
+const UNIVERSE = [
+  'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'DOGEUSDT', 'ADAUSDT', 'AVAXUSDT', 'LINKUSDT', 'SUIUSDT',
+  'NEARUSDT', 'APTUSDT', '1000PEPEUSDT', '1000SHIBUSDT', 'WIFUSDT', 'FETUSDT', 'RENDERUSDT', 'ARBUSDT', 'OPUSDT',
+  'TIAUSDT', 'INJUSDT', 'DOTUSDT', 'LTCUSDT', 'UNIUSDT', 'AAVEUSDT', 'GALAUSDT', 'SEIUSDT', 'HYPEUSDT', 'ZECUSDT',
 ]
 
-const SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'DOGEUSDT', 'ADAUSDT', 'AVAXUSDT', 'LINKUSDT', 'SUIUSDT', 'PEPEUSDT']
-
-export const MOCK_LAB_SYMBOLS: LabSymbol[] = SYMBOLS.map((symbol, i) => ({
+export const MOCK_LAB_SYMBOLS: LabSymbol[] = UNIVERSE.map((symbol, i) => ({
   symbol,
-  has_data: i < 8,
-  timeframes: i < 8 ? ['1h', '4h', '1d'] : [],
+  has_data: i < 12,
+  timeframes: i < 12 ? ['1h', '4h', '1d'] : [],
 }))
 
-// Deterministic pseudo-random so the mock is stable between renders.
 function seeded(seed: number) {
   let s = seed % 2147483647
   if (s <= 0) s += 2147483646
@@ -65,86 +64,87 @@ function hash(str: string): number {
   return Math.abs(h) + 1
 }
 
-const runs = new Map<string, LabRunDetail>()
-const watches = new Map<string, LabWatch>()
-const paperAccounts = new Map<string, PaperAccount>()
-const journal = new Map<string, JournalEntry>()
+const r2 = (v: number) => Math.round(v * 100) / 100
 
-// Mock fills use a fixed placeholder price — mock mode only, never real.
-const MOCK_FILL_PRICE = 100
+const runs = new Map<number, LabRunDetail>()
+const scans = new Map<number, LabScanDetail>()
+const watches = new Map<number, LabWatch>()
+const paperAccounts = new Map<number, PaperAccount>()
+const journal = new Map<number, JournalEntry>()
+let nextId = 100
 
-function mockStats(accountId?: string): JournalStats {
-  const closed = [...journal.values()].filter((j) => j.exit_time && (!accountId || j.account_id === accountId))
-  const wins = closed.filter((j) => (j.pnl ?? 0) > 0)
-  const gross = (f: (n: number) => boolean) => closed.reduce((a, j) => a + (f(j.pnl ?? 0) ? Math.abs(j.pnl ?? 0) : 0), 0)
-  const net = closed.reduce((a, j) => a + (j.pnl ?? 0), 0)
-  const avgR = closed.length ? closed.reduce((a, j) => a + (j.r_multiple ?? 0), 0) / closed.length : null
-  let eq = 10_000
-  return {
-    trades: closed.length,
-    winrate: closed.length ? wins.length / closed.length : null,
-    avg_r: avgR,
-    expectancy_r: avgR,
-    profit_factor: gross((n) => n < 0) > 0 ? gross((n) => n > 0) / gross((n) => n < 0) : null,
-    net_pnl: net,
-    max_dd_pct: 0,
-    equity_curve: closed.map((j) => ({ t: j.exit_time!, equity: (eq += j.pnl ?? 0) })),
-    by_symbol: [],
-    by_source: [],
-  }
-}
-const scans = new Map<string, LabScanDetail>()
-let counter = 0
-
-function makeChecks(rand: () => number): LabCheck[] {
-  const pf = 0.8 + rand() * 1.2
-  const trades = Math.round(20 + rand() * 80)
-  const dd = 8 + rand() * 30
+function makeChecks(o: { pf: number; net: number; trades: number; mc: number; stress: number; unstable: number; liq: number }): LabCheck[] {
+  const c = (name: string, label: string, value: number, threshold: string, passed: boolean): LabCheck => ({ name, label, value, threshold, passed })
   return [
-    { name: 'oos_pf', label: 'Profit factor OOS', value: Number(pf.toFixed(2)), threshold: 1.2, passed: pf >= 1.2 },
-    { name: 'oos_trades', label: 'Jumlah trade OOS', value: trades, threshold: 30, passed: trades >= 30 },
-    { name: 'oos_dd', label: 'Max drawdown OOS (%)', value: Number(dd.toFixed(1)), threshold: 25, passed: dd <= 25 },
-    { name: 'is_oos_decay', label: 'Penurunan PF IS→OOS (%)', value: Number((rand() * 60).toFixed(1)), threshold: 50, passed: rand() > 0.3 },
+    c('oos_profit_factor', 'Holdout profit factor', o.pf, '>= 1.2', o.pf >= 1.2),
+    c('oos_net_return', 'Holdout net return after costs (%)', o.net, '> 0.0', o.net > 0),
+    c('mc_dd_p95', 'Monte Carlo 95th-pct drawdown (%)', o.mc, '> -50.0', o.mc > -50),
+    c('min_oos_trades', 'Holdout trades', o.trades, '>= 30', o.trades >= 30),
+    c('cost_stress', 'Holdout net at 2x costs (%)', o.stress, '> 0', o.stress > 0),
+    c('sensitivity', 'Fragile parameters', o.unstable, '<= 3', o.unstable <= 3),
+    c('no_liquidation', 'Liquidations', o.liq, '<= 0', o.liq <= 0),
   ]
 }
 
-function makeRun(id: string, req: LabRunCreateRequest, createdAt: string): LabRunDetail {
-  const rand = seeded(hash(id + req.symbol + req.timeframe))
-  const validated = req.mode !== 'backtest'
-  const checks = validated ? makeChecks(rand) : []
-  const verdict = validated ? (checks.every((c) => c.passed) ? 'PASS' : 'FAIL') : null
-  const net = -20 + rand() * 90
-  const metrics = {
-    net_return_pct: Number(net.toFixed(2)),
-    profit_factor: Number((0.8 + rand() * 1.4).toFixed(2)),
-    max_dd_pct: Number((5 + rand() * 30).toFixed(2)),
-    trades: Math.round(40 + rand() * 200),
-    win_rate_pct: Number((35 + rand() * 25).toFixed(1)),
-    sharpe: Number((rand() * 2).toFixed(2)),
+function metricBlock(rand: () => number, scale = 1) {
+  const net = (-25 + rand() * 120) * scale
+  return {
+    net_return_pct: r2(net),
+    profit_factor: r2(0.75 + rand() * 1.3),
+    max_dd_pct: r2(8 + rand() * 40),
+    max_dd_intrabar_pct: r2(10 + rand() * 45),
+    trades: Math.round((40 + rand() * 160) * scale),
+    win_rate_pct: r2(30 + rand() * 25),
+    sharpe: r2(rand() * 1.8),
+    liquidations: 0,
+    funding_paid: r2(rand() * 300),
+    fees_paid: r2(200 + rand() * 600),
+    final_equity: r2(10_000 * (1 + net / 100)),
+    longs: Math.round(30 + rand() * 60),
+    shorts: Math.round(10 + rand() * 40),
   }
+}
+
+function makeRun(id: number, req: LabRunCreateRequest, createdAt: string, forcePass?: boolean): LabRunDetail {
+  const rand = seeded(hash(`${id}${req.symbol}${req.timeframe}`))
+  const start = req.start ?? '2020-01-01'
+  const end = req.end ?? '2026-11-09'
+  const hs = new Date(Date.parse(`${start}T00:00:00Z`) + (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) * 0.8)
+    .toISOString().slice(0, 10) + 'T00:00:00Z'
+  const isM = metricBlock(rand)
+  const validated = req.mode !== 'backtest'
+  const oosBase = metricBlock(rand, 0.3)
+  const pass = forcePass ?? rand() > 0.6
+  const o = {
+    pf: pass ? r2(1.3 + rand()) : r2(0.7 + rand() * 0.6),
+    net: pass ? r2(5 + rand() * 30) : r2(-15 + rand() * 20),
+    trades: pass ? 30 + Math.round(rand() * 40) : 12 + Math.round(rand() * 30),
+    mc: pass ? r2(-20 - rand() * 25) : r2(-35 - rand() * 40),
+    stress: pass ? r2(2 + rand() * 10) : r2(-10 + rand() * 12),
+    unstable: pass ? Math.round(rand() * 3) : Math.round(rand() * 6),
+    liq: 0,
+  }
+  const checks = validated ? makeChecks(o) : []
+  const verdict = validated ? (checks.every((c) => c.passed) ? 'PASS' : 'FAIL') : null
   const oos = validated
-    ? {
-        net_return_pct: Number((net * (0.2 + rand() * 0.6)).toFixed(2)),
-        profit_factor: checks[0].value as number,
-        max_dd_pct: checks[2].value as number,
-        trades: checks[1].value as number,
-        win_rate_pct: Number((30 + rand() * 25).toFixed(1)),
-        sharpe: Number((rand() * 1.5).toFixed(2)),
-      }
+    ? { ...oosBase, net_return_pct: o.net, profit_factor: o.pf, trades: o.trades, start: hs, end: `${end}T00:00:00Z`, stress_net_return_pct: o.stress, stress_multiplier: 2 }
     : null
-  const tpl = MOCK_LAB_TEMPLATES[0]
+  const sensKeys = TPL.params.filter((p) => p.tunable).map((p) => p.key)
   const best =
     req.mode === 'optimize'
-      ? Object.fromEntries(
-          tpl.params.map((p) => [
-            p.key,
-            p.type === 'int'
-              ? Math.round(Number(p.default) * (0.8 + rand() * 0.4))
-              : p.type === 'float'
-                ? Number((Number(p.default) * (0.8 + rand() * 0.4)).toFixed(1))
-                : p.default,
-          ]),
-        )
+      ? {
+          ...req.params,
+          ...Object.fromEntries(
+            TPL.params
+              .filter((p) => p.tunable && (!req.search || req.search.params.includes(p.key)))
+              .map((p) => {
+                const lo = p.min ?? 0
+                const hi = p.max ?? 1
+                const v = lo + rand() * (hi - lo)
+                return [p.key, p.type === 'int' ? Math.round(v) : r2(v)]
+              }),
+          ),
+        }
       : null
   return {
     id,
@@ -154,95 +154,175 @@ function makeRun(id: string, req: LabRunCreateRequest, createdAt: string): LabRu
     mode: req.mode,
     status: 'done',
     verdict,
-    net_return_pct: oos ? oos.net_return_pct : metrics.net_return_pct,
-    profit_factor: oos ? oos.profit_factor : metrics.profit_factor,
-    max_dd_pct: oos ? oos.max_dd_pct : metrics.max_dd_pct,
-    trades: oos ? oos.trades : metrics.trades,
+    net_return_pct: isM.net_return_pct,
+    profit_factor: isM.profit_factor,
+    max_dd_pct: isM.max_dd_pct,
+    trades: isM.trades,
     created_at: createdAt,
     params: req.params,
     costs: req.costs,
-    start: req.start ?? '2021-01-01',
-    end: req.end ?? '2026-10-31',
-    metrics,
-    oos_metrics: oos,
+    start,
+    end,
+    metrics: {
+      ...isM,
+      segment: 'in_sample',
+      start: `${start}T00:00:00Z`,
+      end: hs,
+      // nested extras exist in the real payload; the UI must ignore them
+      full_range: null,
+      monte_carlo: null,
+    } as LabRunDetail['metrics'],
+    oos_metrics: oos as LabRunDetail['oos_metrics'],
     checks,
     holdout_touches: validated ? 1 + Math.floor(rand() * 3) : 0,
+    holdout_start: validated ? hs : null,
+    honesty_version: validated ? '2026-11.1' : null,
     engine_commit: 'mock000',
     error: null,
+    finished_at: createdAt,
     best_params: best,
-    job_id: `job-${id}`,
+    job_id: id + 5000,
+    ...(req.mode === 'optimize'
+      ? {
+          n_trials: req.n_trials ?? 30,
+          trials_done: req.n_trials ?? 30,
+          search: req.search ?? { params: TPL.params.filter((p) => p.tunable).map((p) => p.key), ranges: {} },
+          objective: 'net return × PF, penalti drawdown & segmen rugi (walk-forward in-sample)',
+          top_trials: Array.from({ length: 5 }, (_, i) => {
+            const keys = (req.search?.params ?? TPL.params.filter((p) => p.tunable).map((p) => p.key)).slice(0, 4)
+            return {
+              rank: i + 1,
+              trial: Math.round(rand() * 29),
+              score: r2(3 - i * 0.4),
+              params: Object.fromEntries(
+                keys.map((k) => {
+                  const spec = TPL.params.find((p) => p.key === k)!
+                  const v = (spec.min ?? 0) + rand() * ((spec.max ?? 1) - (spec.min ?? 0))
+                  return [k, spec.type === 'int' ? Math.round(v) : r2(v)]
+                }),
+              ),
+              metrics: { net_return_pct: r2(60 - i * 9), profit_factor: r2(1.6 - i * 0.08), max_dd_pct: r2(18 + i * 3), trades: 120 - i * 7, sharpe: r2(1.2 - i * 0.1), profitable_segments: 4 - (i > 2 ? 1 : 0), segments: 5 },
+              error: null,
+            }
+          }),
+        }
+      : {}),
+    sensitivity: validated
+      ? {
+          params: sensKeys.slice(0, 8).map((k) => {
+            const st = r2(0.3 + rand() * 0.7)
+            return { param: k, base: DEFAULTS[k] as number, stability: st, profitable_fraction: r2(rand()), fragile: st <= 0.5 }
+          }),
+          unstable: o.unstable,
+          threshold: 0.5,
+          steps: [-0.2, -0.1, 0.1, 0.2],
+        }
+      : null,
   }
 }
 
+function listItem(r: LabRunDetail) {
+  const { id, template_id, symbol, timeframe, mode, status, verdict, net_return_pct, profit_factor, max_dd_pct, trades, created_at, job_id } = r
+  return { id, template_id, symbol, timeframe, mode, status, verdict, net_return_pct, profit_factor, max_dd_pct, trades, created_at, job_id }
+}
+
+const COSTS = { commission_pct: 0.05, slippage_pct: 0.05, funding: true }
+
 function seed() {
   if (runs.size > 0) return
-  const base = Date.parse('2026-11-01T00:00:00Z')
-  const tpl = MOCK_LAB_TEMPLATES[0]
-  const defaults = Object.fromEntries(tpl.params.map((p) => [p.key, p.default]))
-  const costs = { commission_pct: 0.05, slippage_pct: 0.05, funding: true }
-  const seeds: [string, string, LabRunCreateRequest['mode']][] = [
-    ['ETHUSDT', '4h', 'validate'],
-    ['BTCUSDT', '4h', 'backtest'],
-    ['SOLUSDT', '1h', 'optimize'],
+  const now = Date.now()
+  const seeds: [string, string, LabRunCreateRequest['mode'], boolean | undefined][] = [
+    ['ETHUSDT', '4h', 'validate', true],
+    ['ETHUSDT', '4h', 'optimize', false],
+    ['BTCUSDT', '4h', 'backtest', undefined],
+    ['SOLUSDT', '1h', 'validate', false],
   ]
-  seeds.forEach(([symbol, timeframe, mode], i) => {
-    const id = `mock-run-${i + 1}`
-    runs.set(id, makeRun(id, { template_id: tpl.id, symbol, timeframe, mode, params: defaults, costs }, new Date(base + i * 3_600_000).toISOString()))
+  seeds.forEach(([symbol, timeframe, mode, pass], i) => {
+    const id = i + 1
+    runs.set(id, makeRun(id, { template_id: TPL.id, symbol, timeframe, mode, params: DEFAULTS, costs: COSTS }, new Date(now - (i + 1) * 47 * 60_000).toISOString(), pass))
   })
-  const errId = 'mock-run-err'
-  const errRun = makeRun(errId, { template_id: tpl.id, symbol: 'PEPEUSDT', timeframe: '4h', mode: 'validate', params: defaults, costs }, new Date(base + 4 * 3_600_000).toISOString())
-  runs.set(errId, {
-    ...errRun,
-    status: 'error',
-    verdict: null,
-    net_return_pct: null,
-    profit_factor: null,
-    max_dd_pct: null,
-    trades: null,
-    metrics: {},
-    oos_metrics: null,
-    checks: [],
-    holdout_touches: 0,
-    best_params: null,
-    error: 'Data PEPEUSDT 4h belum tersedia (mock)',
+  const running = makeRun(5, { template_id: TPL.id, symbol: 'LINKUSDT', timeframe: '4h', mode: 'validate', params: DEFAULTS, costs: COSTS }, new Date(now - 90_000).toISOString())
+  runs.set(5, { ...running, status: 'running', verdict: null, checks: [], net_return_pct: null, profit_factor: null, max_dd_pct: null, trades: null, oos_metrics: null, metrics: {}, sensitivity: null })
+  const err = makeRun(6, { template_id: TPL.id, symbol: 'ZECUSDT', timeframe: '1d', mode: 'validate', params: DEFAULTS, costs: COSTS }, new Date(now - 26 * 3_600_000).toISOString())
+  runs.set(6, {
+    ...err, status: 'error', verdict: null, net_return_pct: null, profit_factor: null, max_dd_pct: null, trades: null,
+    metrics: {}, oos_metrics: null, checks: [], holdout_touches: 0, best_params: null, sensitivity: null,
+    error: 'HoldoutError: development segment before the holdout is shorter than 60 days',
   })
+
+  // One finished scan for the heatmap
+  const scanSyms = UNIVERSE.slice(0, 8)
+  const tfs = ['1h', '4h', '1d']
+  const rows = scanSyms.flatMap((symbol, si) =>
+    tfs.map((timeframe, ti) => {
+      const id = 200 + si * 3 + ti
+      const run = makeRun(id, { template_id: TPL.id, symbol, timeframe, mode: 'validate', params: DEFAULTS, costs: COSTS }, new Date(now - 3 * 3_600_000).toISOString())
+      runs.set(id, run)
+      return scanRow(run)
+    }),
+  )
+  scans.set(1, { id: 1, status: 'done', progress: { done: rows.length, total: rows.length }, rows, template_id: TPL.id, mode: 'validate', created_at: new Date(now - 3 * 3_600_000).toISOString() })
+
+  // Paper account + journal history (mock only)
+  paperAccounts.set(1, {
+    id: 1, name: 'Paper ETH 4H', balance: 10_412.5, equity: 10_412.5, realized_pnl: 412.5, created_at: new Date(now - 20 * 86_400_000).toISOString(),
+    risk_pct: 1, leverage_max: 5, starting_balance: 10_000, open_positions: [],
+  })
+  const rand = seeded(42)
+  for (let i = 0; i < 14; i++) {
+    const id = 300 + i
+    const side = rand() > 0.4 ? 'long' : 'short'
+    const r = r2(-1 + rand() * 3.2)
+    const entry = r2(2400 + rand() * 900)
+    journal.set(id, {
+      id, account_id: 1, source: i % 3 === 0 ? 'paper_manual' : i % 3 === 1 ? 'paper_auto' : 'bot', watch_id: null, run_id: null,
+      symbol: i % 4 === 0 ? 'BTCUSDT' : 'ETHUSDT', side, entry_time: new Date(now - (20 - i) * 86_400_000).toISOString(), entry_price: entry,
+      exit_time: new Date(now - (19 - i) * 86_400_000).toISOString(), exit_price: r2(entry * (1 + (side === 'long' ? 1 : -1) * r * 0.02)),
+      qty: 0.4, fees: 1.2, funding: 0.3, sl: r2(entry * 0.97), tp: r2(entry * 1.06), risk_amount: 100, pnl: r2(r * 100), r_multiple: r,
+      exit_reason: r > 0 ? 'tp' : 'sl', notes: i === 2 ? 'Entry telat, tunggu close bar' : null, tags: i === 2 ? ['telat'] : [],
+    })
+  }
+}
+
+function scanRow(run: LabRunDetail) {
+  const o = run.oos_metrics as Record<string, number> | null
+  return {
+    symbol: run.symbol, timeframe: run.timeframe, run_id: run.id, status: run.status, verdict: run.verdict,
+    oos_net_return_pct: o?.net_return_pct ?? null, oos_profit_factor: o?.profit_factor ?? null, oos_max_dd_pct: o?.max_dd_pct ?? null, trades: o?.trades ?? null,
+  }
 }
 
 function makeEquity(run: LabRunDetail): LabEquityPoint[] {
-  const rand = seeded(hash(run.id))
-  const n = 300
-  const start = Date.parse(`${run.start ?? '2021-01-01'}T00:00:00Z`)
-  const end = Date.parse(`${run.end ?? '2026-10-31'}T00:00:00Z`)
+  const rand = seeded(hash(String(run.id)))
+  const n = 400
+  const start = Date.parse(`${run.start}T00:00:00Z`)
+  const end = Date.parse(`${run.end}T00:00:00Z`)
+  const hs = run.holdout_start ? Date.parse(run.holdout_start) : Infinity
   const step = (end - start) / n
   let eq = 10_000
   const out: LabEquityPoint[] = []
   for (let i = 0; i < n; i++) {
-    eq *= 1 + (rand() - 0.47) * 0.02
-    const segment = run.mode === 'backtest' ? 'is' : i < n * 0.6 ? 'is' : i < n * 0.85 ? 'oos' : 'holdout'
-    out.push({ t: new Date(start + i * step).toISOString(), equity: Number(eq.toFixed(2)), segment })
+    const t = start + i * step
+    eq *= 1 + (rand() - 0.47) * 0.025
+    out.push({ t: new Date(t).toISOString(), equity: r2(eq), segment: t >= hs ? 'holdout' : 'is' })
   }
   return out
 }
 
 function makeTrades(run: LabRunDetail): LabTrade[] {
-  const rand = seeded(hash(run.id + 't'))
-  const start = Date.parse(`${run.start ?? '2021-01-01'}T00:00:00Z`)
+  const rand = seeded(hash(`${run.id}t`))
+  const start = Date.parse(`${run.start}T00:00:00Z`)
   const out: LabTrade[] = []
   let price = 2000
-  for (let i = 0; i < 40; i++) {
-    const entry = start + i * 86_400_000 * 20
-    const side = rand() > 0.5 ? 'long' : 'short'
-    const move = (rand() - 0.45) * 0.08
+  for (let i = 0; i < 60; i++) {
+    const entry = start + i * 86_400_000 * 35
+    const side = rand() > 0.4 ? 'long' : 'short'
+    const move = (rand() - 0.45) * 0.1
     const exit = price * (1 + (side === 'long' ? move : -move))
     out.push({
-      entry_time: new Date(entry).toISOString(),
-      exit_time: new Date(entry + 86_400_000 * 3).toISOString(),
-      side,
-      entry_price: Number(price.toFixed(2)),
-      exit_price: Number(exit.toFixed(2)),
-      pnl_pct: Number((move * 100).toFixed(2)),
-      return_on_equity_pct: Number((move * 100 * 0.5).toFixed(2)),
-      exit_reason: move > 0 ? 'tp' : 'sl',
+      entry_time: new Date(entry).toISOString(), exit_time: new Date(entry + 86_400_000 * 4).toISOString(), side,
+      entry_price: r2(price), exit_price: r2(exit), pnl_pct: r2(move * 100), return_on_equity_pct: r2(move * 100 * 0.6),
+      exit_reason: move > 0.03 ? 'tp' : move > 0 ? 'trail' : 'sl',
     })
     price = exit
   }
@@ -252,44 +332,92 @@ function makeTrades(run: LabRunDetail): LabTrade[] {
 function makeDataStatus(): LabDataStatus[] {
   return MOCK_LAB_SYMBOLS.filter((s) => s.has_data).flatMap((s) =>
     s.timeframes.map((tf) => ({
-      symbol: s.symbol,
-      timeframe: tf,
-      first: '2021-01-01T00:00:00Z',
-      last: '2026-11-09T00:00:00Z',
-      rows: tf === '1h' ? 51_336 : tf === '4h' ? 12_834 : 2_139,
+      symbol: s.symbol, timeframe: tf, first: '2020-01-01T00:00:00Z', last: '2026-11-09T00:00:00Z',
+      rows: tf === '1h' ? 60_456 : tf === '4h' ? 15_114 : 2_519,
     })),
   )
+}
+
+function mockStats(accountId?: string): JournalStats {
+  const closed = [...journal.values()].filter((j) => j.exit_time && (!accountId || String(j.account_id) === accountId))
+  const wins = closed.filter((j) => (j.pnl ?? 0) > 0)
+  const gp = closed.reduce((a, j) => a + Math.max(0, j.pnl ?? 0), 0)
+  const gl = closed.reduce((a, j) => a + Math.max(0, -(j.pnl ?? 0)), 0)
+  const rs = closed.map((j) => j.r_multiple ?? 0)
+  const by = (k: 'symbol' | 'source') => {
+    const out: Record<string, { trades: number; winrate: number | null; pnl: number; avg_r: number | null }> = {}
+    for (const j of closed) {
+      const g = (out[j[k]] ??= { trades: 0, winrate: 0, pnl: 0, avg_r: 0 })
+      g.trades++
+      g.pnl = r2(g.pnl + (j.pnl ?? 0))
+    }
+    for (const [key, g] of Object.entries(out)) {
+      const rows = closed.filter((j) => j[k] === key)
+      g.winrate = rows.filter((j) => (j.pnl ?? 0) > 0).length / rows.length
+      g.avg_r = r2(rows.reduce((a, j) => a + (j.r_multiple ?? 0), 0) / rows.length)
+    }
+    return out
+  }
+  let eq = 10_000
+  let peak = eq
+  let dd = 0
+  const curve = closed.map((j) => {
+    eq += j.pnl ?? 0
+    peak = Math.max(peak, eq)
+    dd = Math.min(dd, ((eq - peak) / peak) * 100)
+    return { t: j.exit_time!, equity: r2(eq) }
+  })
+  return {
+    trades: closed.length,
+    winrate: closed.length ? wins.length / closed.length : null,
+    avg_r: rs.length ? r2(rs.reduce((a, b) => a + b, 0) / rs.length) : null,
+    expectancy_r: rs.length ? r2(rs.reduce((a, b) => a + b, 0) / rs.length) : null,
+    profit_factor: gl > 0 ? r2(gp / gl) : null,
+    net_pnl: r2(gp - gl),
+    max_dd_pct: r2(dd),
+    equity_curve: curve,
+    by_symbol: by('symbol'),
+    by_source: by('source'),
+  }
 }
 
 function notFound(): never {
   throw new ApiError('not_found', 404)
 }
 
+function num(id: string | undefined): number {
+  const n = Number(id)
+  if (!Number.isFinite(n)) notFound()
+  return n
+}
+
 export async function getLabMock(method: string, fullPath: string, body?: unknown): Promise<unknown> {
   seed()
-  const path = fullPath.split('?')[0].replace(/^\/api\/v1\/lab/, '')
+  // Simulate network latency so loading states are visible in dev.
+  await new Promise((r) => setTimeout(r, 250))
+  const [pathPart, query = ''] = fullPath.split('?')
+  const path = pathPart.replace(/^\/api\/v1\/lab/, '')
+  const qs = new URLSearchParams(query)
   const seg = path.split('/').filter(Boolean).map(decodeURIComponent)
 
   if (method === 'GET' && path === '/me') return { is_admin: true }
   if (method === 'GET' && path === '/templates') return MOCK_LAB_TEMPLATES
   if (method === 'GET' && path === '/symbols') return MOCK_LAB_SYMBOLS
   if (method === 'GET' && path === '/data/status') return makeDataStatus()
+  // Candles are never mocked — fall through to real Binance sources.
+  if (method === 'GET' && path === '/klines') throw new ApiError('not_found', 404)
 
   if (seg[0] === 'runs') {
     if (method === 'POST' && seg.length === 1) {
       const req = body as LabRunCreateRequest
-      const id = `mock-run-new-${++counter}`
+      const id = ++nextId
       runs.set(id, makeRun(id, req, new Date().toISOString()))
-      return { run_id: id, job_id: `job-${id}` }
+      return { run_id: id, job_id: id + 5000 }
     }
     if (method === 'GET' && seg.length === 1) {
-      return [...runs.values()]
-        .sort((a, b) => b.created_at.localeCompare(a.created_at))
-        .map(({ id, template_id, symbol, timeframe, mode, status, verdict, net_return_pct, profit_factor, max_dd_pct, trades, created_at }) => ({
-          id, template_id, symbol, timeframe, mode, status, verdict, net_return_pct, profit_factor, max_dd_pct, trades, created_at,
-        }))
+      return [...runs.values()].filter((r) => Number(r.id) < 200 || Number(r.id) > 300).sort((a, b) => b.created_at.localeCompare(a.created_at)).map(listItem)
     }
-    const run = runs.get(seg[1])
+    const run = runs.get(num(seg[1]))
     if (!run) notFound()
     if (method === 'GET' && seg.length === 2) return run
     if (method === 'GET' && seg[2] === 'equity') return run.status === 'done' ? makeEquity(run) : []
@@ -299,72 +427,54 @@ export async function getLabMock(method: string, fullPath: string, body?: unknow
   if (seg[0] === 'scans') {
     if (method === 'POST' && seg.length === 1) {
       const req = body as LabScanCreateRequest
-      const id = `mock-scan-${++counter}`
+      const id = ++nextId
       const rows = req.symbols.flatMap((symbol) =>
         req.timeframes.map((timeframe) => {
-          const runId = `${id}-${symbol}-${timeframe}`
-          const run = makeRun(runId, { template_id: req.template_id, symbol, timeframe, mode: req.mode, params: req.params ?? {}, costs: req.costs }, new Date().toISOString())
+          const runId = ++nextId
+          const run = makeRun(runId, { template_id: req.template_id, symbol, timeframe, mode: req.mode, params: req.params ?? DEFAULTS, costs: req.costs }, new Date().toISOString())
           runs.set(runId, run)
-          return {
-            symbol,
-            timeframe,
-            run_id: runId,
-            status: run.status,
-            verdict: run.verdict,
-            oos_net_return_pct: run.oos_metrics?.net_return_pct as number,
-            oos_profit_factor: run.oos_metrics?.profit_factor as number,
-            oos_max_dd_pct: run.oos_metrics?.max_dd_pct as number,
-            trades: run.trades,
-          }
+          return scanRow(run)
         }),
       )
       scans.set(id, { id, status: 'done', progress: { done: rows.length, total: rows.length }, rows, template_id: req.template_id, mode: req.mode, created_at: new Date().toISOString() })
       return { scan_id: id }
     }
     if (method === 'GET' && seg.length === 1) return [...scans.values()].reverse()
-    const scan = scans.get(seg[1])
+    const scan = scans.get(num(seg[1]))
     if (!scan) notFound()
     return scan
-  }
-
-  if (method === 'GET' && path === '/klines') {
-    // Klines are never mocked: the chart must show real Binance prices or an
-    // error. Throwing makes the chart fall through to the next real source.
-    throw new ApiError('not_found', 404)
   }
 
   if (seg[0] === 'watches') {
     if (method === 'POST' && seg.length === 1) {
       const req = body as LabWatchCreateRequest
-      const id = `mock-watch-${++counter}`
+      const id = ++nextId
       watches.set(id, { id, template_id: req.template_id, symbol: req.symbol, timeframe: req.timeframe, params: req.params, created_at: new Date().toISOString(), autopaper: null })
       return { watch_id: id }
     }
     if (method === 'GET' && seg.length === 1) return [...watches.values()]
-    const w = watches.get(seg[1])
+    const w = watches.get(num(seg[1]))
     if (!w) notFound()
     if (method === 'DELETE') {
-      watches.delete(seg[1])
+      watches.delete(w.id as number)
       return undefined
     }
     if (method === 'POST' && seg[2] === 'autopaper') {
-      const req = body as { account_id: string; enabled: boolean }
-      watches.set(w.id, { ...w, autopaper: { account_id: req.account_id, enabled: req.enabled } })
+      const req = body as { account_id: number; enabled: boolean }
+      watches.set(w.id as number, { ...w, autopaper: { account_id: req.account_id, enabled: req.enabled } })
       return { ok: true }
     }
     if (method === 'GET' && seg[2] === 'compare') {
-      return { paper: { trades: 0 }, backtest: { trades: 0 } }
+      return {
+        watch_id: w.id,
+        period: { from: w.created_at, to: new Date().toISOString() },
+        paper: { trades: 0, open_positions: 0, winrate: null, profit_factor: null, net_pnl: 0, avg_r: null, entries: [] },
+        backtest: { trades: 0, winrate: null, net_return_pct: 0, profit_factor: null, position: null, trades_list: [] },
+      }
     }
     if (method === 'GET' && seg[2] === 'state') {
       const now = Date.now()
-      return {
-        watch_id: w.id,
-        computed_at: new Date(now).toISOString(),
-        last_bar: new Date(now - 3_600_000).toISOString(),
-        position: null,
-        recent_trades: [],
-        last_signal: null,
-      }
+      return { watch_id: w.id, computed_at: new Date(now).toISOString(), last_bar: new Date(now - 3_600_000).toISOString(), position: null, recent_trades: [], last_signal: null }
     }
   }
 
@@ -372,50 +482,42 @@ export async function getLabMock(method: string, fullPath: string, body?: unknow
     if (seg[1] === 'accounts' && method === 'GET') return [...paperAccounts.values()]
     if (seg[1] === 'accounts' && method === 'POST') {
       const req = body as PaperAccountCreateRequest
-      const id = `mock-acct-${++counter}`
-      paperAccounts.set(id, { id, name: req.name, balance: req.starting_balance, equity: req.starting_balance, open_positions: 0, realized_pnl: 0, created_at: new Date().toISOString(), risk_pct: req.risk_pct, leverage_max: req.leverage_max, starting_balance: req.starting_balance })
+      const id = ++nextId
+      paperAccounts.set(id, { id, name: req.name, balance: req.starting_balance, equity: req.starting_balance, open_positions: [], realized_pnl: 0, created_at: new Date().toISOString(), risk_pct: req.risk_pct, leverage_max: req.leverage_max, starting_balance: req.starting_balance })
       return { id }
     }
     if (seg[1] === 'orders' && method === 'POST') {
-      const req = body as PaperOrderRequest
-      const id = `mock-j-${++counter}`
-      const dist = Math.abs(MOCK_FILL_PRICE - req.sl) || 1
-      journal.set(id, {
-        id, account_id: req.account_id, source: 'paper_manual', watch_id: req.watch_id ?? null, run_id: null,
-        symbol: req.symbol, side: req.side, entry_time: new Date().toISOString(), entry_price: MOCK_FILL_PRICE,
-        exit_time: null, exit_price: null, qty: req.qty ?? 100 / dist, fees: 0, funding: 0, sl: req.sl, tp: req.tp ?? null,
-        risk_amount: 100, pnl: null, r_multiple: null, exit_reason: null, notes: req.note ?? null, tags: [],
-      })
-      return { position_id: id }
+      // Mock cannot know the live price, so it refuses instead of inventing a fill.
+      void (body as PaperOrderRequest)
+      throw new ApiError('server', 503)
     }
     if (seg[1] === 'positions' && seg[3] === 'close' && method === 'POST') {
-      const j = journal.get(seg[2])
-      if (!j) notFound()
-      journal.set(j.id, { ...j, exit_time: new Date().toISOString(), exit_price: j.entry_price, pnl: 0, r_multiple: 0, exit_reason: 'manual' })
+      for (const a of paperAccounts.values()) {
+        const list = a.open_positions as PaperPosition[]
+        a.open_positions = list.filter((p) => String(p.id) !== seg[2])
+      }
       return { ok: true }
     }
   }
 
   if (seg[0] === 'journal') {
-    if (method === 'GET' && seg[1] === 'stats') {
-      const qs = new URLSearchParams(fullPath.split('?')[1] ?? '')
-      return mockStats(qs.get('account_id') ?? undefined)
-    }
+    if (method === 'GET' && seg[1] === 'stats') return mockStats(qs.get('account_id') ?? undefined)
     if (method === 'GET' && seg.length === 1) {
-      const qs = new URLSearchParams(fullPath.split('?')[1] ?? '')
-      return [...journal.values()].filter(
-        (j) =>
-          (!qs.get('account_id') || j.account_id === qs.get('account_id')) &&
-          (!qs.get('symbol') || j.symbol === qs.get('symbol')) &&
-          (!qs.get('source') || j.source === qs.get('source')),
-      )
+      return [...journal.values()]
+        .filter(
+          (j) =>
+            (!qs.get('account_id') || String(j.account_id) === qs.get('account_id')) &&
+            (!qs.get('symbol') || j.symbol === qs.get('symbol')) &&
+            (!qs.get('source') || j.source === qs.get('source')),
+        )
+        .reverse()
     }
     if (method === 'PATCH' && seg.length === 2) {
-      const j = journal.get(seg[1])
+      const j = journal.get(num(seg[1]))
       if (!j) notFound()
       const patch = body as { notes: string; tags: string[] }
       const next = { ...j, notes: patch.notes, tags: patch.tags }
-      journal.set(j.id, next)
+      journal.set(j.id as number, next)
       return next
     }
   }

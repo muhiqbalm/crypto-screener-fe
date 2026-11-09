@@ -2,6 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api/client'
 import type {
+  LabId,
   JournalFilters,
   JournalPatchRequest,
   PaperAccountCreateRequest,
@@ -14,7 +15,7 @@ export const paperKeys = {
   accounts: () => [...paperKeys.all, 'accounts'] as const,
   journal: (f: JournalFilters) => [...paperKeys.all, 'journal', f] as const,
   stats: (accountId?: string) => [...paperKeys.all, 'stats', accountId ?? 'all'] as const,
-  compare: (watchId: string) => [...paperKeys.all, 'compare', watchId] as const,
+  compare: (watchId: LabId) => [...paperKeys.all, 'compare', String(watchId)] as const,
 }
 
 export function usePaperAccounts(enabled = true) {
@@ -52,9 +53,9 @@ export function useJournalStats(accountId?: string) {
   })
 }
 
-export function useWatchCompare(watchId: string | null) {
+export function useWatchCompare(watchId: LabId | null) {
   return useQuery({
-    queryKey: paperKeys.compare(watchId ?? ''),
+    queryKey: paperKeys.compare(String(watchId ?? '')),
     queryFn: ({ signal }) => api.getWatchCompare(watchId!, signal),
     enabled: Boolean(watchId),
   })
@@ -63,7 +64,7 @@ export function useWatchCompare(watchId: string | null) {
 export function usePatchJournal() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: JournalPatchRequest }) => api.patchJournalEntry(id, body),
+    mutationFn: ({ id, body }: { id: LabId; body: JournalPatchRequest }) => api.patchJournalEntry(id, body),
     onSuccess: () => void qc.invalidateQueries({ queryKey: [...paperKeys.all, 'journal'] }),
   })
 }
@@ -79,7 +80,7 @@ export function useCreatePaperOrder() {
 export function useClosePaperPosition() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => api.closePaperPosition(id),
+    mutationFn: (id: LabId) => api.closePaperPosition(id),
     onSuccess: () => void qc.invalidateQueries({ queryKey: paperKeys.all }),
   })
 }
@@ -87,7 +88,7 @@ export function useClosePaperPosition() {
 export function useSetAutopaper() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ watchId, accountId, enabled }: { watchId: string; accountId: string; enabled: boolean }) =>
+    mutationFn: ({ watchId, accountId, enabled }: { watchId: LabId; accountId: LabId; enabled: boolean }) =>
       api.setWatchAutopaper(watchId, { account_id: accountId, enabled }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: labLiveKeys.watches() }),
   })

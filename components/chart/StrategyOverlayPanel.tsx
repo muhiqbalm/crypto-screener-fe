@@ -58,7 +58,7 @@ function WatchSelector({ watchId, watches }: { watchId: string | null; watches: 
   return (
     <Card className="border-border/60">
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-tight">
           <Eye className="h-4 w-4 text-violet-400" />
           Watch strategi
         </CardTitle>
@@ -74,10 +74,14 @@ function WatchSelector({ watchId, watches }: { watchId: string | null; watches: 
             </button>
           </p>
         ) : list.length === 0 ? (
-          <p className="text-xs text-muted-foreground">
-            Belum ada watch. Buka run yang sudah selesai di <Link href="/lab" className="underline">Lab</Link> lalu klik
-            &quot;Tampilkan di Chart&quot;.
-          </p>
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              Belum ada strategi yang dipantau. Buka run yang sudah selesai di Lab, lalu klik &quot;Tampilkan di Chart&quot;.
+            </p>
+            <Button asChild size="sm" variant="outline" className="w-full">
+              <Link href="/lab">Buka Lab</Link>
+            </Button>
+          </div>
         ) : (
           <>
             <label htmlFor="watch-select" className="sr-only">Pilih watch</label>
@@ -148,7 +152,7 @@ export function LiveSignalCard({
   return (
     <Card className="border-border/60">
       <CardHeader className="flex-row items-center justify-between gap-2 pb-2">
-        <CardTitle className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-tight">
           <Activity className="h-4 w-4 text-emerald-400" />
           Status Sinyal Live
         </CardTitle>
@@ -228,7 +232,7 @@ function RunOverlayCard({
   return (
     <Card className="border-border/60">
       <CardHeader className="pb-2">
-        <CardTitle className="text-xs font-bold uppercase tracking-wider">Overlay trade backtest</CardTitle>
+        <CardTitle className="text-sm font-semibold tracking-tight">Overlay trade backtest</CardTitle>
       </CardHeader>
       <CardContent className="space-y-1">
         {run.isPending ? (

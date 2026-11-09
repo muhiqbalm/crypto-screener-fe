@@ -188,6 +188,18 @@ export function compareRows(c: Record<string, unknown> | null | undefined): Comp
   if (!paper || !backtest || typeof paper !== 'object' || typeof backtest !== 'object') return null
   const p = paper as Record<string, unknown>
   const b = backtest as Record<string, unknown>
-  const keys = Array.from(new Set([...Object.keys(p), ...Object.keys(b)]))
+  const scalar = (v: unknown) => v === null || v === undefined || ['number', 'string', 'boolean'].includes(typeof v)
+  // Lists/objects (entries, trades_list, position) are detail, not comparable metrics.
+  const keys = Array.from(new Set([...Object.keys(p), ...Object.keys(b)])).filter((k) => scalar(p[k]) && scalar(b[k]))
   return keys.map((metric) => ({ metric, paper: p[metric], backtest: b[metric] }))
+}
+
+export const COMPARE_LABEL: Record<string, string> = {
+  trades: 'Jumlah trade',
+  open_positions: 'Posisi terbuka',
+  winrate: 'Winrate',
+  profit_factor: 'Profit factor',
+  net_pnl: 'Net P&L (USDT)',
+  net_return_pct: 'Net return (%)',
+  avg_r: 'Rata-rata R',
 }

@@ -2,6 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api/client'
 import type {
+  LabId,
   LabRunCreateRequest,
   LabRunSummary,
   LabScanCreateRequest,
@@ -15,11 +16,11 @@ export const labKeys = {
   symbols: () => [...labKeys.all, 'symbols'] as const,
   dataStatus: () => [...labKeys.all, 'data-status'] as const,
   runs: () => [...labKeys.all, 'runs'] as const,
-  run: (id: string) => [...labKeys.all, 'run', id] as const,
-  equity: (id: string) => [...labKeys.all, 'run', id, 'equity'] as const,
-  trades: (id: string) => [...labKeys.all, 'run', id, 'trades'] as const,
+  run: (id: LabId) => [...labKeys.all, 'run', String(id)] as const,
+  equity: (id: LabId) => [...labKeys.all, 'run', String(id), 'equity'] as const,
+  trades: (id: LabId) => [...labKeys.all, 'run', String(id), 'trades'] as const,
   scans: () => [...labKeys.all, 'scans'] as const,
-  scan: (id: string) => [...labKeys.all, 'scan', id] as const,
+  scan: (id: LabId) => [...labKeys.all, 'scan', String(id)] as const,
 }
 
 const POLL_MS = 3_000
@@ -71,9 +72,9 @@ export function useLabRuns(limit = 50) {
   })
 }
 
-export function useLabRun(id: string | null | undefined) {
+export function useLabRun(id: LabId | null | undefined) {
   return useQuery({
-    queryKey: labKeys.run(id ?? ''),
+    queryKey: labKeys.run(String(id ?? '')),
     queryFn: ({ signal }) => api.getLabRun(id!, signal),
     enabled: Boolean(id),
     refetchInterval: (query) => (isActiveStatus(query.state.data?.status) ? POLL_MS : false),
@@ -81,7 +82,7 @@ export function useLabRun(id: string | null | undefined) {
   })
 }
 
-export function useLabRunEquity(id: string, enabled: boolean) {
+export function useLabRunEquity(id: LabId, enabled: boolean) {
   return useQuery({
     queryKey: labKeys.equity(id),
     queryFn: ({ signal }) => api.getLabRunEquity(id, signal),
@@ -90,7 +91,7 @@ export function useLabRunEquity(id: string, enabled: boolean) {
   })
 }
 
-export function useLabRunTrades(id: string, enabled: boolean) {
+export function useLabRunTrades(id: LabId, enabled: boolean) {
   return useQuery({
     queryKey: labKeys.trades(id),
     queryFn: ({ signal }) => api.getLabRunTrades(id, signal),
@@ -112,7 +113,7 @@ export function useCreateLabRun() {
 export function useCancelLabJob() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (jobId: string) => api.cancelLabJob(jobId),
+    mutationFn: (jobId: LabId) => api.cancelLabJob(jobId),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: labKeys.all })
     },
@@ -126,9 +127,9 @@ export function useLabScans() {
   })
 }
 
-export function useLabScan(id: string | null) {
+export function useLabScan(id: LabId | null) {
   return useQuery({
-    queryKey: labKeys.scan(id ?? ''),
+    queryKey: labKeys.scan(String(id ?? '')),
     queryFn: ({ signal }) => api.getLabScan(id!, signal),
     enabled: Boolean(id),
     refetchInterval: (query) => (isActiveStatus(query.state.data?.status) ? POLL_MS : false),
@@ -143,5 +144,17 @@ export function useCreateLabScan() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: labKeys.scans() })
     },
+  })
+}
+
+/** Job progress (stage + trial X/Y) while a run is queued/running. */
+export function useLabJob(jobId: LabId | null | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: [...labKeys.all, 'job', String(jobId ?? '')] as const,
+    queryFn: ({ signal }) => api.getLabJob(jobId!, signal),
+    enabled: enabled && jobId !== null && jobId !== undefined,
+    refetchInterval: (query) => (isActiveStatus(query.state.data?.status ?? 'running') ? POLL_MS : false),
+    refetchIntervalInBackground: false,
+    retry: false,
   })
 }

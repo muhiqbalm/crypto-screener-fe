@@ -9,11 +9,11 @@ export const metadata = {
 
 export default function LabScanPage() {
   return (
-    <main className="mx-auto max-w-7xl space-y-8 px-4 py-8 pb-12 sm:px-6 lg:px-8">
+    <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 pb-12 sm:px-6 sm:py-8 lg:px-8">
       <LabHeader
         active="/lab/scan"
-        title="Scan multi-market"
-        subtitle="Jalankan validate / optimize di banyak symbol × timeframe sekaligus. Hasil diurutkan PASS dulu, lalu profit factor out-of-sample."
+        title="Scan banyak koin"
+        subtitle="Jalankan Validasi atau Cari Parameter Terbaik di banyak koin × timeframe sekaligus, lalu bandingkan rapornya di satu peta."
       />
       <Suspense fallback={<Skeleton className="h-96 w-full" />}>
         <ScanView />

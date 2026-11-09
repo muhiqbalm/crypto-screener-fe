@@ -1,3 +1,5 @@
+import type { LabId } from './types/lab'
+
 export const PATHS = {
   // Screener
   screenerSummary: '/api/v1/screener/summary',
@@ -39,28 +41,28 @@ export const PATHS = {
   labSymbols: '/api/v1/lab/symbols',
   labRuns: '/api/v1/lab/runs',
   labRunsList: (limit: number) => `/api/v1/lab/runs?limit=${limit}`,
-  labRun: (id: string) => `/api/v1/lab/runs/${encodeURIComponent(id)}`,
-  labRunEquity: (id: string) => `/api/v1/lab/runs/${encodeURIComponent(id)}/equity`,
-  labRunTrades: (id: string) => `/api/v1/lab/runs/${encodeURIComponent(id)}/trades`,
+  labRun: (id: LabId) => `/api/v1/lab/runs/${encodeURIComponent(String(id))}`,
+  labRunEquity: (id: LabId) => `/api/v1/lab/runs/${encodeURIComponent(String(id))}/equity`,
+  labRunTrades: (id: LabId) => `/api/v1/lab/runs/${encodeURIComponent(String(id))}/trades`,
   labScans: '/api/v1/lab/scans',
-  labScan: (id: string) => `/api/v1/lab/scans/${encodeURIComponent(id)}`,
-  labJob: (id: string) => `/api/v1/lab/jobs/${encodeURIComponent(id)}`,
-  labJobCancel: (id: string) => `/api/v1/lab/jobs/${encodeURIComponent(id)}/cancel`,
+  labScan: (id: LabId) => `/api/v1/lab/scans/${encodeURIComponent(String(id))}`,
+  labJob: (id: LabId) => `/api/v1/lab/jobs/${encodeURIComponent(String(id))}`,
+  labJobCancel: (id: LabId) => `/api/v1/lab/jobs/${encodeURIComponent(String(id))}/cancel`,
   labDataStatus: '/api/v1/lab/data/status',
   labKlines: (symbol: string, timeframe: string, limit: number) =>
     `/api/v1/lab/klines?symbol=${encodeURIComponent(symbol)}&timeframe=${encodeURIComponent(timeframe)}&limit=${limit}`,
   labWatches: '/api/v1/lab/watches',
-  labWatch: (id: string) => `/api/v1/lab/watches/${encodeURIComponent(id)}`,
-  labWatchState: (id: string) => `/api/v1/lab/watches/${encodeURIComponent(id)}/state`,
-  labWatchAutopaper: (id: string) => `/api/v1/lab/watches/${encodeURIComponent(id)}/autopaper`,
-  labWatchCompare: (id: string) => `/api/v1/lab/watches/${encodeURIComponent(id)}/compare`,
+  labWatch: (id: LabId) => `/api/v1/lab/watches/${encodeURIComponent(String(id))}`,
+  labWatchState: (id: LabId) => `/api/v1/lab/watches/${encodeURIComponent(String(id))}/state`,
+  labWatchAutopaper: (id: LabId) => `/api/v1/lab/watches/${encodeURIComponent(String(id))}/autopaper`,
+  labWatchCompare: (id: LabId) => `/api/v1/lab/watches/${encodeURIComponent(String(id))}/compare`,
 
   // Paper trading + journal (PAPER ONLY)
   paperAccounts: '/api/v1/lab/paper/accounts',
   paperOrders: '/api/v1/lab/paper/orders',
-  paperPositionClose: (id: string) => `/api/v1/lab/paper/positions/${encodeURIComponent(id)}/close`,
+  paperPositionClose: (id: LabId) => `/api/v1/lab/paper/positions/${encodeURIComponent(String(id))}/close`,
   journal: (query: string) => `/api/v1/lab/journal${query ? `?${query}` : ''}`,
-  journalEntry: (id: string) => `/api/v1/lab/journal/${encodeURIComponent(id)}`,
+  journalEntry: (id: LabId) => `/api/v1/lab/journal/${encodeURIComponent(String(id))}`,
   journalStats: (accountId?: string) =>
     `/api/v1/lab/journal/stats${accountId ? `?account_id=${encodeURIComponent(accountId)}` : ''}`,
 } as const

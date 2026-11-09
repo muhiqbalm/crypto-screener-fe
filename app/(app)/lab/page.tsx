@@ -11,13 +11,13 @@ export const metadata = {
 
 export default function LabPage() {
   return (
-    <main className="mx-auto max-w-7xl space-y-8 px-4 py-8 pb-12 sm:px-6 lg:px-8">
+    <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 pb-12 sm:px-6 sm:py-8 lg:px-8">
       <LabHeader
         active="/lab"
-        title="Strategy Lab"
-        subtitle="Logika sama dengan strategi live Rosyade (ETH 4H), tapi semua parameter bisa diubah dan dijalankan di perp Binance mana pun, timeframe apa pun. Strategi live di TradingView tidak tersentuh."
+        title="Uji strategi Rosyade"
+        subtitle="Logika sama dengan strategi live ETH 4H. Ganti koin, timeframe atau parameter, lalu lihat rapor LOLOS/GAGAL yang diuji jujur. Strategi live di TradingView tidak tersentuh."
       />
-      <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+      <Suspense fallback={<Skeleton className="h-96 w-full rounded-xl" />}>
         <RunBuilder />
       </Suspense>
       <RunsTable />
