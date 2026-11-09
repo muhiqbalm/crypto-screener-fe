@@ -17,7 +17,8 @@ import {
   Activity,
   Loader2,
   Sun,
-  Moon
+  Moon,
+  FlaskConical,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
@@ -26,6 +27,7 @@ import { cn } from '@/lib/utils/cn'
 import { useSession } from '@/lib/utils/use-session'
 import { useLogout } from '@/lib/queries/auth'
 import { useApiHealth } from '@/lib/queries/health'
+import { useLabMe } from '@/lib/queries/lab'
 
 export function Navbar() {
   const pathname = usePathname()
@@ -34,6 +36,10 @@ export function Navbar() {
   const { theme, setTheme } = useTheme()
   const isMock = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true'
   const { data: health, isPending: healthPending } = useApiHealth()
+  // Lab is admin-only: show the item only on an explicit is_admin === true.
+  // Any error (403, network, backend not deployed yet) hides it.
+  const { data: labMe, isError: labMeError } = useLabMe(Boolean(session?.accessToken))
+  const showLab = Boolean(session) && !labMeError && labMe?.is_admin === true
 
   // Dropdown states
   const [intelOpen, setIntelOpen] = useState(false)
@@ -305,6 +311,21 @@ export function Navbar() {
                   </div>
                 )}
               </div>
+            )}
+
+            {showLab && (
+              <Link
+                href="/lab"
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors duration-150',
+                  pathname.startsWith('/lab')
+                    ? 'bg-accent/80 text-foreground font-bold shadow-xs'
+                    : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+                )}
+              >
+                <FlaskConical className="h-3.5 w-3.5 text-violet-400" />
+                <span>Lab</span>
+              </Link>
             )}
           </nav>
         </div>

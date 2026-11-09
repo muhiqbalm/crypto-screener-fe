@@ -9,6 +9,27 @@ import type {
 } from './types/webhook'
 import type { TradeLogResponse } from './types/trades'
 import type {
+  LabDataStatus,
+  LabEquityPoint,
+  LabJob,
+  LabMeResponse,
+  LabRunCreateRequest,
+  LabRunCreateResponse,
+  LabRunDetail,
+  LabRunSummary,
+  LabScanCreateRequest,
+  LabScanCreateResponse,
+  LabScanDetail,
+  LabSymbol,
+  LabTemplate,
+  LabTrade,
+  LabKline,
+  LabWatch,
+  LabWatchCreateRequest,
+  LabWatchCreateResponse,
+  LabWatchState,
+} from './types/lab'
+import type {
   AccessTokenResponse,
   LoginRequest,
   ProfileUpdateRequest,
@@ -48,6 +69,11 @@ export function getBaseUrl(): string {
 
 function isMockDataEnabled(): boolean {
   return process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true'
+}
+
+/** Strategy Lab endpoints use the same Bearer JWT as /trading/*. */
+function isLabPath(path: string): boolean {
+  return path.startsWith(PATHS.labPrefix)
 }
 
 // ---------------------------------------------------------------------------
@@ -129,13 +155,13 @@ export async function request<T>(
   // production bundles when NEXT_PUBLIC_USE_MOCK_DATA !== "true".
   if (isMockDataEnabled()) {
     const { getMock } = await import('@/lib/mocks/index')
-    return getMock(method, path) as Promise<T>
+    return getMock(method, path, body) as Promise<T>
   }
 
   const isTradingPath = path.startsWith('/trading/')
 
   // Proactive refresh: if token is about to expire, refresh before the request
-  if (isTradingPath && isTokenExpired()) {
+  if ((isTradingPath || isLabPath(path)) && isTokenExpired()) {
     try {
       await _doRefresh()
     } catch {
@@ -166,7 +192,7 @@ async function _executeRequest<T>(
     headers['X-API-Key'] = getApiKey()
   }
 
-  if (path.startsWith('/trading/')) {
+  if (path.startsWith('/trading/') || isLabPath(path)) {
     headers['Authorization'] = `Bearer ${getToken()}`
   }
 
@@ -208,6 +234,17 @@ async function _executeRequest<T>(
       } catch {
         throw new ApiError('auth', status)
       }
+    }
+  }
+
+  // Lab: one reactive refresh on 401 only. 403 means "not an admin" and must
+  // not trigger a refresh/redirect loop.
+  if (status === 401 && !isRetry && isLabPath(path)) {
+    try {
+      await _doRefresh()
+      return _executeRequest<T>(method, path, body, signal, true)
+    } catch {
+      throw new ApiError('auth', status)
     }
   }
 
@@ -332,6 +369,86 @@ export const api = {
 
   getIntelNews(signal?: AbortSignal): Promise<IntelNewsResponse> {
     return request<IntelNewsResponse>('GET', PATHS.intelNews, undefined, signal)
+  },
+
+  // ---------------------------------------------------------------------------
+  // Strategy Lab (/api/v1/lab, admin only)
+  // ---------------------------------------------------------------------------
+
+  getLabMe(signal?: AbortSignal): Promise<LabMeResponse> {
+    return request<LabMeResponse>('GET', PATHS.labMe, undefined, signal)
+  },
+
+  getLabTemplates(signal?: AbortSignal): Promise<LabTemplate[]> {
+    return request<LabTemplate[]>('GET', PATHS.labTemplates, undefined, signal)
+  },
+
+  getLabSymbols(signal?: AbortSignal): Promise<LabSymbol[]> {
+    return request<LabSymbol[]>('GET', PATHS.labSymbols, undefined, signal)
+  },
+
+  createLabRun(body: LabRunCreateRequest): Promise<LabRunCreateResponse> {
+    return request<LabRunCreateResponse>('POST', PATHS.labRuns, body)
+  },
+
+  getLabRuns(limit = 50, signal?: AbortSignal): Promise<LabRunSummary[]> {
+    return request<LabRunSummary[]>('GET', PATHS.labRunsList(limit), undefined, signal)
+  },
+
+  getLabRun(id: string, signal?: AbortSignal): Promise<LabRunDetail> {
+    return request<LabRunDetail>('GET', PATHS.labRun(id), undefined, signal)
+  },
+
+  getLabRunEquity(id: string, signal?: AbortSignal): Promise<LabEquityPoint[]> {
+    return request<LabEquityPoint[]>('GET', PATHS.labRunEquity(id), undefined, signal)
+  },
+
+  getLabRunTrades(id: string, signal?: AbortSignal): Promise<LabTrade[]> {
+    return request<LabTrade[]>('GET', PATHS.labRunTrades(id), undefined, signal)
+  },
+
+  createLabScan(body: LabScanCreateRequest): Promise<LabScanCreateResponse> {
+    return request<LabScanCreateResponse>('POST', PATHS.labScans, body)
+  },
+
+  getLabScans(signal?: AbortSignal): Promise<LabScanDetail[]> {
+    return request<LabScanDetail[]>('GET', PATHS.labScans, undefined, signal)
+  },
+
+  getLabScan(id: string, signal?: AbortSignal): Promise<LabScanDetail> {
+    return request<LabScanDetail>('GET', PATHS.labScan(id), undefined, signal)
+  },
+
+  getLabJob(id: string, signal?: AbortSignal): Promise<LabJob> {
+    return request<LabJob>('GET', PATHS.labJob(id), undefined, signal)
+  },
+
+  cancelLabJob(id: string): Promise<LabJob> {
+    return request<LabJob>('POST', PATHS.labJobCancel(id))
+  },
+
+  getLabDataStatus(signal?: AbortSignal): Promise<LabDataStatus[]> {
+    return request<LabDataStatus[]>('GET', PATHS.labDataStatus, undefined, signal)
+  },
+
+  getLabKlines(symbol: string, timeframe: string, limit = 500, signal?: AbortSignal): Promise<LabKline[]> {
+    return request<LabKline[]>('GET', PATHS.labKlines(symbol, timeframe, limit), undefined, signal)
+  },
+
+  createLabWatch(body: LabWatchCreateRequest): Promise<LabWatchCreateResponse> {
+    return request<LabWatchCreateResponse>('POST', PATHS.labWatches, body)
+  },
+
+  getLabWatches(signal?: AbortSignal): Promise<LabWatch[]> {
+    return request<LabWatch[]>('GET', PATHS.labWatches, undefined, signal)
+  },
+
+  deleteLabWatch(id: string): Promise<void> {
+    return request<void>('DELETE', PATHS.labWatch(id))
+  },
+
+  getLabWatchState(id: string, signal?: AbortSignal): Promise<LabWatchState> {
+    return request<LabWatchState>('GET', PATHS.labWatchState(id), undefined, signal)
   },
 }
 

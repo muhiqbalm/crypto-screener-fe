@@ -5,9 +5,14 @@ import { MOCK_TRADE_LOG } from './trades'
 import { MOCK_BALANCE } from './balance'
 import { MOCK_OPEN_POSITIONS, MOCK_POSITIONS_HISTORY } from './positions'
 
-export async function getMock(method: string, path: string): Promise<unknown> {
+export async function getMock(method: string, path: string, body?: unknown): Promise<unknown> {
   // Resolve on next microtask to simulate async
   await Promise.resolve()
+
+  if (path.startsWith('/api/v1/lab/')) {
+    const { getLabMock } = await import('./lab')
+    return getLabMock(method, path, body)
+  }
 
   if (method === 'GET' && path === PATHS.screenerSummary) return MOCK_SCREENER
   if (method === 'GET' && path === PATHS.webhookConfig) return MOCK_WEBHOOK_CONFIG

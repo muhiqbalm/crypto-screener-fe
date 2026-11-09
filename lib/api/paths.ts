@@ -31,4 +31,25 @@ export const PATHS = {
   // Real Market Intelligence
   intelWhales: '/api/v1/intel/whales',
   intelNews: '/api/v1/intel/news',
+
+  // Strategy Lab (admin only, Bearer JWT)
+  labPrefix: '/api/v1/lab/',
+  labMe: '/api/v1/lab/me',
+  labTemplates: '/api/v1/lab/templates',
+  labSymbols: '/api/v1/lab/symbols',
+  labRuns: '/api/v1/lab/runs',
+  labRunsList: (limit: number) => `/api/v1/lab/runs?limit=${limit}`,
+  labRun: (id: string) => `/api/v1/lab/runs/${encodeURIComponent(id)}`,
+  labRunEquity: (id: string) => `/api/v1/lab/runs/${encodeURIComponent(id)}/equity`,
+  labRunTrades: (id: string) => `/api/v1/lab/runs/${encodeURIComponent(id)}/trades`,
+  labScans: '/api/v1/lab/scans',
+  labScan: (id: string) => `/api/v1/lab/scans/${encodeURIComponent(id)}`,
+  labJob: (id: string) => `/api/v1/lab/jobs/${encodeURIComponent(id)}`,
+  labJobCancel: (id: string) => `/api/v1/lab/jobs/${encodeURIComponent(id)}/cancel`,
+  labDataStatus: '/api/v1/lab/data/status',
+  labKlines: (symbol: string, timeframe: string, limit: number) =>
+    `/api/v1/lab/klines?symbol=${encodeURIComponent(symbol)}&timeframe=${encodeURIComponent(timeframe)}&limit=${limit}`,
+  labWatches: '/api/v1/lab/watches',
+  labWatch: (id: string) => `/api/v1/lab/watches/${encodeURIComponent(id)}`,
+  labWatchState: (id: string) => `/api/v1/lab/watches/${encodeURIComponent(id)}/state`,
 } as const
