@@ -9,7 +9,7 @@ import { ErrorPanel } from '@/components/shell/ErrorPanel'
 import { EmptyPanel } from '@/components/shell/EmptyPanel'
 import { ExchangeLabel } from '@/components/trading/ExchangeLabel'
 import { useBalance } from '@/lib/queries/credentials'
-import { formatUsd } from '@/lib/utils/format'
+import { formatAmount, formatUsd, isUsdStable } from '@/lib/utils/format'
 import type { ExchangeBalanceResponse } from '@/lib/api/types/credentials'
 
 // ---------------------------------------------------------------------------
@@ -41,13 +41,13 @@ function AssetRow({ item }: { item: ExchangeBalanceResponse }) {
       {/* Values */}
       <div className="flex items-center gap-6 text-right shrink-0">
         <div className="w-24">
-          <p className="font-mono text-sm font-semibold tabular-nums text-bullish">{formatUsd(item.free)}</p>
+          <p className="font-mono text-sm font-semibold tabular-nums text-bullish">{formatAmount(item.free, item.currency)}</p>
         </div>
         <div className="w-24 hidden md:block">
-          <p className="font-mono text-sm font-semibold tabular-nums text-bearish">{formatUsd(item.used)}</p>
+          <p className="font-mono text-sm font-semibold tabular-nums text-bearish">{formatAmount(item.used, item.currency)}</p>
         </div>
         <div className="w-28">
-          <p className="font-mono text-sm font-semibold tabular-nums">{formatUsd(item.total)}</p>
+          <p className="truncate font-mono text-sm font-semibold tabular-nums">{formatAmount(item.total, item.currency)}</p>
         </div>
       </div>
     </div>
@@ -65,7 +65,9 @@ function ExchangeBalanceCard({
   exchange: string
   items: ExchangeBalanceResponse[]
 }) {
-  const total = items.reduce((sum, i) => sum + i.total, 0)
+  // Wallet amounts are in each currency's own unit (backend returns raw
+  // balances, not USD values), so only USD stablecoins can be summed.
+  const total = items.filter((i) => isUsdStable(i.currency)).reduce((sum, i) => sum + i.total, 0)
   const assetCount = items.length
 
   return (
@@ -82,7 +84,7 @@ function ExchangeBalanceCard({
           </div>
           <div className="text-right">
             <p className="font-mono text-lg font-bold tabular-nums">{formatUsd(total)}</p>
-            <p className="text-2xs text-muted-foreground">perkiraan total (USD)</p>
+            <p className="text-2xs text-muted-foreground">total stablecoin (USD)</p>
           </div>
         </div>
       </CardHeader>
@@ -137,7 +139,7 @@ function PortfolioSummary({
           <Wallet className="h-5 w-5 text-primary" aria-hidden="true" />
         </div>
         <div>
-          <p className="eyebrow">Total portofolio</p>
+          <p className="eyebrow">Total stablecoin (USD)</p>
           <p className="font-mono text-2xl font-bold tabular-nums tracking-tight">{formatUsd(total)}</p>
         </div>
       </div>
@@ -261,7 +263,7 @@ export function BalanceCard() {
     return acc
   }, {})
 
-  const grandTotal = balances.reduce((sum, i) => sum + i.total, 0)
+  const grandTotal = balances.filter((i) => isUsdStable(i.currency)).reduce((sum, i) => sum + i.total, 0)
   const exchangeCount = Object.keys(byExchange).length
 
   return (

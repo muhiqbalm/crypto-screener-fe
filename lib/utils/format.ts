@@ -96,6 +96,22 @@ export function displaySymbol(sym: string | null | undefined): string {
   return sym.replace(/:USDT$/, "");
 }
 
+const USD_STABLES = new Set(["USDT", "USDC", "BUSD", "FDUSD", "TUSD", "DAI", "USD"]);
+
+/** True for USD-pegged currencies whose amount can be shown/summed as USD. */
+export function isUsdStable(currency: string | null | undefined): boolean {
+  return !!currency && USD_STABLES.has(currency.toUpperCase());
+}
+
+/**
+ * Formats a wallet AMOUNT in its own currency: stablecoins as "$1,234.50",
+ * everything else as "0.0315 BTC" (never pretend a BTC amount is dollars).
+ */
+export function formatAmount(v: number | null | undefined, currency: string): string {
+  if (v === null || v === undefined || isNaN(v)) return DASH;
+  return isUsdStable(currency) ? formatUsd(v) : `${formatQty(v)} ${currency.toUpperCase()}`;
+}
+
 /** Base asset of a USDT-M symbol: "BTC/USDT:USDT" → "BTC". */
 export function baseAsset(sym: string): string {
   return sym.replace("/USDT:USDT", "").replace(":USDT", "");

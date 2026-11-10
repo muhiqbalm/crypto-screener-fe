@@ -48,7 +48,8 @@ const csp = [
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
-  ...(isDev ? [] : ["upgrade-insecure-requests"]),
+  // No upgrade-insecure-requests: it would break plain-http deployments
+  // (docker-compose on localhost). Production is HTTPS via nginx anyway.
 ].join("; ");
 
 const securityHeaders = [

@@ -13,6 +13,8 @@ import {
   baseAsset,
   displaySymbol,
   signClass,
+  formatAmount,
+  isUsdStable,
   formatPercent,
   formatVolume,
   formatFunding,
@@ -111,6 +113,15 @@ describe('formatUsd / formatUsdSigned', () => {
     expect(formatUsdSigned(12.3)).toBe('+$12.30')
     expect(formatUsdSigned(-4)).toBe('-$4.00')
     expect(formatUsdSigned(0)).toBe('$0.00')
+  })
+})
+
+describe('formatAmount', () => {
+  it('shows stablecoins as USD and other assets in their own unit', () => {
+    expect(formatAmount(1550.5, 'USDT')).toBe('$1,550.50')
+    expect(formatAmount(0.0315, 'BTC')).toBe('0.0315 BTC')
+    expect(isUsdStable('usdc')).toBe(true)
+    expect(isUsdStable('ETH')).toBe(false)
   })
 })
 
