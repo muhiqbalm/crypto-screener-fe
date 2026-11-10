@@ -90,26 +90,5 @@ export function Chip({
   )
 }
 
-/** Empty state with a single clear call to action. */
-export function EmptyState({
-  icon,
-  title,
-  description,
-  action,
-}: {
-  icon?: React.ReactNode
-  title: string
-  description?: string
-  action?: React.ReactNode
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border/70 px-6 py-10 text-center">
-      {icon && <div className="text-muted-foreground/70">{icon}</div>}
-      <div className="space-y-1">
-        <p className="text-sm font-medium">{title}</p>
-        {description && <p className="mx-auto max-w-sm text-xs text-muted-foreground">{description}</p>}
-      </div>
-      {action}
-    </div>
-  )
-}
+/** Empty state — re-exported from the shared shell states. */
+export { EmptyState } from '@/components/shell/states'

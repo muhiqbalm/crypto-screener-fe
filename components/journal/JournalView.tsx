@@ -1,5 +1,6 @@
 'use client'
 
+import { PageContainer, PageHeader } from '@/components/shell/page'
 import { useState } from 'react'
 import { BookOpen, Check, Loader2, Pencil, RefreshCw, X } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -39,20 +40,15 @@ export function JournalView() {
   const [filters, setFilters] = useState<JournalFilters>({})
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 border-b border-border/40 pb-6 md:flex-row md:items-end md:justify-between">
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 rounded-full border border-warn/20 bg-warn/10 px-3 py-1 text-xs font-mono font-medium text-warn">
-            <BookOpen className="h-3.5 w-3.5" />
-            TRADING JOURNAL
-          </div>
-          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Jurnal trading</h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            Semua trade paper (manual &amp; auto-follow strategi) tercatat di sini, lengkap dengan R-multiple, catatan dan tag.
-          </p>
-        </div>
-        <PaperBadge />
-      </div>
+    <PageContainer>
+      <PageHeader
+        eyebrow="Strategy Lab"
+        eyebrowIcon={BookOpen}
+        tone="lab"
+        title="Jurnal trading"
+        description="Semua trade paper (manual & auto-follow strategi) tercatat di sini, lengkap dengan R-multiple, catatan dan tag."
+        actions={<PaperBadge />}
+      />
 
       <PaperAccountsSection />
 
@@ -110,7 +106,7 @@ export function JournalView() {
       <StatsSection accountId={filters.account_id ? String(filters.account_id) : undefined} />
       <JournalTable filters={filters} />
       <LiveVsBacktest />
-    </div>
+    </PageContainer>
   )
 }
 

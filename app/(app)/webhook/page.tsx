@@ -1,20 +1,24 @@
+import { Webhook } from 'lucide-react'
 import { WebhookTab } from '@/components/webhook/WebhookTab'
+import { PageContainer, PageHeader } from '@/components/shell/page'
+import { Badge } from '@/components/ui/badge'
 
 export const metadata = {
-  title: 'Webhook & Automation — Crypto Screener',
-  description: 'Configure TradingView webhook and manage trading automation.',
+  title: 'Webhook & Otomasi',
+  description: 'Atur webhook TradingView dan otomasi trading.',
 }
 
 export default function WebhookPage() {
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight">Webhook &amp; Automation</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Configure your TradingView webhook and manage automated trading signals.
-        </p>
-      </div>
+    <PageContainer>
+      <PageHeader
+        eyebrow="Trading live"
+        eyebrowIcon={Webhook}
+        title="Webhook & otomasi"
+        description="Hubungkan alert TradingView ke eksekusi order di exchange, lalu pantau sinyal yang masuk."
+        actions={<Badge variant="bearish" size="sm">AKUN LIVE</Badge>}
+      />
       <WebhookTab />
-    </main>
+    </PageContainer>
   )
 }

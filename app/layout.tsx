@@ -15,8 +15,14 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'BMTM MoonTrade — Screener & Trade System',
-  description: 'Institutional-grade crypto screener, TradingView webhook automation, and Binance trade execution system.',
+  title: {
+    default: 'BMTM MoonTrade',
+    // Pages export just their own name; the brand suffix is added here.
+    template: '%s · BMTM MoonTrade',
+  },
+  description: 'Screener kripto, otomasi webhook TradingView dan Strategy Lab tim BMTM.',
+  // Private, invite-only terminal: keep it out of search engines.
+  robots: { index: false, follow: false },
 }
 
 export default function RootLayout({
@@ -25,7 +31,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="id" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {/* ThemeProvider must be in the server layout so next-themes can inject
             its anti-flash script at the server level (React 19 / Next.js 16

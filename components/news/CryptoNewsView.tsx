@@ -1,5 +1,6 @@
 'use client'
 
+import { PageContainer, PageHeader } from '@/components/shell/page'
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -9,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorPanel } from '@/components/shell/ErrorPanel'
 import { useIntelNews } from '@/lib/queries/intel'
 import { ApiError } from '@/lib/api/errors'
+import { safeExternalUrl } from '@/lib/utils/safe-url'
 import type { NewsItem } from '@/lib/api/types/intel'
 import {
   TrendingUp,
@@ -20,7 +22,8 @@ import {
   Zap,
   Globe2,
   CalendarClock,
-  ArrowUpRight
+  ArrowUpRight,
+  Newspaper,
 } from 'lucide-react'
 
 export function CryptoNewsView() {
@@ -55,40 +58,26 @@ export function CryptoNewsView() {
   })
 
   return (
-    <div className="space-y-8 pb-12">
-      {/* Header Bar */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between border-b border-border/40 pb-6">
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-bullish/10 border border-bullish/20 text-bullish text-xs font-mono font-medium shadow-sm">
-            <span className="h-2 w-2 rounded-full bg-bullish animate-pulse" />
-            NEWS &amp; SENTIMENT
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
-            Market News &amp; Macro Catalysts
-          </h1>
-          <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
-            CoinTelegraph RSS headlines with keyword-based sentiment tagging, plus the Alternative.me Fear &amp; Greed index.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2.5">
-          {snapshotTime && (
-            <Badge variant="outline" className="border-border/80 px-3 py-1.5 font-mono text-xs">
-              Snapshot {snapshotTime}
-            </Badge>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="gap-2 cursor-pointer h-9 px-3.5 border-border/80 hover:bg-muted/50"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin text-bullish' : ''}`} />
-            Sync Intel
-          </Button>
-        </div>
-      </div>
+    <PageContainer>
+      <PageHeader
+        eyebrow="Pasar"
+        eyebrowIcon={Newspaper}
+        title="Berita & sentimen"
+        description="Headline RSS CoinTelegraph dengan tag sentimen berbasis kata kunci, plus indeks Fear & Greed dari Alternative.me."
+        actions={
+          <>
+            {snapshotTime && (
+              <Badge variant="muted" className="num font-normal">
+                Snapshot {snapshotTime}
+              </Badge>
+            )}
+            <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+              <RefreshCw className={isFetching ? 'animate-spin' : ''} aria-hidden="true" />
+              Muat ulang
+            </Button>
+          </>
+        }
+      />
 
       {isPending ? (
         <div className="space-y-4">
@@ -361,9 +350,9 @@ export function CryptoNewsView() {
                   </div>
                 </div>
 
-                {item.linkUrl && (
+                {safeExternalUrl(item.linkUrl) && (
                   <a
-                    href={item.linkUrl}
+                    href={safeExternalUrl(item.linkUrl)!}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-xs font-semibold text-bullish hover:text-bullish transition-colors"
@@ -389,6 +378,6 @@ export function CryptoNewsView() {
       </div>
       </>
       )}
-    </div>
+    </PageContainer>
   )
 }

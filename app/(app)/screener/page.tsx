@@ -1,20 +1,22 @@
+import { BarChart2 } from 'lucide-react'
 import { MarketScreenerTab } from '@/components/screener/MarketScreenerTab'
+import { PageContainer, PageHeader } from '@/components/shell/page'
 
 export const metadata = {
-  title: 'Market Screener — Crypto Screener',
-  description: 'Real-time crypto market screener with signals, tiers, and rankings.',
+  title: 'Screener',
+  description: 'Screener pasar kripto real-time dengan sinyal, tier dan ranking.',
 }
 
 export default function ScreenerPage() {
   return (
-    <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">Market Screener</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Real-time ranked crypto assets with signals and tier classifications.
-        </p>
-      </div>
+    <PageContainer>
+      <PageHeader
+        eyebrow="Pasar"
+        eyebrowIcon={BarChart2}
+        title="Market screener"
+        description="Perpetual USDT-M diurutkan berdasarkan skor multi-faktor, lengkap dengan sinyal dan tier. Klik baris untuk rincian 5 faktor."
+      />
       <MarketScreenerTab />
-    </main>
+    </PageContainer>
   )
 }

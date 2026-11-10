@@ -1,5 +1,6 @@
 'use client'
 
+import { PageContainer, PageHeader } from '@/components/shell/page'
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -98,41 +99,26 @@ export function WhaleRadarView() {
   })
 
   return (
-    <div className="space-y-8 pb-12">
-      {/* Page Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between border-b border-border/40 pb-6">
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-info/10 border border-info/20 text-info text-xs font-mono font-medium shadow-sm">
-            <Radar className="h-3.5 w-3.5 text-info" />
-            WHALE RADAR
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
-            Whale Radar &amp; Top Trader Positioning
-          </h1>
-          <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
-            Binance Futures top-trader long/short ratios and large BTC / ETH / SOL perpetual
-            trades (≥ {minUsdLabel}) from the most recent aggregated trades.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2.5">
-          {snapshotTime && (
-            <Badge variant="outline" className="border-border/80 px-3 py-1.5 font-mono text-xs">
-              Snapshot {snapshotTime}
-            </Badge>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="gap-2 cursor-pointer h-9 px-3.5 border-border/80 hover:bg-muted/50"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin text-bullish' : ''}`} />
-            Refresh Radar
-          </Button>
-        </div>
-      </div>
+    <PageContainer>
+      <PageHeader
+        eyebrow="Pasar"
+        eyebrowIcon={Radar}
+        title="Whale Radar"
+        description={`Rasio long/short top trader Binance Futures dan transaksi besar BTC / ETH / SOL perpetual (≥ ${minUsdLabel}) dari aggregated trades terbaru.`}
+        actions={
+          <>
+            {snapshotTime && (
+              <Badge variant="muted" className="num font-normal">
+                Snapshot {snapshotTime}
+              </Badge>
+            )}
+            <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+              <RefreshCw className={isFetching ? 'animate-spin' : ''} aria-hidden="true" />
+              Muat ulang
+            </Button>
+          </>
+        }
+      />
 
       {isPending ? (
         <div className="space-y-4">
@@ -379,7 +365,7 @@ export function WhaleRadarView() {
           </Card>
         </>
       )}
-    </div>
+    </PageContainer>
   )
 }
 

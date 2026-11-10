@@ -5,6 +5,7 @@ import { ShieldAlert } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { useLabMe } from '@/lib/queries/lab'
+import { PageContainer } from '@/components/shell/page'
 
 /**
  * Lab is admin-only. The backend is the real gate (every /lab call checks the
@@ -15,16 +16,18 @@ export function LabGate({ children }: { children: React.ReactNode }) {
 
   if (isPending) {
     return (
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-4" aria-busy="true">
-        <Skeleton className="h-10 w-72" />
-        <Skeleton className="h-64 w-full" />
-      </main>
+      <PageContainer>
+        <div className="space-y-4" aria-busy="true">
+          <Skeleton className="h-16 w-80" />
+          <Skeleton className="h-64 w-full rounded-xl" />
+        </div>
+      </PageContainer>
     )
   }
 
   if (isError || !data?.is_admin) {
     return (
-      <main className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+      <PageContainer className="pt-16 sm:pt-16">
         <div role="alert" className="mx-auto flex max-w-md flex-col items-center gap-4 text-center">
           <ShieldAlert className="h-10 w-10 text-warn" aria-hidden="true" />
           <h1 className="text-lg font-bold">Strategy Lab khusus admin</h1>
@@ -37,7 +40,7 @@ export function LabGate({ children }: { children: React.ReactNode }) {
             <Link href="/screener">Kembali ke Screener</Link>
           </Button>
         </div>
-      </main>
+      </PageContainer>
     )
   }
 

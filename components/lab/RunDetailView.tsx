@@ -1,8 +1,9 @@
 'use client'
 
+import { PageHeader } from '@/components/shell/page'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { AlertTriangle, ArrowLeft, Ban, CandlestickChart, Loader2, RefreshCw, Sparkles, Trophy, Wand2 } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Ban, CandlestickChart, FlaskConical, Loader2, RefreshCw, Sparkles, Trophy, Wand2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -414,58 +415,66 @@ export function RunDetailView({ id }: { id: string }) {
     <div className="space-y-6">
       <BackLink />
 
-      {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div className="min-w-0 space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <ModeBadge mode={run.mode} />
-            <StatusBadge status={run.status} />
-            <span className="font-mono text-xs text-muted-foreground">run #{String(run.id)}</span>
-          </div>
-          <h1 className="font-mono text-3xl font-extrabold tracking-tight sm:text-4xl">
+      <PageHeader
+        eyebrow="Strategy Lab · detail run"
+        eyebrowIcon={FlaskConical}
+        tone="lab"
+        title={
+          <span className="num">
             {run.symbol} <span className="text-muted-foreground">{run.timeframe}</span>
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            {run.start ?? 'awal data'} → {run.end ?? 'terbaru'} · komisi {run.costs?.commission_pct ?? '—'}% · slippage {run.costs?.slippage_pct ?? '—'}% · funding{' '}
-            {run.costs?.funding ? 'dihitung' : 'tidak'} · {relativeTime(run.created_at)}
-            {run.honesty_version && <> · rapor v{run.honesty_version}</>}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="ghost" size="sm" onClick={() => refetch()} disabled={isFetching} className="gap-1.5" aria-label="Refresh">
-            <RefreshCw className={cn('h-3.5 w-3.5', isFetching && 'animate-spin')} />
-          </Button>
-          {active && run.job_id !== null && run.job_id !== undefined && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-bearish"
-              disabled={cancel.isPending}
-              onClick={() =>
-                cancel.mutate(run.job_id!, {
-                  onSuccess: () => notify.info('Permintaan batal terkirim'),
-                  onError: () => notify.error('Gagal membatalkan job'),
-                })
-              }
-            >
-              <Ban className="h-3.5 w-3.5" />
-              Batalkan
-            </Button>
-          )}
-          <Button asChild variant="outline" size="sm" className="gap-1.5">
-            <Link href={`/lab?from=${encodeURIComponent(String(run.id))}`}>
-              <Wand2 className="h-3.5 w-3.5" />
-              Ubah &amp; jalankan ulang
-            </Link>
-          </Button>
-          {done && (
-            <Button size="sm" className="gap-1.5" onClick={showOnChart} disabled={createWatch.isPending}>
-              {createWatch.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CandlestickChart className="h-3.5 w-3.5" />}
-              Tampilkan di Chart
-            </Button>
-          )}
-        </div>
-      </div>
+          </span>
+        }
+        description={
+          <span className="flex flex-col gap-2">
+            <span className="flex flex-wrap items-center gap-2">
+              <ModeBadge mode={run.mode} />
+              <StatusBadge status={run.status} />
+              <span className="num text-xs text-muted-foreground">run #{String(run.id)}</span>
+            </span>
+            <span className="text-xs">
+              {run.start ?? 'awal data'} → {run.end ?? 'terbaru'} · komisi {run.costs?.commission_pct ?? '—'}% · slippage {run.costs?.slippage_pct ?? '—'}% · funding{' '}
+              {run.costs?.funding ? 'dihitung' : 'tidak'} · {relativeTime(run.created_at)}
+              {run.honesty_version && <> · rapor v{run.honesty_version}</>}
+            </span>
+          </span>
+        }
+        actions={
+          <>
+              <Button variant="ghost" size="sm" onClick={() => refetch()} disabled={isFetching} className="gap-1.5" aria-label="Refresh">
+                <RefreshCw className={cn('h-3.5 w-3.5', isFetching && 'animate-spin')} />
+              </Button>
+              {active && run.job_id !== null && run.job_id !== undefined && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-bearish"
+                  disabled={cancel.isPending}
+                  onClick={() =>
+                    cancel.mutate(run.job_id!, {
+                      onSuccess: () => notify.info('Permintaan batal terkirim'),
+                      onError: () => notify.error('Gagal membatalkan job'),
+                    })
+                  }
+                >
+                  <Ban className="h-3.5 w-3.5" />
+                  Batalkan
+                </Button>
+              )}
+              <Button asChild variant="outline" size="sm" className="gap-1.5">
+                <Link href={`/lab?from=${encodeURIComponent(String(run.id))}`}>
+                  <Wand2 className="h-3.5 w-3.5" />
+                  Ubah &amp; jalankan ulang
+                </Link>
+              </Button>
+              {done && (
+                <Button size="sm" className="gap-1.5" onClick={showOnChart} disabled={createWatch.isPending}>
+                  {createWatch.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CandlestickChart className="h-3.5 w-3.5" />}
+                  Tampilkan di Chart
+                </Button>
+              )}
+          </>
+        }
+      />
 
       {active && <JobProgress job={jobQ.data} status={run.status} />}
 

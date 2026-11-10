@@ -27,17 +27,17 @@ export class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
-          <p className="text-lg font-semibold">Something went wrong</p>
+        <div role="alert" className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4 text-center">
+          <p className="text-lg font-semibold">Terjadi kesalahan</p>
           <p className="text-sm text-muted-foreground max-w-sm">
-            An unexpected error occurred. Please reload the page.
+            Ada error yang tidak terduga. Muat ulang halaman untuk melanjutkan.
           </p>
           <Button
             variant="outline"
             onClick={() => window.location.reload()}
             className="cursor-pointer"
           >
-            Reload
+            Muat ulang
           </Button>
         </div>
       )
