@@ -11,6 +11,10 @@ import { useWebhookConfig } from '@/lib/queries/webhook'
 import { getBaseUrl } from '@/lib/api/client'
 import { notify } from '@/lib/utils/toast'
 import { cn } from '@/lib/utils/cn'
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 interface TestPayload {
   action: 'open' | 'close'
@@ -83,6 +87,7 @@ export function TestWebhookCard() {
   const [isSending, setIsSending] = useState(false)
   const [result, setResult] = useState<TestResult | null>(null)
   const [isResultExpanded, setIsResultExpanded] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   const [form, setForm] = useState<Omit<TestPayload, 'passphrase'>>({
     action: 'open',
@@ -318,7 +323,7 @@ export function TestWebhookCard() {
 
           {/* Send button */}
           <Button
-            onClick={handleSend}
+            onClick={() => { if (validate()) setConfirmOpen(true) }}
             disabled={isSending || noConfig}
             className="w-full gap-2 transition-colors duration-200"
           >
@@ -328,6 +333,29 @@ export function TestWebhookCard() {
             }
             {isSending ? 'Sending…' : 'Send test payload'}
           </Button>
+
+          <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Kirim order LIVE?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Ini bukan simulasi. Backend akan mengeksekusi{' '}
+                  <span className="font-semibold">{form.action.toUpperCase()} {form.side.toUpperCase()} {form.symbol}</span>
+                  {' '}size {form.size_value}{form.size_type === 'percent' ? '%' : ' USD'}
+                  {form.leverage ? `, leverage ${form.leverage}x` : ''} di {form.exchange} dengan uang sungguhan.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Batal</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-bearish text-white hover:bg-bearish/90"
+                  onClick={() => { setConfirmOpen(false); void handleSend() }}
+                >
+                  Ya, kirim order live
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           {/* Response panel */}
           {result && (
