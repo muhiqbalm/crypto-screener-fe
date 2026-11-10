@@ -41,10 +41,10 @@ function AssetRow({ item }: { item: ExchangeBalanceResponse }) {
       {/* Values */}
       <div className="flex items-center gap-6 text-right shrink-0">
         <div className="w-24">
-          <p className="font-mono text-sm font-semibold tabular-nums text-bullish">{formatAmount(item.free, item.currency)}</p>
+          <p className="truncate font-mono text-sm font-semibold tabular-nums text-bullish">{formatAmount(item.free, item.currency)}</p>
         </div>
         <div className="w-24 hidden md:block">
-          <p className="font-mono text-sm font-semibold tabular-nums text-bearish">{formatAmount(item.used, item.currency)}</p>
+          <p className="truncate font-mono text-sm font-semibold tabular-nums text-bearish">{formatAmount(item.used, item.currency)}</p>
         </div>
         <div className="w-28">
           <p className="truncate font-mono text-sm font-semibold tabular-nums">{formatAmount(item.total, item.currency)}</p>
