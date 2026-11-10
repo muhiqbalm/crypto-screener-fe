@@ -12,11 +12,11 @@ interface CostInputsProps {
   onChange: (v: CostFormValues) => void
 }
 
-export function costSummary(c: CostFormValues): string {
+function costSummary(c: CostFormValues): string {
   return `Komisi ${c.commission_pct}% · Slippage ${c.slippage_pct}% · Funding ${c.funding ? 'dihitung' : 'tidak'}`
 }
 
-export function CostInputs({ value, errors, onChange }: CostInputsProps) {
+function CostInputs({ value, errors, onChange }: CostInputsProps) {
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">

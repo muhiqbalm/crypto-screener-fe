@@ -58,7 +58,7 @@ function pickTimeframe(t: LabTemplate, preferred?: string): string {
   return t.timeframes[0] ?? ''
 }
 
-export function prefillOverrides(
+function prefillOverrides(
   run: LabRunDetail | null,
   use: PrefillUse,
   rank: number | null,

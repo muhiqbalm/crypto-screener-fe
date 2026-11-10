@@ -11,7 +11,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
 
+  // Intentional: `mounted` stays false for the first commit so the redirect
+  // effect below never fires while useSession() still returns the SSR snapshot
+  // (null) during hydration. A useSyncExternalStore "is client" hook would also
+  // drop the one-commit loading gate on client-side navigation into (app),
+  // which is a visible change, so the pattern is kept as is.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
   }, [])
 

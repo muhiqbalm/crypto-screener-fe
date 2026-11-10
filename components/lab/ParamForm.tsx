@@ -30,7 +30,7 @@ function isChanged(spec: LabParamSpec, value: ParamFormValue | undefined): boole
   return String(value) !== String(spec.default)
 }
 
-export function ChangedBadge({ count, className }: { count?: number; className?: string }) {
+function ChangedBadge({ count, className }: { count?: number; className?: string }) {
   return (
     <span className={cn('inline-flex items-center rounded-full bg-warn/15 px-1.5 py-px text-[10px] font-semibold text-warn', className)}>
       {count !== undefined ? `${count} diubah` : 'diubah'}
@@ -212,7 +212,7 @@ function ParamSlider({
   )
 }
 
-export function ParamField({
+function ParamField({
   spec,
   value,
   error,

@@ -150,7 +150,7 @@ export interface LabTopTrial {
   error?: string | null
 }
 
-export interface LabSensitivityRow {
+interface LabSensitivityRow {
   param: string
   base: number | string | boolean | null
   stability: number | null

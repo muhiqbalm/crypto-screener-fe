@@ -10,7 +10,7 @@ import type {
 } from '@/lib/api/types/lab'
 import { labLiveKeys } from '@/lib/queries/lab-live'
 
-export const paperKeys = {
+const paperKeys = {
   all: ['lab', 'paper'] as const,
   accounts: () => [...paperKeys.all, 'accounts'] as const,
   journal: (f: JournalFilters) => [...paperKeys.all, 'journal', f] as const,

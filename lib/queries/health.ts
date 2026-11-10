@@ -3,9 +3,9 @@ import { useQuery } from '@tanstack/react-query'
 import { getBaseUrl } from '@/lib/api/client'
 import { PATHS } from '@/lib/api/paths'
 
-export type ApiHealthStatus = 'healthy' | 'degraded' | 'offline'
+type ApiHealthStatus = 'healthy' | 'degraded' | 'offline'
 
-export interface ApiHealth {
+interface ApiHealth {
   status: ApiHealthStatus
   /** Measured round-trip time of the /health request in ms. */
   latencyMs: number | null

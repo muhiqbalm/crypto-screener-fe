@@ -64,7 +64,7 @@ const KPIS: Kpi[] = [
 // Pieces
 // ---------------------------------------------------------------------------
 
-export function KpiTiles({ run }: { run: LabRunDetail }) {
+function KpiTiles({ run }: { run: LabRunDetail }) {
   const oos = run.oos_metrics
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
@@ -111,7 +111,7 @@ function stageLabel(stage: string | null | undefined): string {
   return stage ? (map[stage] ?? stage.replace(/_/g, ' ')) : 'Memproses'
 }
 
-export function JobProgress({ job, status }: { job: LabJob | undefined; status: string }) {
+function JobProgress({ job, status }: { job: LabJob | undefined; status: string }) {
   const p = job && typeof job.progress === 'object' && job.progress ? job.progress : null
   const total = p?.total ?? 0
   const done = p?.done ?? 0

@@ -19,7 +19,7 @@ import type { LabRunMode, LabRunSummary } from '@/lib/api/types/lab'
 type VerdictFilter = 'all' | 'PASS' | 'FAIL' | 'none'
 type ModeFilter = 'all' | LabRunMode
 
-export function filterRuns(rows: LabRunSummary[], f: { q: string; mode: ModeFilter; verdict: VerdictFilter }): LabRunSummary[] {
+function filterRuns(rows: LabRunSummary[], f: { q: string; mode: ModeFilter; verdict: VerdictFilter }): LabRunSummary[] {
   const q = f.q.trim().toUpperCase()
   return rows.filter(
     (r) =>

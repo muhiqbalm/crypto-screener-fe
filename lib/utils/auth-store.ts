@@ -80,11 +80,6 @@ export function getToken(): string {
   return _session?.accessToken ?? ''
 }
 
-/** Returns the current user profile, or null when not logged in. */
-export function getUser(): UserProfileResponse | null {
-  return _session?.user ?? null
-}
-
 /** Returns true when a session exists. */
 export function isLoggedIn(): boolean {
   return _session !== null

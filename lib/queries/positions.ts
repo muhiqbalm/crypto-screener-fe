@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api/client'
 
-export const positionKeys = {
+const positionKeys = {
   all: ['positions'] as const,
   open: () => [...positionKeys.all, 'open'] as const,
   history: () => [...positionKeys.all, 'history'] as const,

@@ -35,7 +35,7 @@ import type {
   PaperPosition,
 } from '@/lib/api/types/lab'
 
-export const MOCK_LAB_TEMPLATES: LabTemplate[] = [templateJson as unknown as LabTemplate]
+const MOCK_LAB_TEMPLATES: LabTemplate[] = [templateJson as unknown as LabTemplate]
 const TPL = MOCK_LAB_TEMPLATES[0]
 const DEFAULTS: Record<string, LabParamValue> = Object.fromEntries(TPL.params.map((p) => [p.key, p.default]))
 
@@ -46,7 +46,7 @@ const UNIVERSE = [
   'TIAUSDT', 'INJUSDT', 'DOTUSDT', 'LTCUSDT', 'UNIUSDT', 'AAVEUSDT', 'GALAUSDT', 'SEIUSDT', 'HYPEUSDT', 'ZECUSDT',
 ]
 
-export const MOCK_LAB_SYMBOLS: LabSymbol[] = UNIVERSE.map((symbol, i) => ({
+const MOCK_LAB_SYMBOLS: LabSymbol[] = UNIVERSE.map((symbol, i) => ({
   symbol,
   has_data: i < 12,
   timeframes: i < 12 ? ['1h', '4h', '1d'] : [],

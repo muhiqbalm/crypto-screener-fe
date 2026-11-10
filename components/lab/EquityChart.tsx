@@ -7,14 +7,14 @@ import type { LabEquityPoint, LabSegment } from '@/lib/api/types/lab'
 
 // Validated categorical palette (dataviz validator: lightness band, CVD and
 // contrast pass on both surfaces). Order is fixed: IS, OOS, holdout.
-export const SEGMENT_META: Record<LabSegment, { label: string; light: string; dark: string }> = {
+const SEGMENT_META: Record<LabSegment, { label: string; light: string; dark: string }> = {
   is: { label: 'In-sample (pengembangan)', light: '#0284c7', dark: '#0284c7' },
   oos: { label: 'Out-of-sample', light: '#d97706', dark: '#d97706' },
   holdout: { label: 'Holdout (ujian terkunci)', light: '#7c3aed', dark: '#8b5cf6' },
 }
 const SEGMENT_ORDER: LabSegment[] = ['is', 'oos', 'holdout']
 
-export interface SegmentSeries {
+interface SegmentSeries {
   segment: LabSegment
   data: { time: UTCTimestamp; value: number }[]
 }

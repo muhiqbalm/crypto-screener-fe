@@ -10,13 +10,13 @@ import {
   getSession,
   isLoggedIn,
 } from '@/lib/utils/auth-store'
-import type { LoginRequest, ProfileUpdateRequest, RegisterRequest } from '@/lib/api/types/auth'
+import type { LoginRequest, ProfileUpdateRequest } from '@/lib/api/types/auth'
 
 // ---------------------------------------------------------------------------
 // Query keys
 // ---------------------------------------------------------------------------
 
-export const authKeys = {
+const authKeys = {
   me: ['auth', 'me'] as const,
 }
 
@@ -74,21 +74,6 @@ export function useLogin() {
     },
     onError: () => {
       clearSession()
-    },
-  })
-}
-
-// ---------------------------------------------------------------------------
-// useRegister
-// ---------------------------------------------------------------------------
-
-export function useRegister() {
-  const router = useRouter()
-
-  return useMutation({
-    mutationFn: (body: RegisterRequest) => api.register(body),
-    onSuccess: () => {
-      router.push('/login')
     },
   })
 }

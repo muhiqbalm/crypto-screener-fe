@@ -27,7 +27,7 @@ import type {
 export type ParamFormValue = string | boolean
 export type ParamFormValues = Record<string, ParamFormValue>
 
-export interface ParamGroup {
+interface ParamGroup {
   group: string
   params: LabParamSpec[]
 }
@@ -82,7 +82,7 @@ export function isLiveDefault(template: LabTemplate, values: ParamFormValues): b
 }
 
 /** Returns an Indonesian error message for an invalid value, or null. */
-export function validateParam(spec: LabParamSpec, raw: ParamFormValue | undefined): string | null {
+function validateParam(spec: LabParamSpec, raw: ParamFormValue | undefined): string | null {
   if (spec.type === 'bool') return null
   const s = typeof raw === 'string' ? raw.trim() : ''
   if (spec.type === 'choice') {
@@ -167,7 +167,7 @@ export function validateCosts(c: CostFormValues): Record<string, string> {
   return errors
 }
 
-export function toCostsPayload(c: CostFormValues): LabCosts {
+function toCostsPayload(c: CostFormValues): LabCosts {
   return {
     commission_pct: Number(c.commission_pct),
     slippage_pct: Number(c.slippage_pct),
@@ -188,7 +188,7 @@ export function costsToForm(c: LabCosts | null | undefined): CostFormValues {
 // Payload builders
 // ---------------------------------------------------------------------------
 
-export interface RunFormState {
+interface RunFormState {
   template: LabTemplate
   symbol: string
   timeframe: string
@@ -305,7 +305,7 @@ export function sortScanRows(rows: LabScanRow[]): LabScanRow[] {
  * static universe list (names only, no numbers); it is intersected with the
  * symbols the backend reports so we never offer something it cannot run.
  */
-export const TOP_30_SYMBOLS = [
+const TOP_30_SYMBOLS = [
   'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'DOGEUSDT',
   'ADAUSDT', 'AVAXUSDT', 'LINKUSDT', 'TRXUSDT', 'DOTUSDT', 'LTCUSDT',
   'BCHUSDT', 'SUIUSDT', 'NEARUSDT', 'APTUSDT', 'ARBUSDT', 'OPUSDT',
@@ -348,7 +348,7 @@ export function holdoutWarning(touches: number | null | undefined): string | nul
   return `Hasil holdout sudah dilihat ${touches} kali — risiko overfitting.`
 }
 
-export interface VerdictCopy {
+interface VerdictCopy {
   tone: 'pass' | 'fail' | 'none'
   title: string
   body: string
@@ -386,40 +386,6 @@ export function verdictCopy(verdict: LabVerdict, mode: LabRunMode, status: LabSt
 }
 
 // ---------------------------------------------------------------------------
-// Metric formatting helpers
-// ---------------------------------------------------------------------------
-
-const METRIC_LABELS: Record<string, string> = {
-  net_return_pct: 'Net return',
-  profit_factor: 'Profit factor',
-  max_dd_pct: 'Max drawdown',
-  trades: 'Jumlah trade',
-  win_rate_pct: 'Win rate',
-  sharpe: 'Sharpe',
-  sortino: 'Sortino',
-  cagr_pct: 'CAGR',
-  avg_trade_pct: 'Rata-rata per trade',
-  expectancy_pct: 'Expectancy',
-  exposure_pct: 'Exposure',
-  calmar: 'Calmar',
-}
-
-/** Known metrics first in a stable order, then anything else the backend sends. */
-export function orderedMetricKeys(...sources: (Record<string, unknown> | null | undefined)[]): string[] {
-  const all = new Set<string>()
-  for (const s of sources) if (s) for (const k of Object.keys(s)) all.add(k)
-  const known = Object.keys(METRIC_LABELS).filter((k) => all.has(k))
-  const rest = [...all].filter((k) => !(k in METRIC_LABELS)).sort()
-  return [...known, ...rest]
-}
-
-export function metricLabel(key: string): string {
-  if (METRIC_LABELS[key]) return METRIC_LABELS[key]
-  const base = key.replace(/_pct$/, '').replace(/_/g, ' ')
-  return base.charAt(0).toUpperCase() + base.slice(1)
-}
-
-// ---------------------------------------------------------------------------
 // Main ("tunable") vs advanced params
 // ---------------------------------------------------------------------------
 
@@ -442,7 +408,7 @@ export const PARAM_COPY: Record<string, { label: string; help: string }> = {
   cooldown_bars: { label: 'Jeda antar trade (bar)', help: 'Berapa bar menunggu setelah exit sebelum boleh entry lagi.' },
 }
 
-export const GROUP_COPY: Record<string, string> = {
+const GROUP_COPY: Record<string, string> = {
   Direction: 'Arah',
   'TP / SL': 'TP / SL',
   'TP check': 'Cek TP (exhaustion)',
@@ -484,7 +450,7 @@ export function changedKeys(template: LabTemplate, values: ParamFormValues): str
   return template.params.filter((p) => !sameValue(p, values[p.key], p.default)).map((p) => p.key)
 }
 
-export interface ParamDiffRow {
+interface ParamDiffRow {
   key: string
   label: string
   group: string
@@ -592,7 +558,7 @@ export function validateOptimize(template: LabTemplate, cfg: OptimizeConfig): Re
   return errors
 }
 
-export function buildSearch(template: LabTemplate, cfg: OptimizeConfig): LabOptimizeSearch {
+function buildSearch(template: LabTemplate, cfg: OptimizeConfig): LabOptimizeSearch {
   const params: string[] = []
   const ranges: Record<string, [number, number]> = {}
   for (const p of template.params) {
@@ -624,7 +590,7 @@ function fmtSignedPct(v: number): string {
   return `${v > 0 ? '+' : v < 0 ? '−' : ''}${fmtNum(Math.abs(v), 1)}%`
 }
 
-export const CHECK_LABEL: Record<string, string> = {
+const CHECK_LABEL: Record<string, string> = {
   oos_profit_factor: 'Profit factor holdout',
   oos_net_return: 'Return bersih holdout',
   mc_dd_p95: 'Drawdown terburuk (Monte Carlo 95%)',

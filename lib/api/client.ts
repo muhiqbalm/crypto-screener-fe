@@ -44,7 +44,6 @@ import type {
   AccessTokenResponse,
   LoginRequest,
   ProfileUpdateRequest,
-  RegisterRequest,
   TokenResponse,
   UserProfileResponse,
 } from './types/auth'
@@ -333,10 +332,6 @@ export const api = {
     return request<AccessTokenResponse>('POST', PATHS.authRefresh, body)
   },
 
-  register(body: RegisterRequest): Promise<UserProfileResponse> {
-    return request<UserProfileResponse>('POST', PATHS.authRegister, body)
-  },
-
   logout(): Promise<void> {
     return request<void>('POST', PATHS.authLogout)
   },
@@ -508,6 +503,4 @@ export const api = {
     return request<JournalStats>('GET', PATHS.journalStats(accountId), undefined, signal)
   },
 }
-
-export const apiClient = api
 

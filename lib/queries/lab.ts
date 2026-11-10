@@ -9,7 +9,7 @@ import type {
 } from '@/lib/api/types/lab'
 import { isActiveStatus } from '@/lib/lab/form'
 
-export const labKeys = {
+const labKeys = {
   all: ['lab'] as const,
   me: () => [...labKeys.all, 'me'] as const,
   templates: () => [...labKeys.all, 'templates'] as const,

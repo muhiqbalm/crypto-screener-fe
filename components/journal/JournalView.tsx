@@ -257,7 +257,7 @@ function JournalTable({ filters }: { filters: JournalFilters }) {
   )
 }
 
-export function JournalRow({ entry: r }: { entry: JournalEntry }) {
+function JournalRow({ entry: r }: { entry: JournalEntry }) {
   const patch = usePatchJournal()
   const [editing, setEditing] = useState(false)
   const [notes, setNotes] = useState(r.notes ?? '')

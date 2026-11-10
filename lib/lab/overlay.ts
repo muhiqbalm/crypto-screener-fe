@@ -20,7 +20,7 @@ export interface OverlayPriceLine {
   dashed?: boolean
 }
 
-export interface OverlayTrade {
+interface OverlayTrade {
   entry_time: string
   exit_time: string | null
   side: string

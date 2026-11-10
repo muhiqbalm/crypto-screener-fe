@@ -12,7 +12,7 @@ import type {
 
 export const PAPER_LABEL = 'PAPER — bukan order sungguhan'
 
-export interface PaperSize {
+interface PaperSize {
   riskAmount: number
   qty: number
   notional: number
@@ -170,7 +170,7 @@ export function parseTags(s: string): string[] {
   return Array.from(new Set(s.split(',').map((t) => t.trim()).filter(Boolean)))
 }
 
-export interface CompareRow {
+interface CompareRow {
   metric: string
   paper: unknown
   backtest: unknown

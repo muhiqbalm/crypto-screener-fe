@@ -27,7 +27,7 @@ export function dedupeToast(key: string, message: string, windowMs = 2000): bool
 // Notify helpers
 // ---------------------------------------------------------------------------
 
-export interface NotifyOptions {
+interface NotifyOptions {
   duration?: number
   description?: string
 }

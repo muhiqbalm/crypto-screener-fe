@@ -96,7 +96,7 @@ export function SymbolPicker({ symbols, value, onChange, invalid }: SymbolPicker
 }
 
 /** "siap" when the backend already has candles; otherwise it downloads on first use. */
-export function DataTag({ hasData }: { hasData: boolean }) {
+function DataTag({ hasData }: { hasData: boolean }) {
   return hasData ? (
     <span className="rounded-full bg-bullish/10 px-1.5 py-px font-sans text-[10px] font-medium text-bullish">siap</span>
   ) : (

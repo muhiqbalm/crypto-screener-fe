@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api/client'
 import type { CredentialUpsertRequest } from '@/lib/api/types/credentials'
 
-export const credentialKeys = {
+const credentialKeys = {
   all: ['credentials'] as const,
   list: () => [...credentialKeys.all, 'list'] as const,
   balance: () => [...credentialKeys.all, 'balance'] as const,

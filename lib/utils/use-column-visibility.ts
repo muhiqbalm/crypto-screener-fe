@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 
-export type ColumnId =
+type ColumnId =
   | 'symbol'
   | 'rank'
   | 'price'

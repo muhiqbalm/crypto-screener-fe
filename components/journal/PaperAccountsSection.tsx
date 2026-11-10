@@ -29,7 +29,7 @@ interface FormState {
 
 const INITIAL: FormState = { name: '', starting_balance: '10000', risk_pct: '1', leverage_max: '5' }
 
-export function validateAccountForm(f: FormState): Record<string, string> {
+function validateAccountForm(f: FormState): Record<string, string> {
   const e: Record<string, string> = {}
   if (!f.name.trim()) e.name = 'Nama wajib diisi'
   const bal = Number(f.starting_balance)

@@ -276,7 +276,7 @@ function ScanBuilder({ onCreated }: { onCreated: (id: LabId) => void }) {
 // Results
 // ---------------------------------------------------------------------------
 
-export function ScanProgress({ scan }: { scan: LabScanDetail }) {
+function ScanProgress({ scan }: { scan: LabScanDetail }) {
   const total = scan.progress?.total ?? 0
   const done = scan.progress?.done ?? 0
   const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0

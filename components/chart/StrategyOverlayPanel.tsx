@@ -134,7 +134,7 @@ function Row({ label, children, className }: { label: string; children: React.Re
   )
 }
 
-export function LiveSignalCard({
+function LiveSignalCard({
   state,
   lastPrice,
   priceSource,
