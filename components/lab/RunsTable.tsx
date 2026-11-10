@@ -44,7 +44,8 @@ export function RunsTable() {
   )
   const total = data?.length ?? 0
   const active = (data ?? []).filter((r) => isActiveStatus(r.status)).length
-  const go = (r: LabRunSummary) => router.push(`/lab/runs/${encodeURIComponent(String(r.id))}`)
+  const go = (r: LabRunSummary) =>
+    router.push(`/lab/${r.template_id === 'universal_v0' ? 'universal/runs' : 'runs'}/${encodeURIComponent(String(r.id))}`)
 
   return (
     <Section

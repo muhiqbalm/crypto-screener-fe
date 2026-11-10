@@ -8,6 +8,8 @@ import {
   Radar,
   Wallet,
   Webhook,
+  Layers,
+  TrendingUp,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -53,6 +55,18 @@ export const LAB_NAV: NavItem[] = [
     label: 'Scan banyak koin',
     hint: 'Satu strategi di banyak koin × timeframe',
     icon: Grid3x3,
+  },
+  {
+    href: '/lab/universal',
+    label: 'Universal',
+    hint: 'Strategi portofolio multi-koin + paper otomatis',
+    icon: Layers,
+  },
+  {
+    href: '/lab/strength',
+    label: 'Koin Terkuat',
+    hint: 'Ranking momentum & tren semua koin tiap 4H',
+    icon: TrendingUp,
   },
 ]
 
