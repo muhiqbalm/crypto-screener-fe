@@ -1,6 +1,7 @@
 'use client'
 
 import { PageContainer, PageHeader } from '@/components/shell/page'
+import { StatTile } from '@/components/ui/stat-tile'
 import { useState } from 'react'
 import { BookOpen, Check, Loader2, Pencil, RefreshCw, X } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -111,13 +112,7 @@ export function JournalView() {
 }
 
 function StatCard({ label, value, hint, className }: { label: string; value: string; hint?: string; className?: string }) {
-  return (
-    <div className="flex min-h-[92px] flex-col justify-between rounded-xl border border-border bg-card p-3 shadow-sm">
-      <div className="truncate eyebrow">{label}</div>
-      <div className={cn('truncate font-mono text-xl font-bold tabular-nums', className)}>{value}</div>
-      <div className="truncate text-3xs text-muted-foreground">{hint ?? '\u00a0'}</div>
-    </div>
-  )
+  return <StatTile label={label} value={value} hint={hint ?? '\u00a0'} valueClassName={className} className="min-h-[92px] justify-between" />
 }
 
 function StatsSection({ accountId }: { accountId?: string }) {

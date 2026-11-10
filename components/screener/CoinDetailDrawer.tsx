@@ -1,9 +1,7 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import {
-  X,
   TrendingUp,
   TrendingDown,
   ShieldAlert,
@@ -16,6 +14,8 @@ import {
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { TierBadge } from '@/components/screener/TierBadge'
 import type { AssetDetail } from '@/lib/api/types/screener'
 import { cn } from '@/lib/utils/cn'
 import { baseAsset, formatFunding, formatPrice, formatScore, formatVolume } from '@/lib/utils/format'
@@ -37,17 +37,17 @@ function subSignalClass(sig: SignalDirection | null | undefined): string {
 }
 
 export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
-  const drawerRef = useRef<HTMLDivElement>(null)
+  // Radix Sheet handles Esc, focus trap, scroll lock and focus return.
+  return (
+    <Sheet open={asset !== null} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent side="right" aria-describedby={undefined} className="w-full max-w-lg overflow-y-auto bg-card p-6">
+        {asset && <DrawerBody asset={asset} onClose={onClose} />}
+      </SheetContent>
+    </Sheet>
+  )
+}
 
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose])
-
-  if (!asset) return null
+function DrawerBody({ asset, onClose }: { asset: AssetDetail; onClose: () => void }) {
 
   const symbolClean = baseAsset(asset.symbol)
   const change24h = asset.change_24h
@@ -60,40 +60,17 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
   const momentum = asset.momentum_signal ?? asset.macd_signal ?? null
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex justify-end bg-black/60 transition-opacity duration-300"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-    >
-      <div
-        ref={drawerRef}
-        className="relative flex h-full w-full max-w-lg flex-col border-l border-border bg-card p-6 shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <>
         {/* Header */}
-        <div className="flex items-start justify-between border-b border-border pb-4">
+        <div className="flex items-start justify-between border-b border-border pb-4 pr-8">
           <div>
             <div className="flex items-center gap-2">
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                 #{asset.rank ?? '-'}
               </span>
-              <h2 className="text-xl font-bold tracking-tight">{symbolClean}</h2>
+              <SheetTitle className="text-xl font-bold tracking-tight">{symbolClean}</SheetTitle>
               <span className="text-xs text-muted-foreground font-mono">/USDT Perp</span>
-              {asset.tier && (
-                <Badge
-                  className={cn(
-                    'text-xs font-bold',
-                    asset.tier === 'A'
-                      ? 'bg-lab/20 text-lab border border-lab/30'
-                      : asset.tier === 'B'
-                        ? 'bg-info/20 text-info border border-info/30'
-                        : 'bg-muted text-muted-foreground',
-                  )}
-                >
-                  Tier {asset.tier}
-                </Badge>
-              )}
+              <TierBadge tier={asset.tier} />
             </div>
             <div className="mt-2 flex items-baseline gap-3">
               <span className="text-2xl font-bold font-mono tracking-tight">
@@ -119,16 +96,6 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
               )}
             </div>
           </div>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="rounded-full h-8 w-8 text-muted-foreground hover:text-foreground"
-            aria-label="Close drawer"
-          >
-            <X className="h-4 w-4" />
-          </Button>
         </div>
 
         {/* Content Body */}
@@ -309,16 +276,15 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
         {/* Footer Actions */}
         <div className="mt-6 border-t border-border pt-4 flex items-center gap-3">
           <Button asChild className="flex-1 gap-2 cursor-pointer">
-            <Link href="/chart">
+            <Link href={`/chart?symbol=${encodeURIComponent(`${symbolClean}USDT`)}`}>
               <ExternalLink className="h-4 w-4" />
-              Open Live Binance Chart
+              Buka chart live
             </Link>
           </Button>
-          <Button variant="outline" onClick={onClose} className="cursor-pointer">
-            Close
+          <Button variant="outline" onClick={onClose}>
+            Tutup
           </Button>
         </div>
-      </div>
-    </div>
+    </>
   )
 }

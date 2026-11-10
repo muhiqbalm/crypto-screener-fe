@@ -73,11 +73,12 @@ function SegBtn({
       type="button"
       onClick={onClick}
       disabled={disabled}
+      aria-pressed={active}
       className={cn(
-        'px-3 py-1 text-xs font-medium rounded-md transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50',
+        'h-7 shrink-0 rounded-md px-3 text-xs font-medium transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         active
-          ? 'bg-primary text-primary-foreground'
-          : 'text-muted-foreground hover:text-foreground hover:bg-muted/60',
+          ? 'bg-background text-foreground shadow-sm'
+          : 'text-muted-foreground hover:text-foreground',
       )}
     >
       {children}
@@ -156,7 +157,9 @@ export function ChartContainer() {
       ? { kind: 'run' as const, symbol: runQ.data.symbol, timeframe: runQ.data.timeframe }
       : null
 
-  const [pickedSymbol,   setSymbol]    = useState('BTCUSDT')
+  // ?symbol=SOLUSDT deep link (e.g. from the screener drawer); validated.
+  const symbolParam = search.get('symbol')?.toUpperCase() ?? ''
+  const [pickedSymbol,   setSymbol]    = useState(/^[A-Z0-9]{2,20}USDT$/.test(symbolParam) ? symbolParam : 'BTCUSDT')
   const [pickedInterval, setInterval]  = useState('1m')
   const symbol = overlay?.symbol ?? pickedSymbol
   const interval = overlay?.timeframe ?? pickedInterval
@@ -299,7 +302,7 @@ export function ChartContainer() {
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Symbol selector */}
-        <div className="flex flex-wrap items-center gap-1 rounded-lg border border-border bg-muted/30 p-1">
+        <div role="group" aria-label="Pilih koin" className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-lg border bg-muted/40 p-0.5">
           {symbolOptions.map(s => (
             <SegBtn
               key={s.value}
@@ -313,7 +316,7 @@ export function ChartContainer() {
         </div>
 
         {/* Interval selector */}
-        <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/30 p-1">
+        <div role="group" aria-label="Pilih timeframe" className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-lg border bg-muted/40 p-0.5">
           {intervalOptions.map(i => (
             <SegBtn
               key={i.value}
@@ -385,7 +388,7 @@ export function ChartContainer() {
                 onClick={handleReload}
                 disabled={isLoading}
                 className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-                aria-label="Reload chart data"
+                aria-label="Muat ulang data chart"
               >
                 <RefreshCw className={cn('h-3 w-3', isLoading && 'animate-spin')} aria-hidden="true" />
               </Button>
@@ -399,7 +402,7 @@ export function ChartContainer() {
                 <div className="absolute inset-0 flex items-center justify-center bg-card z-10">
                   <div className="flex flex-col items-center gap-3">
                     <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" aria-hidden="true" />
-                    <p className="text-sm text-muted-foreground">Loading chart…</p>
+                    <p className="text-sm text-muted-foreground">Memuat chart…</p>
                   </div>
                 </div>
               )}
@@ -410,7 +413,7 @@ export function ChartContainer() {
                     <WifiOff className="h-8 w-8 text-muted-foreground/40" aria-hidden="true" />
                     <p className="text-sm text-muted-foreground">{error}</p>
                     <Button variant="outline" size="sm" onClick={handleReload}>
-                      Retry
+                      Coba lagi
                     </Button>
                   </div>
                 </div>

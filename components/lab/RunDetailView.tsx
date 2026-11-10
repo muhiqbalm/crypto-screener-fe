@@ -1,6 +1,7 @@
 'use client'
 
 import { PageHeader } from '@/components/shell/page'
+import { StatTile } from '@/components/ui/stat-tile'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AlertTriangle, ArrowLeft, Ban, CandlestickChart, FlaskConical, Loader2, RefreshCw, Sparkles, Trophy, Wand2 } from 'lucide-react'
@@ -73,23 +74,22 @@ function KpiTiles({ run }: { run: LabRunDetail }) {
         const is = num(run.metrics, k.key)
         const ho = oos ? num(oos, k.key) : null
         return (
-          <div key={k.key} className="flex flex-col rounded-xl border border-border bg-card p-3 shadow-sm">
-            <Eyebrow>{k.label}</Eyebrow>
+          <StatTile key={k.key} label={k.label}>
             {oos ? (
-              <div className="mt-2 grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <div className="text-3xs text-muted-foreground">In-sample</div>
-                  <div className={cn('font-mono text-sm tabular-nums', k.cls?.(is))}>{k.fmt(is)}</div>
+                  <div className={cn('num text-sm', k.cls?.(is))}>{k.fmt(is)}</div>
                 </div>
                 <div>
                   <div className="text-3xs font-medium text-lab">Holdout</div>
-                  <div className={cn('font-mono text-base font-bold tabular-nums', k.cls?.(ho))}>{k.fmt(ho)}</div>
+                  <div className={cn('num text-base font-bold', k.cls?.(ho))}>{k.fmt(ho)}</div>
                 </div>
               </div>
             ) : (
-              <div className={cn('mt-2 font-mono text-lg font-bold tabular-nums', k.cls?.(is))}>{k.fmt(is)}</div>
+              <div className={cn('num text-lg font-bold', k.cls?.(is))}>{k.fmt(is)}</div>
             )}
-          </div>
+          </StatTile>
         )
       })}
     </div>
