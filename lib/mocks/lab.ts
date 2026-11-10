@@ -1,7 +1,7 @@
 /**
  * Strategy Lab mock backend — ONLY reachable when NEXT_PUBLIC_USE_MOCK_DATA=true
  * (lazy-imported from lib/api/client.ts, tree-shaken out of production).
- * Navbar shows "Mock Mode" whenever this is active, so these synthetic numbers
+ * the API status pill shows "Mode mock" whenever this is active, so these synthetic numbers
  * are never presented as real results.
  *
  * Shapes mirror the real backend (crypto-screener src/api/lab_routes.py):

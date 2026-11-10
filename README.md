@@ -12,6 +12,11 @@ npm run lint      # eslint
 npm run test:run  # vitest (single run)
 ```
 
+## Design system
+
+See [DESIGN.md](DESIGN.md) for tokens, layout primitives, shared components,
+number formatting and how to add a page to the navigation.
+
 ## Environment
 
 Copy `.env.example` to `.env.local`. Set `NEXT_PUBLIC_USE_MOCK_DATA=true` to
