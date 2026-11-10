@@ -5,7 +5,11 @@ import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils/cn'
 import { isNavItemActive, type NavItem } from '@/lib/nav'
 
-/** Route-based tab strip (e.g. Strategy Lab sub-pages). Items come from lib/nav.ts. */
+/**
+ * Route-based tab strip (e.g. Strategy Lab sub-pages). Items come from lib/nav.ts.
+ * Items hold icon components, so render this from a client component (they
+ * cannot cross the server→client boundary as props).
+ */
 export function PageTabs({ items, label }: { items: NavItem[]; label: string }) {
   const pathname = usePathname()
   return (

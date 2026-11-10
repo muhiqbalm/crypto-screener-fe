@@ -1,3 +1,5 @@
+'use client'
+
 import { FlaskConical } from 'lucide-react'
 import { PageHeader } from '@/components/shell/page'
 import { PageTabs } from '@/components/shell/PageTabs'
