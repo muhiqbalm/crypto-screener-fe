@@ -1,20 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { Send, ChevronDown, ChevronUp, CheckCircle2, XCircle, Loader2, FlaskConical, AlertTriangle } from 'lucide-react'
+import { ChevronDown, ChevronUp, CheckCircle2, XCircle, FlaskConical, AlertTriangle } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { useWebhookConfig } from '@/lib/queries/webhook'
-import { getBaseUrl } from '@/lib/api/client'
 import { notify } from '@/lib/utils/toast'
 import { cn } from '@/lib/utils/cn'
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
 
 interface TestPayload {
   action: 'open' | 'close'
@@ -84,10 +79,8 @@ function SegmentControl<T extends string>({
 export function TestWebhookCard() {
   const { data: webhookConfig } = useWebhookConfig()
   const [isExpanded, setIsExpanded] = useState(false)
-  const [isSending, setIsSending] = useState(false)
   const [result, setResult] = useState<TestResult | null>(null)
   const [isResultExpanded, setIsResultExpanded] = useState(false)
-  const [confirmOpen, setConfirmOpen] = useState(false)
 
   const [form, setForm] = useState<Omit<TestPayload, 'passphrase'>>({
     action: 'open',
@@ -120,39 +113,16 @@ export function TestWebhookCard() {
     return valid
   }
 
-  async function handleSend() {
+  // Sengaja TIDAK mengirim ke /webhook/tradingview: endpoint itu mengeksekusi
+  // order live. Kartu ini hanya membuat pratinjau payload (passphrase disamarkan)
+  // untuk dicek/disalin ke alert TradingView.
+  function handleSend() {
     if (!validate()) return
-    const passphrase = webhookConfig?.passphrase
-    if (!passphrase) { notify.error('No webhook config found. Create one first.'); return }
-
-    const payload: TestPayload = { ...form, passphrase, leverage: form.leverage ?? undefined as unknown as null }
-    setIsSending(true)
-    setResult(null)
-
-    try {
-      const res = await fetch(`${getBaseUrl()}/webhook/tradingview`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      let body: unknown
-      try { body = await res.json() } catch { body = null }
-      const testResult: TestResult = { ok: res.ok, status: res.status, body }
-      setResult(testResult)
-      setIsResultExpanded(true)
-      if (res.ok) notify.success('Test payload sent successfully')
-      else notify.error(`Webhook returned ${res.status}`)
-    } catch (err) {
-      const testResult: TestResult = {
-        ok: false, status: 0,
-        body: { error: 'Network error', detail: err instanceof Error ? err.message : String(err) },
-      }
-      setResult(testResult)
-      setIsResultExpanded(true)
-      notify.error('Network error — could not reach the webhook endpoint')
-    } finally {
-      setIsSending(false)
-    }
+    if (!webhookConfig?.passphrase) { notify.error('Buat konfigurasi webhook dulu.'); return }
+    const preview = { ...form, passphrase: '<PASSPHRASE>' }
+    setResult({ ok: true, status: 200, body: preview })
+    setIsResultExpanded(true)
+    notify.success('Pratinjau payload dibuat — tidak ada order yang dikirim')
   }
 
   const noConfig = !webhookConfig?.passphrase
@@ -192,7 +162,7 @@ export function TestWebhookCard() {
           <div className="flex items-center gap-2">
             {!isExpanded && (
               <span className="hidden sm:block text-xs text-muted-foreground">
-                Kirim alert ke endpoint (eksekusi nyata)
+                Pratinjau payload (tanpa order)
               </span>
             )}
             {isExpanded
@@ -205,14 +175,12 @@ export function TestWebhookCard() {
 
       {isExpanded && (
         <CardContent id="test-webhook-body" className="space-y-5 pt-0">
-          {/* Copy-only safety notice: behaviour (POST /webhook/tradingview with the
-              real passphrase) is unchanged — see FE audit P0 note. */}
-          <div role="note" className="flex gap-2.5 rounded-lg border border-bearish/40 bg-bearish/10 px-3 py-2.5 text-xs text-foreground">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-bearish" aria-hidden="true" />
+          {/* Preview only — never POSTs to the live webhook (CEO decision 2026-11-10). */}
+          <div role="note" className="flex gap-2.5 rounded-lg border border-info/40 bg-info/10 px-3 py-2.5 text-xs text-foreground">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-info" aria-hidden="true" />
             <p>
-              <span className="font-semibold text-bearish">Bukan simulasi.</span> Payload ini dikirim ke endpoint webhook
-              produksi dengan passphrase asli. Kalau otomasi aktif dan API key exchange terpasang, backend akan
-              mengeksekusi <span className="font-semibold">order LIVE</span> sesuai action, side, size dan leverage di bawah.
+              <span className="font-semibold">Mode pratinjau.</span> Kartu ini hanya menyusun dan mengecek payload alert.
+              Tidak ada yang dikirim ke webhook dan <span className="font-semibold">tidak ada order</span> yang dieksekusi.
             </p>
           </div>
 
@@ -318,44 +286,18 @@ export function TestWebhookCard() {
             <span className="font-mono text-xs tracking-widest text-muted-foreground">
               {webhookConfig?.passphrase ? '••••••••••••' : <span className="italic">no config</span>}
             </span>
-            <span className="ml-auto text-2xs text-muted-foreground">sent automatically</span>
+            <span className="ml-auto text-2xs text-muted-foreground">disamarkan di pratinjau</span>
           </div>
 
           {/* Send button */}
           <Button
-            onClick={() => { if (validate()) setConfirmOpen(true) }}
-            disabled={isSending || noConfig}
+            onClick={handleSend}
+            disabled={noConfig}
             className="w-full gap-2 transition-colors duration-200"
           >
-            {isSending
-              ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              : <Send className="h-4 w-4" aria-hidden="true" />
-            }
-            {isSending ? 'Sending…' : 'Send test payload'}
+            <FlaskConical className="h-4 w-4" aria-hidden="true" />
+            Buat pratinjau payload
           </Button>
-
-          <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Kirim order LIVE?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Ini bukan simulasi. Backend akan mengeksekusi{' '}
-                  <span className="font-semibold">{form.action.toUpperCase()} {form.side.toUpperCase()} {form.symbol}</span>
-                  {' '}size {form.size_value}{form.size_type === 'percent' ? '%' : ' USD'}
-                  {form.leverage ? `, leverage ${form.leverage}x` : ''} di {form.exchange} dengan uang sungguhan.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Batal</AlertDialogCancel>
-                <AlertDialogAction
-                  className="bg-bearish text-white hover:bg-bearish/90"
-                  onClick={() => { setConfirmOpen(false); void handleSend() }}
-                >
-                  Ya, kirim order live
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
 
           {/* Response panel */}
           {result && (
