@@ -48,7 +48,7 @@ export function Section({
 /** Small uppercase label used above fields / stat values. */
 export function Eyebrow({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn('text-[10px] font-mono font-semibold uppercase tracking-wider text-muted-foreground', className)}>
+    <div className={cn('text-3xs font-mono font-semibold uppercase tracking-wider text-muted-foreground', className)}>
       {children}
     </div>
   )

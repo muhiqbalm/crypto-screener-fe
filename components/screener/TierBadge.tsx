@@ -11,9 +11,9 @@ interface TierBadgeProps {
 // Discrete shades distinct from bullish (green) and bearish (red).
 // Color + text label: color is NOT the only indicator (a11y requirement).
 const TIER_STYLES: Record<TierClass, string> = {
-  A: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  B: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-  C: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
+  A: 'bg-info/20 text-info border-info/30',
+  B: 'bg-warn/20 text-warn border-warn/30',
+  C: 'bg-muted-foreground/20 text-muted-foreground border-muted-foreground/30',
 }
 
 export function TierBadge({ tier }: TierBadgeProps) {

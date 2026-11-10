@@ -9,16 +9,12 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorPanel } from '@/components/shell/ErrorPanel'
 import { signClass } from '@/components/lab/LabBadges'
 import { ApiError } from '@/lib/api/errors'
-import { formatPrice, formatTimestamp } from '@/lib/utils/format'
+import { formatUsd, formatUsdSigned, formatTimestamp } from '@/lib/utils/format'
 import { notify } from '@/lib/utils/toast'
 import { cn } from '@/lib/utils/cn'
 import { openPositionCount } from '@/lib/lab/paper'
 import { useCreatePaperAccount, usePaperAccounts } from '@/lib/queries/paper'
 
-export function fmtUsdSigned(v: number | null | undefined): string {
-  if (v === null || v === undefined || !Number.isFinite(v)) return '—'
-  return `${v > 0 ? '+' : v < 0 ? '-' : ''}${formatPrice(Math.abs(v))}`
-}
 
 interface FormState {
   name: string
@@ -76,7 +72,7 @@ export function PaperAccountsSection() {
     <Card className="border-border/60">
       <CardHeader className="flex-row items-center justify-between gap-2 pb-3">
         <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-tight">
-          <Wallet className="h-4 w-4 text-amber-400" />
+          <Wallet className="h-4 w-4 text-warn" />
           Akun paper
         </CardTitle>
         <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setOpen((o) => !o)}>
@@ -103,9 +99,9 @@ export function PaperAccountsSection() {
                   value={form[key]}
                   onChange={(e) => setForm({ ...form, [key]: e.target.value })}
                   aria-invalid={Boolean(errors[key])}
-                  className={cn('h-8 text-xs', type === 'number' && 'font-mono', errors[key] && 'border-rose-500')}
+                  className={cn('h-8 text-xs', type === 'number' && 'font-mono', errors[key] && 'border-bearish')}
                 />
-                {errors[key] && <p className="text-[11px] text-rose-400">{errors[key]}</p>}
+                {errors[key] && <p className="text-2xs text-bearish">{errors[key]}</p>}
               </div>
             ))}
             <div className="flex items-end">
@@ -129,15 +125,15 @@ export function PaperAccountsSection() {
               <div key={a.id} className="rounded-lg border border-border/60 bg-card/50 p-3">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">{a.name}</span>
-                  <span className="font-mono text-[10px] text-muted-foreground">{formatTimestamp(a.created_at)}</span>
+                  <span className="font-mono text-3xs text-muted-foreground">{formatTimestamp(a.created_at)}</span>
                 </div>
                 <dl className="mt-2 grid grid-cols-2 gap-1 font-mono text-xs">
                   <dt className="text-muted-foreground">Balance</dt>
-                  <dd className="text-right">{formatPrice(a.balance)}</dd>
+                  <dd className="text-right">{formatUsd(a.balance)}</dd>
                   <dt className="text-muted-foreground">Equity</dt>
-                  <dd className="text-right font-bold">{formatPrice(a.equity)}</dd>
+                  <dd className="text-right font-bold">{formatUsd(a.equity)}</dd>
                   <dt className="text-muted-foreground">Realized P&amp;L</dt>
-                  <dd className={cn('text-right', signClass(a.realized_pnl))}>{fmtUsdSigned(a.realized_pnl)}</dd>
+                  <dd className={cn('text-right', signClass(a.realized_pnl))}>{formatUsdSigned(a.realized_pnl)}</dd>
                   <dt className="text-muted-foreground">Posisi terbuka</dt>
                   <dd className="text-right">{openPositionCount(a)}</dd>
                 </dl>

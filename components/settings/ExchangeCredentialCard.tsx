@@ -20,7 +20,7 @@ interface ExchangeCredentialCardProps {
 // Exchange display metadata
 const EXCHANGE_META: Record<Exchange, { label: string; color: string }> = {
   binance: { label: 'Binance', color: 'text-yellow-500' },
-  okx: { label: 'OKX', color: 'text-blue-400' },
+  okx: { label: 'OKX', color: 'text-info' },
 }
 
 export function ExchangeCredentialCard({ exchange, existing }: ExchangeCredentialCardProps) {

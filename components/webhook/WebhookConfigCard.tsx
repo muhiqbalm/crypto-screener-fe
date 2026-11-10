@@ -50,7 +50,7 @@ function FieldRow({
 }) {
   return (
     <div className="space-y-1.5">
-      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
+      <p className="text-2xs font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
       <div className="flex items-center gap-2">
         <div
           className={`flex-1 rounded-lg border border-input bg-muted/30 px-3 py-2 text-sm break-all select-all ${

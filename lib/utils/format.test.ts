@@ -7,6 +7,12 @@ import { describe, it, expect } from 'vitest'
 import {
   valueOrDash,
   formatPrice,
+  formatUsd,
+  formatUsdSigned,
+  formatQty,
+  baseAsset,
+  displaySymbol,
+  signClass,
   formatPercent,
   formatVolume,
   formatFunding,
@@ -84,6 +90,43 @@ describe('formatPrice', () => {
 
   it('formats large values with commas', () => {
     expect(formatPrice(67420.5)).toBe('$67,420.50')
+  })
+
+  it('keeps enough decimals for mid-priced coins', () => {
+    expect(formatPrice(2.34567)).toBe('$2.3457')
+    expect(formatPrice(12.3456)).toBe('$12.3456')
+    expect(formatPrice(145.1234)).toBe('$145.123')
+    expect(formatPrice(145.1)).toBe('$145.10')
+    expect(formatPrice(-3.5)).toBe('-$3.50')
+  })
+})
+
+describe('formatUsd / formatUsdSigned', () => {
+  it('always uses 2 decimals', () => {
+    expect(formatUsd(1234.5)).toBe('$1,234.50')
+    expect(formatUsd(0.004)).toBe('$0.00')
+    expect(formatUsd(null)).toBe(DASH)
+  })
+  it('signs amounts', () => {
+    expect(formatUsdSigned(12.3)).toBe('+$12.30')
+    expect(formatUsdSigned(-4)).toBe('-$4.00')
+    expect(formatUsdSigned(0)).toBe('$0.00')
+  })
+})
+
+describe('formatQty / baseAsset / displaySymbol / signClass', () => {
+  it('removes float noise from quantities', () => {
+    expect(formatQty(0.1 + 0.2)).toBe('0.3')
+    expect(formatQty(12500)).toBe('12,500')
+  })
+  it('strips USDT-M suffixes', () => {
+    expect(baseAsset('BTC/USDT:USDT')).toBe('BTC')
+    expect(displaySymbol('ETH/USDT:USDT')).toBe('ETH/USDT')
+  })
+  it('maps sign to colour class', () => {
+    expect(signClass(1)).toBe('text-bullish')
+    expect(signClass(-1)).toBe('text-bearish')
+    expect(signClass(0)).toBe('text-foreground')
   })
 })
 

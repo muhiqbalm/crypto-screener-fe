@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { createChart, ColorType, type UTCTimestamp } from 'lightweight-charts'
 import { useTheme } from 'next-themes'
+import { getChartTheme } from '@/lib/chart-theme'
 
 /** Single-series equity line (title names the series, so no legend box). */
 export function SimpleLineChart({ points, label }: { points: { t: string; equity: number }[]; label: string }) {
@@ -17,15 +18,15 @@ export function SimpleLineChart({ points, label }: { points: { t: string; equity
       autoSize: true,
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: isDark ? '#b3b3b3' : '#555555',
-        fontFamily: 'var(--font-geist-mono, ui-monospace, monospace)',
+        textColor: getChartTheme(isDark).text,
+        fontFamily: getChartTheme(isDark).fontFamily,
         fontSize: 11,
       },
-      grid: { vertLines: { visible: false }, horzLines: { color: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' } },
+      grid: { vertLines: { visible: false }, horzLines: { color: getChartTheme(isDark).grid } },
       rightPriceScale: { borderVisible: false },
       timeScale: { borderVisible: false, timeVisible: true },
     })
-    const series = chart.addLineSeries({ color: '#0284c7', lineWidth: 2, priceLineVisible: false })
+    const series = chart.addLineSeries({ color: getChartTheme(isDark).line, lineWidth: 2, priceLineVisible: false })
     const seen = new Map<number, number>()
     for (const p of points) {
       const ts = Math.floor(Date.parse(p.t) / 1000)

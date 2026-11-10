@@ -26,7 +26,7 @@ export function LabGate({ children }: { children: React.ReactNode }) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div role="alert" className="mx-auto flex max-w-md flex-col items-center gap-4 text-center">
-          <ShieldAlert className="h-10 w-10 text-amber-400" aria-hidden="true" />
+          <ShieldAlert className="h-10 w-10 text-warn" aria-hidden="true" />
           <h1 className="text-lg font-bold">Strategy Lab khusus admin</h1>
           <p className="text-sm text-muted-foreground">
             {isError

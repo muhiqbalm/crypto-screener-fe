@@ -15,22 +15,27 @@ export function valueOrDash(v: unknown): string {
 }
 
 /**
- * Formats a price as USD.
- * - |v| >= 1: 2 decimal places (e.g. "$1,234.56")
- * - |v| < 1: 4 significant digits so tiny prices (SHIB, PEPE, GALA) are not
- *   rounded away (e.g. 0.00001234 -> "$0.00001234", 0.5 -> "$0.50")
- * - Returns "—" for null/undefined/NaN.
+ * Formats a crypto PRICE as USD with enough precision to be useful for every
+ * coin (crypto prices span 9 orders of magnitude):
+ * - |v| >= 1000      → 2 decimals            ($67,420.50)
+ * - 1 <= |v| < 1000  → 2–4 decimals, ~6 significant digits
+ *                      ($2.3457, $12.3456, $145.123)
+ * - |v| < 1          → 2–4 significant digits ($0.50, $0.1234, $0.00001234)
+ * Trailing zeros are trimmed down to 2 decimals. Use `formatUsd` for money
+ * amounts (balances, PnL, notional) which always have 2 decimals.
+ * Returns "—" for null/undefined/NaN.
  */
 export function formatPrice(v: number | null | undefined): string {
   if (v === null || v === undefined || isNaN(v)) return DASH;
 
-  if (Math.abs(v) >= 1 || v === 0) {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(v);
+  const abs = Math.abs(v);
+  if (abs >= 1000 || v === 0) {
+    return usd(2, 2).format(v);
+  }
+  if (abs >= 1) {
+    const intDigits = Math.floor(Math.log10(abs)) + 1; // 1..3
+    const maxDecimals = Math.min(4, Math.max(2, 6 - intDigits));
+    return usd(2, maxDecimals).format(v);
   }
 
   return new Intl.NumberFormat("en-US", {
@@ -39,6 +44,67 @@ export function formatPrice(v: number | null | undefined): string {
     minimumSignificantDigits: 2,
     maximumSignificantDigits: 4,
   }).format(v);
+}
+
+const _usdCache = new Map<string, Intl.NumberFormat>();
+function usd(minFrac: number, maxFrac: number): Intl.NumberFormat {
+  const key = `${minFrac}:${maxFrac}`;
+  let f = _usdCache.get(key);
+  if (!f) {
+    f = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: minFrac,
+      maximumFractionDigits: maxFrac,
+    });
+    _usdCache.set(key, f);
+  }
+  return f;
+}
+
+/**
+ * Formats a MONEY amount (balance, equity, PnL, notional) in USD with exactly
+ * 2 decimals. e.g. 1234.5 → "$1,234.50", -3.2 → "-$3.20".
+ */
+export function formatUsd(v: number | null | undefined): string {
+  if (v === null || v === undefined || isNaN(v)) return DASH;
+  return usd(2, 2).format(v);
+}
+
+/** Like formatUsd but always signed: +$12.30 / -$4.00 / $0.00. */
+export function formatUsdSigned(v: number | null | undefined): string {
+  if (v === null || v === undefined || isNaN(v)) return DASH;
+  const body = usd(2, 2).format(Math.abs(v));
+  return `${v > 0 ? "+" : v < 0 ? "-" : ""}${body}`;
+}
+
+/**
+ * Formats a quantity / contract size without float noise
+ * (0.30000000000000004 → "0.3"), up to 8 decimals, grouped thousands.
+ */
+export function formatQty(v: number | null | undefined): string {
+  if (v === null || v === undefined || isNaN(v)) return DASH;
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 8 }).format(v);
+}
+
+/**
+ * Display form of an exchange symbol: "BTC/USDT:USDT" → "BTC/USDT",
+ * "ETHUSDT" stays "ETHUSDT".
+ */
+export function displaySymbol(sym: string | null | undefined): string {
+  if (!sym) return DASH;
+  return sym.replace(/:USDT$/, "");
+}
+
+/** Base asset of a USDT-M symbol: "BTC/USDT:USDT" → "BTC". */
+export function baseAsset(sym: string): string {
+  return sym.replace("/USDT:USDT", "").replace(":USDT", "");
+}
+
+/** Tailwind text colour for a signed value (green / red / neutral). */
+export function signClass(v: number | null | undefined): string {
+  if (v === null || v === undefined || !Number.isFinite(v) || v === 0) return "text-foreground";
+  return v > 0 ? "text-bullish" : "text-bearish";
 }
 
 /**

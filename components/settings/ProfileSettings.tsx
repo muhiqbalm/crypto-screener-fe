@@ -130,7 +130,7 @@ function ProfileForm({ user }: { user: NonNullable<ReturnType<typeof useMe>['dat
             className="bg-muted/40 text-muted-foreground cursor-not-allowed"
             aria-describedby="profile-email-hint"
           />
-          <p id="profile-email-hint" className="text-[11px] text-muted-foreground">
+          <p id="profile-email-hint" className="text-2xs text-muted-foreground">
             Email cannot be changed.
           </p>
         </div>
@@ -149,7 +149,7 @@ function ProfileForm({ user }: { user: NonNullable<ReturnType<typeof useMe>['dat
             aria-describedby={nameError ? 'profile-name-error' : undefined}
           />
           {nameError && (
-            <p id="profile-name-error" className="text-[11px] text-bearish" role="alert">
+            <p id="profile-name-error" className="text-2xs text-bearish" role="alert">
               {nameError}
             </p>
           )}
@@ -170,7 +170,7 @@ function ProfileForm({ user }: { user: NonNullable<ReturnType<typeof useMe>['dat
             disabled={update.isPending}
             className="font-mono"
           />
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-2xs text-muted-foreground">
             For groups, ensure the ID starts with a minus sign (e.g. <span className="font-mono font-semibold text-primary">-5231848624</span>). The bot will dispatch live execution alerts with PnL directly to your group.
           </p>
         </div>
@@ -225,7 +225,7 @@ function ProfileForm({ user }: { user: NonNullable<ReturnType<typeof useMe>['dat
                 aria-describedby={passwordError ? 'profile-password-error' : undefined}
               />
               {passwordError && (
-                <p id="profile-password-error" className="text-[11px] text-bearish" role="alert">
+                <p id="profile-password-error" className="text-2xs text-bearish" role="alert">
                   {passwordError}
                 </p>
               )}

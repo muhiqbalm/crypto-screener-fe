@@ -15,17 +15,17 @@ export default function RegisterPage() {
         href="/screener"
         className="mb-8 flex items-center gap-2.5 text-xl font-semibold tracking-tight transition-opacity hover:opacity-85"
       >
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 shadow-md shadow-emerald-500/10">
-          <BarChart2 className="h-5 w-5 text-emerald-400" aria-hidden="true" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-bullish/10 border border-bullish/25 text-bullish shadow-md shadow-bullish/10">
+          <BarChart2 className="h-5 w-5 text-bullish" aria-hidden="true" />
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="font-black tracking-wider bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">BMTM</span>
+          <span className="font-black tracking-wider bg-gradient-to-r from-bullish via-info to-info bg-clip-text text-transparent">BMTM</span>
           <span className="font-bold tracking-tight text-foreground">MOONTRADE</span>
         </div>
       </Link>
 
       <div className="w-full max-w-md rounded-2xl border border-border/60 bg-card/60 backdrop-blur-md p-8 shadow-xl text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-warn/10 border border-warn/20 text-warn">
           <ShieldAlert className="h-6 w-6" aria-hidden="true" />
         </div>
 

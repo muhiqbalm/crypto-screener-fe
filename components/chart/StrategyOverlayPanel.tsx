@@ -59,7 +59,7 @@ function WatchSelector({ watchId, watches }: { watchId: string | null; watches: 
     <Card className="border-border/60">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-tight">
-          <Eye className="h-4 w-4 text-violet-400" />
+          <Eye className="h-4 w-4 text-lab" />
           Watch strategi
         </CardTitle>
       </CardHeader>
@@ -67,7 +67,7 @@ function WatchSelector({ watchId, watches }: { watchId: string | null; watches: 
         {watches.isPending ? (
           <Skeleton className="h-9 w-full" />
         ) : watches.isError ? (
-          <p className="text-xs text-rose-400">
+          <p className="text-xs text-bearish">
             Gagal memuat daftar watch.{' '}
             <button type="button" className="underline cursor-pointer" onClick={() => watches.refetch()}>
               Coba lagi
@@ -102,7 +102,7 @@ function WatchSelector({ watchId, watches }: { watchId: string | null; watches: 
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 gap-1.5 text-xs text-rose-400"
+                className="h-7 gap-1.5 text-xs text-bearish"
                 disabled={del.isPending}
                 onClick={() =>
                   del.mutate(watchId, {
@@ -153,7 +153,7 @@ function LiveSignalCard({
     <Card className="border-border/60">
       <CardHeader className="flex-row items-center justify-between gap-2 pb-2">
         <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-tight">
-          <Activity className="h-4 w-4 text-emerald-400" />
+          <Activity className="h-4 w-4 text-bullish" />
           Status Sinyal Live
         </CardTitle>
         {state.isFetching && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" aria-label="memuat" />}
@@ -162,7 +162,7 @@ function LiveSignalCard({
         {state.isPending ? (
           <Skeleton className="h-32 w-full" />
         ) : state.isError || !s ? (
-          <p className="text-xs text-rose-400">
+          <p className="text-xs text-bearish">
             Gagal memuat status watch.{' '}
             <button type="button" className="underline cursor-pointer" onClick={() => state.refetch()}>
               Coba lagi
@@ -186,7 +186,7 @@ function LiveSignalCard({
                   <Row label="Take profit" className="text-bullish">{formatPrice(pos.tp)}</Row>
                   <Row label="Unrealised (tanpa leverage)" className={signClass(upnl)}>{formatPercent(upnl)}</Row>
                   {priceSource === 'spot' && (
-                    <p className="pt-1 text-[10px] text-amber-400">Unrealised dihitung dari harga spot (feed perp tidak tersedia).</p>
+                    <p className="pt-1 text-3xs text-warn">Unrealised dihitung dari harga spot (feed perp tidak tersedia).</p>
                   )}
                 </>
               )}
@@ -205,7 +205,7 @@ function LiveSignalCard({
             <div className="pt-2">
               <Row label="Bar terakhir">{formatTimestamp(s.last_bar)}</Row>
               <Row label="Dihitung">{formatTimestamp(s.computed_at)}</Row>
-              <p className="pt-1 text-[10px] text-muted-foreground">
+              <p className="pt-1 text-3xs text-muted-foreground">
                 Update tiap {WATCH_STATE_POLL_MS / 1000} detik. Sinyal dihitung di bar yang sudah close.
                 {markersOffscreen > 0 && ` ${markersOffscreen} marker di luar rentang candle yang dimuat.`}
               </p>
@@ -238,7 +238,7 @@ function RunOverlayCard({
         {run.isPending ? (
           <Skeleton className="h-24 w-full" />
         ) : run.isError || !r ? (
-          <p className="text-xs text-rose-400">Run tidak bisa dimuat.</p>
+          <p className="text-xs text-bearish">Run tidak bisa dimuat.</p>
         ) : (
           <>
             <div className="flex items-center gap-2 pb-1">
@@ -246,18 +246,18 @@ function RunOverlayCard({
               <VerdictBadge verdict={r.verdict} />
             </div>
             <Row label="Run">
-              <Link href={`/lab/runs/${encodeURIComponent(r.id)}`} className="text-sky-400 hover:underline">{r.id}</Link>
+              <Link href={`/lab/runs/${encodeURIComponent(r.id)}`} className="text-info hover:underline">{r.id}</Link>
             </Row>
             <Row label="Trade backtest">
               {r.status !== 'done' ? 'run belum selesai' : trades.isPending ? '…' : trades.isError ? 'gagal dimuat' : (trades.data?.length ?? 0)}
             </Row>
             <Row label="Marker di chart">{markerCount}</Row>
             {markersOffscreen > 0 && (
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-3xs text-muted-foreground">
                 {markersOffscreen} trade di luar 500 candle terakhir — tidak tampil di chart.
               </p>
             )}
-            <p className="pt-1 text-[10px] text-muted-foreground">Ini trade hasil backtest, bukan posisi live.</p>
+            <p className="pt-1 text-3xs text-muted-foreground">Ini trade hasil backtest, bukan posisi live.</p>
           </>
         )}
       </CardContent>

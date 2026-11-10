@@ -11,10 +11,10 @@ import { ErrorPanel } from '@/components/shell/ErrorPanel'
 import { EmptyPanel } from '@/components/shell/EmptyPanel'
 import { signClass } from '@/components/lab/LabBadges'
 import { PaperBadge } from '@/components/chart/PaperTradePanel'
-import { PaperAccountsSection, fmtUsdSigned } from '@/components/journal/PaperAccountsSection'
+import { PaperAccountsSection } from '@/components/journal/PaperAccountsSection'
 import { SimpleLineChart } from '@/components/journal/LineChart'
 import { ApiError } from '@/lib/api/errors'
-import { formatPrice, formatScore, formatTimestamp, valueOrDash } from '@/lib/utils/format'
+import { formatPrice, formatScore, formatTimestamp, formatUsdSigned, valueOrDash } from '@/lib/utils/format'
 import { notify } from '@/lib/utils/toast'
 import { cn } from '@/lib/utils/cn'
 import { COMPARE_LABEL, compareRows, normalizeBreakdown, parseTags, winratePct, type NormalizedBreakdown } from '@/lib/lab/paper'
@@ -42,7 +42,7 @@ export function JournalView() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 border-b border-border/40 pb-6 md:flex-row md:items-end md:justify-between">
         <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-xs font-mono font-medium text-amber-400">
+          <div className="inline-flex items-center gap-2 rounded-full border border-warn/20 bg-warn/10 px-3 py-1 text-xs font-mono font-medium text-warn">
             <BookOpen className="h-3.5 w-3.5" />
             TRADING JOURNAL
           </div>
@@ -117,9 +117,9 @@ export function JournalView() {
 function StatCard({ label, value, hint, className }: { label: string; value: string; hint?: string; className?: string }) {
   return (
     <div className="flex min-h-[92px] flex-col justify-between rounded-xl border border-border/60 bg-card p-3 shadow-sm">
-      <div className="truncate text-[10px] font-mono font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="truncate text-3xs font-mono font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className={cn('truncate font-mono text-xl font-bold tabular-nums', className)}>{value}</div>
-      <div className="truncate text-[10px] text-muted-foreground">{hint ?? '\u00a0'}</div>
+      <div className="truncate text-3xs text-muted-foreground">{hint ?? '\u00a0'}</div>
     </div>
   )
 }
@@ -154,7 +154,7 @@ function StatsSection({ accountId }: { accountId?: string }) {
             <StatCard label="Avg R" value={fmtR(s.avg_r)} className={signClass(s.avg_r)} hint="rata-rata per trade" />
             <StatCard label="Expectancy" value={fmtR(s.expectancy_r)} className={signClass(s.expectancy_r)} hint="harapan per trade" />
             <StatCard label="Profit factor" value={formatScore(s.profit_factor)} hint="untung ÷ rugi" />
-            <StatCard label="Net P&L" value={fmtUsdSigned(s.net_pnl)} className={signClass(s.net_pnl)} hint="setelah biaya" />
+            <StatCard label="Net P&L" value={formatUsdSigned(s.net_pnl)} className={signClass(s.net_pnl)} hint="setelah biaya" />
             <StatCard label="Max DD" value={s.max_dd_pct === null ? '—' : `−${formatScore(Math.abs(s.max_dd_pct), 1)}%`} className="text-bearish" hint="turun terdalam" />
           </div>
           <Card className="border-border/60">
@@ -193,7 +193,7 @@ function BreakdownTable({ title, rows }: { title: string; rows: NormalizedBreakd
             <TableHeader>
               <TableRow>
                 {['', 'Trade', 'Winrate', 'Avg R', 'Net P&L'].map((h) => (
-                  <TableHead key={h} className="text-[11px] uppercase">{h}</TableHead>
+                  <TableHead key={h} className="text-2xs uppercase">{h}</TableHead>
                 ))}
               </TableRow>
             </TableHeader>
@@ -204,7 +204,7 @@ function BreakdownTable({ title, rows }: { title: string; rows: NormalizedBreakd
                   <TableCell className="py-1.5 font-mono text-xs">{valueOrDash(r.trades)}</TableCell>
                   <TableCell className="py-1.5 font-mono text-xs">{r.winrate === null ? '—' : `${r.winrate.toFixed(1)}%`}</TableCell>
                   <TableCell className={cn('py-1.5 font-mono text-xs', signClass(r.avg_r))}>{fmtR(r.avg_r)}</TableCell>
-                  <TableCell className={cn('py-1.5 font-mono text-xs', signClass(r.net_pnl))}>{fmtUsdSigned(r.net_pnl)}</TableCell>
+                  <TableCell className={cn('py-1.5 font-mono text-xs', signClass(r.net_pnl))}>{formatUsdSigned(r.net_pnl)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -242,7 +242,7 @@ function JournalTable({ filters }: { filters: JournalFilters }) {
               <TableHeader>
                 <TableRow>
                   {['Entry', 'Symbol', 'Arah', 'Sumber', 'Harga entry', 'Harga exit', 'Qty', 'Fee+funding', 'P&L', 'R', 'Exit', 'Catatan & tag'].map((h) => (
-                    <TableHead key={h} className="whitespace-nowrap text-[11px] uppercase">{h}</TableHead>
+                    <TableHead key={h} className="whitespace-nowrap text-2xs uppercase">{h}</TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
@@ -279,15 +279,15 @@ function JournalRow({ entry: r }: { entry: JournalEntry }) {
 
   return (
     <TableRow className="align-top">
-      <TableCell className="whitespace-nowrap py-1.5 font-mono text-[11px]">{formatTimestamp(r.entry_time)}</TableCell>
+      <TableCell className="whitespace-nowrap py-1.5 font-mono text-2xs">{formatTimestamp(r.entry_time)}</TableCell>
       <TableCell className="py-1.5 font-mono text-xs font-semibold">{r.symbol}</TableCell>
       <TableCell className={cn('py-1.5 text-xs font-bold uppercase', r.side.toLowerCase() === 'long' ? 'text-bullish' : 'text-bearish')}>{r.side}</TableCell>
-      <TableCell className="whitespace-nowrap py-1.5 text-[11px]">{SOURCE_LABEL[r.source] ?? r.source}</TableCell>
+      <TableCell className="whitespace-nowrap py-1.5 text-2xs">{SOURCE_LABEL[r.source] ?? r.source}</TableCell>
       <TableCell className="py-1.5 font-mono text-xs">{formatPrice(r.entry_price)}</TableCell>
-      <TableCell className="py-1.5 font-mono text-xs">{r.exit_time ? formatPrice(r.exit_price) : <span className="text-sky-400">terbuka</span>}</TableCell>
+      <TableCell className="py-1.5 font-mono text-xs">{r.exit_time ? formatPrice(r.exit_price) : <span className="text-info">terbuka</span>}</TableCell>
       <TableCell className="py-1.5 font-mono text-xs">{r.qty === null ? '—' : formatScore(r.qty, 4)}</TableCell>
-      <TableCell className="py-1.5 font-mono text-xs text-muted-foreground">{hasCosts ? fmtUsdSigned(-Math.abs(costs)) : '—'}</TableCell>
-      <TableCell className={cn('py-1.5 font-mono text-xs', signClass(r.pnl))}>{fmtUsdSigned(r.pnl)}</TableCell>
+      <TableCell className="py-1.5 font-mono text-xs text-muted-foreground">{hasCosts ? formatUsdSigned(-Math.abs(costs)) : '—'}</TableCell>
+      <TableCell className={cn('py-1.5 font-mono text-xs', signClass(r.pnl))}>{formatUsdSigned(r.pnl)}</TableCell>
       <TableCell className={cn('py-1.5 font-mono text-xs', signClass(r.r_multiple))}>{fmtR(r.r_multiple)}</TableCell>
       <TableCell className="py-1.5 text-xs">{valueOrDash(r.exit_reason)}</TableCell>
       <TableCell className="min-w-[220px] py-1.5 text-xs">
@@ -296,13 +296,13 @@ function JournalRow({ entry: r }: { entry: JournalEntry }) {
             <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Catatan" aria-label="Catatan" className="h-7 text-xs" />
             <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="tag1, tag2" aria-label="Tag" className="h-7 font-mono text-xs" />
             <div className="flex gap-1">
-              <Button size="sm" className="h-6 px-2 text-[10px]" onClick={save} disabled={patch.isPending}>
+              <Button size="sm" className="h-6 px-2 text-3xs" onClick={save} disabled={patch.isPending}>
                 {patch.isPending ? <Loader2 className="animate-spin" /> : <Check />} Simpan
               </Button>
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-6 px-2 text-[10px]"
+                className="h-6 px-2 text-3xs"
                 onClick={() => {
                   setNotes(r.notes ?? '')
                   setTags((r.tags ?? []).join(', '))
@@ -320,7 +320,7 @@ function JournalRow({ entry: r }: { entry: JournalEntry }) {
               {(r.tags ?? []).length > 0 && (
                 <span className="mt-0.5 flex flex-wrap gap-1">
                   {(r.tags ?? []).map((t) => (
-                    <span key={t} className="rounded bg-muted px-1 font-mono text-[10px]">#{t}</span>
+                    <span key={t} className="rounded bg-muted px-1 font-mono text-3xs">#{t}</span>
                   ))}
                 </span>
               )}
@@ -383,9 +383,9 @@ function LiveVsBacktest() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-[11px] uppercase">Metrik</TableHead>
-                <TableHead className="text-right text-[11px] uppercase">Paper (live)</TableHead>
-                <TableHead className="text-right text-[11px] uppercase">Backtest</TableHead>
+                <TableHead className="text-2xs uppercase">Metrik</TableHead>
+                <TableHead className="text-right text-2xs uppercase">Paper (live)</TableHead>
+                <TableHead className="text-right text-2xs uppercase">Backtest</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -408,7 +408,7 @@ function LiveVsBacktest() {
             ))}
           </dl>
         )}
-        <p className="mt-2 text-[10px] text-muted-foreground">
+        <p className="mt-2 text-3xs text-muted-foreground">
           Selisih besar antara paper dan backtest = tanda backtest terlalu optimis (slippage, fill, atau overfit).
         </p>
       </CardContent>

@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { signClass } from '@/components/lab/LabBadges'
-import { formatPrice, formatScore } from '@/lib/utils/format'
+import { formatPrice, formatQty, formatScore, formatUsd, formatUsdSigned } from '@/lib/utils/format'
 import { notify } from '@/lib/utils/toast'
 import { cn } from '@/lib/utils/cn'
 import {
@@ -52,7 +52,7 @@ export function PaperBadge({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded border border-amber-500/40 bg-amber-500/15 px-1.5 py-0.5 font-mono text-[10px] font-bold text-amber-400',
+        'inline-flex items-center gap-1 rounded border border-warn/40 bg-warn/15 px-1.5 py-0.5 font-mono text-3xs font-bold text-warn',
         className,
       )}
     >
@@ -127,11 +127,11 @@ export function PaperTradePanel(p: Props) {
   const autoOn = Boolean(p.watch?.autopaper?.enabled && (!account || sameId(p.watch?.autopaper?.account_id, account.id)))
 
   return (
-    <Card className="border-amber-500/30">
+    <Card className="border-warn/30">
       <CardHeader className="space-y-2 pb-2">
         <CardTitle className="flex items-center justify-between gap-2 text-sm font-semibold tracking-tight">
           <span>Paper Trade</span>
-          <Link href="/journal" className="inline-flex items-center gap-1 text-[10px] font-semibold normal-case text-sky-400 hover:underline">
+          <Link href="/journal" className="inline-flex items-center gap-1 text-3xs font-semibold normal-case text-info hover:underline">
             <FileText className="h-3 w-3" /> Jurnal
           </Link>
         </CardTitle>
@@ -142,7 +142,7 @@ export function PaperTradePanel(p: Props) {
         {p.accounts.isPending ? (
           <Skeleton className="h-9 w-full" />
         ) : p.accounts.isError ? (
-          <p className="text-xs text-rose-400">
+          <p className="text-xs text-bearish">
             Gagal memuat akun paper.{' '}
             <button type="button" className="underline cursor-pointer" onClick={() => p.accounts.refetch()}>Coba lagi</button>
           </p>
@@ -152,7 +152,7 @@ export function PaperTradePanel(p: Props) {
           </p>
         ) : (
           <div className="space-y-1">
-            <label htmlFor="paper-account" className="text-[11px] font-medium">Akun paper</label>
+            <label htmlFor="paper-account" className="text-2xs font-medium">Akun paper</label>
             <select
               id="paper-account"
               value={account?.id ?? ''}
@@ -161,12 +161,12 @@ export function PaperTradePanel(p: Props) {
             >
               {(p.accounts.data ?? []).map((a) => (
                 <option key={String(a.id)} value={String(a.id)} className="bg-popover">
-                  {a.name} · equity {formatPrice(a.equity)}
+                  {a.name} · equity {formatUsd(a.equity)}
                 </option>
               ))}
             </select>
             {account && (
-              <p className="font-mono text-[10px] text-muted-foreground">
+              <p className="font-mono text-3xs text-muted-foreground">
                 Risk {account.risk_pct ?? '—'}% · leverage maks {account.leverage_max ?? '—'}x
               </p>
             )}
@@ -182,7 +182,7 @@ export function PaperTradePanel(p: Props) {
                 variant="outline"
                 aria-pressed={draft.side === 'long'}
                 onClick={() => pickSide('long')}
-                className={cn('gap-1', draft.side === 'long' && 'border-emerald-500 bg-emerald-500/15 text-emerald-400')}
+                className={cn('gap-1', draft.side === 'long' && 'border-bullish bg-bullish/15 text-bullish')}
               >
                 <ArrowUpRight /> Long
               </Button>
@@ -191,30 +191,30 @@ export function PaperTradePanel(p: Props) {
                 variant="outline"
                 aria-pressed={draft.side === 'short'}
                 onClick={() => pickSide('short')}
-                className={cn('gap-1', draft.side === 'short' && 'border-rose-500 bg-rose-500/15 text-rose-400')}
+                className={cn('gap-1', draft.side === 'short' && 'border-bearish bg-bearish/15 text-bearish')}
               >
                 <ArrowDownRight /> Short
               </Button>
             </div>
-            {errors.side && <p className="text-[11px] text-rose-400">{errors.side}</p>}
+            {errors.side && <p className="text-2xs text-bearish">{errors.side}</p>}
 
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <label htmlFor="paper-sl" className="text-[11px] font-medium">Stop loss *</label>
-                <Input id="paper-sl" type="number" inputMode="decimal" step="any" value={draft.sl} onChange={(e) => set({ sl: e.target.value })} className={cn('h-8 font-mono text-xs', errors.sl && 'border-rose-500')} />
+                <label htmlFor="paper-sl" className="text-2xs font-medium">Stop loss *</label>
+                <Input id="paper-sl" type="number" inputMode="decimal" step="any" value={draft.sl} onChange={(e) => set({ sl: e.target.value })} className={cn('h-8 font-mono text-xs', errors.sl && 'border-bearish')} />
               </div>
               <div className="space-y-1">
-                <label htmlFor="paper-tp" className="text-[11px] font-medium">Take profit</label>
-                <Input id="paper-tp" type="number" inputMode="decimal" step="any" value={draft.tp} onChange={(e) => set({ tp: e.target.value })} className={cn('h-8 font-mono text-xs', errors.tp && 'border-rose-500')} />
+                <label htmlFor="paper-tp" className="text-2xs font-medium">Take profit</label>
+                <Input id="paper-tp" type="number" inputMode="decimal" step="any" value={draft.tp} onChange={(e) => set({ tp: e.target.value })} className={cn('h-8 font-mono text-xs', errors.tp && 'border-bearish')} />
               </div>
             </div>
             {(errors.sl || errors.tp || errors.price) && (
-              <p className="text-[11px] text-rose-400">{errors.sl ?? errors.tp ?? errors.price}</p>
+              <p className="text-2xs text-bearish">{errors.sl ?? errors.tp ?? errors.price}</p>
             )}
             {p.strategyPosition && (
               <button
                 type="button"
-                className="text-[11px] text-sky-400 underline cursor-pointer"
+                className="text-2xs text-info underline cursor-pointer"
                 onClick={() =>
                   set({
                     side: p.strategyPosition!.side.toLowerCase() === 'short' ? 'short' : 'long',
@@ -226,17 +226,17 @@ export function PaperTradePanel(p: Props) {
                 Isi dari posisi strategi ({p.strategyPosition.side})
               </button>
             )}
-            <p className="text-[10px] text-muted-foreground">Garis SL/TP draft tampil di chart (oranye putus-putus). Ubah lewat input.</p>
+            <p className="text-3xs text-muted-foreground">Garis SL/TP draft tampil di chart (oranye putus-putus). Ubah lewat input.</p>
 
             {/* Size */}
-            <div className="rounded-md border border-border/60 bg-muted/20 p-2 text-[11px]">
+            <div className="rounded-md border border-border/60 bg-muted/20 p-2 text-2xs">
               {size ? (
                 <div className="space-y-0.5 font-mono">
-                  <div className="flex justify-between"><span className="text-muted-foreground">Risiko</span><span>{formatPrice(size.riskAmount)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Risiko</span><span>{formatUsd(size.riskAmount)}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Qty (perkiraan)</span><span>{formatScore(size.qty, 4)}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Notional</span><span>{formatPrice(size.notional)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Notional</span><span>{formatUsd(size.notional)}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Leverage efektif</span><span>{formatScore(size.leverage, 2)}x</span></div>
-                  {size.capped && <p className="pt-1 font-sans text-amber-400">Ukuran dipotong oleh leverage maks akun.</p>}
+                  {size.capped && <p className="pt-1 font-sans text-warn">Ukuran dipotong oleh leverage maks akun.</p>}
                 </div>
               ) : (
                 <p className="text-muted-foreground">
@@ -245,15 +245,15 @@ export function PaperTradePanel(p: Props) {
                     : 'Isi SL untuk lihat ukuran posisi dari risk %.'}
                 </p>
               )}
-              <p className="pt-1 text-[10px] text-muted-foreground">Fill pakai harga market saat server menerima order; backend menghitung ulang ukuran.</p>
+              <p className="pt-1 text-3xs text-muted-foreground">Fill pakai harga market saat server menerima order; backend menghitung ulang ukuran.</p>
             </div>
 
-            <details className="text-[11px]">
+            <details className="text-2xs">
               <summary className="cursor-pointer text-muted-foreground">Opsi lanjutan</summary>
               <div className="mt-2 space-y-2">
                 <div className="space-y-1">
                   <label htmlFor="paper-qty" className="font-medium">Qty manual (opsional)</label>
-                  <Input id="paper-qty" type="number" inputMode="decimal" step="any" value={draft.qty} onChange={(e) => set({ qty: e.target.value })} className={cn('h-8 font-mono text-xs', errors.qty && 'border-rose-500')} />
+                  <Input id="paper-qty" type="number" inputMode="decimal" step="any" value={draft.qty} onChange={(e) => set({ qty: e.target.value })} className={cn('h-8 font-mono text-xs', errors.qty && 'border-bearish')} />
                 </div>
                 <div className="space-y-1">
                   <label htmlFor="paper-note" className="font-medium">Catatan</label>
@@ -267,8 +267,8 @@ export function PaperTradePanel(p: Props) {
                 Review order PAPER
               </Button>
             ) : (
-              <div role="alertdialog" aria-label="Konfirmasi order paper" className="space-y-2 rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-xs">
-                <p className="flex items-center gap-1.5 font-bold text-amber-300">
+              <div role="alertdialog" aria-label="Konfirmasi order paper" className="space-y-2 rounded-md border border-warn/50 bg-warn/10 p-3 text-xs">
+                <p className="flex items-center gap-1.5 font-bold text-warn">
                   <AlertTriangle className="h-3.5 w-3.5" /> Konfirmasi — {PAPER_LABEL}
                 </p>
                 <p className="font-mono">
@@ -291,9 +291,9 @@ export function PaperTradePanel(p: Props) {
             {/* Auto-follow */}
             {p.watchId && (
               <div className="flex items-center justify-between gap-2 rounded-md border border-border/60 px-3 py-2">
-                <label htmlFor="autopaper" className="text-[11px]">
+                <label htmlFor="autopaper" className="text-2xs">
                   <span className="font-medium">Auto-follow strategi</span>
-                  <span className="block text-[10px] text-muted-foreground">Sinyal watch ini otomatis dicatat sebagai PAPER di akun ini.</span>
+                  <span className="block text-3xs text-muted-foreground">Sinyal watch ini otomatis dicatat sebagai PAPER di akun ini.</span>
                 </label>
                 <Switch
                   id="autopaper"
@@ -314,24 +314,24 @@ export function PaperTradePanel(p: Props) {
 
             {/* Open positions */}
             <div className="space-y-1.5">
-              <h3 className="text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
+              <h3 className="text-3xs font-mono font-bold uppercase tracking-wider text-muted-foreground">
                 Posisi paper terbuka · {p.symbol}
               </h3>
               {p.positionsLoading ? (
                 <Skeleton className="h-10 w-full" />
               ) : p.positions.length === 0 ? (
-                <p className="text-[11px] text-muted-foreground">Tidak ada.</p>
+                <p className="text-2xs text-muted-foreground">Tidak ada.</p>
               ) : (
                 <ul className="space-y-1.5">
                   {p.positions.map((pos) => {
                     const upnl = unrealisedPnl(pos, p.lastPrice) ?? pos.unrealized_pnl ?? null
                     return (
-                      <li key={pos.id} className="flex items-center justify-between gap-2 rounded border border-border/50 px-2 py-1.5 font-mono text-[11px]">
+                      <li key={pos.id} className="flex items-center justify-between gap-2 rounded border border-border/50 px-2 py-1.5 font-mono text-2xs">
                         <span>
                           <span className={pos.side === 'long' ? 'text-bullish' : 'text-bearish'}>{pos.side.toUpperCase()}</span>{' '}
-                          {formatScore(pos.qty, 4)} @ {formatPrice(pos.entry_price)}
+                          {formatQty(pos.qty)} @ {formatPrice(pos.entry_price)}
                           <span className={cn('ml-2', signClass(upnl))}>
-                            {upnl === null ? '—' : `${upnl >= 0 ? '+' : '-'}${formatPrice(Math.abs(upnl))}`}
+                            {upnl === null ? '—' : formatUsdSigned(upnl)}
                           </span>
                         </span>
                         {sameId(closingId, pos.id) ? (
@@ -339,7 +339,7 @@ export function PaperTradePanel(p: Props) {
                             <Button
                               size="sm"
                               variant="destructive"
-                              className="h-6 px-2 text-[10px]"
+                              className="h-6 px-2 text-3xs"
                               disabled={close.isPending}
                               onClick={() =>
                                 close.mutate(pos.id, {
@@ -358,7 +358,7 @@ export function PaperTradePanel(p: Props) {
                             </Button>
                           </span>
                         ) : (
-                          <Button size="sm" variant="outline" className="h-6 px-2 text-[10px]" onClick={() => setClosingId(pos.id)}>
+                          <Button size="sm" variant="outline" className="h-6 px-2 text-3xs" onClick={() => setClosingId(pos.id)}>
                             Tutup
                           </Button>
                         )}

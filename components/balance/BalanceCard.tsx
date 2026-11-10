@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorPanel } from '@/components/shell/ErrorPanel'
 import { EmptyPanel } from '@/components/shell/EmptyPanel'
 import { useBalance } from '@/lib/queries/credentials'
-import { formatPrice } from '@/lib/utils/format'
+import { formatUsd } from '@/lib/utils/format'
 import type { ExchangeBalanceResponse } from '@/lib/api/types/credentials'
 
 // ---------------------------------------------------------------------------
@@ -17,7 +17,7 @@ import type { ExchangeBalanceResponse } from '@/lib/api/types/credentials'
 
 const EXCHANGE_META: Record<string, { label: string; colorClass: string; dotClass: string }> = {
   binance: { label: 'Binance', colorClass: 'text-yellow-500', dotClass: 'bg-yellow-500' },
-  okx:     { label: 'OKX',     colorClass: 'text-blue-400',   dotClass: 'bg-blue-400'   },
+  okx:     { label: 'OKX',     colorClass: 'text-info',   dotClass: 'bg-info'   },
 }
 
 function getExchangeMeta(exchange: string) {
@@ -42,7 +42,7 @@ function AssetRow({ item }: { item: ExchangeBalanceResponse }) {
       {/* Currency + account type */}
       <div className="w-28 shrink-0">
         <p className="font-mono text-sm font-semibold leading-none">{item.currency}</p>
-        <p className="mt-0.5 text-[11px] text-muted-foreground capitalize">{item.account_type}</p>
+        <p className="mt-0.5 text-2xs text-muted-foreground capitalize">{item.account_type}</p>
       </div>
 
       {/* Usage bar */}
@@ -59,13 +59,13 @@ function AssetRow({ item }: { item: ExchangeBalanceResponse }) {
       {/* Values */}
       <div className="flex items-center gap-6 text-right shrink-0">
         <div className="w-24">
-          <p className="font-mono text-sm font-semibold tabular-nums text-bullish">{formatPrice(item.free)}</p>
+          <p className="font-mono text-sm font-semibold tabular-nums text-bullish">{formatUsd(item.free)}</p>
         </div>
         <div className="w-24 hidden md:block">
-          <p className="font-mono text-sm font-semibold tabular-nums text-bearish">{formatPrice(item.used)}</p>
+          <p className="font-mono text-sm font-semibold tabular-nums text-bearish">{formatUsd(item.used)}</p>
         </div>
         <div className="w-28">
-          <p className="font-mono text-sm font-semibold tabular-nums">{formatPrice(item.total)}</p>
+          <p className="font-mono text-sm font-semibold tabular-nums">{formatUsd(item.total)}</p>
         </div>
       </div>
     </div>
@@ -97,13 +97,13 @@ function ExchangeBalanceCard({
           <div className="flex items-center gap-2">
             <span className={`h-2 w-2 rounded-full ${meta.dotClass}`} aria-hidden="true" />
             <CardTitle className={`text-base ${meta.colorClass}`}>{meta.label}</CardTitle>
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">
+            <Badge variant="outline" className="text-3xs px-1.5 py-0 text-muted-foreground">
               {assetCount} {assetCount === 1 ? 'asset' : 'assets'}
             </Badge>
           </div>
           <div className="text-right">
-            <p className="font-mono text-lg font-bold tabular-nums">{formatPrice(total)}</p>
-            <p className="text-[11px] text-muted-foreground">est. total (USD)</p>
+            <p className="font-mono text-lg font-bold tabular-nums">{formatUsd(total)}</p>
+            <p className="text-2xs text-muted-foreground">est. total (USD)</p>
           </div>
         </div>
       </CardHeader>
@@ -115,12 +115,12 @@ function ExchangeBalanceCard({
           <div>
             {/* Column header */}
             <div className="flex items-center gap-4 px-3 pb-1">
-              <span className="w-28 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Asset</span>
+              <span className="w-28 text-2xs font-medium text-muted-foreground uppercase tracking-wider">Asset</span>
               <span className="flex-1 hidden sm:block" />
               <div className="flex items-center gap-6 text-right shrink-0">
-                <span className="w-24 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Free</span>
-                <span className="w-24 hidden md:block text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Used</span>
-                <span className="w-28 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Total</span>
+                <span className="w-24 text-2xs font-medium text-muted-foreground uppercase tracking-wider">Free</span>
+                <span className="w-24 hidden md:block text-2xs font-medium text-muted-foreground uppercase tracking-wider">Used</span>
+                <span className="w-28 text-2xs font-medium text-muted-foreground uppercase tracking-wider">Total</span>
               </div>
             </div>
             {items.map((item, i) => (
@@ -159,7 +159,7 @@ function PortfolioSummary({
         </div>
         <div>
           <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Total Portfolio</p>
-          <p className="font-mono text-2xl font-bold tabular-nums tracking-tight">{formatPrice(total)}</p>
+          <p className="font-mono text-2xl font-bold tabular-nums tracking-tight">{formatUsd(total)}</p>
         </div>
       </div>
       <div className="flex items-center gap-4">

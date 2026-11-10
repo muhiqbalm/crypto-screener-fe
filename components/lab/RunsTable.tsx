@@ -29,7 +29,7 @@ function filterRuns(rows: LabRunSummary[], f: { q: string; mode: ModeFilter; ver
   )
 }
 
-const th = 'px-3 py-2 text-left text-[11px] font-medium uppercase tracking-wide text-muted-foreground'
+const th = 'px-3 py-2 text-left text-2xs font-medium uppercase tracking-wide text-muted-foreground'
 const td = 'px-3 py-2.5'
 
 export function RunsTable() {
@@ -136,7 +136,7 @@ export function RunsTable() {
                   <td className={td}>
                     <span className="font-mono text-xs font-semibold">{r.symbol}</span>{' '}
                     <span className="font-mono text-xs text-muted-foreground">{r.timeframe}</span>
-                    <span className="block text-[10px] text-muted-foreground sm:hidden">{MODE_LABEL[r.mode]}</span>
+                    <span className="block text-3xs text-muted-foreground sm:hidden">{MODE_LABEL[r.mode]}</span>
                   </td>
                   <td className={cn(td, 'hidden text-xs text-muted-foreground sm:table-cell')}>{MODE_LABEL[r.mode]}</td>
                   <td className={td}><RunStateChip status={r.status} verdict={r.verdict} mode={r.mode} /></td>

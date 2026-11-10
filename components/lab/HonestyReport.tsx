@@ -117,9 +117,9 @@ export function ChecksList({ checks }: { checks: LabCheck[] }) {
         <thead className="border-b border-border/60 bg-muted/30">
           <tr>
             <th className="w-10 px-3 py-2"><span className="sr-only">Status</span></th>
-            <th className="px-3 py-2 text-left text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Cek</th>
-            <th className="px-3 py-2 text-right text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Nilai</th>
-            <th className="hidden px-3 py-2 text-right text-[11px] font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">Syarat</th>
+            <th className="px-3 py-2 text-left text-2xs font-medium uppercase tracking-wide text-muted-foreground">Cek</th>
+            <th className="px-3 py-2 text-right text-2xs font-medium uppercase tracking-wide text-muted-foreground">Nilai</th>
+            <th className="hidden px-3 py-2 text-right text-2xs font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">Syarat</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border/50">

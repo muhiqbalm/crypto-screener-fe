@@ -15,7 +15,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useOpenPositions, usePositionsHistory } from '@/lib/queries/positions'
-import { formatPrice, formatPercent, formatTimestamp } from '@/lib/utils/format'
+import { formatPrice, formatPercent, formatQty, formatTimestamp, formatUsdSigned } from '@/lib/utils/format'
 import { ApiError } from '@/lib/api/errors'
 import type { OpenPositionResponse, ClosedPositionResponse } from '@/lib/api/types/credentials'
 
@@ -36,8 +36,8 @@ function SideBadge({ side }: { side: string }) {
       variant="outline"
       className={
         isLong
-          ? 'bg-bullish/15 text-bullish border-bullish/25 text-[11px] font-semibold uppercase tracking-wide px-2 py-0'
-          : 'bg-bearish/15 text-bearish border-bearish/25 text-[11px] font-semibold uppercase tracking-wide px-2 py-0'
+          ? 'bg-bullish/15 text-bullish border-bullish/25 text-2xs font-semibold uppercase tracking-wide px-2 py-0'
+          : 'bg-bearish/15 text-bearish border-bearish/25 text-2xs font-semibold uppercase tracking-wide px-2 py-0'
       }
     >
       {isLong ? 'Long' : 'Short'}
@@ -48,7 +48,7 @@ function SideBadge({ side }: { side: string }) {
 function LeverageBadge({ leverage }: { leverage: number | null }) {
   if (leverage == null) return <span className="text-muted-foreground">{DASH}</span>
   return (
-    <Badge variant="outline" className="text-[11px] px-1.5 py-0 font-mono text-muted-foreground">
+    <Badge variant="outline" className="text-2xs px-1.5 py-0 font-mono text-muted-foreground">
       {leverage}×
     </Badge>
   )
@@ -57,7 +57,7 @@ function LeverageBadge({ leverage }: { leverage: number | null }) {
 function ExchangeLabel({ exchange }: { exchange: string }) {
   const colors: Record<string, string> = {
     binance: 'text-yellow-500',
-    okx: 'text-blue-400',
+    okx: 'text-info',
   }
   const color = colors[exchange.toLowerCase()] ?? 'text-muted-foreground'
   const label = exchange.charAt(0).toUpperCase() + exchange.slice(1).toLowerCase()
@@ -103,9 +103,9 @@ function PnlCell({
 
   return (
     <div className={`text-right ${colorClass}`}>
-      <p className="font-mono text-xs font-semibold tabular-nums">{formatPrice(value)}</p>
+      <p className="font-mono text-xs font-semibold tabular-nums">{formatUsdSigned(value)}</p>
       {pct != null && (
-        <p className="font-mono text-[11px] tabular-nums opacity-75">{formatPercent(pct)}</p>
+        <p className="font-mono text-2xs tabular-nums opacity-75">{formatPercent(pct)}</p>
       )}
     </div>
   )
@@ -131,12 +131,12 @@ function OpenPositionsTable() {
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-semibold">Open Positions</h3>
               {!isPending && !error && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">
+                <Badge variant="outline" className="text-3xs px-1.5 py-0 text-muted-foreground">
                   {count}
                 </Badge>
               )}
             </div>
-            <p className="text-[11px] text-muted-foreground">Live — auto-refreshes every 15 s</p>
+            <p className="text-2xs text-muted-foreground">Live — auto-refreshes every 15 s</p>
           </div>
         </div>
         <Button
@@ -201,7 +201,7 @@ function OpenPositionsTable() {
                 <TableCell className="py-3"><SideBadge side={pos.side} /></TableCell>
                 <TableCell className="text-right font-mono text-xs tabular-nums py-3">{formatPrice(pos.entry_price)}</TableCell>
                 <TableCell className="text-right font-mono text-xs tabular-nums py-3">{num(pos.mark_price, formatPrice)}</TableCell>
-                <TableCell className="text-right font-mono text-xs tabular-nums py-3">{pos.quantity}</TableCell>
+                <TableCell className="text-right font-mono text-xs tabular-nums py-3">{formatQty(pos.quantity)}</TableCell>
                 <TableCell className="text-center py-3"><LeverageBadge leverage={pos.leverage} /></TableCell>
                 <TableCell className="py-3">
                   <PnlCell value={pos.unrealized_pnl} pct={pos.unrealized_pnl_pct} />
@@ -238,12 +238,12 @@ function PositionHistoryTable() {
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-semibold">Position History</h3>
               {!isPending && !error && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">
+                <Badge variant="outline" className="text-3xs px-1.5 py-0 text-muted-foreground">
                   {count}
                 </Badge>
               )}
             </div>
-            <p className="text-[11px] text-muted-foreground">Closed positions, most recent first</p>
+            <p className="text-2xs text-muted-foreground">Closed positions, most recent first</p>
           </div>
         </div>
         <Button
@@ -311,7 +311,7 @@ function PositionHistoryTable() {
                   <TableCell className="text-right font-mono text-xs tabular-nums py-3">{formatPrice(pos.entry_price)}</TableCell>
                   <TableCell className="text-right font-mono text-xs tabular-nums py-3">{formatPrice(pos.exit_price)}</TableCell>
                   <TableCell className="py-3"><PnlCell value={pnl} /></TableCell>
-                  <TableCell className="text-right font-mono text-xs tabular-nums py-3">{pos.quantity}</TableCell>
+                  <TableCell className="text-right font-mono text-xs tabular-nums py-3">{formatQty(pos.quantity)}</TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground whitespace-nowrap py-3">
                     {formatTimestamp(pos.opened_at)}
                   </TableCell>

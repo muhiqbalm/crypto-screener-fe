@@ -186,7 +186,7 @@ function ScanBuilder({ onCreated }: { onCreated: (id: LabId) => void }) {
                   onClick={() => setSelected(toggle(selected, s.symbol))}
                   title={s.has_data ? 'Data siap' : 'Akan diunduh saat dipakai (±1 menit)'}
                   className={cn(
-                    'inline-flex h-7 items-center gap-1 rounded-md border px-2 font-mono text-[11px] transition-colors cursor-pointer',
+                    'inline-flex h-7 items-center gap-1 rounded-md border px-2 font-mono text-2xs transition-colors cursor-pointer',
                     on ? 'border-lab/50 bg-lab/15 text-lab' : 'border-border/60 text-muted-foreground hover:bg-accent hover:text-foreground',
                   )}
                 >
@@ -197,8 +197,8 @@ function ScanBuilder({ onCreated }: { onCreated: (id: LabId) => void }) {
             })}
             {visible.length === 0 && <p className="w-full py-2 text-center text-xs text-muted-foreground">Koin tidak ditemukan</p>}
           </div>
-          <p className="text-[11px] text-muted-foreground">Titik abu-abu = data belum ada, akan diunduh saat dipakai (±1 menit per koin).</p>
-          {errors.symbols && <p className="text-[11px] text-bearish">{errors.symbols}</p>}
+          <p className="text-2xs text-muted-foreground">Titik abu-abu = data belum ada, akan diunduh saat dipakai (±1 menit per koin).</p>
+          {errors.symbols && <p className="text-2xs text-bearish">{errors.symbols}</p>}
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -211,7 +211,7 @@ function ScanBuilder({ onCreated }: { onCreated: (id: LabId) => void }) {
                 </Chip>
               ))}
             </div>
-            {errors.timeframes && <p className="text-[11px] text-bearish">{errors.timeframes}</p>}
+            {errors.timeframes && <p className="text-2xs text-bearish">{errors.timeframes}</p>}
           </div>
           <div className="space-y-1.5">
             <span className="text-xs font-medium">Mode</span>
@@ -221,10 +221,10 @@ function ScanBuilder({ onCreated }: { onCreated: (id: LabId) => void }) {
             </div>
             {mode === 'optimize' && (
               <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                <span className="text-[11px] text-muted-foreground">Percobaan per kombinasi:</span>
+                <span className="text-2xs text-muted-foreground">Percobaan per kombinasi:</span>
                 {TRIAL_OPTIONS.map((n) => (
                   <Chip key={n} active={nTrials === n} onClick={() => setNTrials(n)} className="h-7 px-2.5">
-                    {n} <span className="text-[10px] opacity-70">±{estimateMinutes(n)} mnt</span>
+                    {n} <span className="text-3xs opacity-70">±{estimateMinutes(n)} mnt</span>
                   </Chip>
                 ))}
               </div>
@@ -238,7 +238,7 @@ function ScanBuilder({ onCreated }: { onCreated: (id: LabId) => void }) {
           <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 [&::-webkit-details-marker]:hidden">
             <span>
               <span className="block text-xs font-medium">Parameter</span>
-              <span className="block text-[11px] text-muted-foreground">{changed === 0 ? 'Default live ETH 4H' : `${changed} diubah dari default live`}</span>
+              <span className="block text-2xs text-muted-foreground">{changed === 0 ? 'Default live ETH 4H' : `${changed} diubah dari default live`}</span>
             </span>
             <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
           </summary>
@@ -252,7 +252,7 @@ function ScanBuilder({ onCreated }: { onCreated: (id: LabId) => void }) {
             <span className="font-mono text-lg font-bold">{combos}</span> kombinasi{' '}
             <span className="text-muted-foreground">({selected.length} koin × {tfs.length} timeframe)</span>
             {mode === 'optimize' && combos > 0 && (
-              <span className="block text-[11px] text-muted-foreground">Perkiraan ±{estimateMinutes(nTrials) * combos} mnt total kalau dijalankan berurutan.</span>
+              <span className="block text-2xs text-muted-foreground">Perkiraan ±{estimateMinutes(nTrials) * combos} mnt total kalau dijalankan berurutan.</span>
             )}
             {large && (
               <p role="alert" className="mt-1 flex items-start gap-1.5 text-xs text-warn">
@@ -282,14 +282,14 @@ function ScanProgress({ scan }: { scan: LabScanDetail }) {
   const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0
   return (
     <div className="space-y-1">
-      <div className="flex justify-between text-[11px] text-muted-foreground">
+      <div className="flex justify-between text-2xs text-muted-foreground">
         <span>{scan.status === 'done' ? 'Selesai' : 'Progress'}</span>
         <span className="font-mono">
           {done}/{total} ({pct}%)
         </span>
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={done}>
-        <div className="h-full rounded-full bg-violet-500 transition-all" style={{ width: `${pct}%` }} />
+        <div className="h-full rounded-full bg-lab transition-all" style={{ width: `${pct}%` }} />
       </div>
     </div>
   )
@@ -325,14 +325,14 @@ function ScanHeatmap({ rows }: { rows: LabScanRow[] }) {
             <tr>
               <th />
               {tfs.map((tf) => (
-                <th key={tf} className="px-1 pb-1 text-center font-mono text-[11px] font-medium text-muted-foreground">{tf}</th>
+                <th key={tf} className="px-1 pb-1 text-center font-mono text-2xs font-medium text-muted-foreground">{tf}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {symbols.map((s) => (
               <tr key={s}>
-                <th scope="row" className="pr-2 text-left font-mono text-[11px] font-semibold">{s.replace(/USDT$/, '')}</th>
+                <th scope="row" className="pr-2 text-left font-mono text-2xs font-semibold">{s.replace(/USDT$/, '')}</th>
                 {tfs.map((tf) => {
                   const r = at(s, tf)
                   if (!r) return <td key={tf} className="h-12 w-20 rounded-md bg-muted/20" />
@@ -340,14 +340,14 @@ function ScanHeatmap({ rows }: { rows: LabScanRow[] }) {
                   const content = (
                     <div className="flex h-12 w-20 flex-col items-center justify-center gap-0.5 sm:w-24">
                       {r.status !== 'done' ? (
-                        <span className="text-[10px] text-muted-foreground">{r.status === 'running' ? 'jalan…' : r.status === 'queued' ? 'antri' : r.status}</span>
+                        <span className="text-3xs text-muted-foreground">{r.status === 'running' ? 'jalan…' : r.status === 'queued' ? 'antri' : r.status}</span>
                       ) : (
                         <>
                           <span className="font-mono text-sm font-bold tabular-nums">{formatScore(r.oos_profit_factor)}</span>
                           {r.verdict === 'PASS' ? (
-                            <span className="rounded bg-bullish px-1 text-[9px] font-bold leading-4 text-bullish-foreground">LOLOS</span>
+                            <span className="rounded bg-bullish px-1 text-3xs font-bold leading-4 text-bullish-foreground">LOLOS</span>
                           ) : (
-                            <span className="text-[9px] text-muted-foreground">PF</span>
+                            <span className="text-3xs text-muted-foreground">PF</span>
                           )}
                         </>
                       )}
@@ -370,7 +370,7 @@ function ScanHeatmap({ rows }: { rows: LabScanRow[] }) {
           </tbody>
         </table>
       </div>
-      <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground" aria-label="Legenda">
+      <div className="flex flex-wrap items-center gap-3 text-2xs text-muted-foreground" aria-label="Legenda">
         <span>PF holdout:</span>
         {[
           [-2, '< 0.8'],
@@ -410,7 +410,7 @@ function ScanTable({ rows }: { rows: LabScanRow[] }) {
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({ key: 'default', desc: true })
   const sorted = useMemo(() => sortScanTable(rows, sort.key, sort.desc), [rows, sort])
   const head = (key: SortKey, label: string, right = true) => (
-    <th className={cn('px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground', right ? 'text-right' : 'text-left')}>
+    <th className={cn('px-3 py-2 text-2xs font-medium uppercase tracking-wide text-muted-foreground', right ? 'text-right' : 'text-left')}>
       <button
         type="button"
         className="inline-flex items-center gap-1 hover:text-foreground cursor-pointer"
@@ -427,7 +427,7 @@ function ScanTable({ rows }: { rows: LabScanRow[] }) {
         <thead className="sticky top-0 border-b border-border/60 bg-card">
           <tr>
             {head('symbol', 'Koin', false)}
-            <th className="px-3 py-2 text-left text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            <th className="px-3 py-2 text-left text-2xs font-medium uppercase tracking-wide text-muted-foreground">
               <button type="button" className="hover:text-foreground cursor-pointer" onClick={() => setSort({ key: 'default', desc: true })}>
                 Hasil {sort.key === 'default' && '↓'}
               </button>

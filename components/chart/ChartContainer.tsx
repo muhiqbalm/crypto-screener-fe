@@ -276,7 +276,7 @@ export function ChartContainer() {
   return (
     <div className="flex flex-col gap-4">
       {overlay && (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-violet-500/30 bg-violet-500/10 px-4 py-2 text-xs text-violet-200">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-lab/30 bg-lab/10 px-4 py-2 text-xs text-lab">
           <span>
             Mode overlay strategi:{' '}
             <span className="font-mono font-bold">
@@ -290,7 +290,7 @@ export function ChartContainer() {
         </div>
       )}
       {(watchId || runId) && !overlay && isAdmin && (watchesQ.isError || runQ.isError || (watchId && watchesQ.isSuccess)) && (
-        <div role="alert" className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs text-amber-300">
+        <div role="alert" className="rounded-lg border border-warn/30 bg-warn/10 px-4 py-2 text-xs text-warn">
           {watchId ? `Watch ${watchId} tidak ditemukan.` : `Run ${runId} tidak bisa dimuat.`}{' '}
           <Link href="/chart" className="underline">Kembali ke chart biasa</Link>
         </div>
@@ -339,8 +339,8 @@ export function ChartContainer() {
                   {source && (
                     <span
                       className={cn(
-                        'ml-2 rounded px-1.5 py-0.5 font-mono text-[10px]',
-                        source === 'spot' ? 'bg-amber-500/15 text-amber-400' : 'bg-muted text-muted-foreground',
+                        'ml-2 rounded px-1.5 py-0.5 font-mono text-3xs',
+                        source === 'spot' ? 'bg-warn/15 text-warn' : 'bg-muted text-muted-foreground',
                       )}
                     >
                       {KLINE_SOURCE_LABEL[source]}
@@ -367,7 +367,7 @@ export function ChartContainer() {
               <Badge
                 variant="outline"
                 className={cn(
-                  'gap-1.5 text-[10px] px-2 py-0.5',
+                  'gap-1.5 text-3xs px-2 py-0.5',
                   wsLive
                     ? 'border-bullish/30 bg-bullish/10 text-bullish'
                     : 'text-muted-foreground',

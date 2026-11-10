@@ -94,14 +94,14 @@ export function Navbar() {
 
   // Real backend health: GET /api/v1/health with browser-measured latency.
   const statusDot = isMock
-    ? 'bg-amber-400'
+    ? 'bg-warn'
     : healthPending
       ? 'bg-muted-foreground/50'
       : health?.status === 'healthy'
-        ? 'bg-emerald-500 animate-pulse'
+        ? 'bg-bullish animate-pulse'
         : health?.status === 'degraded'
-          ? 'bg-amber-400'
-          : 'bg-rose-500'
+          ? 'bg-warn'
+          : 'bg-bearish'
   const statusText = isMock
     ? 'Mock Mode'
     : healthPending
@@ -124,17 +124,17 @@ export function Navbar() {
             href="/screener"
             className="flex items-center gap-2.5 tracking-tight transition-opacity hover:opacity-85"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 shadow-sm shadow-emerald-500/20">
-              <BarChart2 className="h-4 w-4 text-emerald-400" aria-hidden="true" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-bullish/10 border border-bullish/25 text-bullish shadow-sm shadow-bullish/20">
+              <BarChart2 className="h-4 w-4 text-bullish" aria-hidden="true" />
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="font-extrabold tracking-wider bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
+              <span className="font-extrabold tracking-wider bg-gradient-to-r from-bullish via-info to-info bg-clip-text text-transparent">
                 BMTM
               </span>
               <span className="hidden font-bold tracking-tight text-foreground text-sm lg:inline">
                 MOONTRADE
               </span>
-              <span className="hidden xl:inline-flex text-[9px] font-mono font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 text-emerald-400">
+              <span className="hidden xl:inline-flex text-3xs font-mono font-bold tracking-wider px-1.5 py-0.5 rounded bg-bullish/10 border border-bullish/25 text-bullish">
                 TRADE SYSTEM
               </span>
             </div>
@@ -158,7 +158,7 @@ export function Navbar() {
                     : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                 )}
               >
-                <Activity className="h-3.5 w-3.5 text-emerald-400" />
+                <Activity className="h-3.5 w-3.5 text-bullish" />
                 <span className="sr-only md:not-sr-only">Market Intel</span>
                 <ChevronDown
                   className={cn(
@@ -170,7 +170,7 @@ export function Navbar() {
 
               {intelOpen && (
                 <div className="fixed inset-x-2 top-14 mt-1 rounded-xl md:absolute md:inset-x-auto md:left-0 md:top-auto md:mt-2 md:w-72 border border-border/80 bg-card/95 p-2 shadow-xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-2 py-1.5 text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-wider">
+                  <div className="px-2 py-1.5 text-3xs font-mono font-bold text-muted-foreground uppercase tracking-wider">
                     Quantitative &amp; Market Intelligence
                   </div>
                   <Link
@@ -180,15 +180,15 @@ export function Navbar() {
                       pathname === '/news' && 'bg-accent/70'
                     )}
                   >
-                    <div className="p-1.5 rounded-md bg-purple-500/10 text-purple-400 mt-0.5">
+                    <div className="p-1.5 rounded-md bg-lab/10 text-lab mt-0.5">
                       <Newspaper className="h-4 w-4" />
                     </div>
                     <div>
                       <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
                         News &amp; Sentiment
-                        <span className="text-[9px] px-1 py-0.2 rounded bg-purple-500/20 text-purple-300 font-mono">RSS</span>
+                        <span className="text-3xs px-1 py-0.2 rounded bg-lab/20 text-lab font-mono">RSS</span>
                       </div>
-                      <div className="text-[11px] text-muted-foreground">Fear &amp; Greed + breaking crypto wires</div>
+                      <div className="text-2xs text-muted-foreground">Fear &amp; Greed + breaking crypto wires</div>
                     </div>
                   </Link>
 
@@ -199,15 +199,15 @@ export function Navbar() {
                       pathname === '/whales' && 'bg-accent/70'
                     )}
                   >
-                    <div className="p-1.5 rounded-md bg-cyan-500/10 text-cyan-400 mt-0.5">
+                    <div className="p-1.5 rounded-md bg-info/10 text-info mt-0.5">
                       <Radar className="h-4 w-4" />
                     </div>
                     <div>
                       <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
                         Whale Radar
-                        <span className="text-[9px] px-1 py-0.2 rounded bg-cyan-500/20 text-cyan-300 font-mono">Live FAPI</span>
+                        <span className="text-3xs px-1 py-0.2 rounded bg-info/20 text-info font-mono">Live FAPI</span>
                       </div>
-                      <div className="text-[11px] text-muted-foreground">Binance top trader L/S &amp; large trades</div>
+                      <div className="text-2xs text-muted-foreground">Binance top trader L/S &amp; large trades</div>
                     </div>
                   </Link>
 
@@ -218,12 +218,12 @@ export function Navbar() {
                       pathname === '/screener' && 'bg-accent/70'
                     )}
                   >
-                    <div className="p-1.5 rounded-md bg-emerald-500/10 text-emerald-400 mt-0.5">
+                    <div className="p-1.5 rounded-md bg-bullish/10 text-bullish mt-0.5">
                       <BarChart2 className="h-4 w-4" />
                     </div>
                     <div>
                       <div className="text-xs font-bold text-foreground">Quant Screener</div>
-                      <div className="text-[11px] text-muted-foreground">Multi-factor ranking &amp; OI delta</div>
+                      <div className="text-2xs text-muted-foreground">Multi-factor ranking &amp; OI delta</div>
                     </div>
                   </Link>
 
@@ -234,12 +234,12 @@ export function Navbar() {
                       pathname === '/chart' && 'bg-accent/70'
                     )}
                   >
-                    <div className="p-1.5 rounded-md bg-teal-500/10 text-teal-400 mt-0.5">
+                    <div className="p-1.5 rounded-md bg-info/10 text-info mt-0.5">
                       <LineChart className="h-4 w-4" />
                     </div>
                     <div>
                       <div className="text-xs font-bold text-foreground">Interactive Chart</div>
-                      <div className="text-[11px] text-muted-foreground">TradingView candles &amp; indicators</div>
+                      <div className="text-2xs text-muted-foreground">TradingView candles &amp; indicators</div>
                     </div>
                   </Link>
                 </div>
@@ -263,7 +263,7 @@ export function Navbar() {
                       : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                   )}
                 >
-                  <Zap className="h-3.5 w-3.5 text-amber-400" />
+                  <Zap className="h-3.5 w-3.5 text-warn" />
                   <span className="sr-only md:not-sr-only">Trade Engine</span>
                   <ChevronDown
                     className={cn(
@@ -275,7 +275,7 @@ export function Navbar() {
 
                 {engineOpen && (
                   <div className="fixed inset-x-2 top-14 mt-1 rounded-xl md:absolute md:inset-x-auto md:left-0 md:top-auto md:mt-2 md:w-64 border border-border/80 bg-card/95 p-2 shadow-xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-150">
-                    <div className="px-2 py-1.5 text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-wider">
+                    <div className="px-2 py-1.5 text-3xs font-mono font-bold text-muted-foreground uppercase tracking-wider">
                       Automated Execution Gateway
                     </div>
                     <Link
@@ -285,12 +285,12 @@ export function Navbar() {
                         pathname === '/webhook' && 'bg-accent/70'
                       )}
                     >
-                      <div className="p-1.5 rounded-md bg-amber-500/10 text-amber-400 mt-0.5">
+                      <div className="p-1.5 rounded-md bg-warn/10 text-warn mt-0.5">
                         <Webhook className="h-4 w-4" />
                       </div>
                       <div>
                         <div className="text-xs font-bold text-foreground">Webhook Gateway</div>
-                        <div className="text-[11px] text-muted-foreground">TradingView dedicated bridge</div>
+                        <div className="text-2xs text-muted-foreground">TradingView dedicated bridge</div>
                       </div>
                     </Link>
 
@@ -301,12 +301,12 @@ export function Navbar() {
                         pathname === '/balance' && 'bg-accent/70'
                       )}
                     >
-                      <div className="p-1.5 rounded-md bg-emerald-500/10 text-emerald-400 mt-0.5">
+                      <div className="p-1.5 rounded-md bg-bullish/10 text-bullish mt-0.5">
                         <Wallet className="h-4 w-4" />
                       </div>
                       <div>
                         <div className="text-xs font-bold text-foreground">Balance &amp; Margin</div>
-                        <div className="text-[11px] text-muted-foreground">Live Binance equity &amp; positions</div>
+                        <div className="text-2xs text-muted-foreground">Live Binance equity &amp; positions</div>
                       </div>
                     </Link>
                   </div>
@@ -324,7 +324,7 @@ export function Navbar() {
                     : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                 )}
               >
-                <FlaskConical className="h-3.5 w-3.5 text-violet-400" />
+                <FlaskConical className="h-3.5 w-3.5 text-lab" />
                 <span className="sr-only md:not-sr-only">Lab</span>
               </Link>
             )}
@@ -339,7 +339,7 @@ export function Navbar() {
                     : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                 )}
               >
-                <BookOpen className="h-3.5 w-3.5 text-amber-400" />
+                <BookOpen className="h-3.5 w-3.5 text-warn" />
                 <span className="sr-only md:not-sr-only">Jurnal</span>
               </Link>
             )}
@@ -351,7 +351,7 @@ export function Navbar() {
           {/* Engine Status Badge */}
           <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-muted/50 border border-border/60">
             <span className={cn('h-2 w-2 rounded-full', statusDot)} />
-            <span className="text-[11px] font-medium text-foreground">
+            <span className="text-2xs font-medium text-foreground">
               {statusText}
             </span>
           </div>
@@ -368,7 +368,7 @@ export function Navbar() {
                 }}
                 className="flex items-center gap-2 rounded-full p-1 pl-1.5 pr-2.5 bg-card/80 border border-border/80 hover:bg-accent transition-colors cursor-pointer"
               >
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-mono font-bold text-xs border border-emerald-500/30">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-bullish/20 text-bullish font-mono font-bold text-xs border border-bullish/30">
                   {userInitial}
                 </div>
                 <span className="hidden max-w-[100px] truncate text-xs font-semibold text-foreground sm:inline">
@@ -389,12 +389,12 @@ export function Navbar() {
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-xs text-foreground">{userDisplayName}</span>
                       {roleLabel && (
-                        <Badge className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[9px] font-mono font-bold tracking-wide">
+                        <Badge className="bg-bullish/15 text-bullish border border-bullish/30 text-3xs font-mono font-bold tracking-wide">
                           {roleLabel}
                         </Badge>
                       )}
                     </div>
-                    <div className="text-[11px] text-muted-foreground truncate mt-0.5">
+                    <div className="text-2xs text-muted-foreground truncate mt-0.5">
                       {session.user.email}
                     </div>
                   </div>
@@ -417,7 +417,7 @@ export function Navbar() {
                     <button
                       type="button"
                       onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                      className="text-[11px] font-mono font-medium px-2 py-0.5 rounded bg-muted/70 hover:bg-muted text-foreground border border-border/60 cursor-pointer"
+                      className="text-2xs font-mono font-medium px-2 py-0.5 rounded bg-muted/70 hover:bg-muted text-foreground border border-border/60 cursor-pointer"
                     >
                       {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
                     </button>
@@ -430,7 +430,7 @@ export function Navbar() {
                     type="button"
                     onClick={() => logout.mutate()}
                     disabled={logout.isPending}
-                    className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                    className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-bearish hover:bg-bearish/10 transition-colors cursor-pointer"
                   >
                     {logout.isPending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

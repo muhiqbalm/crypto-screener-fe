@@ -39,7 +39,7 @@ function CostInputs({ value, errors, onChange }: CostInputsProps) {
               aria-invalid={Boolean(errors[key])}
               className={cn('h-8 font-mono text-xs tabular-nums', errors[key] && 'border-bearish')}
             />
-            {errors[key] && <p className="text-[11px] text-bearish">{errors[key]}</p>}
+            {errors[key] && <p className="text-2xs text-bearish">{errors[key]}</p>}
           </div>
         ))}
       </div>
@@ -59,7 +59,7 @@ export function CostDisclosure(props: CostInputsProps) {
       <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 [&::-webkit-details-marker]:hidden">
         <span className="min-w-0">
           <span className="block text-xs font-medium">Biaya</span>
-          <span className="block truncate text-[11px] text-muted-foreground">{costSummary(props.value)}</span>
+          <span className="block truncate text-2xs text-muted-foreground">{costSummary(props.value)}</span>
         </span>
         <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
       </summary>

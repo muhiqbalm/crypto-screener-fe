@@ -77,11 +77,11 @@ function KpiTiles({ run }: { run: LabRunDetail }) {
             {oos ? (
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <div>
-                  <div className="text-[10px] text-muted-foreground">In-sample</div>
+                  <div className="text-3xs text-muted-foreground">In-sample</div>
                   <div className={cn('font-mono text-sm tabular-nums', k.cls?.(is))}>{k.fmt(is)}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] font-medium text-lab">Holdout</div>
+                  <div className="text-3xs font-medium text-lab">Holdout</div>
                   <div className={cn('font-mono text-base font-bold tabular-nums', k.cls?.(ho))}>{k.fmt(ho)}</div>
                 </div>
               </div>
@@ -117,10 +117,10 @@ function JobProgress({ job, status }: { job: LabJob | undefined; status: string 
   const done = p?.done ?? 0
   const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : null
   return (
-    <div className="space-y-2 rounded-xl border border-sky-500/30 bg-sky-500/[0.07] p-4" role="status">
+    <div className="space-y-2 rounded-xl border border-info/30 bg-info/[0.07] p-4" role="status">
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <span className="flex items-center gap-2 font-medium">
-          <Loader2 className="h-4 w-4 animate-spin text-sky-500" />
+          <Loader2 className="h-4 w-4 animate-spin text-info" />
           {status === 'queued' ? 'Menunggu antrian…' : `${stageLabel(p?.stage)}…`}
         </span>
         <span className="font-mono text-xs text-muted-foreground">
@@ -129,11 +129,11 @@ function JobProgress({ job, status }: { job: LabJob | undefined; status: string 
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct ?? undefined}>
         <div
-          className={cn('h-full rounded-full bg-sky-500 transition-all', pct === null && 'w-1/3 animate-pulse')}
+          className={cn('h-full rounded-full bg-info transition-all', pct === null && 'w-1/3 animate-pulse')}
           style={pct !== null ? { width: `${pct}%` } : undefined}
         />
       </div>
-      <p className="text-[11px] text-muted-foreground">Halaman update otomatis. Boleh ditinggal — hasilnya tersimpan di riwayat run.</p>
+      <p className="text-2xs text-muted-foreground">Halaman update otomatis. Boleh ditinggal — hasilnya tersimpan di riwayat run.</p>
     </div>
   )
 }
@@ -145,9 +145,9 @@ function ParamDiffTable({ rows, emptyText }: { rows: { key: string; label: strin
       <table className="w-full min-w-[420px] text-sm">
         <thead className="border-b border-border/60 bg-muted/30">
           <tr>
-            <th className="px-3 py-2 text-left text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Parameter</th>
-            <th className="px-3 py-2 text-right text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Default live</th>
-            <th className="px-3 py-2 text-right text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Dipakai</th>
+            <th className="px-3 py-2 text-left text-2xs font-medium uppercase tracking-wide text-muted-foreground">Parameter</th>
+            <th className="px-3 py-2 text-right text-2xs font-medium uppercase tracking-wide text-muted-foreground">Default live</th>
+            <th className="px-3 py-2 text-right text-2xs font-medium uppercase tracking-wide text-muted-foreground">Dipakai</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border/50">
@@ -155,7 +155,7 @@ function ParamDiffTable({ rows, emptyText }: { rows: { key: string; label: strin
             <tr key={r.key}>
               <td className="px-3 py-2">
                 <div className="text-sm">{r.label}</div>
-                <div className="font-mono text-[10px] text-muted-foreground">{r.key}</div>
+                <div className="font-mono text-3xs text-muted-foreground">{r.key}</div>
               </td>
               <td className="px-3 py-2 text-right font-mono text-xs text-muted-foreground">{fmtVal(r.def)}</td>
               <td className="px-3 py-2 text-right font-mono text-sm font-semibold text-warn">{fmtVal(r.value)}</td>
@@ -202,7 +202,7 @@ function OptimizeSection({ run, template }: { run: LabRunDetail; template: LabTe
         <div className="space-y-2">
           <h3 className="text-xs font-semibold">Parameter terbaik vs default</h3>
           <ParamDiffTable rows={diff} emptyText="Parameter terbaik sama dengan default live." />
-          <p className="text-[11px] text-muted-foreground">Dipilih dari data in-sample saja. Rapor di atas sudah menguji parameter ini di holdout.</p>
+          <p className="text-2xs text-muted-foreground">Dipilih dari data in-sample saja. Rapor di atas sudah menguji parameter ini di holdout.</p>
         </div>
 
         {trials.length > 0 && (
@@ -213,7 +213,7 @@ function OptimizeSection({ run, template }: { run: LabRunDetail; template: LabTe
                 <thead className="border-b border-border/60 bg-muted/30">
                   <tr>
                     {['#', 'Parameter', 'Net', 'PF', 'Max DD', 'Trade', 'Segmen untung', ''].map((h, i) => (
-                      <th key={h || i} className={cn('px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground', i >= 2 && i < 7 ? 'text-right' : 'text-left')}>
+                      <th key={h || i} className={cn('px-3 py-2 text-2xs font-medium uppercase tracking-wide text-muted-foreground', i >= 2 && i < 7 ? 'text-right' : 'text-left')}>
                         {h}
                       </th>
                     ))}
@@ -229,7 +229,7 @@ function OptimizeSection({ run, template }: { run: LabRunDetail; template: LabTe
                         ) : (
                           <div className="flex max-w-[320px] flex-wrap gap-1">
                             {Object.entries(t.params).map(([k, v]) => (
-                              <span key={k} className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]" title={k}>
+                              <span key={k} className="rounded bg-muted px-1.5 py-0.5 font-mono text-3xs" title={k}>
                                 {labelOf(k)}: <b>{fmtVal(v)}</b>
                               </span>
                             ))}
@@ -253,7 +253,7 @@ function OptimizeSection({ run, template }: { run: LabRunDetail; template: LabTe
                 </tbody>
               </table>
             </div>
-            <p className="text-[11px] text-muted-foreground">Metrik di tabel ini dari data in-sample (walk-forward), bukan holdout.</p>
+            <p className="text-2xs text-muted-foreground">Metrik di tabel ini dari data in-sample (walk-forward), bukan holdout.</p>
           </div>
         )}
       </div>
@@ -274,15 +274,15 @@ function TradesTab({ id, enabled }: { id: LabId; enabled: boolean }) {
         <thead className="sticky top-0 border-b border-border/60 bg-card">
           <tr>
             {['Entry', 'Exit', 'Arah', 'Harga entry', 'Harga exit', 'P&L', 'Return equity', 'Alasan'].map((h, i) => (
-              <th key={h} className={cn('px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground', i >= 3 && i <= 6 ? 'text-right' : 'text-left')}>{h}</th>
+              <th key={h} className={cn('px-3 py-2 text-2xs font-medium uppercase tracking-wide text-muted-foreground', i >= 3 && i <= 6 ? 'text-right' : 'text-left')}>{h}</th>
             ))}
           </tr>
         </thead>
         <tbody className="divide-y divide-border/50">
           {trades.map((t, i) => (
             <tr key={`${t.entry_time}-${i}`}>
-              <td className="whitespace-nowrap px-3 py-1.5 font-mono text-[11px]">{formatTimestamp(t.entry_time).slice(0, 16)}</td>
-              <td className="whitespace-nowrap px-3 py-1.5 font-mono text-[11px] text-muted-foreground">{formatTimestamp(t.exit_time).slice(0, 16)}</td>
+              <td className="whitespace-nowrap px-3 py-1.5 font-mono text-2xs">{formatTimestamp(t.entry_time).slice(0, 16)}</td>
+              <td className="whitespace-nowrap px-3 py-1.5 font-mono text-2xs text-muted-foreground">{formatTimestamp(t.exit_time).slice(0, 16)}</td>
               <td className={cn('px-3 py-1.5 text-xs font-bold uppercase', t.side.toLowerCase() === 'long' ? 'text-bullish' : 'text-bearish')}>{t.side}</td>
               <td className="px-3 py-1.5 text-right font-mono text-xs tabular-nums">{formatPrice(t.entry_price)}</td>
               <td className="px-3 py-1.5 text-right font-mono text-xs tabular-nums">{formatPrice(t.exit_price)}</td>
@@ -314,7 +314,7 @@ function SensitivityTab({ run, template }: { run: LabRunDetail; template: LabTem
           <thead className="border-b border-border/60 bg-muted/30">
             <tr>
               {['Parameter', 'Nilai', 'Stabilitas', 'Status'].map((h, i) => (
-                <th key={h} className={cn('px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground', i > 0 ? 'text-right' : 'text-left')}>{h}</th>
+                <th key={h} className={cn('px-3 py-2 text-2xs font-medium uppercase tracking-wide text-muted-foreground', i > 0 ? 'text-right' : 'text-left')}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -499,7 +499,7 @@ export function RunDetailView({ id }: { id: string }) {
                   <div className="font-mono text-2xl font-bold tabular-nums">{fmtPf(num(ho ?? run.metrics, 'profit_factor'))}</div>
                 </div>
                 {ho && num(ho, 'stress_net_return_pct') !== null && (
-                  <div className="col-span-2 text-[11px] text-muted-foreground">
+                  <div className="col-span-2 text-2xs text-muted-foreground">
                     Dengan biaya 2×:{' '}
                     <span className={cn('font-mono font-semibold', signClass(num(ho, 'stress_net_return_pct')))}>{formatPercent(num(ho, 'stress_net_return_pct'), 1)}</span>
                   </div>

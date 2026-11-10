@@ -172,7 +172,7 @@ export function TestWebhookCard() {
               <Badge
                 variant="outline"
                 className={cn(
-                  'text-[10px] px-1.5 py-0',
+                  'text-3xs px-1.5 py-0',
                   result.ok
                     ? 'border-bullish/30 bg-bullish/10 text-bullish'
                     : 'border-bearish/30 bg-bearish/10 text-bearish'
@@ -252,7 +252,7 @@ export function TestWebhookCard() {
                 disabled={noConfig}
                 aria-invalid={!!symbolError}
               />
-              {symbolError && <p className="text-[11px] text-bearish" role="alert">{symbolError}</p>}
+              {symbolError && <p className="text-2xs text-bearish" role="alert">{symbolError}</p>}
             </div>
             <SegmentControl
               id="test-size-type"
@@ -278,7 +278,7 @@ export function TestWebhookCard() {
                 disabled={noConfig}
                 aria-invalid={!!sizeError}
               />
-              {sizeError && <p className="text-[11px] text-bearish" role="alert">{sizeError}</p>}
+              {sizeError && <p className="text-2xs text-bearish" role="alert">{sizeError}</p>}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="test-leverage" className="text-xs">Leverage</Label>
@@ -299,11 +299,11 @@ export function TestWebhookCard() {
 
           {/* Passphrase indicator */}
           <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2">
-            <span className="text-[11px] text-muted-foreground">Passphrase:</span>
+            <span className="text-2xs text-muted-foreground">Passphrase:</span>
             <span className="font-mono text-xs tracking-widest text-muted-foreground">
               {webhookConfig?.passphrase ? '••••••••••••' : <span className="italic">no config</span>}
             </span>
-            <span className="ml-auto text-[11px] text-muted-foreground">sent automatically</span>
+            <span className="ml-auto text-2xs text-muted-foreground">sent automatically</span>
           </div>
 
           {/* Send button */}
@@ -348,7 +348,7 @@ export function TestWebhookCard() {
               </button>
               {isResultExpanded && (
                 <pre className={cn(
-                  'border-t px-4 py-3 font-mono text-[11px] overflow-x-auto leading-relaxed',
+                  'border-t px-4 py-3 font-mono text-2xs overflow-x-auto leading-relaxed',
                   result.ok ? 'border-bullish/20 bg-bullish/5' : 'border-bearish/20 bg-bearish/5'
                 )}>
                   {JSON.stringify(result.body, null, 2)}

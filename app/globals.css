@@ -2,56 +2,66 @@
 @plugin "tailwindcss-animate";
 
 /* ============================================================
-   Tailwind v4 @theme block — shadcn/ui new-york zinc dark
-   Default token set is DARK (dark-mode-first per Req 3.1).
-   Light-mode overrides live in :root.light below.
+   BMTM design tokens (Tailwind v4 @theme).
+   Dark is the default token set; `html.light` overrides below.
+   See DESIGN.md for how to use them. Rule of thumb: components
+   never use raw palette colours (emerald-400, rose-500 …) — only
+   the semantic tokens defined here.
    ============================================================ */
 @theme {
-  /* --- Font stacks (Geist variables wired in layout.tsx) --- */
+  /* --- Fonts (Geist variables wired in app/layout.tsx) --- */
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
-  /* --- Domain-specific tokens (crypto dashboard) --- */
-  /* Bullish green — OKLCH L=72% gives ~7.8:1 contrast on dark bg (WCAG AA ✓) */
-  --color-bullish:            oklch(0.72 0.17 142);
-  --color-bullish-foreground: oklch(0.15 0.02 142);
+  /* --- Type scale additions: dense trading UI needs two sizes below xs --- */
+  --text-2xs: 0.6875rem;           /* 11px — table meta, captions */
+  --text-2xs--line-height: 1rem;
+  --text-3xs: 0.625rem;            /* 10px — eyebrows, tiny badges (minimum) */
+  --text-3xs--line-height: 0.875rem;
 
-  /* Bearish red — OKLCH L=65% gives ~6.3:1 contrast on dark bg (WCAG AA ✓) */
-  --color-bearish:            oklch(0.65 0.22 25);
-  --color-bearish-foreground: oklch(0.98 0.01 25);
+  /* --- Market direction --- */
+  --color-bullish:            oklch(0.74 0.16 152);
+  --color-bullish-foreground: oklch(0.16 0.03 152);
+  --color-bearish:            oklch(0.68 0.20 22);
+  --color-bearish-foreground: oklch(0.98 0.01 22);
 
-  /* Strategy Lab accent (violet) + caution (amber) text tokens */
-  --color-lab:                oklch(0.80 0.11 293);
-  --color-warn:               oklch(0.83 0.15 80);
+  /* --- Semantic accents (status, not direction) --- */
+  --color-brand:              oklch(0.76 0.14 170);   /* BMTM teal-emerald */
+  --color-brand-foreground:   oklch(0.17 0.03 170);
+  --color-info:               oklch(0.74 0.12 235);   /* neutral info / links */
+  --color-warn:               oklch(0.83 0.15 80);    /* caution, stale data */
+  --color-lab:                oklch(0.78 0.12 293);   /* Strategy Lab / paper */
 
-  /* --- shadcn/ui new-york zinc DARK tokens (default) --- */
-  --color-background:          oklch(0.145 0 0);
-  --color-foreground:          oklch(0.985 0 0);
+  /* --- Surfaces (zinc, slightly cool) --- */
+  --color-background:          oklch(0.155 0.004 270);
+  --color-foreground:          oklch(0.97 0 0);
 
-  --color-card:                oklch(0.205 0 0);
-  --color-card-foreground:     oklch(0.985 0 0);
+  --color-card:                oklch(0.195 0.005 270);
+  --color-card-foreground:     oklch(0.97 0 0);
 
-  --color-popover:             oklch(0.205 0 0);
-  --color-popover-foreground:  oklch(0.985 0 0);
+  --color-popover:             oklch(0.215 0.006 270);
+  --color-popover-foreground:  oklch(0.97 0 0);
 
-  --color-primary:             oklch(0.985 0 0);
+  --color-sidebar:             oklch(0.17 0.005 270);
+
+  --color-primary:             oklch(0.97 0 0);
   --color-primary-foreground:  oklch(0.205 0 0);
 
-  --color-secondary:           oklch(0.269 0 0);
-  --color-secondary-foreground: oklch(0.985 0 0);
+  --color-secondary:           oklch(0.27 0.006 270);
+  --color-secondary-foreground: oklch(0.97 0 0);
 
-  --color-muted:               oklch(0.269 0 0);
-  --color-muted-foreground:    oklch(0.708 0 0);
+  --color-muted:               oklch(0.25 0.006 270);
+  --color-muted-foreground:    oklch(0.71 0.01 270);
 
-  --color-accent:              oklch(0.269 0 0);
-  --color-accent-foreground:   oklch(0.985 0 0);
+  --color-accent:              oklch(0.27 0.006 270);
+  --color-accent-foreground:   oklch(0.97 0 0);
 
-  --color-destructive:         oklch(0.704 0.191 22.216);
-  --color-destructive-foreground: oklch(0.985 0 0);
+  --color-destructive:         oklch(0.68 0.20 22);
+  --color-destructive-foreground: oklch(0.98 0 0);
 
-  --color-border:              oklch(1 0 0 / 10%);
-  --color-input:               oklch(1 0 0 / 15%);
-  --color-ring:                oklch(0.556 0 0);
+  --color-border:              oklch(1 0 0 / 9%);
+  --color-input:               oklch(1 0 0 / 14%);
+  --color-ring:                oklch(0.76 0.14 170 / 60%);
 
   /* --- Radius --- */
   --radius: 0.625rem;
@@ -59,59 +69,91 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* --- Layout --- */
+  --spacing-sidebar: 15rem;
+  --spacing-topbar: 3.5rem;
 }
 
 /* ============================================================
-   Light-mode token overrides — applied when next-themes sets
-   class="light" on <html> (storageKey: "crypto-screener-theme")
+   Light theme — next-themes sets class="light" on <html>.
+   Every accent is darkened to keep >= 4.5:1 on white.
    ============================================================ */
 :root.light {
-  --color-background:          oklch(1 0 0);
-  --color-foreground:          oklch(0.141 0.005 285.823);
+  --color-background:          oklch(0.985 0.002 270);
+  --color-foreground:          oklch(0.17 0.01 270);
 
   --color-card:                oklch(1 0 0);
-  --color-card-foreground:     oklch(0.141 0.005 285.823);
+  --color-card-foreground:     oklch(0.17 0.01 270);
 
   --color-popover:             oklch(1 0 0);
-  --color-popover-foreground:  oklch(0.141 0.005 285.823);
+  --color-popover-foreground:  oklch(0.17 0.01 270);
+
+  --color-sidebar:             oklch(0.97 0.003 270);
 
   --color-primary:             oklch(0.21 0.006 285.885);
   --color-primary-foreground:  oklch(0.985 0 0);
 
-  --color-secondary:           oklch(0.967 0.001 286.375);
+  --color-secondary:           oklch(0.955 0.003 270);
   --color-secondary-foreground: oklch(0.21 0.006 285.885);
 
-  --color-muted:               oklch(0.967 0.001 286.375);
-  --color-muted-foreground:    oklch(0.552 0.016 285.938);
+  --color-muted:               oklch(0.955 0.003 270);
+  --color-muted-foreground:    oklch(0.50 0.016 270);
 
-  --color-accent:              oklch(0.967 0.001 286.375);
+  --color-accent:              oklch(0.945 0.004 270);
   --color-accent-foreground:   oklch(0.21 0.006 285.885);
 
-  --color-destructive:         oklch(0.577 0.245 27.325);
+  --color-destructive:         oklch(0.55 0.22 25);
   --color-destructive-foreground: oklch(0.985 0 0);
 
-  --color-border:              oklch(0.92 0.004 286.32);
-  --color-input:               oklch(0.92 0.004 286.32);
-  --color-ring:                oklch(0.705 0.015 286.067);
+  --color-border:              oklch(0.90 0.005 270);
+  --color-input:               oklch(0.88 0.006 270);
+  --color-ring:                oklch(0.50 0.11 170 / 60%);
 
-  /* Bullish/bearish in light mode — darker shades for 4.5:1 on white bg */
-  /* Bullish on white: L=0.45 → ~0.14 luminance → contrast ≈ (1.05)/(0.14+0.05) ≈ 5.5:1 ✓ */
-  --color-bullish:            oklch(0.45 0.17 142);
-  --color-bullish-foreground: oklch(0.98 0.01 142);
+  --color-bullish:            oklch(0.50 0.15 152);
+  --color-bullish-foreground: oklch(0.98 0.01 152);
+  --color-bearish:            oklch(0.52 0.21 22);
+  --color-bearish-foreground: oklch(0.98 0.01 22);
 
-  /* Bearish on white: L=0.48 → ~0.17 luminance → contrast ≈ (1.05)/(0.17+0.05) ≈ 4.8:1 ✓ */
-  --color-bearish:            oklch(0.48 0.22 25);
-  --color-bearish-foreground: oklch(0.98 0.01 25);
-
-  /* Lab accent / caution on white (>= 4.5:1) */
+  --color-brand:              oklch(0.50 0.11 170);
+  --color-brand-foreground:   oklch(0.98 0.01 170);
+  --color-info:               oklch(0.50 0.14 240);
+  --color-warn:               oklch(0.53 0.13 60);
   --color-lab:                oklch(0.48 0.21 293);
-  --color-warn:               oklch(0.52 0.13 60);
+}
+
+/* ============================================================
+   Utilities
+   ============================================================ */
+
+/* Numbers: monospace + tabular digits so columns line up. */
+@utility num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Small uppercase label above values / sections. */
+@utility eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  line-height: var(--text-3xs--line-height);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-muted-foreground);
 }
 
 /* ============================================================
    Base styles
    ============================================================ */
 @layer base {
+  :root {
+    color-scheme: dark;
+  }
+  :root.light {
+    color-scheme: light;
+  }
+
   * {
     border-color: var(--color-border);
   }
@@ -124,8 +166,23 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Ensure dark mode is the default rendering — next-themes adds
-     class="dark" to <html>; the @theme block above already defines
-     dark tokens as the baseline so no extra selector is needed.
-     The :root.light block above handles the light override. */
+  /* Consistent keyboard focus for links and custom controls that do not
+     bring their own ring. */
+  a:focus-visible,
+  [role="button"]:focus-visible,
+  summary:focus-visible,
+  tr[tabindex]:focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }

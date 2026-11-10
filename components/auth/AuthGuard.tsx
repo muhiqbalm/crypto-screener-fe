@@ -32,11 +32,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-            <Loader2 className="h-6 w-6 animate-spin text-emerald-400" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-bullish/10 border border-bullish/20 text-bullish">
+            <Loader2 className="h-6 w-6 animate-spin text-bullish" />
           </div>
           <div className="space-y-1">
-            <div className="flex items-center justify-center gap-1.5 text-xs font-mono font-semibold text-emerald-400">
+            <div className="flex items-center justify-center gap-1.5 text-xs font-mono font-semibold text-bullish">
               <ShieldCheck className="h-3.5 w-3.5" />
               PRIVATE TERMINAL GATEWAY
             </div>

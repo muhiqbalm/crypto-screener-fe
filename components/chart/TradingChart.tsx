@@ -15,24 +15,7 @@ import {
 } from 'lightweight-charts'
 import type { OverlayMarker, OverlayPriceLine } from '@/lib/lab/overlay'
 import { useTheme } from 'next-themes'
-
-// ---------------------------------------------------------------------------
-// Theme-aware chart colors
-// ---------------------------------------------------------------------------
-
-function getChartColors(isDark: boolean) {
-  return {
-    background:       isDark ? '#1a1a1a' : '#ffffff',
-    text:             isDark ? '#b3b3b3' : '#555555',
-    grid:             isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-    border:           isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)',
-    crosshair:        isDark ? 'rgba(255,255,255,0.3)'  : 'rgba(0,0,0,0.3)',
-    upColor:          '#22c55e',   // green-500 — consistent across modes
-    downColor:        '#ef4444',   // red-500
-    wickUpColor:      '#22c55e',
-    wickDownColor:    '#ef4444',
-  }
-}
+import { getChartTheme } from '@/lib/chart-theme'
 
 // ---------------------------------------------------------------------------
 // REST: fetch historical klines from Binance
@@ -160,7 +143,7 @@ export function TradingChart({
   // ── Create / destroy chart ────────────────────────────────────────────────
   useEffect(() => {
     if (!containerRef.current) return
-    const colors = getChartColors(isDark)
+    const colors = getChartTheme(isDark)
 
     const chart = createChart(containerRef.current, {
       layout: {
@@ -175,8 +158,8 @@ export function TradingChart({
       },
       crosshair: {
         mode: CrosshairMode.Normal,
-        vertLine: { color: colors.crosshair, labelBackgroundColor: colors.border },
-        horzLine: { color: colors.crosshair, labelBackgroundColor: colors.border },
+        vertLine: { color: colors.crosshair, labelBackgroundColor: colors.labelBg },
+        horzLine: { color: colors.crosshair, labelBackgroundColor: colors.labelBg },
       },
       rightPriceScale: {
         borderColor: colors.border,
@@ -191,12 +174,12 @@ export function TradingChart({
     })
 
     const series = chart.addCandlestickSeries({
-      upColor:          colors.upColor,
-      downColor:        colors.downColor,
-      borderUpColor:    colors.upColor,
-      borderDownColor:  colors.downColor,
-      wickUpColor:      colors.wickUpColor,
-      wickDownColor:    colors.wickDownColor,
+      upColor:          colors.up,
+      downColor:        colors.down,
+      borderUpColor:    colors.up,
+      borderDownColor:  colors.down,
+      wickUpColor:      colors.up,
+      wickDownColor:    colors.down,
     })
 
     chartRef.current  = chart

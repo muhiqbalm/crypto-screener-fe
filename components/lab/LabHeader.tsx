@@ -11,7 +11,7 @@ export function LabHeader({ title, subtitle, active }: { title: string; subtitle
   return (
     <div className="flex flex-col gap-4 border-b border-border/40 pb-5 md:flex-row md:items-end md:justify-between">
       <div className="space-y-2">
-        <div className="inline-flex items-center gap-2 rounded-full border border-lab/25 bg-lab/10 px-3 py-1 font-mono text-[11px] font-medium text-lab">
+        <div className="inline-flex items-center gap-2 rounded-full border border-lab/25 bg-lab/10 px-3 py-1 font-mono text-2xs font-medium text-lab">
           <FlaskConical className="h-3.5 w-3.5" />
           STRATEGY LAB
         </div>

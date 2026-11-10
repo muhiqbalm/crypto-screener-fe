@@ -5,23 +5,11 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import type { SummaryData, AssetSummary } from '@/lib/api/types/screener'
 import { cn } from '@/lib/utils/cn'
-import { formatFunding, formatScore } from '@/lib/utils/format'
+import { baseAsset, formatFunding, formatScore, formatVolume } from '@/lib/utils/format'
 
 interface MarketOverviewCardsProps {
   summary: SummaryData
   onSelectCoin?: (symbol: string) => void
-}
-
-function formatVolume(vol: number | null | undefined): string {
-  if (vol === null || vol === undefined || isNaN(vol)) return 'N/A'
-  if (vol >= 1e9) return `$${(vol / 1e9).toFixed(2)}B`
-  if (vol >= 1e6) return `$${(vol / 1e6).toFixed(2)}M`
-  if (vol >= 1e3) return `$${(vol / 1e3).toFixed(2)}K`
-  return `$${vol.toFixed(2)}`
-}
-
-function cleanSymbol(sym: string): string {
-  return sym.replace('/USDT:USDT', '').replace(':USDT', '')
 }
 
 export function MarketOverviewCards({ summary, onSelectCoin }: MarketOverviewCardsProps) {
@@ -52,7 +40,7 @@ export function MarketOverviewCards({ summary, onSelectCoin }: MarketOverviewCar
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               24h Futures Volume
             </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-info/10 text-info">
               <Activity className="h-4 w-4" aria-hidden="true" />
             </div>
           </div>
@@ -85,7 +73,7 @@ export function MarketOverviewCards({ summary, onSelectCoin }: MarketOverviewCar
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Market Bias (Sentiment)
             </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-bullish/10 text-bullish">
               <TrendingUp className="h-4 w-4" aria-hidden="true" />
             </div>
           </div>
@@ -97,17 +85,17 @@ export function MarketOverviewCards({ summary, onSelectCoin }: MarketOverviewCar
           {/* Segmented bar */}
           <div className="mt-2 flex h-2 w-full overflow-hidden rounded-full bg-muted">
             <div
-              className="bg-emerald-500 transition-all duration-500"
+              className="bg-bullish transition-all duration-500"
               style={{ width: `${bullishPct}%` }}
               title={`Bullish: ${bullishPct}%`}
             />
             <div
-              className="bg-amber-400/80 transition-all duration-500"
+              className="bg-warn/80 transition-all duration-500"
               style={{ width: `${neutralPct}%` }}
               title={`Neutral: ${neutralPct}%`}
             />
             <div
-              className="bg-rose-500 transition-all duration-500"
+              className="bg-bearish transition-all duration-500"
               style={{ width: `${bearishPct}%` }}
               title={`Bearish: ${bearishPct}%`}
             />
@@ -129,7 +117,7 @@ export function MarketOverviewCards({ summary, onSelectCoin }: MarketOverviewCar
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Avg Funding Rate
             </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-warn/10 text-warn">
               <Flame className="h-4 w-4" aria-hidden="true" />
             </div>
           </div>
@@ -170,14 +158,14 @@ export function MarketOverviewCards({ summary, onSelectCoin }: MarketOverviewCar
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Top Quant Picks
             </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10 text-purple-500">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-lab/10 text-lab">
               <Zap className="h-4 w-4" aria-hidden="true" />
             </div>
           </div>
           <div className="mt-2 flex flex-col gap-1.5">
             {top_3_assets && top_3_assets.length > 0 ? (
               top_3_assets.slice(0, 3).map((asset: AssetSummary, idx: number) => {
-                const label = cleanSymbol(asset.symbol)
+                const label = baseAsset(asset.symbol)
                 return (
                   <button
                     key={asset.symbol}
@@ -186,7 +174,7 @@ export function MarketOverviewCards({ summary, onSelectCoin }: MarketOverviewCar
                     className="flex items-center justify-between rounded-md p-1 px-1.5 text-xs transition-colors hover:bg-muted/80 cursor-pointer text-left"
                   >
                     <div className="flex items-center gap-1.5">
-                      <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                      <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-3xs font-bold text-primary">
                         #{asset.rank ?? idx + 1}
                       </span>
                       <span className="font-semibold text-foreground">{label}</span>
@@ -196,9 +184,9 @@ export function MarketOverviewCards({ summary, onSelectCoin }: MarketOverviewCar
                         <Badge
                           variant="secondary"
                           className={cn(
-                            'text-[9px] px-1.5 py-0 font-medium',
+                            'text-3xs px-1.5 py-0 font-medium',
                             asset.confidence_tier === 'HIGH'
-                              ? 'bg-emerald-500/10 text-emerald-500'
+                              ? 'bg-bullish/10 text-bullish'
                               : 'bg-muted text-muted-foreground',
                           )}
                         >

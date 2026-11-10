@@ -60,8 +60,8 @@ function isTakerBuy(tx: WhaleTrade): boolean {
 }
 
 const STANCE_CLASS: Record<string, string> = {
-  bullish: 'text-emerald-400',
-  bearish: 'text-rose-400',
+  bullish: 'text-bullish',
+  bearish: 'text-bearish',
   neutral: 'text-muted-foreground',
 }
 
@@ -102,8 +102,8 @@ export function WhaleRadarView() {
       {/* Page Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between border-b border-border/40 pb-6">
         <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-mono font-medium shadow-sm">
-            <Radar className="h-3.5 w-3.5 text-cyan-400" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-info/10 border border-info/20 text-info text-xs font-mono font-medium shadow-sm">
+            <Radar className="h-3.5 w-3.5 text-info" />
             WHALE RADAR
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
@@ -128,7 +128,7 @@ export function WhaleRadarView() {
             disabled={isFetching}
             className="gap-2 cursor-pointer h-9 px-3.5 border-border/80 hover:bg-muted/50"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin text-emerald-400' : ''}`} />
+            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin text-bullish' : ''}`} />
             Refresh Radar
           </Button>
         </div>
@@ -160,7 +160,7 @@ export function WhaleRadarView() {
           {status === 'partial' && (
             <div
               role="status"
-              className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-500"
+              className="rounded-lg border border-warn/40 bg-warn/10 px-4 py-2.5 text-xs text-warn"
             >
               Partial snapshot — unavailable: {missing.length > 0 ? missing.join(', ') : 'some sources'}.
             </div>
@@ -170,30 +170,30 @@ export function WhaleRadarView() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
               title="Large Taker Buys"
-              icon={<CircleDollarSign className="h-4 w-4 text-emerald-400" />}
+              icon={<CircleDollarSign className="h-4 w-4 text-bullish" />}
               value={formatUsdCompact(intel?.largeTradeBuyUsd)}
-              valueClass="text-emerald-400"
+              valueClass="text-bullish"
               caption={windowLabel ? `Trades ≥ ${minUsdLabel}, last ${windowLabel}` : `Trades ≥ ${minUsdLabel}`}
             />
             <StatCard
               title="Large Taker Sells"
-              icon={<Layers className="h-4 w-4 text-rose-400" />}
+              icon={<Layers className="h-4 w-4 text-bearish" />}
               value={formatUsdCompact(intel?.largeTradeSellUsd)}
-              valueClass="text-rose-400"
+              valueClass="text-bearish"
               caption={windowLabel ? `Trades ≥ ${minUsdLabel}, last ${windowLabel}` : `Trades ≥ ${minUsdLabel}`}
             />
             <StatCard
               title="Large Trade Net Flow"
-              icon={<Activity className="h-4 w-4 text-cyan-400" />}
+              icon={<Activity className="h-4 w-4 text-info" />}
               value={formatUsdCompact(netUsd, true)}
               valueClass={
-                netUsd === null ? undefined : netUsd >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                netUsd === null ? undefined : netUsd >= 0 ? 'text-bullish' : 'text-bearish'
               }
               caption="Taker buys minus taker sells (BTC/ETH/SOL perps)"
             />
             <StatCard
               title="Top Trader Stance"
-              icon={<TrendingUp className="h-4 w-4 text-emerald-400" />}
+              icon={<TrendingUp className="h-4 w-4 text-bullish" />}
               value={intel?.smartMoneyStance ?? '—'}
               valueClass={`text-base ${stanceCode ? STANCE_CLASS[stanceCode] : 'text-muted-foreground'}`}
               caption={
@@ -231,10 +231,10 @@ export function WhaleRadarView() {
                         <div className="flex items-center justify-between">
                           <span className="font-mono font-bold text-sm text-foreground tracking-wide">{item.symbol}</span>
                           <Badge
-                            className={`text-[10px] font-mono font-semibold px-2 py-0.5 ${
+                            className={`text-3xs font-mono font-semibold px-2 py-0.5 ${
                               isBullish
-                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                                : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
+                                ? 'bg-bullish/15 text-bullish border border-bullish/30'
+                                : 'bg-bearish/15 text-bearish border border-bearish/30'
                             }`}
                           >
                             {isBullish ? 'Long Skew' : 'Short Skew'}
@@ -242,18 +242,18 @@ export function WhaleRadarView() {
                         </div>
 
                         <div className="flex justify-between text-xs font-mono font-medium">
-                          <span className="text-emerald-400">Long: {item.longPct}%</span>
-                          <span className="text-rose-400">Short: {item.shortPct}%</span>
+                          <span className="text-bullish">Long: {item.longPct}%</span>
+                          <span className="text-bearish">Short: {item.shortPct}%</span>
                         </div>
 
-                        <div className="w-full h-2 bg-rose-500/30 rounded-full overflow-hidden flex">
+                        <div className="w-full h-2 bg-bearish/30 rounded-full overflow-hidden flex">
                           <div
-                            className="bg-emerald-400 h-full transition-all duration-500 rounded-l-full"
+                            className="bg-bullish h-full transition-all duration-500 rounded-l-full"
                             style={{ width: `${item.longPct}%` }}
                           />
                         </div>
 
-                        <div className="flex justify-between items-center text-[11px] text-muted-foreground font-mono pt-1 border-t border-border/30">
+                        <div className="flex justify-between items-center text-2xs text-muted-foreground font-mono pt-1 border-t border-border/30">
                           <span>
                             L/S Ratio:{' '}
                             <strong className="text-foreground">
@@ -325,7 +325,7 @@ export function WhaleRadarView() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="border-b border-border/60 bg-muted/20 text-muted-foreground text-[11px] font-mono uppercase text-left">
+                      <tr className="border-b border-border/60 bg-muted/20 text-muted-foreground text-2xs font-mono uppercase text-left">
                         <th className="py-3 px-5 font-semibold">Time</th>
                         <th className="py-3 px-5 font-semibold">Asset</th>
                         <th className="py-3 px-5 font-semibold">Size</th>
@@ -343,7 +343,7 @@ export function WhaleRadarView() {
                             {tx.timestamp ?? '—'}
                           </td>
                           <td className="py-3.5 px-5 font-mono">
-                            <span className="px-2 py-0.5 rounded-md bg-muted/70 text-[11px] font-semibold border border-border/50">
+                            <span className="px-2 py-0.5 rounded-md bg-muted/70 text-2xs font-semibold border border-border/50">
                               {tx.symbol}
                             </span>
                           </td>
@@ -353,11 +353,11 @@ export function WhaleRadarView() {
                           </td>
                           <td className="py-3.5 px-5 text-right whitespace-nowrap">
                             {isTakerBuy(tx) ? (
-                              <Badge className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[11px] gap-1 font-mono py-1 px-2.5">
+                              <Badge className="bg-bullish/15 text-bullish border border-bullish/30 text-2xs gap-1 font-mono py-1 px-2.5">
                                 <ArrowUpRight className="h-3 w-3" /> Buy
                               </Badge>
                             ) : (
-                              <Badge className="bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[11px] gap-1 font-mono py-1 px-2.5">
+                              <Badge className="bg-bearish/15 text-bearish border border-bearish/30 text-2xs gap-1 font-mono py-1 px-2.5">
                                 <ArrowDownRight className="h-3 w-3" /> Sell
                               </Badge>
                             )}

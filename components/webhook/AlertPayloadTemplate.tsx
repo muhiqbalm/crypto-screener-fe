@@ -42,9 +42,9 @@ export function AlertPayloadTemplate() {
       return (
         <div key={i}>
           <span>{indent}</span>
-          <span className="text-blue-400">{key}</span>
+          <span className="text-info">{key}</span>
           <span className="text-muted-foreground">{colon}</span>
-          <span className={isTvVar ? 'text-yellow-400' : isString ? 'text-bullish/90' : 'text-orange-400'}>
+          <span className={isTvVar ? 'text-yellow-400' : isString ? 'text-bullish/90' : 'text-warn'}>
             {value}
           </span>
         </div>
@@ -77,7 +77,7 @@ export function AlertPayloadTemplate() {
             <code>{renderHighlighted(templateStr)}</code>
           </pre>
         </div>
-        <p className="mt-2.5 text-[11px] text-muted-foreground">
+        <p className="mt-2.5 text-2xs text-muted-foreground">
           Paste this into your TradingView alert message.{' '}
           <span className="text-yellow-500/80">{'{{variables}}'}</span> are replaced by TradingView at runtime.
         </p>

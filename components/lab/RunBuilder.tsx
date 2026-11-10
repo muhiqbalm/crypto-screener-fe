@@ -248,7 +248,7 @@ export function RunBuilder() {
               <div className="space-y-1.5">
                 <label htmlFor="lab-symbol" className="text-xs font-medium">Koin (Binance perp)</label>
                 <SymbolPicker symbols={symbols} value={form.symbol} onChange={(s) => update({ symbol: s })} invalid={Boolean(errors.symbol)} />
-                {errors.symbol && <p className="text-[11px] text-bearish">{errors.symbol}</p>}
+                {errors.symbol && <p className="text-2xs text-bearish">{errors.symbol}</p>}
               </div>
 
               <div className="space-y-1.5">
@@ -281,20 +281,20 @@ export function RunBuilder() {
                 {form.preset === 'custom' && (
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <div className="space-y-1">
-                      <label htmlFor="lab-start" className="text-[11px] text-muted-foreground">Mulai</label>
+                      <label htmlFor="lab-start" className="text-2xs text-muted-foreground">Mulai</label>
                       <Input id="lab-start" type="date" value={form.start} onChange={(e) => update({ start: e.target.value })} className={cn('h-8 px-2 text-xs', errors.start && 'border-bearish')} />
                     </div>
                     <div className="space-y-1">
-                      <label htmlFor="lab-end" className="text-[11px] text-muted-foreground">Sampai (kosong = terbaru)</label>
+                      <label htmlFor="lab-end" className="text-2xs text-muted-foreground">Sampai (kosong = terbaru)</label>
                       <Input id="lab-end" type="date" value={form.end} onChange={(e) => update({ end: e.target.value })} className={cn('h-8 px-2 text-xs', errors.end && 'border-bearish')} />
                     </div>
                   </div>
                 )}
-                {(errors.start || errors.end) && <p className="text-[11px] text-bearish">{errors.end ?? errors.start}</p>}
-                <p className="text-[11px] text-muted-foreground">20% data terakhir dikunci sebagai holdout untuk ujian akhir.</p>
+                {(errors.start || errors.end) && <p className="text-2xs text-bearish">{errors.end ?? errors.start}</p>}
+                <p className="text-2xs text-muted-foreground">20% data terakhir dikunci sebagai holdout untuk ujian akhir.</p>
               </div>
 
-              <p className="flex items-start gap-1.5 rounded-md bg-muted/40 px-2.5 py-2 text-[11px] text-muted-foreground">
+              <p className="flex items-start gap-1.5 rounded-md bg-muted/40 px-2.5 py-2 text-2xs text-muted-foreground">
                 <Database className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 <span>
                   {symbolInfo && !symbolInfo.has_data
@@ -316,7 +316,7 @@ export function RunBuilder() {
               <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 sm:px-5 [&::-webkit-details-marker]:hidden">
                 <span className="min-w-0">
                   <span className="flex items-center gap-2 text-sm font-semibold"><Sparkles className="h-4 w-4 text-lab" />Pengaturan cari parameter</span>
-                  <span className="block truncate text-[11px] text-muted-foreground">{optimizeSummary(form.optimize)}</span>
+                  <span className="block truncate text-2xs text-muted-foreground">{optimizeSummary(form.optimize)}</span>
                 </span>
                 <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
               </summary>
@@ -358,7 +358,7 @@ export function RunBuilder() {
                 <span className="font-mono">{form.symbol}</span> · <span className="font-mono">{form.timeframe}</span> · {presetLabel}
                 {changed > 0 ? <span className="text-warn"> · {changed} parameter diubah</span> : <span className="text-muted-foreground"> · default live</span>}
               </p>
-              <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <p className="flex items-center gap-1.5 text-2xs text-muted-foreground">
                 <Info className="h-3 w-3 shrink-0" />
                 Validasi &amp; optimize diuji jujur di periode holdout yang dikunci — tidak bisa diintip optimizer.
               </p>
@@ -379,7 +379,7 @@ export function RunBuilder() {
                     <span className="sm:hidden">{short}</span>
                     <span className="hidden sm:inline">{label}</span>
                   </span>
-                  <span className="hidden text-[10px] font-normal opacity-75 sm:block">
+                  <span className="hidden text-3xs font-normal opacity-75 sm:block">
                     {mode === 'optimize' ? `${form.optimize.nTrials} percobaan · ±${estimateMinutes(form.optimize.nTrials)} mnt` : hint}
                   </span>
                 </Button>

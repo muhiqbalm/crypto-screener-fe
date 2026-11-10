@@ -15,19 +15,19 @@ export default function LoginPage() {
         href="/screener"
         className="mb-8 flex items-center gap-2.5 text-xl font-semibold tracking-tight transition-opacity hover:opacity-85"
       >
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 shadow-md shadow-emerald-500/10">
-          <BarChart2 className="h-5 w-5 text-emerald-400" aria-hidden="true" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-bullish/10 border border-bullish/25 text-bullish shadow-md shadow-bullish/10">
+          <BarChart2 className="h-5 w-5 text-bullish" aria-hidden="true" />
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="font-black tracking-wider bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">BMTM</span>
+          <span className="font-black tracking-wider bg-gradient-to-r from-bullish via-info to-info bg-clip-text text-transparent">BMTM</span>
           <span className="font-bold tracking-tight text-foreground">MOONTRADE</span>
         </div>
       </Link>
 
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 mb-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-mono font-medium">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 mb-2 rounded-full bg-bullish/10 border border-bullish/20 text-bullish text-2xs font-mono font-medium">
+            <span className="h-1.5 w-1.5 rounded-full bg-bullish animate-pulse" />
             SCREENER & TRADE SYSTEM
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Terminal Access</h1>

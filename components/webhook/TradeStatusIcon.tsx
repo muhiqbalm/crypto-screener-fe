@@ -15,5 +15,5 @@ export function TradeStatusIcon({ status, className }: TradeStatusIconProps) {
   if (status === 'failed' || status === 'rejected') {
     return <X className={cn('h-4 w-4 text-bearish', className)} aria-label="Failed" />
   }
-  return <Clock className={cn('h-4 w-4 text-amber-400', className)} aria-label="Pending" />
+  return <Clock className={cn('h-4 w-4 text-warn', className)} aria-label="Pending" />
 }

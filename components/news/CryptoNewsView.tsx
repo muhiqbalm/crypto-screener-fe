@@ -59,8 +59,8 @@ export function CryptoNewsView() {
       {/* Header Bar */}
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between border-b border-border/40 pb-6">
         <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono font-medium shadow-sm">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-bullish/10 border border-bullish/20 text-bullish text-xs font-mono font-medium shadow-sm">
+            <span className="h-2 w-2 rounded-full bg-bullish animate-pulse" />
             NEWS &amp; SENTIMENT
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
@@ -84,7 +84,7 @@ export function CryptoNewsView() {
             disabled={isFetching}
             className="gap-2 cursor-pointer h-9 px-3.5 border-border/80 hover:bg-muted/50"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin text-emerald-400' : ''}`} />
+            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin text-bullish' : ''}`} />
             Sync Intel
           </Button>
         </div>
@@ -116,7 +116,7 @@ export function CryptoNewsView() {
       {status === 'partial' && (
         <div
           role="status"
-          className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-500"
+          className="rounded-lg border border-warn/40 bg-warn/10 px-4 py-2.5 text-xs text-warn"
         >
           Partial snapshot — unavailable: {missing.length > 0 ? missing.join(', ') : 'some sources'}.
         </div>
@@ -125,44 +125,44 @@ export function CryptoNewsView() {
       {/* Intelligence Metric Banner */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Fear & Greed Index */}
-        <Card className="border-border/60 bg-gradient-to-b from-card/90 to-card/40 backdrop-blur-md shadow-sm hover:border-emerald-500/30 transition-all">
+        <Card className="border-border/60 bg-gradient-to-b from-card/90 to-card/40 backdrop-blur-md shadow-sm hover:border-bullish/30 transition-all">
           <CardHeader className="p-5 pb-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono font-medium uppercase tracking-wider text-muted-foreground">Fear &amp; Greed Index</span>
-              <div className="h-8 w-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                <Gauge className="h-4 w-4 text-emerald-400" />
+              <div className="h-8 w-8 rounded-lg bg-bullish/10 border border-bullish/20 flex items-center justify-center">
+                <Gauge className="h-4 w-4 text-bullish" />
               </div>
             </div>
           </CardHeader>
           <CardContent className="p-5 pt-1">
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-mono font-black text-emerald-400">{fng ? fng.value : '—'}</span>
+              <span className="text-3xl font-mono font-black text-bullish">{fng ? fng.value : '—'}</span>
               <span className="text-xs font-mono text-muted-foreground">/ 100</span>
               {fng?.classification && (
-                <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30 ml-auto font-mono text-[11px] px-2 py-0.5">
+                <Badge className="bg-bullish/15 text-bullish border-bullish/30 ml-auto font-mono text-2xs px-2 py-0.5">
                   {fng.classification}
                 </Badge>
               )}
             </div>
             <div className="w-full bg-muted/40 rounded-full h-1.5 mt-3 overflow-hidden">
               <div
-                className="bg-gradient-to-r from-amber-500 via-emerald-400 to-cyan-400 h-1.5 rounded-full"
+                className="bg-gradient-to-r from-warn via-bullish to-info h-1.5 rounded-full"
                 style={{ width: `${fng ? Math.min(fng.value, 100) : 0}%` }}
               />
             </div>
-            <p className="text-[11px] text-muted-foreground mt-2 font-mono">
+            <p className="text-2xs text-muted-foreground mt-2 font-mono">
               Alternative.me F&amp;G Telemetry
             </p>
           </CardContent>
         </Card>
 
         {/* AI Catalyst Score */}
-        <Card className="border-border/60 bg-gradient-to-b from-card/90 to-card/40 backdrop-blur-md shadow-sm hover:border-cyan-500/30 transition-all">
+        <Card className="border-border/60 bg-gradient-to-b from-card/90 to-card/40 backdrop-blur-md shadow-sm hover:border-info/30 transition-all">
           <CardHeader className="p-5 pb-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono font-medium uppercase tracking-wider text-muted-foreground">Headline Sentiment</span>
-              <div className="h-8 w-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
-                <Sparkles className="h-4 w-4 text-cyan-400" />
+              <div className="h-8 w-8 rounded-lg bg-info/10 border border-info/20 flex items-center justify-center">
+                <Sparkles className="h-4 w-4 text-info" />
               </div>
             </div>
           </CardHeader>
@@ -173,8 +173,8 @@ export function CryptoNewsView() {
                   catalystBias === null
                     ? 'text-muted-foreground'
                     : catalystBias.startsWith('-')
-                      ? 'text-rose-400'
-                      : 'text-cyan-400'
+                      ? 'text-bearish'
+                      : 'text-info'
                 }`}
                 title={intel?.catalystBiasBasis ?? undefined}
               >
@@ -183,21 +183,21 @@ export function CryptoNewsView() {
               <span className="text-xs font-mono text-muted-foreground">net bias</span>
             </div>
             <div className="w-full bg-muted/40 rounded-full h-1.5 mt-3 overflow-hidden">
-              <div className="bg-cyan-400 h-1.5 rounded-full" style={{ width: `${bullShare ?? 0}%` }} />
+              <div className="bg-info h-1.5 rounded-full" style={{ width: `${bullShare ?? 0}%` }} />
             </div>
-            <p className="text-[11px] text-muted-foreground mt-2 font-mono">
+            <p className="text-2xs text-muted-foreground mt-2 font-mono">
               {bullishCount} bullish / {bearishCount} bearish headlines (keyword tagging)
             </p>
           </CardContent>
         </Card>
 
         {/* Live News Items Count */}
-        <Card className="border-border/60 bg-gradient-to-b from-card/90 to-card/40 backdrop-blur-md shadow-sm hover:border-emerald-500/30 transition-all">
+        <Card className="border-border/60 bg-gradient-to-b from-card/90 to-card/40 backdrop-blur-md shadow-sm hover:border-bullish/30 transition-all">
           <CardHeader className="p-5 pb-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono font-medium uppercase tracking-wider text-muted-foreground">Live Breaking Feed</span>
-              <div className="h-8 w-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                <Zap className="h-4 w-4 text-emerald-400" />
+              <div className="h-8 w-8 rounded-lg bg-bullish/10 border border-bullish/20 flex items-center justify-center">
+                <Zap className="h-4 w-4 text-bullish" />
               </div>
             </div>
           </CardHeader>
@@ -206,27 +206,27 @@ export function CryptoNewsView() {
               <span className="text-3xl font-mono font-black text-foreground">{newsList.length}</span>
               <span className="text-xs font-mono text-muted-foreground">Articles</span>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-2 font-mono">
+            <p className="text-2xs text-muted-foreground mt-2 font-mono">
               CoinTelegraph RSS
             </p>
           </CardContent>
         </Card>
 
         {/* Terminal Latency */}
-        <Card className="border-border/60 bg-gradient-to-b from-card/90 to-card/40 backdrop-blur-md shadow-sm hover:border-purple-500/30 transition-all">
+        <Card className="border-border/60 bg-gradient-to-b from-card/90 to-card/40 backdrop-blur-md shadow-sm hover:border-lab/30 transition-all">
           <CardHeader className="p-5 pb-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono font-medium uppercase tracking-wider text-muted-foreground">Data Snapshot</span>
-              <div className="h-8 w-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
-                <Globe2 className="h-4 w-4 text-purple-400" />
+              <div className="h-8 w-8 rounded-lg bg-lab/10 border border-lab/20 flex items-center justify-center">
+                <Globe2 className="h-4 w-4 text-lab" />
               </div>
             </div>
           </CardHeader>
           <CardContent className="p-5 pt-1">
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-mono font-black text-purple-400">{snapshotTime ?? '—'}</span>
+              <span className="text-2xl font-mono font-black text-lab">{snapshotTime ?? '—'}</span>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-2 font-mono">
+            <p className="text-2xs text-muted-foreground mt-2 font-mono">
               Backend cache refreshes at most every 60s
             </p>
           </CardContent>
@@ -256,7 +256,7 @@ export function CryptoNewsView() {
                 onClick={() => setSelectedCategory(cat)}
                 className={`h-7 text-xs font-medium px-3 cursor-pointer ${
                   selectedCategory === cat
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30'
+                    ? 'bg-bullish/20 text-bullish border border-bullish/40 hover:bg-bullish/30'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
@@ -276,9 +276,9 @@ export function CryptoNewsView() {
                 className={`h-7 text-xs font-medium px-3 cursor-pointer ${
                   selectedSentiment === snt
                     ? snt === 'BULLISH'
-                      ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10'
+                      ? 'border-bullish text-bullish bg-bullish/10'
                       : snt === 'BEARISH'
-                      ? 'border-rose-500 text-rose-400 bg-rose-500/10'
+                      ? 'border-bearish text-bearish bg-bearish/10'
                       : 'border-border text-foreground bg-accent'
                     : 'text-muted-foreground'
                 }`}
@@ -295,19 +295,19 @@ export function CryptoNewsView() {
         {filteredNews.map((item) => (
           <Card
             key={item.id}
-            className="border-border/60 bg-card/70 hover:border-emerald-500/40 hover:bg-card/90 transition-all duration-200 flex flex-col justify-between shadow-sm rounded-xl overflow-hidden"
+            className="border-border/60 bg-card/70 hover:border-bullish/40 hover:bg-card/90 transition-all duration-200 flex flex-col justify-between shadow-sm rounded-xl overflow-hidden"
           >
             <CardHeader className="p-5 pb-3">
               <div className="flex items-center justify-between gap-2 mb-3">
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="font-mono text-[10px] font-semibold tracking-wider uppercase bg-muted/60 border-border/80 px-2 py-0.5">
+                  <Badge variant="outline" className="font-mono text-3xs font-semibold tracking-wider uppercase bg-muted/60 border-border/80 px-2 py-0.5">
                     {item.category}
                   </Badge>
                   {item.timestamp && (
                     <time
                       dateTime={item.publishedAt ?? undefined}
                       title={item.publishedAt ? new Date(item.publishedAt).toLocaleString() : undefined}
-                      className="text-[11px] text-muted-foreground flex items-center gap-1 font-mono"
+                      className="text-2xs text-muted-foreground flex items-center gap-1 font-mono"
                     >
                       <CalendarClock className="h-3 w-3" />
                       {item.timestamp}
@@ -317,24 +317,24 @@ export function CryptoNewsView() {
 
                 <div>
                   {item.sentiment === 'BULLISH' ? (
-                    <Badge className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 gap-1 text-[11px] font-mono px-2 py-0.5">
+                    <Badge className="bg-bullish/15 text-bullish border border-bullish/30 gap-1 text-2xs font-mono px-2 py-0.5">
                       <TrendingUp className="h-3 w-3" />
                       BULLISH
                     </Badge>
                   ) : item.sentiment === 'BEARISH' ? (
-                    <Badge className="bg-rose-500/15 text-rose-400 border border-rose-500/30 gap-1 text-[11px] font-mono px-2 py-0.5">
+                    <Badge className="bg-bearish/15 text-bearish border border-bearish/30 gap-1 text-2xs font-mono px-2 py-0.5">
                       <TrendingDown className="h-3 w-3" />
                       BEARISH
                     </Badge>
                   ) : (
-                    <Badge className="bg-muted/30 text-muted-foreground border border-border gap-1 text-[11px] font-mono px-2 py-0.5">
+                    <Badge className="bg-muted/30 text-muted-foreground border border-border gap-1 text-2xs font-mono px-2 py-0.5">
                       NEUTRAL
                     </Badge>
                   )}
                 </div>
               </div>
 
-              <CardTitle className="text-base font-bold leading-snug tracking-tight text-foreground hover:text-emerald-400 transition-colors">
+              <CardTitle className="text-base font-bold leading-snug tracking-tight text-foreground hover:text-bullish transition-colors">
                 {item.title}
               </CardTitle>
             </CardHeader>
@@ -346,14 +346,14 @@ export function CryptoNewsView() {
 
               <div className="flex flex-wrap items-center justify-between pt-3 border-t border-border/40 gap-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-mono font-medium text-emerald-400/95 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20">
+                  <span className="text-2xs font-mono font-medium text-bullish/95 bg-bullish/10 px-2.5 py-1 rounded-md border border-bullish/20">
                     {item.source}
                   </span>
                   <div className="flex items-center gap-1">
                     {item.affectedSymbols.map((sym) => (
                       <span
                         key={sym}
-                        className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-muted/70 text-foreground border border-border/60"
+                        className="text-3xs font-mono font-bold px-2 py-0.5 rounded bg-muted/70 text-foreground border border-border/60"
                       >
                         {sym}
                       </span>
@@ -366,7 +366,7 @@ export function CryptoNewsView() {
                     href={item.linkUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-bullish hover:text-bullish transition-colors"
                   >
                     Read article
                     <ArrowUpRight className="h-3.5 w-3.5" />

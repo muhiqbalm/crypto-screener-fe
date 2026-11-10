@@ -42,7 +42,7 @@ function SideBadge({ side }: { side: TradeLogResponse['side'] }) {
     <Badge
       variant="outline"
       className={cn(
-        'text-[11px] font-semibold uppercase tracking-wide px-2 py-0',
+        'text-2xs font-semibold uppercase tracking-wide px-2 py-0',
         side === 'long'
           ? 'bg-bullish/15 text-bullish border-bullish/25'
           : 'bg-bearish/15 text-bearish border-bearish/25'
@@ -83,7 +83,7 @@ export function SignalLogsTable() {
           <Activity className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
           <CardTitle className="text-base">Signal Logs</CardTitle>
           {!isPending && (
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">
+            <Badge variant="outline" className="text-3xs px-1.5 py-0 text-muted-foreground">
               {count}
             </Badge>
           )}

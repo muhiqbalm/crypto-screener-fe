@@ -109,7 +109,7 @@ export function MarketScreenerTab() {
           <span className="flex items-center gap-3 font-mono">
             {isStale && (
               <span
-                className="rounded border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-amber-500"
+                className="rounded border border-warn/40 bg-warn/10 px-1.5 py-0.5 text-warn"
                 title="Backend is serving the last good snapshot because the latest refresh failed or is overdue"
               >
                 stale ({Math.round(dataAge ?? 0)}s)

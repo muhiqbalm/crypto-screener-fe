@@ -38,11 +38,11 @@ export function OptimizePanel({ template, value, errors, onChange }: Props) {
           {TRIAL_OPTIONS.map((n) => (
             <Chip key={n} active={value.nTrials === n} onClick={() => onChange({ ...value, nTrials: n })}>
               {n}
-              <span className="text-[10px] opacity-70">±{estimateMinutes(n)} mnt</span>
+              <span className="text-3xs opacity-70">±{estimateMinutes(n)} mnt</span>
             </Chip>
           ))}
         </div>
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-2xs text-muted-foreground">
           Makin banyak percobaan makin teliti, tapi juga makin besar risiko &quot;kebetulan bagus&quot;. Hasilnya tetap diuji di holdout.
         </p>
       </div>
@@ -53,7 +53,7 @@ export function OptimizePanel({ template, value, errors, onChange }: Props) {
             <span className="text-xs font-medium">Parameter yang dicari &amp; rentangnya</span>
             <button
               type="button"
-              className="text-[11px] text-lab hover:underline cursor-pointer"
+              className="text-2xs text-lab hover:underline cursor-pointer"
               onClick={() => {
                 if (all) onChange({ ...value, ranges: Object.fromEntries(Object.entries(value.ranges).map(([k, r]) => [k, { ...r, enabled: false }])) })
                 else onChange({ ...defaultOptimizeConfig(template), nTrials: value.nTrials })
@@ -74,7 +74,7 @@ export function OptimizePanel({ template, value, errors, onChange }: Props) {
                       type="checkbox"
                       checked={r.enabled}
                       onChange={(e) => setRange(p.key, { enabled: e.target.checked })}
-                      className="h-4 w-4 shrink-0 cursor-pointer accent-violet-500"
+                      className="h-4 w-4 shrink-0 cursor-pointer accent-lab"
                     />
                     <label htmlFor={`opt-${p.key}`} className="min-w-0 flex-1 truncate text-xs">
                       {paramLabel(p)}
@@ -86,9 +86,9 @@ export function OptimizePanel({ template, value, errors, onChange }: Props) {
                       value={r.min}
                       disabled={!r.enabled}
                       onChange={(e) => setRange(p.key, { min: e.target.value })}
-                      className={cn('h-7 w-16 px-1.5 text-right font-mono text-[11px]', err && 'border-bearish')}
+                      className={cn('h-7 w-16 px-1.5 text-right font-mono text-2xs', err && 'border-bearish')}
                     />
-                    <span className="text-[10px] text-muted-foreground">–</span>
+                    <span className="text-3xs text-muted-foreground">–</span>
                     <Input
                       type="number"
                       step="any"
@@ -96,15 +96,15 @@ export function OptimizePanel({ template, value, errors, onChange }: Props) {
                       value={r.max}
                       disabled={!r.enabled}
                       onChange={(e) => setRange(p.key, { max: e.target.value })}
-                      className={cn('h-7 w-16 px-1.5 text-right font-mono text-[11px]', err && 'border-bearish')}
+                      className={cn('h-7 w-16 px-1.5 text-right font-mono text-2xs', err && 'border-bearish')}
                     />
                   </div>
-                  {err && <p className="mt-1 pl-6 text-[11px] text-bearish">{err}</p>}
+                  {err && <p className="mt-1 pl-6 text-2xs text-bearish">{err}</p>}
                 </li>
               )
             })}
           </ul>
-          {errors.search && <p className="text-[11px] text-bearish">{errors.search}</p>}
+          {errors.search && <p className="text-2xs text-bearish">{errors.search}</p>}
         </div>
       )}
     </div>

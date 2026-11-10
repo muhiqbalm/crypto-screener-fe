@@ -32,7 +32,7 @@ function isChanged(spec: LabParamSpec, value: ParamFormValue | undefined): boole
 
 function ChangedBadge({ count, className }: { count?: number; className?: string }) {
   return (
-    <span className={cn('inline-flex items-center rounded-full bg-warn/15 px-1.5 py-px text-[10px] font-semibold text-warn', className)}>
+    <span className={cn('inline-flex items-center rounded-full bg-warn/15 px-1.5 py-px text-3xs font-semibold text-warn', className)}>
       {count !== undefined ? `${count} diubah` : 'diubah'}
     </span>
   )
@@ -46,11 +46,11 @@ export function ParamSummary({ template, values, onChange }: Omit<ParamFormProps
   return (
     <div className="flex flex-wrap items-center gap-2">
       {changed === 0 ? (
-        <span className="inline-flex items-center rounded-full bg-bullish/10 px-2 py-0.5 text-[11px] font-medium text-bullish">
+        <span className="inline-flex items-center rounded-full bg-bullish/10 px-2 py-0.5 text-2xs font-medium text-bullish">
           Sama dengan live ETH 4H
         </span>
       ) : (
-        <ChangedBadge count={changed} className="px-2 py-0.5 text-[11px]" />
+        <ChangedBadge count={changed} className="px-2 py-0.5 text-2xs" />
       )}
       <Button
         type="button"
@@ -102,7 +102,7 @@ export function AdvancedParams({ template, values, errors, onChange }: ParamForm
                 <span className="font-medium">{groupLabel(g.group)}</span>
                 <span className="text-xs text-muted-foreground">{g.params.length} param</span>
                 {changed > 0 && <ChangedBadge count={changed} />}
-                {hasError && <span className="text-[11px] text-bearish">ada error</span>}
+                {hasError && <span className="text-2xs text-bearish">ada error</span>}
               </span>
               <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
             </summary>
@@ -175,7 +175,7 @@ function ParamSlider({
         </label>
         {changed && <ChangedBadge />}
       </div>
-      {copy?.help && <p className="text-[11px] leading-snug text-muted-foreground">{copy.help}</p>}
+      {copy?.help && <p className="text-2xs leading-snug text-muted-foreground">{copy.help}</p>}
       <div className="mt-auto flex items-center gap-3">
         <input
           type="range"
@@ -185,7 +185,7 @@ function ParamSlider({
           value={sliderValue}
           onChange={(e) => onChange(e.target.value)}
           aria-label={`${paramLabel(spec)} (slider)`}
-          className="h-1.5 min-w-0 flex-1 cursor-pointer accent-violet-500"
+          className="h-1.5 min-w-0 flex-1 cursor-pointer accent-lab"
         />
         <Input
           id={id}
@@ -202,9 +202,9 @@ function ParamSlider({
         />
       </div>
       {error ? (
-        <p id={`${id}-err`} className="text-[11px] text-bearish">{error}</p>
+        <p id={`${id}-err`} className="text-2xs text-bearish">{error}</p>
       ) : (
-        <p className="font-mono text-[10px] text-muted-foreground">
+        <p className="font-mono text-3xs text-muted-foreground">
           default {fmtDefault(spec.default)} · {min}–{max}
         </p>
       )}
@@ -245,7 +245,7 @@ function ParamField({
           {paramLabel(spec)}
           {changed && <ChangedBadge />}
         </span>
-        <span className="shrink-0 font-mono text-[10px] font-normal text-muted-foreground">default {fmtDefault(spec.default)}</span>
+        <span className="shrink-0 font-mono text-3xs font-normal text-muted-foreground">default {fmtDefault(spec.default)}</span>
       </label>
       {spec.type === 'choice' ? (
         <select
@@ -277,7 +277,7 @@ function ParamField({
           className={cn('h-8 font-mono text-xs tabular-nums', error && 'border-bearish')}
         />
       )}
-      {error && <p id={`${id}-err`} className="text-[11px] text-bearish">{error}</p>}
+      {error && <p id={`${id}-err`} className="text-2xs text-bearish">{error}</p>}
     </div>
   )
 }

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { createChart, ColorType, type IChartApi, type UTCTimestamp } from 'lightweight-charts'
 import { useTheme } from 'next-themes'
+import { getChartTheme } from '@/lib/chart-theme'
 import type { LabEquityPoint, LabSegment } from '@/lib/api/types/lab'
 
 // Validated categorical palette (dataviz validator: lightness band, CVD and
@@ -60,13 +61,13 @@ export function EquityChart({ points, holdoutStart }: { points: LabEquityPoint[]
       autoSize: true,
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: isDark ? '#b3b3b3' : '#555555',
-        fontFamily: 'var(--font-geist-mono, ui-monospace, monospace)',
+        textColor: getChartTheme(isDark).text,
+        fontFamily: getChartTheme(isDark).fontFamily,
         fontSize: 11,
       },
       grid: {
         vertLines: { visible: false },
-        horzLines: { color: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' },
+        horzLines: { color: getChartTheme(isDark).grid },
       },
       rightPriceScale: { borderVisible: false },
       timeScale: { borderVisible: false },
@@ -97,7 +98,7 @@ export function EquityChart({ points, holdoutStart }: { points: LabEquityPoint[]
 
   return (
     <div className="space-y-2">
-      <ul className="flex flex-wrap gap-4 text-[11px] text-muted-foreground" aria-label="Legenda segmen">
+      <ul className="flex flex-wrap gap-4 text-2xs text-muted-foreground" aria-label="Legenda segmen">
         {present.map((s) => (
           <li key={s} className="flex items-center gap-1.5">
             <span

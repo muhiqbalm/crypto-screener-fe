@@ -4,11 +4,11 @@ import { CheckCircle2, Clock, Loader2, XCircle, Ban, AlertTriangle } from 'lucid
 import { cn } from '@/lib/utils/cn'
 import type { LabRunMode, LabStatus, LabVerdict } from '@/lib/api/types/lab'
 
-const pill = 'inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-medium leading-4'
+const pill = 'inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-2xs font-medium leading-4'
 
 const STATUS_STYLE: Record<LabStatus, { label: string; className: string; Icon: typeof Clock }> = {
   queued: { label: 'Antri', className: 'border-border bg-muted/50 text-muted-foreground', Icon: Clock },
-  running: { label: 'Jalan', className: 'border-sky-500/40 bg-sky-500/10 text-sky-500', Icon: Loader2 },
+  running: { label: 'Jalan', className: 'border-info/40 bg-info/10 text-info', Icon: Loader2 },
   done: { label: 'Selesai', className: 'border-border bg-muted/40 text-muted-foreground', Icon: CheckCircle2 },
   error: { label: 'Error', className: 'border-bearish/40 bg-bearish/10 text-bearish', Icon: AlertTriangle },
   cancelled: { label: 'Dibatalkan', className: 'border-border bg-muted/50 text-muted-foreground', Icon: Ban },
@@ -61,14 +61,11 @@ export const MODE_LABEL: Record<LabRunMode, string> = {
 
 export function ModeBadge({ mode }: { mode: LabRunMode }) {
   return (
-    <span className={cn(pill, 'border-border/80 font-mono text-[10px] uppercase tracking-wide text-muted-foreground')}>
+    <span className={cn(pill, 'border-border/80 font-mono text-3xs uppercase tracking-wide text-muted-foreground')}>
       {MODE_LABEL[mode] ?? mode}
     </span>
   )
 }
 
-/** Signed number class (green/red) used for return-like metrics. */
-export function signClass(v: number | null | undefined): string {
-  if (v === null || v === undefined || !Number.isFinite(v) || v === 0) return 'text-foreground'
-  return v > 0 ? 'text-bullish' : 'text-bearish'
-}
+/** Signed number class (green/red) — re-exported from lib/utils/format. */
+export { signClass } from '@/lib/utils/format'
