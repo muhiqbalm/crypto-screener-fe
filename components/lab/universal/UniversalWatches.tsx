@@ -1,0 +1,179 @@
+'use client'
+
+import { useState } from 'react'
+import Link from 'next/link'
+import { AlertTriangle, Bell, BellOff, Bot, Plus, Trash2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { ErrorPanel } from '@/components/shell/ErrorPanel'
+import { EmptyState, Eyebrow, Section } from '@/components/lab/Section'
+import { signClass } from '@/components/lab/LabBadges'
+import { ApiError, apiErrorDetail } from '@/lib/api/errors'
+import { formatPercent, formatPrice, formatScore, formatTimestamp } from '@/lib/utils/format'
+import { notify } from '@/lib/utils/toast'
+import { cn } from '@/lib/utils/cn'
+import { relativeTime } from '@/lib/lab/form'
+import {
+  useCreateUniversalWatch,
+  useDeleteUniversalWatch,
+  usePatchUniversalWatch,
+  useUniversalRebalances,
+  useUniversalWatches,
+} from '@/lib/queries/universal'
+import type { LabId } from '@/lib/api/types/lab'
+import type { UniversalWatch } from '@/lib/api/types/universal'
+
+const ACTION_LABEL: Record<string, string> = { open: 'BUKA', add: 'TAMBAH', reduce: 'KURANGI', close: 'TUTUP' }
+
+function Rebalances({ watchId }: { watchId: LabId }) {
+  const q = useUniversalRebalances(watchId)
+  if (q.isPending) return <Skeleton className="h-24 w-full" />
+  const rows = q.data ?? []
+  if (rows.length === 0) return <p className="text-xs text-muted-foreground">Belum ada rebalance.</p>
+  return (
+    <div className="max-h-72 space-y-2 overflow-auto">
+      {rows.map((r) => (
+        <div key={String(r.id)} className="rounded-lg border border-border/60 p-2 text-xs">
+          <div className="flex flex-wrap justify-between gap-2">
+            <span className="font-mono">{formatTimestamp(r.bar).slice(0, 16)}</span>
+            <span className="text-muted-foreground">{r.equity !== null ? `equity ${formatPrice(r.equity)} USDT` : r.note}</span>
+          </div>
+          {r.orders.length === 0 ? (
+            <p className="mt-1 text-muted-foreground">Tidak ada order (target: {r.targets.map((t) => t.symbol.replace(/USDT$/, '')).join(', ') || 'kosong'}).</p>
+          ) : (
+            <ul className="mt-1 space-y-0.5 font-mono">
+              {r.orders.map((o, i) => (
+                <li key={i} className="flex flex-wrap gap-x-2">
+                  <span className={cn('font-semibold', o.action === 'close' || o.action === 'reduce' ? 'text-bearish' : 'text-bullish')}>{ACTION_LABEL[o.action] ?? o.action}</span>
+                  <span>{o.symbol.replace(/USDT$/, '')}</span>
+                  <span className="text-muted-foreground">{o.side} {formatScore(o.weight_from, 1)}% → {formatScore(o.weight_to, 1)}% @ {formatPrice(o.price)}</span>
+                  {typeof o.pnl === 'number' && <span className={signClass(o.pnl)}>{o.pnl >= 0 ? '+' : ''}{formatScore(o.pnl, 2)}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function WatchCard({ w }: { w: UniversalWatch }) {
+  const patch = usePatchUniversalWatch()
+  const del = useDeleteUniversalWatch()
+  const [showLog, setShowLog] = useState(false)
+  const acct = w.account
+  const ret = acct && acct.starting_balance ? ((acct.equity / acct.starting_balance) - 1) * 100 : null
+  const toggle = (body: { autopaper?: boolean; telegram?: boolean }) =>
+    patch.mutate({ id: w.id, body }, { onError: (e) => notify.error('Gagal menyimpan', { description: apiErrorDetail(e) ?? undefined }) })
+
+  return (
+    <div className="space-y-3 rounded-xl border border-border/60 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2 text-sm font-semibold"><Bot className="h-4 w-4 text-lab" />{w.name || `Universal #${w.id}`}</div>
+          <div className="text-xs text-muted-foreground">
+            Rebalance {String(w.params.rebalance ?? '1d')} · top-{String(w.params.top_n ?? 5)}{w.params.allow_short ? ` + short ${String(w.params.bottom_n)}` : ''} ·
+            dibuat {relativeTime(w.created_at)}
+            {w.run_id ? <> · dari <Link className="underline" href={`/lab/universal/runs/${encodeURIComponent(String(w.run_id))}`}>run #{String(w.run_id)}</Link></> : null}
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Switch id={`ap-${w.id}`} checked={w.autopaper} disabled={!w.account_id || patch.isPending} onCheckedChange={(v) => toggle({ autopaper: v })} />
+            <Label htmlFor={`ap-${w.id}`} className="text-xs">Auto paper</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch id={`tg-${w.id}`} checked={w.telegram} disabled={patch.isPending} onCheckedChange={(v) => toggle({ telegram: v })} />
+            <Label htmlFor={`tg-${w.id}`} className="flex items-center gap-1 text-xs">{w.telegram ? <Bell className="h-3 w-3" /> : <BellOff className="h-3 w-3" />}Telegram</Label>
+          </div>
+          <Button variant="ghost" size="sm" className="h-8 text-xs text-bearish" disabled={del.isPending}
+            onClick={() => { if (window.confirm('Hentikan watch ini? Posisi paper yang masih terbuka tidak ditutup otomatis.')) del.mutate(w.id) }}>
+            <Trash2 className="h-3.5 w-3.5" />Hentikan
+          </Button>
+        </div>
+      </div>
+
+      {w.state?.error && (
+        <p className="flex items-start gap-2 rounded-lg border border-bearish/40 bg-bearish/10 px-3 py-2 text-xs text-bearish"><AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />{w.state.error}</p>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="space-y-1">
+          <Eyebrow>Akun paper</Eyebrow>
+          {acct ? (
+            <>
+              <div className="font-mono text-lg font-bold tabular-nums">{formatPrice(acct.equity)} <span className="text-xs font-normal text-muted-foreground">USDT</span></div>
+              <div className={cn('font-mono text-xs', signClass(ret))}>{formatPercent(ret, 2)} sejak mulai · realized {formatScore(acct.realized_pnl, 2)}</div>
+              <Link href={`/journal?source=paper_auto&account_id=${encodeURIComponent(String(acct.id))}`} className="text-xs underline text-muted-foreground">Lihat jurnal</Link>
+            </>
+          ) : <p className="text-xs text-muted-foreground">Tanpa akun paper (sinyal saja).</p>}
+        </div>
+        <div className="space-y-1">
+          <Eyebrow>Target saat ini</Eyebrow>
+          {(w.state?.targets ?? []).length === 0 ? (
+            <p className="text-xs text-muted-foreground">{w.state ? 'Kosong — tidak ada koin yang lolos filter tren (cash).' : 'Menunggu evaluasi pertama…'}</p>
+          ) : (
+            <ul className="space-y-0.5 font-mono text-xs">
+              {w.state!.targets.map((t) => (
+                <li key={t.symbol} className="flex justify-between gap-3"><span>{t.symbol.replace(/USDT$/, '')}</span><span className={t.weight_pct >= 0 ? 'text-bullish' : 'text-bearish'}>{formatScore(t.weight_pct, 1)}%</span></li>
+              ))}
+            </ul>
+          )}
+          {w.state && <p className="text-[11px] text-muted-foreground">Rebalance berikut: {formatTimestamp(w.state.next_rebalance).slice(0, 16)}</p>}
+        </div>
+        <div className="space-y-1">
+          <Eyebrow>Posisi terbuka</Eyebrow>
+          {(acct?.open_positions ?? []).length === 0 ? <p className="text-xs text-muted-foreground">Tidak ada.</p> : (
+            <ul className="space-y-0.5 font-mono text-xs">
+              {acct!.open_positions.map((p) => (
+                <li key={String(p.id)} className="flex justify-between gap-3">
+                  <span>{p.symbol.replace(/USDT$/, '')} <span className="text-muted-foreground">{p.side}</span></span>
+                  <span className={signClass(p.unrealized_pnl)}>{p.unrealized_pnl === null ? '—' : formatScore(p.unrealized_pnl, 2)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+      <div>
+        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setShowLog((s) => !s)}>{showLog ? 'Sembunyikan riwayat rebalance' : 'Riwayat rebalance'}</Button>
+        {showLog && <div className="mt-2"><Rebalances watchId={w.id} /></div>}
+      </div>
+    </div>
+  )
+}
+
+export function UniversalWatches() {
+  const q = useUniversalWatches()
+  const create = useCreateUniversalWatch()
+  const startDefault = () =>
+    create.mutate(
+      { name: 'Universal v0 (default)', params: {}, costs: { commission_pct: 0.05, slippage_pct: 0.05, funding: true }, autopaper: true, telegram: true },
+      {
+        onSuccess: () => notify.success('Paper trading Universal dimulai', { description: 'Akun paper 10.000 USDT dibuat. Rebalance pertama setelah data diperbarui (±2 menit).' }),
+        onError: (e) => notify.error('Gagal membuat watch', { description: apiErrorDetail(e) ?? undefined }),
+      },
+    )
+  return (
+    <Section
+      title="Paper trading otomatis"
+      description="Setiap close candle 4H worker menghitung ulang; saat jadwal rebalance, akun paper diatur ke bobot target dan dicatat di jurnal (paper_auto). Alert ke grup Telegram BMTM bisa dimatikan per watch."
+      action={
+        <Button size="sm" onClick={startDefault} disabled={create.isPending} className="h-8 gap-1.5 text-xs">
+          <Plus className="h-3.5 w-3.5" />Mulai (setting default)
+        </Button>
+      }
+    >
+      {q.isPending ? <Skeleton className="h-40 w-full" /> : q.error ? (
+        <ErrorPanel kind={q.error instanceof ApiError ? q.error.kind : 'server'} onRetry={() => q.refetch()} messageOverride="Gagal memuat watch Universal." />
+      ) : (q.data ?? []).length === 0 ? (
+        <EmptyState title="Belum ada paper trading Universal" description="Mulai dengan setting default, atau buka hasil run lalu klik “Pantau (paper)”. Tidak ada order nyata." />
+      ) : (
+        <div className="space-y-3">{q.data!.map((w) => <WatchCard key={String(w.id)} w={w} />)}</div>
+      )}
+    </Section>
+  )
+}

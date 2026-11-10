@@ -5,6 +5,8 @@ import { cn } from '@/lib/utils/cn'
 const TABS = [
   { href: '/lab', label: 'Uji strategi' },
   { href: '/lab/scan', label: 'Scan banyak koin' },
+  { href: '/lab/universal', label: 'Universal' },
+  { href: '/lab/strength', label: 'Koin Terkuat' },
 ]
 
 export function LabHeader({ title, subtitle, active }: { title: string; subtitle: string; active?: string }) {
@@ -18,7 +20,7 @@ export function LabHeader({ title, subtitle, active }: { title: string; subtitle
         <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">{title}</h1>
         <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">{subtitle}</p>
       </div>
-      <nav className="inline-flex self-start rounded-lg border border-border/60 bg-muted/30 p-1 md:self-auto" aria-label="Navigasi Lab">
+      <nav className="inline-flex flex-wrap self-start rounded-lg border border-border/60 bg-muted/30 p-1 md:self-auto" aria-label="Navigasi Lab">
         {TABS.map((t) => (
           <Link
             key={t.href}
