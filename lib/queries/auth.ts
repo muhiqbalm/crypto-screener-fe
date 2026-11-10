@@ -43,7 +43,8 @@ export function useMe() {
 // useLogin
 // ---------------------------------------------------------------------------
 
-export function useLogin() {
+/** @param redirectTo already-validated same-origin path (see safeNextPath). */
+export function useLogin(redirectTo = '/screener') {
   const queryClient = useQueryClient()
   const router = useRouter()
 
@@ -70,7 +71,7 @@ export function useLogin() {
     onSuccess: (user) => {
       // Seed the query cache so useMe() resolves immediately
       queryClient.setQueryData(authKeys.me, user)
-      router.push('/screener')
+      router.push(redirectTo)
     },
     onError: () => {
       clearSession()

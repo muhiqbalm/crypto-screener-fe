@@ -1,47 +1,35 @@
+import { Suspense } from 'react'
+import { Lock } from 'lucide-react'
 import { LoginForm } from '@/components/auth/LoginForm'
-import { BarChart2 } from 'lucide-react'
-import Link from 'next/link'
+import { Brand } from '@/components/shell/Brand'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export const metadata = {
-  title: 'Login — BMTM MoonTrade',
-  description: 'Sign in to BMTM MoonTrade — Screener & Trade System.',
+  title: 'Masuk',
+  description: 'Masuk ke BMTM MoonTrade — screener & trade system.',
 }
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
-      {/* Brand mark */}
-      <Link
-        href="/screener"
-        className="mb-8 flex items-center gap-2.5 text-xl font-semibold tracking-tight transition-opacity hover:opacity-85"
-      >
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-bullish/10 border border-bullish/25 text-bullish shadow-md shadow-bullish/10">
-          <BarChart2 className="h-5 w-5 text-bullish" aria-hidden="true" />
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="font-black tracking-wider bg-gradient-to-r from-bullish via-info to-info bg-clip-text text-transparent">BMTM</span>
-          <span className="font-bold tracking-tight text-foreground">MOONTRADE</span>
-        </div>
-      </Link>
+    <main className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
+      <Brand size="lg" className="mb-8" href="/login" />
 
       <div className="w-full max-w-sm">
-        <div className="mb-6 text-center">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 mb-2 rounded-full bg-bullish/10 border border-bullish/20 text-bullish text-2xs font-mono font-medium">
-            <span className="h-1.5 w-1.5 rounded-full bg-bullish animate-pulse" />
-            SCREENER & TRADE SYSTEM
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight">Terminal Access</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Sign in to access your quantitative trading dashboard
-          </p>
+        <div className="mb-6 space-y-1 text-center">
+          <h1 className="text-2xl font-bold tracking-tight">Masuk ke terminal</h1>
+          <p className="text-sm text-muted-foreground">Screener, trading otomatis & Strategy Lab tim BMTM.</p>
         </div>
 
-        <LoginForm />
+        {/* useSearchParams (?next=) needs a Suspense boundary */}
+        <Suspense fallback={<Skeleton className="h-64 w-full rounded-xl" />}>
+          <LoginForm />
+        </Suspense>
 
-        <div className="mt-6 rounded-lg border border-border/40 bg-muted/20 p-3 text-center text-xs text-muted-foreground">
-          🔒 <span className="font-medium text-foreground">Private Terminal</span> • Access restricted to authorized team members (Yanandra, Rosyade, Iqbal).
-        </div>
+        <p className="mt-6 flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
+          <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+          Terminal privat — hanya untuk anggota tim yang diundang.
+        </p>
       </div>
-    </div>
+    </main>
   )
 }

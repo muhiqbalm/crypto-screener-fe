@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,9 +9,19 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { useLogin } from '@/lib/queries/auth'
 import { ApiError } from '@/lib/api/errors'
+import { safeNextPath } from '@/lib/utils/safe-url'
+import { getSession } from '@/lib/utils/auth-store'
 
 export function LoginForm() {
-  const login = useLogin()
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const next = safeNextPath(searchParams.get('next'))
+  const login = useLogin(next)
+
+  // Already signed in (e.g. opened /login from a bookmark) → go straight in.
+  useEffect(() => {
+    if (getSession()?.accessToken) router.replace(next)
+  }, [router, next])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -18,9 +29,9 @@ export function LoginForm() {
 
   function validate(): boolean {
     const next: typeof fieldErrors = {}
-    if (!email.trim()) next.email = 'Email is required'
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) next.email = 'Enter a valid email'
-    if (!password) next.password = 'Password is required'
+    if (!email.trim()) next.email = 'Email wajib diisi'
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) next.email = 'Format email tidak valid'
+    if (!password) next.password = 'Password wajib diisi'
     setFieldErrors(next)
     return Object.keys(next).length === 0
   }
@@ -34,8 +45,8 @@ export function LoginForm() {
   // Map API error to a human-readable message
   const apiError = login.error
     ? login.error instanceof ApiError && login.error.kind === 'auth'
-      ? 'Invalid email or password.'
-      : 'Something went wrong. Please try again.'
+      ? 'Email atau password salah.'
+      : 'Terjadi kesalahan. Coba lagi.'
     : null
 
   return (
@@ -45,7 +56,7 @@ export function LoginForm() {
 
           {/* API-level error banner */}
           {apiError && (
-            <p className="rounded-md bg-bearish/10 px-3 py-2 text-sm text-bearish" role="alert">
+            <p className="rounded-md border border-bearish/30 bg-bearish/10 px-3 py-2 text-sm text-bearish" role="alert">
               {apiError}
             </p>
           )}
@@ -57,7 +68,7 @@ export function LoginForm() {
               id="email"
               type="email"
               autoComplete="email"
-              placeholder="you@example.com"
+              placeholder="nama@email.com"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value)
@@ -97,7 +108,7 @@ export function LoginForm() {
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground cursor-pointer"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
                 tabIndex={-1}
               >
                 {showPassword
@@ -116,10 +127,10 @@ export function LoginForm() {
             {login.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-                Signing in…
+                Masuk…
               </>
             ) : (
-              'Sign in'
+              'Masuk'
             )}
           </Button>
         </form>

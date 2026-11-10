@@ -1,4 +1,5 @@
 'use client'
+import { AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface ErrorProps {
@@ -8,13 +9,17 @@ interface ErrorProps {
 
 export default function Error({ error, unstable_retry }: ErrorProps) {
   return (
-    <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
-      <p className="text-lg font-semibold">Something went wrong</p>
-      <p className="text-sm text-muted-foreground max-w-sm">
-        {error.message || 'An unexpected error occurred.'}
-      </p>
-      <Button variant="outline" onClick={unstable_retry} className="cursor-pointer">
-        Try again
+    <div role="alert" className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4 text-center">
+      <AlertTriangle className="h-8 w-8 text-bearish" aria-hidden="true" />
+      <div className="space-y-1">
+        <p className="text-lg font-semibold">Terjadi kesalahan</p>
+        <p className="max-w-sm text-sm text-muted-foreground">
+          Halaman ini gagal dimuat. Coba lagi; kalau masih gagal, muat ulang browser.
+        </p>
+        {error.digest && <p className="num text-2xs text-muted-foreground">ref: {error.digest}</p>}
+      </div>
+      <Button variant="outline" onClick={unstable_retry}>
+        Coba lagi
       </Button>
     </div>
   )
