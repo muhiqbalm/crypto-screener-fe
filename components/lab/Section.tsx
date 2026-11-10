@@ -25,7 +25,7 @@ export function Section({
   id?: string
 }) {
   return (
-    <section id={id} className={cn('rounded-xl border border-border/60 bg-card text-card-foreground shadow-sm', className)}>
+    <section id={id} className={cn('rounded-xl border border-border bg-card text-card-foreground shadow-sm', className)}>
       {(title || action) && (
         <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-4 pt-4 sm:px-5">
           <div className="min-w-0 space-y-0.5">
@@ -48,7 +48,7 @@ export function Section({
 /** Small uppercase label used above fields / stat values. */
 export function Eyebrow({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn('text-3xs font-mono font-semibold uppercase tracking-wider text-muted-foreground', className)}>
+    <div className={cn('eyebrow', className)}>
       {children}
     </div>
   )
@@ -81,7 +81,7 @@ export function Chip({
         'inline-flex h-8 items-center justify-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50',
         active
           ? 'border-lab/50 bg-lab/10 text-lab'
-          : 'border-border/70 text-muted-foreground hover:bg-accent hover:text-foreground',
+          : 'border-border text-muted-foreground hover:bg-accent hover:text-foreground',
         className,
       )}
     >

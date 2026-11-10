@@ -56,7 +56,7 @@ function WatchSelector({ watchId, watches }: { watchId: string | null; watches: 
   const list = watches.data ?? []
 
   return (
-    <Card className="border-border/60">
+    <Card className="border-border">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-tight">
           <Eye className="h-4 w-4 text-lab" />
@@ -150,7 +150,7 @@ function LiveSignalCard({
   const upnl = pos ? unrealisedPct(pos.side, pos.entry_price, lastPrice) : null
 
   return (
-    <Card className="border-border/60">
+    <Card className="border-border">
       <CardHeader className="flex-row items-center justify-between gap-2 pb-2">
         <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-tight">
           <Activity className="h-4 w-4 text-bullish" />
@@ -230,7 +230,7 @@ function RunOverlayCard({
 }) {
   const r = run.data
   return (
-    <Card className="border-border/60">
+    <Card className="border-border">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-semibold tracking-tight">Overlay trade backtest</CardTitle>
       </CardHeader>

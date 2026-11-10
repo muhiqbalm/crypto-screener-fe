@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useScreenerSummary, screenerKeys } from '@/lib/queries/screener'
 import { ScreenerFilters, type ScreenerFilterState } from '@/components/screener/ScreenerFilters'
@@ -10,6 +10,7 @@ import { CoinDetailDrawer } from '@/components/screener/CoinDetailDrawer'
 import { ErrorPanel } from '@/components/shell/ErrorPanel'
 import { EmptyPanel } from '@/components/shell/EmptyPanel'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Badge } from '@/components/ui/badge'
 import { notify, dedupeToast } from '@/lib/utils/toast'
 import { ApiError } from '@/lib/api/errors'
 import type { AssetDetail } from '@/lib/api/types/screener'
@@ -25,6 +26,15 @@ export function MarketScreenerTab() {
   const { data, isPending, error } = useScreenerSummary()
   const [filters, setFilters] = useState<ScreenerFilterState>(DEFAULT_FILTERS)
   const [selectedAsset, setSelectedAsset] = useState<AssetDetail | null>(null)
+
+  // Toast once per error kind (side effect kept out of render).
+  useEffect(() => {
+    if (!error) return
+    const kind = error instanceof ApiError ? error.kind : 'server'
+    if (dedupeToast(`screener-error-${kind}`, kind)) {
+      notify.error(kind === 'network' ? 'Koneksi ke server terputus.' : 'Gagal memuat data screener.')
+    }
+  }, [error])
 
   function handleRetry() {
     queryClient.invalidateQueries({ queryKey: screenerKeys.summary() })
@@ -51,22 +61,13 @@ export function MarketScreenerTab() {
 
   // Error state (Req 7.5, 7.6, 7.7)
   if (error) {
-    const kind = error instanceof ApiError ? error.kind : 'server'
-    const dedupeKey = `screener-error-${kind}`
-    if (dedupeToast(dedupeKey, kind)) {
-      notify.error(
-        kind === 'network'
-          ? 'Network error. Please check your connection.'
-          : 'Failed to load screener data.',
-      )
-    }
-    return <ErrorPanel kind={kind} onRetry={handleRetry} />
+    return <ErrorPanel kind={error instanceof ApiError ? error.kind : 'server'} onRetry={handleRetry} />
   }
 
   // Empty state (Req 7.2, 7.3)
   const rawAssets = data?.assets ?? []
   if (rawAssets.length === 0) {
-    return <EmptyPanel message="No assets available" ctaLabel="Retry" onCta={handleRetry} />
+    return <EmptyPanel message="Belum ada data koin dari server." ctaLabel="Muat ulang" onCta={handleRetry} />
   }
 
   // Signals and bull/bear/neutral counts come straight from the backend
@@ -98,25 +99,22 @@ export function MarketScreenerTab() {
       )}
 
       {/* 2. Filter Controls */}
-      <div className="rounded-xl border border-border/80 bg-card/40 p-4 backdrop-blur-xs">
-        <ScreenerFilters filters={filters} onFiltersChange={setFilters} />
-      </div>
-
-      {/* 3. Interactive Screener Table */}
-      <div className="rounded-xl border border-border overflow-hidden bg-card shadow-xs">
-        <div className="px-4 py-2.5 border-b border-border bg-muted/20 flex items-center justify-between text-xs text-muted-foreground">
-          <span>Click on any asset row to view 5-factor quant breakdown & live chart</span>
-          <span className="flex items-center gap-3 font-mono">
+      {/* 2–3. Filters + interactive table in one card */}
+      <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
+        <div className="flex flex-col gap-3 border-b px-4 py-3 md:flex-row md:items-end md:justify-between">
+          <ScreenerFilters filters={filters} onFiltersChange={setFilters} />
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             {isStale && (
-              <span
-                className="rounded border border-warn/40 bg-warn/10 px-1.5 py-0.5 text-warn"
-                title="Backend is serving the last good snapshot because the latest refresh failed or is overdue"
+              <Badge
+                variant="warn"
+                size="sm"
+                title="Backend menyajikan snapshot terakhir karena refresh terbaru gagal atau terlambat"
               >
-                stale ({Math.round(dataAge ?? 0)}s)
-              </span>
+                data basi ({Math.round(dataAge ?? 0)} dtk)
+              </Badge>
             )}
-            <span>{assets.length} perpetuals tracked</span>
-          </span>
+            <span className="num">{assets.length} perpetual</span>
+          </div>
         </div>
         <ScreenerTable
           data={assets}

@@ -34,10 +34,10 @@ export function MarketOverviewCards({ summary, onSelectCoin }: MarketOverviewCar
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {/* 1. 24h Market Volume */}
-      <Card className="relative overflow-hidden border-border/80 bg-card/60 backdrop-blur-xs shadow-xs hover:border-border transition-all">
+      <Card className="relative overflow-hidden border-border bg-card shadow-xs ">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            <span className="eyebrow">
               24h Futures Volume
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-info/10 text-info">
@@ -67,10 +67,10 @@ export function MarketOverviewCards({ summary, onSelectCoin }: MarketOverviewCar
       </Card>
 
       {/* 2. Market Sentiment Gauge */}
-      <Card className="relative overflow-hidden border-border/80 bg-card/60 backdrop-blur-xs shadow-xs hover:border-border transition-all">
+      <Card className="relative overflow-hidden border-border bg-card shadow-xs ">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            <span className="eyebrow">
               Market Bias (Sentiment)
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-bullish/10 text-bullish">
@@ -111,10 +111,10 @@ export function MarketOverviewCards({ summary, onSelectCoin }: MarketOverviewCar
       </Card>
 
       {/* 3. Average Funding Rate */}
-      <Card className="relative overflow-hidden border-border/80 bg-card/60 backdrop-blur-xs shadow-xs hover:border-border transition-all">
+      <Card className="relative overflow-hidden border-border bg-card shadow-xs ">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            <span className="eyebrow">
               Avg Funding Rate
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-warn/10 text-warn">
@@ -152,10 +152,10 @@ export function MarketOverviewCards({ summary, onSelectCoin }: MarketOverviewCar
       </Card>
 
       {/* 4. Top Ranked Opportunities */}
-      <Card className="relative overflow-hidden border-border/80 bg-card/60 backdrop-blur-xs shadow-xs hover:border-border transition-all">
+      <Card className="relative overflow-hidden border-border bg-card shadow-xs ">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            <span className="eyebrow">
               Top Quant Picks
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-lab/10 text-lab">

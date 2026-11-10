@@ -103,9 +103,9 @@ export function RunsTable() {
           action={<Button variant="outline" size="sm" onClick={() => { setQ(''); setMode('all'); setVerdict('all') }}>Hapus filter</Button>}
         />
       ) : (
-        <div className="-mx-4 overflow-x-auto sm:mx-0 sm:rounded-lg sm:border sm:border-border/60">
+        <div className="-mx-4 overflow-x-auto sm:mx-0 sm:rounded-lg sm:border sm:border-border">
           <table className="w-full text-sm sm:min-w-[560px]">
-            <thead className="border-b border-border/60 bg-muted/30">
+            <thead className="border-b border-border bg-muted/30">
               <tr>
                 <th className={th}>Koin</th>
                 <th className={cn(th, 'hidden sm:table-cell')}>Mode</th>

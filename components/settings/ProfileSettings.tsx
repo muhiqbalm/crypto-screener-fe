@@ -177,7 +177,7 @@ function ProfileForm({ user }: { user: NonNullable<ReturnType<typeof useMe>['dat
 
         {/* Divider */}
         <div className="border-t border-border pt-2">
-          <p className="mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          <p className="mb-3 eyebrow">
             Change password
           </p>
 

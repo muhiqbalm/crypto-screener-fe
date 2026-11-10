@@ -35,7 +35,6 @@ import {
 import { useColumnVisibility } from '@/lib/utils/use-column-visibility'
 import type { AssetDetail } from '@/lib/api/types/screener'
 import type { ScreenerFilterState } from '@/components/screener/ScreenerFilters'
-import { cn } from '@/lib/utils/cn'
 
 // ---------------------------------------------------------------------------
 // Column definitions
@@ -263,27 +262,19 @@ export function ScreenerTable({ data, filters, onSelectAsset }: ScreenerTablePro
                   // Req 15.6 — scope="col" on every <th>
                   scope="col"
                   aria-sort={isSortable ? ariaSort : undefined}
-                  className={cn(
-                    'whitespace-nowrap select-none',
-                    isSortable &&
-                      'cursor-pointer transition-colors duration-200 hover:text-foreground',
-                  )}
-                  onClick={
-                    isSortable
-                      ? () => handleSortToggle(header.column.id)
-                      : undefined
-                  }
+                  className="select-none"
                 >
-                  {header.isPlaceholder ? null : (
-                    <span className="inline-flex items-center gap-1">
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                      {isSortable && (
-                        <SortIcon direction={sortDir} />
-                      )}
-                    </span>
+                  {header.isPlaceholder ? null : isSortable ? (
+                    <button
+                      type="button"
+                      onClick={() => handleSortToggle(header.column.id)}
+                      className="-mx-1 inline-flex items-center gap-1 rounded px-1 uppercase tracking-wide transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+                    >
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      <SortIcon direction={sortDir} />
+                    </button>
+                  ) : (
+                    flexRender(header.column.columnDef.header, header.getContext())
                   )}
                 </TableHead>
               )
@@ -299,7 +290,7 @@ export function ScreenerTable({ data, filters, onSelectAsset }: ScreenerTablePro
               colSpan={columns.length}
               className="h-24 text-center text-muted-foreground"
             >
-              No results.
+              Tidak ada koin yang cocok dengan filter.
             </TableCell>
           </TableRow>
         ) : (
@@ -309,7 +300,16 @@ export function ScreenerTable({ data, filters, onSelectAsset }: ScreenerTablePro
             <TableRow
               key={row.id}
               onClick={() => onSelectAsset?.(row.original)}
-              className="hover:bg-muted/70 transition-colors duration-200 cursor-pointer"
+              // Keyboard access: rows open the detail drawer like a button.
+              tabIndex={onSelectAsset ? 0 : undefined}
+              onKeyDown={(e) => {
+                if (onSelectAsset && (e.key === 'Enter' || e.key === ' ')) {
+                  e.preventDefault()
+                  onSelectAsset(row.original)
+                }
+              }}
+              aria-label={onSelectAsset ? `Rincian ${row.original.symbol}` : undefined}
+              className="cursor-pointer"
             >
               {row.getVisibleCells().map((cell) => (
                 <TableCell key={cell.id}>

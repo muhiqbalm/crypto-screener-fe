@@ -229,7 +229,7 @@ export function PaperTradePanel(p: Props) {
             <p className="text-3xs text-muted-foreground">Garis SL/TP draft tampil di chart (oranye putus-putus). Ubah lewat input.</p>
 
             {/* Size */}
-            <div className="rounded-md border border-border/60 bg-muted/20 p-2 text-2xs">
+            <div className="rounded-md border border-border bg-muted/20 p-2 text-2xs">
               {size ? (
                 <div className="space-y-0.5 font-mono">
                   <div className="flex justify-between"><span className="text-muted-foreground">Risiko</span><span>{formatUsd(size.riskAmount)}</span></div>
@@ -290,7 +290,7 @@ export function PaperTradePanel(p: Props) {
 
             {/* Auto-follow */}
             {p.watchId && (
-              <div className="flex items-center justify-between gap-2 rounded-md border border-border/60 px-3 py-2">
+              <div className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2">
                 <label htmlFor="autopaper" className="text-2xs">
                   <span className="font-medium">Auto-follow strategi</span>
                   <span className="block text-3xs text-muted-foreground">Sinyal watch ini otomatis dicatat sebagai PAPER di akun ini.</span>
@@ -314,7 +314,7 @@ export function PaperTradePanel(p: Props) {
 
             {/* Open positions */}
             <div className="space-y-1.5">
-              <h3 className="text-3xs font-mono font-bold uppercase tracking-wider text-muted-foreground">
+              <h3 className="eyebrow">
                 Posisi paper terbuka · {p.symbol}
               </h3>
               {p.positionsLoading ? (
@@ -326,7 +326,7 @@ export function PaperTradePanel(p: Props) {
                   {p.positions.map((pos) => {
                     const upnl = unrealisedPnl(pos, p.lastPrice) ?? pos.unrealized_pnl ?? null
                     return (
-                      <li key={pos.id} className="flex items-center justify-between gap-2 rounded border border-border/50 px-2 py-1.5 font-mono text-2xs">
+                      <li key={pos.id} className="flex items-center justify-between gap-2 rounded border border-border px-2 py-1.5 font-mono text-2xs">
                         <span>
                           <span className={pos.side === 'long' ? 'text-bullish' : 'text-bearish'}>{pos.side.toUpperCase()}</span>{' '}
                           {formatQty(pos.qty)} @ {formatPrice(pos.entry_price)}

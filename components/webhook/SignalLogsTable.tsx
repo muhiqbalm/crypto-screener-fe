@@ -77,7 +77,6 @@ export function SignalLogsTable() {
 
   return (
     <Card className="overflow-hidden">
-      <div className="h-0.5 w-full bg-muted" />
       <CardHeader className="flex flex-row items-center justify-between gap-4 pb-3 pt-4">
         <div className="flex items-center gap-2">
           <Activity className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
@@ -126,7 +125,7 @@ export function SignalLogsTable() {
                   <TableRow
                     onClick={() => handleRowClick(row)}
                     className={cn(
-                      'transition-colors duration-150 border-b border-border/50 last:border-0',
+                      'transition-colors duration-150 border-b border-border last:border-0',
                       row.status === 'failed' && 'cursor-pointer hover:bg-bearish/8',
                       row.status !== 'failed' && 'hover:bg-muted/30',
                     )}

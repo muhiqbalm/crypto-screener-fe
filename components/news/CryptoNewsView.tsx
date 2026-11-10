@@ -114,7 +114,7 @@ export function CryptoNewsView() {
       {/* Intelligence Metric Banner */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Fear & Greed Index */}
-        <Card className="border-border/60 bg-gradient-to-b from-card/90 to-card/40 backdrop-blur-md shadow-sm hover:border-bullish/30 transition-all">
+        <Card className="border-border bg-gradient-to-b from-card/90 to-card/40 backdrop-blur-md shadow-sm hover:border-bullish/30 transition-all">
           <CardHeader className="p-5 pb-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono font-medium uppercase tracking-wider text-muted-foreground">Fear &amp; Greed Index</span>
@@ -146,7 +146,7 @@ export function CryptoNewsView() {
         </Card>
 
         {/* AI Catalyst Score */}
-        <Card className="border-border/60 bg-gradient-to-b from-card/90 to-card/40 backdrop-blur-md shadow-sm hover:border-info/30 transition-all">
+        <Card className="border-border bg-gradient-to-b from-card/90 to-card/40 backdrop-blur-md shadow-sm hover:border-info/30 transition-all">
           <CardHeader className="p-5 pb-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono font-medium uppercase tracking-wider text-muted-foreground">Headline Sentiment</span>
@@ -181,7 +181,7 @@ export function CryptoNewsView() {
         </Card>
 
         {/* Live News Items Count */}
-        <Card className="border-border/60 bg-gradient-to-b from-card/90 to-card/40 backdrop-blur-md shadow-sm hover:border-bullish/30 transition-all">
+        <Card className="border-border bg-gradient-to-b from-card/90 to-card/40 backdrop-blur-md shadow-sm hover:border-bullish/30 transition-all">
           <CardHeader className="p-5 pb-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono font-medium uppercase tracking-wider text-muted-foreground">Live Breaking Feed</span>
@@ -202,7 +202,7 @@ export function CryptoNewsView() {
         </Card>
 
         {/* Terminal Latency */}
-        <Card className="border-border/60 bg-gradient-to-b from-card/90 to-card/40 backdrop-blur-md shadow-sm hover:border-lab/30 transition-all">
+        <Card className="border-border bg-gradient-to-b from-card/90 to-card/40 backdrop-blur-md shadow-sm hover:border-lab/30 transition-all">
           <CardHeader className="p-5 pb-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono font-medium uppercase tracking-wider text-muted-foreground">Data Snapshot</span>
@@ -223,20 +223,20 @@ export function CryptoNewsView() {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between bg-card/70 p-4 rounded-xl border border-border/60 backdrop-blur-md shadow-sm">
+      <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between bg-card/70 p-4 rounded-xl border border-border backdrop-blur-md shadow-sm">
         <div className="relative w-full md:w-80">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search breaking news, tickers, catalysts..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 text-xs bg-background/60 border-border/80 h-9 focus-visible:ring-1"
+            className="pl-9 text-xs bg-background/60 border-border h-9 focus-visible:ring-1"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-3 justify-between md:justify-end">
           {/* Category Pills */}
-          <div className="flex flex-wrap items-center gap-1.5 border border-border/80 rounded-lg p-1 bg-background/50">
+          <div className="flex flex-wrap items-center gap-1.5 border border-border rounded-lg p-1 bg-background/50">
             {['ALL', 'Macro', 'Catalyst', 'Regulatory'].map((cat) => (
               <Button
                 key={cat}
@@ -255,7 +255,7 @@ export function CryptoNewsView() {
           </div>
 
           {/* Sentiment Filter */}
-          <div className="flex items-center gap-1.5 border border-border/80 rounded-lg p-1 bg-background/50">
+          <div className="flex items-center gap-1.5 border border-border rounded-lg p-1 bg-background/50">
             {['ALL', 'BULLISH', 'BEARISH'].map((snt) => (
               <Button
                 key={snt}
@@ -284,12 +284,12 @@ export function CryptoNewsView() {
         {filteredNews.map((item) => (
           <Card
             key={item.id}
-            className="border-border/60 bg-card/70 hover:border-bullish/40 hover:bg-card/90 transition-all duration-200 flex flex-col justify-between shadow-sm rounded-xl overflow-hidden"
+            className="border-border bg-card/70 hover:border-bullish/40 hover:bg-card/90 transition-all duration-200 flex flex-col justify-between shadow-sm rounded-xl overflow-hidden"
           >
             <CardHeader className="p-5 pb-3">
               <div className="flex items-center justify-between gap-2 mb-3">
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="font-mono text-3xs font-semibold tracking-wider uppercase bg-muted/60 border-border/80 px-2 py-0.5">
+                  <Badge variant="outline" className="font-mono text-3xs font-semibold tracking-wider uppercase bg-muted/60 border-border px-2 py-0.5">
                     {item.category}
                   </Badge>
                   {item.timestamp && (
@@ -333,7 +333,7 @@ export function CryptoNewsView() {
                 {item.summary}
               </p>
 
-              <div className="flex flex-wrap items-center justify-between pt-3 border-t border-border/40 gap-2">
+              <div className="flex flex-wrap items-center justify-between pt-3 border-t border-border gap-2">
                 <div className="flex items-center gap-2">
                   <span className="text-2xs font-mono font-medium text-bullish/95 bg-bullish/10 px-2.5 py-1 rounded-md border border-bullish/20">
                     {item.source}
@@ -342,7 +342,7 @@ export function CryptoNewsView() {
                     {item.affectedSymbols.map((sym) => (
                       <span
                         key={sym}
-                        className="text-3xs font-mono font-bold px-2 py-0.5 rounded bg-muted/70 text-foreground border border-border/60"
+                        className="text-3xs font-mono font-bold px-2 py-0.5 rounded bg-muted/70 text-foreground border border-border"
                       >
                         {sym}
                       </span>
@@ -367,7 +367,7 @@ export function CryptoNewsView() {
         ))}
 
         {filteredNews.length === 0 && (
-          <div className="col-span-full py-16 text-center text-muted-foreground border border-dashed border-border/60 rounded-xl bg-card/30">
+          <div className="col-span-full py-16 text-center text-muted-foreground border border-dashed border-border rounded-xl bg-card">
             <p className="text-sm">
               {newsList.length === 0
                 ? 'No live headlines available right now.'

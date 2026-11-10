@@ -51,7 +51,7 @@ export function SymbolPicker({ symbols, value, onChange, invalid }: SymbolPicker
         </span>
       </button>
       {open && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border border-border/80 bg-popover p-2 shadow-xl">
+        <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover p-2 shadow-xl">
           <div className="relative mb-2">
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
             <Input

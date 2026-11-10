@@ -14,6 +14,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { ExchangeLabel } from '@/components/trading/ExchangeLabel'
+import { SideBadge } from '@/components/trading/SideBadge'
+import { Segmented } from '@/components/ui/segmented'
+import { EmptyState, ErrorState } from '@/components/shell/states'
 import { useOpenPositions, usePositionsHistory } from '@/lib/queries/positions'
 import { formatPrice, formatPercent, formatQty, formatTimestamp, formatUsdSigned } from '@/lib/utils/format'
 import { ApiError } from '@/lib/api/errors'
@@ -29,39 +33,13 @@ function num(v: number | null | undefined, formatter: (n: number) => string): st
   return v == null ? DASH : formatter(v)
 }
 
-function SideBadge({ side }: { side: string }) {
-  const isLong = side.toLowerCase() === 'long'
-  return (
-    <Badge
-      variant="outline"
-      className={
-        isLong
-          ? 'bg-bullish/15 text-bullish border-bullish/25 text-2xs font-semibold uppercase tracking-wide px-2 py-0'
-          : 'bg-bearish/15 text-bearish border-bearish/25 text-2xs font-semibold uppercase tracking-wide px-2 py-0'
-      }
-    >
-      {isLong ? 'Long' : 'Short'}
-    </Badge>
-  )
-}
-
 function LeverageBadge({ leverage }: { leverage: number | null }) {
   if (leverage == null) return <span className="text-muted-foreground">{DASH}</span>
   return (
-    <Badge variant="outline" className="text-2xs px-1.5 py-0 font-mono text-muted-foreground">
+    <Badge variant="muted" size="xs">
       {leverage}×
     </Badge>
   )
-}
-
-function ExchangeLabel({ exchange }: { exchange: string }) {
-  const colors: Record<string, string> = {
-    binance: 'text-yellow-500',
-    okx: 'text-info',
-  }
-  const color = colors[exchange.toLowerCase()] ?? 'text-muted-foreground'
-  const label = exchange.charAt(0).toUpperCase() + exchange.slice(1).toLowerCase()
-  return <span className={`text-xs font-medium ${color}`}>{label}</span>
 }
 
 // ---------------------------------------------------------------------------
@@ -129,14 +107,14 @@ function OpenPositionsTable() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold">Open Positions</h3>
+              <h3 className="text-sm font-semibold">Posisi terbuka</h3>
               {!isPending && !error && (
-                <Badge variant="outline" className="text-3xs px-1.5 py-0 text-muted-foreground">
+                <Badge variant="muted" size="xs">
                   {count}
                 </Badge>
               )}
             </div>
-            <p className="text-2xs text-muted-foreground">Live — auto-refreshes every 15 s</p>
+            <p className="text-2xs text-muted-foreground">Live — diperbarui otomatis tiap 15 detik</p>
           </div>
         </div>
         <Button
@@ -148,7 +126,7 @@ function OpenPositionsTable() {
           aria-label="Refresh open positions"
         >
           <RefreshCw className={`h-3 w-3 ${isFetching ? 'animate-spin' : ''}`} aria-hidden="true" />
-          {isFetching ? 'Refreshing…' : 'Refresh'}
+          {isFetching ? 'Memuat…' : 'Muat ulang'}
         </Button>
       </div>
 
@@ -164,7 +142,7 @@ function OpenPositionsTable() {
               <TableHead scope="col" className="text-xs font-medium text-muted-foreground text-right">Qty</TableHead>
               <TableHead scope="col" className="text-xs font-medium text-muted-foreground text-center">Lev.</TableHead>
               <TableHead scope="col" className="text-xs font-medium text-muted-foreground text-right">Unrealized PnL</TableHead>
-              <TableHead scope="col" className="text-xs font-medium text-muted-foreground text-right">Liq. Price</TableHead>
+              <TableHead scope="col" className="text-xs font-medium text-muted-foreground text-right">Harga likuidasi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -172,21 +150,21 @@ function OpenPositionsTable() {
 
             {!isPending && error && (
               <TableRow>
-                <TableCell colSpan={9} className="py-10 text-center text-sm text-muted-foreground">
-                  {apiError?.kind === 'not_found'
-                    ? 'No exchange credentials configured.'
-                    : 'Failed to load positions. Please try again.'}
+                <TableCell colSpan={9} className="p-0">
+                  <ErrorState
+                    compact
+                    kind={apiError?.kind ?? 'server'}
+                    message={apiError?.kind === 'not_found' ? 'Belum ada API key exchange. Tambahkan di Pengaturan.' : undefined}
+                    onRetry={() => refetch()}
+                  />
                 </TableCell>
               </TableRow>
             )}
 
             {!isPending && !error && count === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="py-10 text-center">
-                  <div className="flex flex-col items-center gap-2">
-                    <Activity className="h-8 w-8 text-muted-foreground/30" aria-hidden="true" />
-                    <p className="text-sm text-muted-foreground">No open positions</p>
-                  </div>
+                <TableCell colSpan={9} className="p-3">
+                  <EmptyState icon={<Activity className="h-8 w-8" aria-hidden="true" />} title="Tidak ada posisi terbuka" className="border-0" />
                 </TableCell>
               </TableRow>
             )}
@@ -194,7 +172,7 @@ function OpenPositionsTable() {
             {!isPending && !error && data && data.length > 0 && data.map((pos: OpenPositionResponse, i: number) => (
               <TableRow
                 key={`${pos.exchange}-${pos.symbol}-${i}`}
-                className="hover:bg-muted/30 transition-colors duration-150 border-b border-border/50 last:border-0"
+                className="hover:bg-muted/30 transition-colors duration-150 border-b border-border last:border-0"
               >
                 <TableCell className="font-mono text-sm font-semibold py-3">{pos.symbol}</TableCell>
                 <TableCell className="py-3"><ExchangeLabel exchange={pos.exchange} /></TableCell>
@@ -236,14 +214,14 @@ function PositionHistoryTable() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold">Position History</h3>
+              <h3 className="text-sm font-semibold">Riwayat posisi</h3>
               {!isPending && !error && (
-                <Badge variant="outline" className="text-3xs px-1.5 py-0 text-muted-foreground">
+                <Badge variant="muted" size="xs">
                   {count}
                 </Badge>
               )}
             </div>
-            <p className="text-2xs text-muted-foreground">Closed positions, most recent first</p>
+            <p className="text-2xs text-muted-foreground">Posisi yang sudah ditutup, terbaru di atas</p>
           </div>
         </div>
         <Button
@@ -255,7 +233,7 @@ function PositionHistoryTable() {
           aria-label="Refresh position history"
         >
           <RefreshCw className={`h-3 w-3 ${isFetching ? 'animate-spin' : ''}`} aria-hidden="true" />
-          {isFetching ? 'Refreshing…' : 'Refresh'}
+          {isFetching ? 'Memuat…' : 'Muat ulang'}
         </Button>
       </div>
 
@@ -270,8 +248,8 @@ function PositionHistoryTable() {
               <TableHead scope="col" className="text-xs font-medium text-muted-foreground text-right">Exit</TableHead>
               <TableHead scope="col" className="text-xs font-medium text-muted-foreground text-right">Realized PnL</TableHead>
               <TableHead scope="col" className="text-xs font-medium text-muted-foreground text-right">Qty</TableHead>
-              <TableHead scope="col" className="text-xs font-medium text-muted-foreground">Opened</TableHead>
-              <TableHead scope="col" className="text-xs font-medium text-muted-foreground">Closed</TableHead>
+              <TableHead scope="col" className="text-xs font-medium text-muted-foreground">Dibuka</TableHead>
+              <TableHead scope="col" className="text-xs font-medium text-muted-foreground">Ditutup</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -279,21 +257,21 @@ function PositionHistoryTable() {
 
             {!isPending && error && (
               <TableRow>
-                <TableCell colSpan={9} className="py-10 text-center text-sm text-muted-foreground">
-                  {apiError?.kind === 'not_found'
-                    ? 'No exchange credentials configured.'
-                    : 'Failed to load position history. Please try again.'}
+                <TableCell colSpan={9} className="p-0">
+                  <ErrorState
+                    compact
+                    kind={apiError?.kind ?? 'server'}
+                    message={apiError?.kind === 'not_found' ? 'Belum ada API key exchange. Tambahkan di Pengaturan.' : undefined}
+                    onRetry={() => refetch()}
+                  />
                 </TableCell>
               </TableRow>
             )}
 
             {!isPending && !error && count === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="py-10 text-center">
-                  <div className="flex flex-col items-center gap-2">
-                    <History className="h-8 w-8 text-muted-foreground/30" aria-hidden="true" />
-                    <p className="text-sm text-muted-foreground">No closed positions yet</p>
-                  </div>
+                <TableCell colSpan={9} className="p-3">
+                  <EmptyState icon={<History className="h-8 w-8" aria-hidden="true" />} title="Belum ada posisi yang ditutup" className="border-0" />
                 </TableCell>
               </TableRow>
             )}
@@ -303,7 +281,7 @@ function PositionHistoryTable() {
               return (
                 <TableRow
                   key={pos.id}
-                  className="hover:bg-muted/30 transition-colors duration-150 border-b border-border/50 last:border-0"
+                  className="hover:bg-muted/30 transition-colors duration-150 border-b border-border last:border-0"
                 >
                   <TableCell className="font-mono text-sm font-semibold py-3">{pos.symbol}</TableCell>
                   <TableCell className="py-3"><ExchangeLabel exchange={pos.exchange} /></TableCell>
@@ -339,34 +317,16 @@ export function PositionsTable() {
     <Card>
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">Positions</CardTitle>
-          {/* Tab switcher */}
-          <div className="flex gap-0.5 rounded-lg border border-border bg-muted/40 p-0.5">
-            <button
-              onClick={() => setTab('open')}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-200 cursor-pointer ${
-                tab === 'open'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-              aria-pressed={tab === 'open'}
-            >
-              <Activity className="h-3 w-3" aria-hidden="true" />
-              Open
-            </button>
-            <button
-              onClick={() => setTab('history')}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-200 cursor-pointer ${
-                tab === 'history'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-              aria-pressed={tab === 'history'}
-            >
-              <History className="h-3 w-3" aria-hidden="true" />
-              History
-            </button>
-          </div>
+          <CardTitle className="text-base">Posisi</CardTitle>
+          <Segmented
+            aria-label="Tampilan posisi"
+            value={tab}
+            onChange={setTab}
+            options={[
+              { value: 'open', label: 'Terbuka', icon: <Activity aria-hidden="true" /> },
+              { value: 'history', label: 'Riwayat', icon: <History aria-hidden="true" /> },
+            ]}
+          />
         </div>
       </CardHeader>
       <CardContent className="pt-0">

@@ -54,7 +54,6 @@ export function AlertPayloadTemplate() {
 
   return (
     <Card className="overflow-hidden">
-      <div className="h-0.5 w-full bg-muted" />
       <CardHeader className="flex flex-row items-center justify-between gap-4 pb-3 pt-4">
         <div className="flex items-center gap-2">
           <FileCode2 className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
@@ -72,7 +71,7 @@ export function AlertPayloadTemplate() {
         </Button>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="rounded-lg bg-muted/50 border border-border/50 p-4">
+        <div className="rounded-lg bg-muted/50 border border-border p-4">
           <pre className="text-xs font-mono overflow-x-auto leading-relaxed">
             <code>{renderHighlighted(templateStr)}</code>
           </pre>

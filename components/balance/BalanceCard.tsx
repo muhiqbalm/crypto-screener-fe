@@ -7,28 +7,10 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorPanel } from '@/components/shell/ErrorPanel'
 import { EmptyPanel } from '@/components/shell/EmptyPanel'
+import { ExchangeLabel } from '@/components/trading/ExchangeLabel'
 import { useBalance } from '@/lib/queries/credentials'
 import { formatUsd } from '@/lib/utils/format'
 import type { ExchangeBalanceResponse } from '@/lib/api/types/credentials'
-
-// ---------------------------------------------------------------------------
-// Exchange display metadata
-// ---------------------------------------------------------------------------
-
-const EXCHANGE_META: Record<string, { label: string; colorClass: string; dotClass: string }> = {
-  binance: { label: 'Binance', colorClass: 'text-yellow-500', dotClass: 'bg-yellow-500' },
-  okx:     { label: 'OKX',     colorClass: 'text-info',   dotClass: 'bg-info'   },
-}
-
-function getExchangeMeta(exchange: string) {
-  return (
-    EXCHANGE_META[exchange.toLowerCase()] ?? {
-      label: exchange.charAt(0).toUpperCase() + exchange.slice(1),
-      colorClass: 'text-foreground',
-      dotClass: 'bg-muted-foreground',
-    }
-  )
-}
 
 // ---------------------------------------------------------------------------
 // Single asset row
@@ -83,43 +65,40 @@ function ExchangeBalanceCard({
   exchange: string
   items: ExchangeBalanceResponse[]
 }) {
-  const meta = getExchangeMeta(exchange)
   const total = items.reduce((sum, i) => sum + i.total, 0)
   const assetCount = items.length
 
   return (
     <Card className="overflow-hidden">
-      {/* Colored top accent bar */}
-      <div className={`h-0.5 w-full ${meta.dotClass} opacity-60`} />
-
       <CardHeader className="pb-2 pt-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className={`h-2 w-2 rounded-full ${meta.dotClass}`} aria-hidden="true" />
-            <CardTitle className={`text-base ${meta.colorClass}`}>{meta.label}</CardTitle>
-            <Badge variant="outline" className="text-3xs px-1.5 py-0 text-muted-foreground">
-              {assetCount} {assetCount === 1 ? 'asset' : 'assets'}
+            <CardTitle className="text-base">
+              <ExchangeLabel exchange={exchange} className="text-base font-semibold" />
+            </CardTitle>
+            <Badge variant="muted" size="xs">
+              {assetCount} aset
             </Badge>
           </div>
           <div className="text-right">
             <p className="font-mono text-lg font-bold tabular-nums">{formatUsd(total)}</p>
-            <p className="text-2xs text-muted-foreground">est. total (USD)</p>
+            <p className="text-2xs text-muted-foreground">perkiraan total (USD)</p>
           </div>
         </div>
       </CardHeader>
 
       <CardContent className="px-3 pb-3 pt-1">
         {items.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">No assets found</p>
+          <p className="py-6 text-center text-sm text-muted-foreground">Tidak ada aset</p>
         ) : (
           <div>
             {/* Column header */}
             <div className="flex items-center gap-4 px-3 pb-1">
-              <span className="w-28 text-2xs font-medium text-muted-foreground uppercase tracking-wider">Asset</span>
+              <span className="w-28 text-2xs font-medium text-muted-foreground uppercase tracking-wider">Aset</span>
               <span className="flex-1 hidden sm:block" />
               <div className="flex items-center gap-6 text-right shrink-0">
                 <span className="w-24 text-2xs font-medium text-muted-foreground uppercase tracking-wider">Free</span>
-                <span className="w-24 hidden md:block text-2xs font-medium text-muted-foreground uppercase tracking-wider">Used</span>
+                <span className="w-24 hidden md:block text-2xs font-medium text-muted-foreground uppercase tracking-wider">Terpakai</span>
                 <span className="w-28 text-2xs font-medium text-muted-foreground uppercase tracking-wider">Total</span>
               </div>
             </div>
@@ -152,20 +131,20 @@ function PortfolioSummary({
   isFetching: boolean
 }) {
   return (
-    <div className="flex items-center justify-between rounded-xl border border-border bg-card px-5 py-4">
+    <div className="flex items-center justify-between rounded-xl border bg-card px-5 py-4 shadow-xs">
       <div className="flex items-center gap-4">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
           <Wallet className="h-5 w-5 text-primary" aria-hidden="true" />
         </div>
         <div>
-          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Total Portfolio</p>
+          <p className="eyebrow">Total portofolio</p>
           <p className="font-mono text-2xl font-bold tabular-nums tracking-tight">{formatUsd(total)}</p>
         </div>
       </div>
       <div className="flex items-center gap-4">
         <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
           <TrendingUp className="h-3.5 w-3.5" aria-hidden="true" />
-          <span>{exchangeCount} {exchangeCount === 1 ? 'exchange' : 'exchanges'} connected</span>
+          <span>{exchangeCount} exchange terhubung</span>
         </div>
         <Button
           variant="outline"
@@ -179,7 +158,7 @@ function PortfolioSummary({
             className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`}
             aria-hidden="true"
           />
-          {isFetching ? 'Refreshing…' : 'Refresh'}
+          {isFetching ? 'Memuat…' : 'Muat ulang'}
         </Button>
       </div>
     </div>
@@ -194,7 +173,7 @@ function BalanceSkeleton() {
   return (
     <div className="space-y-4">
       {/* Summary strip skeleton */}
-      <div className="flex items-center justify-between rounded-xl border border-border bg-card px-5 py-4">
+      <div className="flex items-center justify-between rounded-xl border bg-card px-5 py-4 shadow-xs">
         <div className="flex items-center gap-4">
           <Skeleton className="h-10 w-10 rounded-lg" />
           <div className="space-y-1.5">
@@ -207,7 +186,6 @@ function BalanceSkeleton() {
       {/* Exchange cards skeleton */}
       {[0, 1].map((i) => (
         <Card key={i} className="overflow-hidden">
-          <div className="h-0.5 w-full bg-muted" />
           <CardHeader className="pb-2 pt-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -254,7 +232,7 @@ export function BalanceCard() {
             onRetry={() => refetch()}
             messageOverride={
               (error as { kind?: string }).kind === 'not_found'
-                ? 'No exchange credentials configured. Add your API keys in Settings.'
+                ? 'Belum ada API key exchange. Tambahkan di Pengaturan.'
                 : undefined
             }
           />
@@ -269,7 +247,7 @@ export function BalanceCard() {
     return (
       <Card>
         <CardContent className="pt-6">
-          <EmptyPanel message="No balance data available. Make sure your exchange credentials are configured and have read permissions." />
+          <EmptyPanel message="Belum ada data saldo. Pastikan API key exchange sudah diisi dan punya izin baca." />
         </CardContent>
       </Card>
     )

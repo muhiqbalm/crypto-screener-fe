@@ -312,7 +312,7 @@ export function RunBuilder() {
           </Section>
 
           {main.length > 0 && (
-            <details className="group rounded-xl border border-border/60 bg-card shadow-sm" open={Boolean(errors.search) || Object.keys(errors).some((k) => k.startsWith('search.')) || undefined}>
+            <details className="group rounded-xl border border-border bg-card shadow-sm" open={Boolean(errors.search) || Object.keys(errors).some((k) => k.startsWith('search.')) || undefined}>
               <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 sm:px-5 [&::-webkit-details-marker]:hidden">
                 <span className="min-w-0">
                   <span className="flex items-center gap-2 text-sm font-semibold"><Sparkles className="h-4 w-4 text-lab" />Pengaturan cari parameter</span>
@@ -351,7 +351,7 @@ export function RunBuilder() {
 
       {/* Sticky action bar */}
       <div className="sticky bottom-3 z-30">
-        <div className="rounded-xl border border-border/80 bg-background/90 p-3 shadow-lg backdrop-blur-md sm:p-4">
+        <div className="rounded-xl border border-border bg-background/90 p-3 shadow-lg backdrop-blur-md sm:p-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0 space-y-0.5">
               <p className="truncate text-sm font-semibold">
@@ -395,14 +395,14 @@ export function RunBuilder() {
 function BuilderSkeleton() {
   return (
     <div className="grid gap-4 lg:grid-cols-[340px_1fr]" aria-busy="true" aria-label="Memuat builder">
-      <div className="space-y-3 rounded-xl border border-border/60 p-5">
+      <div className="space-y-3 rounded-xl border border-border p-5">
         <Skeleton className="h-4 w-32" />
         <Skeleton className="h-9 w-full" />
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-8 w-full" />
         <Skeleton className="h-16 w-full" />
       </div>
-      <div className="space-y-3 rounded-xl border border-border/60 p-5">
+      <div className="space-y-3 rounded-xl border border-border p-5">
         <Skeleton className="h-4 w-40" />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (

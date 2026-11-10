@@ -175,7 +175,7 @@ function ScanBuilder({ onCreated }: { onCreated: (id: LabId) => void }) {
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari koin…" aria-label="Cari koin" className="h-8 pl-8 font-mono text-xs" />
           </div>
-          <div className="flex max-h-44 flex-wrap gap-1.5 overflow-auto rounded-lg border border-border/60 p-2">
+          <div className="flex max-h-44 flex-wrap gap-1.5 overflow-auto rounded-lg border border-border p-2">
             {visible.map((s) => {
               const on = selected.includes(s.symbol)
               return (
@@ -187,7 +187,7 @@ function ScanBuilder({ onCreated }: { onCreated: (id: LabId) => void }) {
                   title={s.has_data ? 'Data siap' : 'Akan diunduh saat dipakai (±1 menit)'}
                   className={cn(
                     'inline-flex h-7 items-center gap-1 rounded-md border px-2 font-mono text-2xs transition-colors cursor-pointer',
-                    on ? 'border-lab/50 bg-lab/15 text-lab' : 'border-border/60 text-muted-foreground hover:bg-accent hover:text-foreground',
+                    on ? 'border-lab/50 bg-lab/15 text-lab' : 'border-border text-muted-foreground hover:bg-accent hover:text-foreground',
                   )}
                 >
                   {s.symbol.replace(/USDT$/, '')}
@@ -234,7 +234,7 @@ function ScanBuilder({ onCreated }: { onCreated: (id: LabId) => void }) {
 
         <CostDisclosure value={costs} errors={errors} onChange={setCosts} />
 
-        <details className="group rounded-lg border border-border/60">
+        <details className="group rounded-lg border border-border">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 [&::-webkit-details-marker]:hidden">
             <span>
               <span className="block text-xs font-medium">Parameter</span>
@@ -422,9 +422,9 @@ function ScanTable({ rows }: { rows: LabScanRow[] }) {
     </th>
   )
   return (
-    <div className="-mx-4 max-h-[560px] overflow-auto sm:mx-0 sm:rounded-lg sm:border sm:border-border/60">
+    <div className="-mx-4 max-h-[560px] overflow-auto sm:mx-0 sm:rounded-lg sm:border sm:border-border">
       <table className="w-full min-w-[600px] text-sm">
-        <thead className="sticky top-0 border-b border-border/60 bg-card">
+        <thead className="sticky top-0 border-b border-border bg-card">
           <tr>
             {head('symbol', 'Koin', false)}
             <th className="px-3 py-2 text-left text-2xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -517,7 +517,7 @@ function RecentScans({ activeId }: { activeId: string | null }) {
       ) : scans.length === 0 ? (
         <EmptyState title="Belum ada scan" description="Pilih koin dan timeframe di atas, lalu klik Jalankan scan." />
       ) : (
-        <ul className="divide-y divide-border/50 overflow-hidden rounded-lg border border-border/60">
+        <ul className="divide-y divide-border/50 overflow-hidden rounded-lg border border-border">
           {scans.map((s) => {
             const passes = (s.rows ?? []).filter((r) => r.verdict === 'PASS').length
             return (

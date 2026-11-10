@@ -43,7 +43,7 @@ function CostInputs({ value, errors, onChange }: CostInputsProps) {
           </div>
         ))}
       </div>
-      <div className="flex items-center justify-between gap-3 rounded-md border border-border/50 px-3 py-2">
+      <div className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2">
         <label htmlFor="cost-funding" className="text-xs font-medium">Hitung funding fee</label>
         <Switch id="cost-funding" checked={value.funding} onCheckedChange={(c) => onChange({ ...value, funding: c })} />
       </div>
@@ -55,7 +55,7 @@ function CostInputs({ value, errors, onChange }: CostInputsProps) {
 export function CostDisclosure(props: CostInputsProps) {
   const hasError = Boolean(props.errors.commission_pct || props.errors.slippage_pct)
   return (
-    <details className="group rounded-lg border border-border/60" open={hasError || undefined}>
+    <details className="group rounded-lg border border-border" open={hasError || undefined}>
       <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 [&::-webkit-details-marker]:hidden">
         <span className="min-w-0">
           <span className="block text-xs font-medium">Biaya</span>

@@ -73,7 +73,7 @@ function KpiTiles({ run }: { run: LabRunDetail }) {
         const is = num(run.metrics, k.key)
         const ho = oos ? num(oos, k.key) : null
         return (
-          <div key={k.key} className="flex flex-col rounded-xl border border-border/60 bg-card p-3 shadow-sm">
+          <div key={k.key} className="flex flex-col rounded-xl border border-border bg-card p-3 shadow-sm">
             <Eyebrow>{k.label}</Eyebrow>
             {oos ? (
               <div className="mt-2 grid grid-cols-2 gap-2">
@@ -142,9 +142,9 @@ function JobProgress({ job, status }: { job: LabJob | undefined; status: string 
 function ParamDiffTable({ rows, emptyText }: { rows: { key: string; label: string; def: LabParamValue; value: LabParamValue }[]; emptyText: string }) {
   if (rows.length === 0) return <p className="text-sm text-muted-foreground">{emptyText}</p>
   return (
-    <div className="-mx-4 overflow-x-auto sm:mx-0 sm:rounded-lg sm:border sm:border-border/60">
+    <div className="-mx-4 overflow-x-auto sm:mx-0 sm:rounded-lg sm:border sm:border-border">
       <table className="w-full min-w-[420px] text-sm">
-        <thead className="border-b border-border/60 bg-muted/30">
+        <thead className="border-b border-border bg-muted/30">
           <tr>
             <th className="px-3 py-2 text-left text-2xs font-medium uppercase tracking-wide text-muted-foreground">Parameter</th>
             <th className="px-3 py-2 text-right text-2xs font-medium uppercase tracking-wide text-muted-foreground">Default live</th>
@@ -209,9 +209,9 @@ function OptimizeSection({ run, template }: { run: LabRunDetail; template: LabTe
         {trials.length > 0 && (
           <div className="space-y-2">
             <h3 className="flex items-center gap-1.5 text-xs font-semibold"><Trophy className="h-3.5 w-3.5 text-warn" />Top {trials.length} kombinasi</h3>
-            <div className="-mx-4 overflow-x-auto sm:mx-0 sm:rounded-lg sm:border sm:border-border/60">
+            <div className="-mx-4 overflow-x-auto sm:mx-0 sm:rounded-lg sm:border sm:border-border">
               <table className="w-full min-w-[640px] text-sm">
-                <thead className="border-b border-border/60 bg-muted/30">
+                <thead className="border-b border-border bg-muted/30">
                   <tr>
                     {['#', 'Parameter', 'Net', 'PF', 'Max DD', 'Trade', 'Segmen untung', ''].map((h, i) => (
                       <th key={h || i} className={cn('px-3 py-2 text-2xs font-medium uppercase tracking-wide text-muted-foreground', i >= 2 && i < 7 ? 'text-right' : 'text-left')}>
@@ -270,9 +270,9 @@ function TradesTab({ id, enabled }: { id: LabId; enabled: boolean }) {
   const trades = q.data ?? []
   if (trades.length === 0) return <EmptyState title="Tidak ada trade di periode ini" description="Coba periode lebih panjang atau longgarkan filter entry." />
   return (
-    <div className="-mx-4 max-h-[520px] overflow-auto sm:mx-0 sm:rounded-lg sm:border sm:border-border/60">
+    <div className="-mx-4 max-h-[520px] overflow-auto sm:mx-0 sm:rounded-lg sm:border sm:border-border">
       <table className="w-full min-w-[720px] text-sm">
-        <thead className="sticky top-0 border-b border-border/60 bg-card">
+        <thead className="sticky top-0 border-b border-border bg-card">
           <tr>
             {['Entry', 'Exit', 'Arah', 'Harga entry', 'Harga exit', 'P&L', 'Return equity', 'Alasan'].map((h, i) => (
               <th key={h} className={cn('px-3 py-2 text-2xs font-medium uppercase tracking-wide text-muted-foreground', i >= 3 && i <= 6 ? 'text-right' : 'text-left')}>{h}</th>
@@ -310,9 +310,9 @@ function SensitivityTab({ run, template }: { run: LabRunDetail; template: LabTem
       <p className="text-xs text-muted-foreground">
         Tiap parameter digeser ±10–20%. Stabilitas rendah (≤ {s.threshold ?? 0.5}) = hasil gampang berubah = rapuh. {s.unstable} dari {s.params.length} rapuh.
       </p>
-      <div className="-mx-4 overflow-x-auto sm:mx-0 sm:rounded-lg sm:border sm:border-border/60">
+      <div className="-mx-4 overflow-x-auto sm:mx-0 sm:rounded-lg sm:border sm:border-border">
         <table className="w-full min-w-[420px] text-sm">
-          <thead className="border-b border-border/60 bg-muted/30">
+          <thead className="border-b border-border bg-muted/30">
             <tr>
               {['Parameter', 'Nilai', 'Stabilitas', 'Status'].map((h, i) => (
                 <th key={h} className={cn('px-3 py-2 text-2xs font-medium uppercase tracking-wide text-muted-foreground', i > 0 ? 'text-right' : 'text-left')}>{h}</th>

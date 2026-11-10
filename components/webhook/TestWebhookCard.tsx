@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Send, ChevronDown, ChevronUp, CheckCircle2, XCircle, Loader2, FlaskConical } from 'lucide-react'
+import { Send, ChevronDown, ChevronUp, CheckCircle2, XCircle, Loader2, FlaskConical, AlertTriangle } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -154,7 +154,6 @@ export function TestWebhookCard() {
 
   return (
     <Card className="overflow-hidden">
-      <div className="h-0.5 w-full bg-muted" />
 
       {/* Collapsible header */}
       <CardHeader
@@ -188,7 +187,7 @@ export function TestWebhookCard() {
           <div className="flex items-center gap-2">
             {!isExpanded && (
               <span className="hidden sm:block text-xs text-muted-foreground">
-                Send a test alert to your endpoint
+                Kirim alert ke endpoint (eksekusi nyata)
               </span>
             )}
             {isExpanded
@@ -201,6 +200,17 @@ export function TestWebhookCard() {
 
       {isExpanded && (
         <CardContent id="test-webhook-body" className="space-y-5 pt-0">
+          {/* Copy-only safety notice: behaviour (POST /webhook/tradingview with the
+              real passphrase) is unchanged — see FE audit P0 note. */}
+          <div role="note" className="flex gap-2.5 rounded-lg border border-bearish/40 bg-bearish/10 px-3 py-2.5 text-xs text-foreground">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-bearish" aria-hidden="true" />
+            <p>
+              <span className="font-semibold text-bearish">Bukan simulasi.</span> Payload ini dikirim ke endpoint webhook
+              produksi dengan passphrase asli. Kalau otomasi aktif dan API key exchange terpasang, backend akan
+              mengeksekusi <span className="font-semibold">order LIVE</span> sesuai action, side, size dan leverage di bawah.
+            </p>
+          </div>
+
           {noConfig && (
             <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
               Create a webhook config first to use this feature.

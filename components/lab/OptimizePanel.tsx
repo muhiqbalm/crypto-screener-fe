@@ -62,7 +62,7 @@ export function OptimizePanel({ template, value, errors, onChange }: Props) {
               {all ? 'Kosongkan' : 'Pilih semua (rentang default)'}
             </button>
           </div>
-          <ul className="divide-y divide-border/50 rounded-lg border border-border/60">
+          <ul className="divide-y divide-border/50 rounded-lg border border-border">
             {main.map((p) => {
               const r = value.ranges[p.key] ?? { enabled: false, min: String(p.min ?? ''), max: String(p.max ?? '') }
               const err = errors[`search.${p.key}`]

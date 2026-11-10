@@ -24,25 +24,25 @@ interface ScreenerFiltersProps {
 
 export function ScreenerFilters({ filters, onFiltersChange }: ScreenerFiltersProps) {
   return (
-    <div className="flex flex-wrap gap-3 pb-4">
+    <div className="flex flex-wrap gap-3">
       {/* Symbol search */}
       <div className="flex flex-col gap-1.5 min-w-[160px]">
         <Label
           htmlFor="symbol-filter"
           className="text-xs text-muted-foreground"
         >
-          Symbol
+          Simbol
         </Label>
         <Input
           id="symbol-filter"
           type="search"
-          placeholder="Search symbol…"
+          placeholder="Cari simbol…"
           value={filters.symbol}
           onChange={(e) =>
             onFiltersChange({ ...filters, symbol: e.target.value })
           }
           className="h-8 text-sm transition-colors duration-200 focus-visible:ring-ring"
-          aria-label="Filter by symbol"
+          aria-label="Filter simbol"
         />
       </div>
 
@@ -52,7 +52,7 @@ export function ScreenerFilters({ filters, onFiltersChange }: ScreenerFiltersPro
           htmlFor="signal-filter"
           className="text-xs text-muted-foreground"
         >
-          Signal
+          Sinyal
         </Label>
         <Select
           value={filters.signal}
@@ -63,12 +63,12 @@ export function ScreenerFilters({ filters, onFiltersChange }: ScreenerFiltersPro
           <SelectTrigger
             id="signal-filter"
             className="h-8 text-sm cursor-pointer transition-colors duration-200"
-            aria-label="Filter by signal"
+            aria-label="Filter sinyal"
           >
-            <SelectValue placeholder="All signals" />
+            <SelectValue placeholder="Semua sinyal" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">All signals</SelectItem>
+            <SelectItem value="ALL">Semua sinyal</SelectItem>
             <SelectItem value="BULLISH">Bullish</SelectItem>
             <SelectItem value="BEARISH">Bearish</SelectItem>
             <SelectItem value="NEUTRAL">Neutral</SelectItem>
@@ -93,12 +93,12 @@ export function ScreenerFilters({ filters, onFiltersChange }: ScreenerFiltersPro
           <SelectTrigger
             id="tier-filter"
             className="h-8 text-sm cursor-pointer transition-colors duration-200"
-            aria-label="Filter by tier"
+            aria-label="Filter tier"
           >
-            <SelectValue placeholder="All tiers" />
+            <SelectValue placeholder="Semua tier" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">All tiers</SelectItem>
+            <SelectItem value="ALL">Semua tier</SelectItem>
             <SelectItem value="A">Tier A</SelectItem>
             <SelectItem value="B">Tier B</SelectItem>
             <SelectItem value="C">Tier C</SelectItem>

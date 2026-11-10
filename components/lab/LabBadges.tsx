@@ -61,7 +61,7 @@ export const MODE_LABEL: Record<LabRunMode, string> = {
 
 export function ModeBadge({ mode }: { mode: LabRunMode }) {
   return (
-    <span className={cn(pill, 'border-border/80 font-mono text-3xs uppercase tracking-wide text-muted-foreground')}>
+    <span className={cn(pill, 'border-border font-mono text-3xs uppercase tracking-wide text-muted-foreground')}>
       {MODE_LABEL[mode] ?? mode}
     </span>
   )

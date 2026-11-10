@@ -112,9 +112,9 @@ export function ChecksList({ checks }: { checks: LabCheck[] }) {
     return <p className="text-sm text-muted-foreground">Tidak ada cek kejujuran untuk run ini (mode backtest tidak menjalankan cek).</p>
   }
   return (
-    <div className="-mx-4 overflow-x-auto sm:mx-0 sm:rounded-lg sm:border sm:border-border/60">
+    <div className="-mx-4 overflow-x-auto sm:mx-0 sm:rounded-lg sm:border sm:border-border">
       <table className="w-full text-sm sm:min-w-[520px]">
-        <thead className="border-b border-border/60 bg-muted/30">
+        <thead className="border-b border-border bg-muted/30">
           <tr>
             <th className="w-10 px-3 py-2"><span className="sr-only">Status</span></th>
             <th className="px-3 py-2 text-left text-2xs font-medium uppercase tracking-wide text-muted-foreground">Cek</th>

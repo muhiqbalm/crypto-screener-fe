@@ -91,7 +91,7 @@ export function AdvancedParams({ template, values, errors, onChange }: ParamForm
   const set = (key: string, v: ParamFormValue) => onChange({ ...values, [key]: v })
   if (advanced.length === 0) return null
   return (
-    <div className="divide-y divide-border/60 overflow-hidden rounded-lg border border-border/60">
+    <div className="divide-y divide-border/60 overflow-hidden rounded-lg border border-border">
       {advanced.map((g) => {
         const changed = g.params.filter((p) => isChanged(p, values[p.key])).length
         const hasError = g.params.some((p) => errors[p.key])
@@ -165,7 +165,7 @@ function ParamSlider({
     <div
       className={cn(
         'flex flex-col gap-2 rounded-lg border p-3 transition-colors',
-        changed ? 'border-warn/40 bg-warn/5' : 'border-border/60',
+        changed ? 'border-warn/40 bg-warn/5' : 'border-border',
         error && 'border-bearish/60',
       )}
     >
@@ -228,7 +228,7 @@ function ParamField({
 
   if (spec.type === 'bool') {
     return (
-      <div className={cn('flex items-center justify-between gap-3 rounded-md border px-3 py-2', changed ? 'border-warn/40 bg-warn/5' : 'border-border/50')}>
+      <div className={cn('flex items-center justify-between gap-3 rounded-md border px-3 py-2', changed ? 'border-warn/40 bg-warn/5' : 'border-border')}>
         <label htmlFor={id} className="text-xs font-medium">
           {paramLabel(spec)}
           {changed && <span className="ml-1.5 align-middle"><ChangedBadge /></span>}

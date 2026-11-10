@@ -61,7 +61,7 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs transition-opacity duration-300"
+      className="fixed inset-0 z-50 flex justify-end bg-black/60 transition-opacity duration-300"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -155,7 +155,7 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
               </Badge>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
-              <div className="rounded-lg bg-card p-2.5 border border-border/60">
+              <div className="rounded-lg bg-card p-2.5 border border-border">
                 <span className="text-muted-foreground block text-2xs">Confidence Level</span>
                 <span className="font-semibold text-sm">
                   {isNum(asset.confidence_pct) ? `${asset.confidence_pct.toFixed(1)}%` : '—'}
@@ -164,7 +164,7 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
                   )}
                 </span>
               </div>
-              <div className="rounded-lg bg-card p-2.5 border border-border/60">
+              <div className="rounded-lg bg-card p-2.5 border border-border">
                 <span className="text-muted-foreground block text-2xs">Composite Signal</span>
                 <span className={cn('font-semibold text-sm', subSignalClass(asset.signal))}>
                   {asset.signal ?? '—'}
@@ -181,7 +181,7 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
             </h3>
             <div className="space-y-2.5">
               {/* Factor 1: Momentum */}
-              <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card p-3 text-xs">
+              <div className="flex items-center justify-between rounded-lg border border-border bg-card p-3 text-xs">
                 <div className="flex items-center gap-2">
                   <Compass className="h-4 w-4 text-info" />
                   <div>
@@ -205,7 +205,7 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
               </div>
 
               {/* Factor 2: Funding Rate */}
-              <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card p-3 text-xs">
+              <div className="flex items-center justify-between rounded-lg border border-border bg-card p-3 text-xs">
                 <div className="flex items-center gap-2">
                   <Flame className="h-4 w-4 text-warn" />
                   <div>
@@ -224,7 +224,7 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
               </div>
 
               {/* Factor 3: OI Momentum & Squeeze */}
-              <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card p-3 text-xs">
+              <div className="flex items-center justify-between rounded-lg border border-border bg-card p-3 text-xs">
                 <div className="flex items-center gap-2">
                   <Layers className="h-4 w-4 text-bullish" />
                   <div>
@@ -243,7 +243,7 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
               </div>
 
               {/* Factor 4: Sentiment (L/S Ratio) */}
-              <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card p-3 text-xs">
+              <div className="flex items-center justify-between rounded-lg border border-border bg-card p-3 text-xs">
                 <div className="flex items-center gap-2">
                   <Scale className="h-4 w-4 text-lab" />
                   <div>
@@ -262,7 +262,7 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
               </div>
 
               {/* Factor 5: 1D Reversal */}
-              <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card p-3 text-xs">
+              <div className="flex items-center justify-between rounded-lg border border-border bg-card p-3 text-xs">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-bearish" />
                   <div>
@@ -284,7 +284,7 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
               Optimal Position Sizing (Inverse Volatility)
             </h3>
             <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="rounded-lg bg-card p-3 border border-border/60">
+              <div className="rounded-lg bg-card p-3 border border-border">
                 <span className="text-muted-foreground block text-2xs">Suggested Allocation</span>
                 <span className="font-bold text-lg font-mono text-primary">
                   {isNum(asset.suggested_position_pct) ? `${asset.suggested_position_pct.toFixed(2)}%` : '—'}
@@ -293,7 +293,7 @@ export function CoinDetailDrawer({ asset, onClose }: CoinDetailDrawerProps) {
                   of allocated portfolio capital
                 </span>
               </div>
-              <div className="rounded-lg bg-card p-3 border border-border/60">
+              <div className="rounded-lg bg-card p-3 border border-border">
                 <span className="text-muted-foreground block text-2xs">Volatility (ATR %)</span>
                 <span className="font-bold text-lg font-mono">
                   {isNum(asset.volatility) ? `${asset.volatility.toFixed(2)}%` : '—'}

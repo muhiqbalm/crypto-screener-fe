@@ -69,7 +69,7 @@ export function PaperAccountsSection() {
   const accounts = q.data ?? []
 
   return (
-    <Card className="border-border/60">
+    <Card className="border-border">
       <CardHeader className="flex-row items-center justify-between gap-2 pb-3">
         <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-tight">
           <Wallet className="h-4 w-4 text-warn" />
@@ -81,7 +81,7 @@ export function PaperAccountsSection() {
       </CardHeader>
       <CardContent className="space-y-4">
         {open && (
-          <div className="grid grid-cols-1 gap-3 rounded-lg border border-border/60 p-3 sm:grid-cols-5">
+          <div className="grid grid-cols-1 gap-3 rounded-lg border border-border p-3 sm:grid-cols-5">
             {(
               [
                 ['name', 'Nama', 'text'],
@@ -122,7 +122,7 @@ export function PaperAccountsSection() {
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {accounts.map((a) => (
-              <div key={a.id} className="rounded-lg border border-border/60 bg-card/50 p-3">
+              <div key={a.id} className="rounded-lg border border-border bg-card p-3">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">{a.name}</span>
                   <span className="font-mono text-3xs text-muted-foreground">{formatTimestamp(a.created_at)}</span>

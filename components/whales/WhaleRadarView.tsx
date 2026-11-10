@@ -191,8 +191,8 @@ export function WhaleRadarView() {
           </div>
 
           {/* Binance Top Trader Long/Short Ratio Matrix */}
-          <Card className="border-border/60 bg-card/70 backdrop-blur-md shadow-md overflow-hidden">
-            <CardHeader className="p-5 sm:p-6 pb-4 border-b border-border/40">
+          <Card className="border-border bg-card/70 backdrop-blur-md shadow-md overflow-hidden">
+            <CardHeader className="p-5 sm:p-6 pb-4 border-b border-border">
               <CardTitle className="text-lg font-bold tracking-tight text-foreground">
                 Binance Top Trader Long / Short Ratio
               </CardTitle>
@@ -212,7 +212,7 @@ export function WhaleRadarView() {
                     return (
                       <div
                         key={item.symbol}
-                        className="p-4 rounded-xl border border-border/60 bg-background/60 hover:border-border transition-all space-y-3"
+                        className="p-4 rounded-xl border border-border bg-background/60 space-y-3"
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-mono font-bold text-sm text-foreground tracking-wide">{item.symbol}</span>
@@ -261,8 +261,8 @@ export function WhaleRadarView() {
           </Card>
 
           {/* Large trade stream */}
-          <Card className="border-border/60 bg-card/70 backdrop-blur-md shadow-md overflow-hidden">
-            <CardHeader className="p-5 sm:p-6 pb-4 border-b border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <Card className="border-border bg-card/70 backdrop-blur-md shadow-md overflow-hidden">
+            <CardHeader className="p-5 sm:p-6 pb-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <CardTitle className="text-lg font-bold tracking-tight text-foreground">
                   Large Perpetual Trades
@@ -278,10 +278,10 @@ export function WhaleRadarView() {
                     placeholder="Search token…"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-8 h-9 text-xs bg-background/60 border-border/80 focus-visible:ring-1"
+                    className="pl-8 h-9 text-xs bg-background/60 border-border focus-visible:ring-1"
                   />
                 </div>
-                <div className="flex items-center gap-1 border border-border/80 rounded-lg p-1 bg-background/60">
+                <div className="flex items-center gap-1 border border-border rounded-lg p-1 bg-background/60">
                   {(
                     [
                       ['all', 'All'],
@@ -311,7 +311,7 @@ export function WhaleRadarView() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="border-b border-border/60 bg-muted/20 text-muted-foreground text-2xs font-mono uppercase text-left">
+                      <tr className="border-b border-border bg-muted/20 text-muted-foreground text-2xs font-mono uppercase text-left">
                         <th className="py-3 px-5 font-semibold">Time</th>
                         <th className="py-3 px-5 font-semibold">Asset</th>
                         <th className="py-3 px-5 font-semibold">Size</th>
@@ -329,7 +329,7 @@ export function WhaleRadarView() {
                             {tx.timestamp ?? '—'}
                           </td>
                           <td className="py-3.5 px-5 font-mono">
-                            <span className="px-2 py-0.5 rounded-md bg-muted/70 text-2xs font-semibold border border-border/50">
+                            <span className="px-2 py-0.5 rounded-md bg-muted/70 text-2xs font-semibold border border-border">
                               {tx.symbol}
                             </span>
                           </td>
@@ -383,12 +383,12 @@ function StatCard({
   valueClass?: string
 }) {
   return (
-    <Card className="border-border/60 bg-gradient-to-b from-card/90 to-card/40 backdrop-blur-md shadow-sm">
+    <Card className="border-border bg-gradient-to-b from-card/90 to-card/40 backdrop-blur-md shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between p-5 pb-2">
         <CardTitle className="text-xs font-mono font-medium uppercase tracking-wider text-muted-foreground">
           {title}
         </CardTitle>
-        <div className="h-8 w-8 rounded-lg bg-muted/40 border border-border/60 flex items-center justify-center">
+        <div className="h-8 w-8 rounded-lg bg-muted/40 border border-border flex items-center justify-center">
           {icon}
         </div>
       </CardHeader>

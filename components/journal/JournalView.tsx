@@ -53,7 +53,7 @@ export function JournalView() {
       <PaperAccountsSection />
 
       {/* Filters */}
-      <Card className="border-border/60">
+      <Card className="border-border">
         <CardContent className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-6">
           <div className="space-y-1">
             <label htmlFor="f-account" className="text-xs font-medium">Akun</label>
@@ -112,8 +112,8 @@ export function JournalView() {
 
 function StatCard({ label, value, hint, className }: { label: string; value: string; hint?: string; className?: string }) {
   return (
-    <div className="flex min-h-[92px] flex-col justify-between rounded-xl border border-border/60 bg-card p-3 shadow-sm">
-      <div className="truncate text-3xs font-mono font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
+    <div className="flex min-h-[92px] flex-col justify-between rounded-xl border border-border bg-card p-3 shadow-sm">
+      <div className="truncate eyebrow">{label}</div>
       <div className={cn('truncate font-mono text-xl font-bold tabular-nums', className)}>{value}</div>
       <div className="truncate text-3xs text-muted-foreground">{hint ?? '\u00a0'}</div>
     </div>
@@ -153,7 +153,7 @@ function StatsSection({ accountId }: { accountId?: string }) {
             <StatCard label="Net P&L" value={formatUsdSigned(s.net_pnl)} className={signClass(s.net_pnl)} hint="setelah biaya" />
             <StatCard label="Max DD" value={s.max_dd_pct === null ? '—' : `−${formatScore(Math.abs(s.max_dd_pct), 1)}%`} className="text-bearish" hint="turun terdalam" />
           </div>
-          <Card className="border-border/60">
+          <Card className="border-border">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold tracking-tight">Kurva equity paper</CardTitle>
             </CardHeader>
@@ -177,7 +177,7 @@ function StatsSection({ accountId }: { accountId?: string }) {
 
 function BreakdownTable({ title, rows }: { title: string; rows: NormalizedBreakdown[] }) {
   return (
-    <Card className="border-border/60">
+    <Card className="border-border">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-semibold tracking-tight">{title}</CardTitle>
       </CardHeader>
@@ -215,7 +215,7 @@ function JournalTable({ filters }: { filters: JournalFilters }) {
   const q = useJournal(filters)
   const rows = q.data ?? []
   return (
-    <Card className="border-border/60">
+    <Card className="border-border">
       <CardHeader className="flex-row items-center justify-between gap-2 pb-2">
         <CardTitle className="text-sm font-semibold tracking-tight">
           Daftar trade <span className="font-mono text-xs font-normal text-muted-foreground">({rows.length})</span>
@@ -233,7 +233,7 @@ function JournalTable({ filters }: { filters: JournalFilters }) {
         ) : rows.length === 0 ? (
           <EmptyPanel message="Belum ada trade di jurnal untuk filter ini." />
         ) : (
-          <div className="max-h-[640px] overflow-auto rounded-lg border border-border/60">
+          <div className="max-h-[640px] overflow-auto rounded-lg border border-border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -346,7 +346,7 @@ function LiveVsBacktest() {
   const rows = compareRows(q.data)
 
   return (
-    <Card className="border-border/60">
+    <Card className="border-border">
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-2 pb-2">
         <CardTitle className="text-sm font-semibold tracking-tight">Live (paper) vs backtest per watch</CardTitle>
         {(watchesQ.data ?? []).length > 0 && (

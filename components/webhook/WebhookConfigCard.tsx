@@ -75,7 +75,6 @@ export function WebhookConfigCard() {
   if (isPending) {
     return (
       <Card className="overflow-hidden">
-        <div className="h-0.5 w-full bg-muted" />
         <CardHeader className="pb-3 pt-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -107,7 +106,6 @@ export function WebhookConfigCard() {
     if (apiError?.kind === 'not_found') {
       return (
         <Card className="overflow-hidden">
-          <div className="h-0.5 w-full bg-muted" />
           <CardHeader className="pb-3 pt-4">
             <div className="flex items-center gap-2">
               <Webhook className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
@@ -143,7 +141,6 @@ export function WebhookConfigCard() {
 
     return (
       <Card className="overflow-hidden">
-        <div className="h-0.5 w-full bg-muted" />
         <CardHeader className="pb-3 pt-4">
           <div className="flex items-center gap-2">
             <Webhook className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
