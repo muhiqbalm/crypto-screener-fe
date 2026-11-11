@@ -10,6 +10,7 @@ import {
   detectPreset,
   diffFromDefaults,
   estimateMinutes,
+  groupLabel,
   initialParamValues,
   presetRange,
   relativeTime,
@@ -130,5 +131,12 @@ describe('2-year period preset (15m default)', () => {
     const today = new Date(Date.UTC(2026, 10, 11))
     expect(presetRange('2y', today)).toEqual({ start: '2024-11-11', end: '' })
     expect(detectPreset('2024-11-11', '', today)).toBe('2y')
+  })
+})
+
+describe('groupLabel', () => {
+  it('translates the MTF entry-timing group and falls back to the backend name', () => {
+    expect(groupLabel('Entry timing (MTF)')).toBe('Timing entry (MTF, riset)')
+    expect(groupLabel('Unknown group')).toBe('Unknown group')
   })
 })
