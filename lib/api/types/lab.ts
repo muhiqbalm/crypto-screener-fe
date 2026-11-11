@@ -26,6 +26,8 @@ export interface LabParamSpec {
   group: string
   /** Real backend: true for the 12 "main" params the optimizer may search. */
   tunable?: boolean
+  /** Optional explanation from the template schema (Indonesian). */
+  help?: string | null
 }
 
 export interface LabTemplate {

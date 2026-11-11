@@ -122,6 +122,7 @@ function PresetRow({ p }: { p: LabPreset }) {
           <span className="num">{p.name}</span>
         </span>
         {p.live_reference && <span className="ml-1.5 text-3xs font-medium uppercase tracking-wide text-lab">referensi live</span>}
+        {p.template_id !== 'rosyade_family' && <span className="ml-1.5 font-mono text-3xs text-muted-foreground">{p.template_id}</span>}
         {p.notes && <span className="mt-0.5 block max-w-[320px] text-3xs text-muted-foreground">{p.notes}</span>}
       </td>
       <td className="px-3 py-2.5">
@@ -160,14 +161,16 @@ export function PresetsView() {
   const q = useLabPresets()
   const templatesQ = useLabTemplates()
   const presets = q.data ?? []
-  const family = familyName(templatesQ.data?.[0]?.name)
+  const family = (templatesQ.data ?? []).length > 1
+    ? (templatesQ.data ?? []).map((t) => t.name).join(' / ')
+    : familyName(templatesQ.data?.[0]?.name)
   const coins = Array.from(new Set(presets.map((p) => p.symbol)))
 
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-lab/30 bg-lab/[0.06] px-4 py-3 text-xs text-muted-foreground">
         <p>
-          Satu logika strategi (<span className="font-medium text-foreground">{family}</span>), <b className="text-foreground">parameter berbeda per koin &amp; timeframe</b>. Preset bernama{' '}
+          {(templatesQ.data ?? []).length > 1 ? 'Logika strategi per template' : 'Satu logika strategi'} (<span className="font-medium text-foreground">{family}</span>), <b className="text-foreground">parameter berbeda per koin &amp; timeframe</b>. Preset bernama{' '}
           <span className="num text-foreground">{'{TF}-{KOIN}-{Label}'}</span>, mis. <span className="num text-foreground">4H-ETH-Basic</span> atau <span className="num text-foreground">1H-BTC-Opt1</span>.
         </p>
         <p className="mt-1">

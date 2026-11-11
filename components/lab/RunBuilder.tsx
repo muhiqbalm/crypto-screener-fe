@@ -200,6 +200,7 @@ export function RunBuilder() {
                       <option key={t.id} value={t.id} className="bg-popover">{t.name}</option>
                     ))}
                   </select>
+                  {template.description && <p className="text-2xs leading-snug text-muted-foreground">{template.description}</p>}
                 </div>
               ) : (
                 <p className="text-xs text-muted-foreground" title={template.description}>
