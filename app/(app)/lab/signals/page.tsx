@@ -3,6 +3,7 @@ import { PageContainer } from '@/components/shell/page'
 import { LoadingState } from '@/components/shell/states'
 import { LabHeader } from '@/components/lab/LabHeader'
 import { LedgerView } from '@/components/lab/ledger/LedgerView'
+import { ExecutionQuality } from '@/components/lab/shadow/ExecutionQuality'
 
 export const metadata = {
   title: 'Catatan Sinyal',
@@ -20,6 +21,9 @@ export default function SignalsPage() {
       <Suspense fallback={<LoadingState rows={6} />}>
         <LedgerView />
       </Suspense>
+      <div className="mt-5">
+        <ExecutionQuality />
+      </div>
     </PageContainer>
   )
 }
