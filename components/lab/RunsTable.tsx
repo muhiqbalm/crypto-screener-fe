@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button'
 import { ErrorPanel } from '@/components/shell/ErrorPanel'
 import { Chip, EmptyState, Section } from '@/components/lab/Section'
 import { MODE_LABEL, RunStateChip, signClass } from '@/components/lab/LabBadges'
+import { CompareCheckbox, CompareTray } from '@/components/lab/compare/CompareTray'
+import { MAX_COMPARE, toggleId } from '@/lib/lab/planning'
 import { formatPercent, formatScore, formatTimestamp, valueOrDash } from '@/lib/utils/format'
 import { ApiError } from '@/lib/api/errors'
 import { cn } from '@/lib/utils/cn'
@@ -38,6 +40,7 @@ export function RunsTable() {
   const [q, setQ] = useState('')
   const [mode, setMode] = useState<ModeFilter>('all')
   const [verdict, setVerdict] = useState<VerdictFilter>('all')
+  const [picked, setPicked] = useState<string[]>([])
   const rows = useMemo(
     () => filterRuns([...(data ?? [])].sort((a, b) => b.created_at.localeCompare(a.created_at)), { q, mode, verdict }),
     [data, q, mode, verdict],
@@ -108,6 +111,7 @@ export function RunsTable() {
           <table className="w-full text-sm sm:min-w-[560px]">
             <thead className="border-b border-border bg-muted/30">
               <tr>
+                <th className={cn(th, 'w-8 pr-0')}><span className="sr-only">Pilih untuk dibandingkan</span></th>
                 <th className={th}>Koin</th>
                 <th className={cn(th, 'hidden sm:table-cell')}>Mode</th>
                 <th className={th}>Hasil</th>
@@ -134,6 +138,17 @@ export function RunsTable() {
                   }}
                   className="cursor-pointer transition-colors hover:bg-accent/50 focus-visible:bg-accent/50 focus-visible:outline-none"
                 >
+                  <td className={cn(td, 'w-8 pr-0')}>
+                    {r.status === 'done' && r.template_id !== 'universal_v0' && (
+                      <CompareCheckbox
+                        id={String(r.id)}
+                        checked={picked.includes(String(r.id))}
+                        disabled={picked.length >= MAX_COMPARE}
+                        onToggle={(id) => setPicked(toggleId(picked, id))}
+                        label={`Bandingkan run ${r.symbol} ${r.timeframe}`}
+                      />
+                    )}
+                  </td>
                   <td className={td}>
                     <span className="font-mono text-xs font-semibold">{r.symbol}</span>{' '}
                     <span className="font-mono text-xs text-muted-foreground">{r.timeframe}</span>
@@ -156,6 +171,7 @@ export function RunsTable() {
           </table>
         </div>
       )}
+      <CompareTray ids={picked} onClear={() => setPicked([])} />
     </Section>
   )
 }

@@ -75,11 +75,14 @@ export interface LabRunCreateRequest {
   n_trials?: number
   /** Optimize only: restrict the search to these keys / ranges. */
   search?: LabOptimizeSearch
+  /** Provenance: backend links the run only when params equal the preset's. */
+  preset_id?: LabId
 }
 
 export interface LabRunCreateResponse {
   run_id: LabId
   job_id: LabId
+  preset_linked?: boolean
 }
 
 export interface LabRunSummary {
@@ -132,6 +135,9 @@ export interface LabRunDetail extends LabRunSummary {
   top_trials?: LabTopTrial[] | null
   /** How often this template+symbol was tried across timeframes (data-snooping warning). */
   snooping?: LabSnooping | null
+  /** Preset this run was started from (unchanged params), and presets saved from it. */
+  preset?: { id: LabId; name: string } | null
+  saved_as?: string[]
 }
 
 /** metrics.costs / oos_metrics.costs: what the costs eat on this timeframe. */
@@ -214,6 +220,13 @@ export interface LabScanCreateRequest {
   mode: LabScanMode
   n_trials?: number
   search?: LabOptimizeSearch
+  /** Per-timeframe start date (falls back to `start`). */
+  start?: string
+  starts?: Record<string, string>
+  /** Every cell uses this preset's params. */
+  preset_id?: LabId
+  /** Per cell: best PASS preset for that coin+TF, else `params`. */
+  use_best_presets?: boolean
 }
 
 export interface LabScanCreateResponse {
@@ -230,6 +243,7 @@ export interface LabScanRow {
   oos_profit_factor: number | null
   oos_max_dd_pct: number | null
   trades: number | null
+  preset?: { id: LabId; name: string } | null
 }
 
 export interface LabProgress {
@@ -246,6 +260,8 @@ export interface LabScanDetail {
   template_id?: string
   mode?: LabScanMode
   created_at?: string
+  /** Queue position + ETA while unfinished (null when done). */
+  queue?: { queued: number; running: number; queue_position: number | null; eta_s: number | null } | null
 }
 
 export interface LabJobProgress {
@@ -261,6 +277,14 @@ export interface LabJob {
   status: LabStatus
   progress?: LabJobProgress | number | null
   error?: string | null
+  // queue / ETA while queued or running (seconds from now)
+  timeout_s?: number | null
+  queue_position?: number | null
+  est_s?: number | null
+  eta_start_s?: number | null
+  eta_done_s?: number | null
+  elapsed_s?: number | null
+  started_at?: string | null
 }
 
 export interface LabDataStatus {

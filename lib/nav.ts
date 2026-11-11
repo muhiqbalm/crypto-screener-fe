@@ -1,6 +1,7 @@
 import {
   BarChart2,
   BookOpen,
+  Bookmark,
   CandlestickChart,
   FlaskConical,
   Grid3x3,
@@ -11,6 +12,7 @@ import {
   Layers,
   ListChecks,
   TrendingUp,
+  Trophy,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -56,6 +58,19 @@ export const LAB_NAV: NavItem[] = [
     label: 'Scan banyak koin',
     hint: 'Satu strategi di banyak koin × timeframe',
     icon: Grid3x3,
+  },
+  {
+    href: '/lab/leaderboard',
+    label: 'Peringkat',
+    hint: 'Hasil terbaik lintas koin & timeframe, diukur di holdout',
+    icon: Trophy,
+    activePrefixes: ['/lab/compare'],
+  },
+  {
+    href: '/lab/presets',
+    label: 'Preset',
+    hint: 'Parameter bernama per koin × timeframe (4H-ETH-Basic = live)',
+    icon: Bookmark,
   },
   {
     href: '/lab/universal',

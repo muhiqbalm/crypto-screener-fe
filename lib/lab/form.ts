@@ -250,6 +250,11 @@ export function buildScanRequest(args: {
   costs: CostFormValues
   mode: LabScanMode
   nTrials?: number
+  /** One start for every timeframe, or per-timeframe starts (wins per TF). */
+  start?: string
+  starts?: Record<string, string>
+  presetId?: string | number | null
+  useBestPresets?: boolean
 }): LabScanCreateRequest {
   const req: LabScanCreateRequest = {
     template_id: args.template.id,
@@ -260,6 +265,10 @@ export function buildScanRequest(args: {
   }
   if (args.params) req.params = toParamsPayload(args.template, args.params)
   if (args.mode === 'optimize' && args.nTrials) req.n_trials = args.nTrials
+  if (args.start) req.start = args.start
+  if (args.starts && Object.keys(args.starts).length > 0) req.starts = { ...args.starts }
+  if (args.presetId !== null && args.presetId !== undefined) req.preset_id = args.presetId
+  if (args.useBestPresets) req.use_best_presets = true
   return req
 }
 
@@ -473,10 +482,11 @@ export function diffFromDefaults(
 // Date presets
 // ---------------------------------------------------------------------------
 
-export type DatePreset = '1y' | '3y' | 'since2020' | 'custom'
+export type DatePreset = '1y' | '2y' | '3y' | 'since2020' | 'custom'
 
 export const DATE_PRESETS: { id: DatePreset; label: string }[] = [
   { id: '1y', label: '1 tahun' },
+  { id: '2y', label: '2 tahun' },
   { id: '3y', label: '3 tahun' },
   { id: 'since2020', label: 'Sejak 2020' },
   { id: 'custom', label: 'Custom' },
@@ -490,13 +500,14 @@ function isoDate(d: Date): string {
 export function presetRange(preset: DatePreset, today: Date = new Date()): { start: string; end: string } | null {
   if (preset === 'custom') return null
   if (preset === 'since2020') return { start: '2020-01-01', end: '' }
-  const d = new Date(Date.UTC(today.getUTCFullYear() - (preset === '1y' ? 1 : 3), today.getUTCMonth(), today.getUTCDate()))
+  const years = preset === '1y' ? 1 : preset === '2y' ? 2 : 3
+  const d = new Date(Date.UTC(today.getUTCFullYear() - years, today.getUTCMonth(), today.getUTCDate()))
   return { start: isoDate(d), end: '' }
 }
 
 /** Which preset (if any) a start/end pair corresponds to. */
 export function detectPreset(start: string, end: string, today: Date = new Date()): DatePreset {
-  for (const p of ['1y', '3y', 'since2020'] as const) {
+  for (const p of ['1y', '2y', '3y', 'since2020'] as const) {
     const r = presetRange(p, today)!
     if (r.start === start && r.end === end) return p
   }

@@ -47,7 +47,7 @@ export function ParamSummary({ template, values, onChange }: Omit<ParamFormProps
     <div className="flex flex-wrap items-center gap-2">
       {changed === 0 ? (
         <span className="inline-flex items-center rounded-full bg-bullish/10 px-2 py-0.5 text-2xs font-medium text-bullish">
-          Sama dengan live ETH 4H
+          Sama dengan 4H-ETH-Basic (live)
         </span>
       ) : (
         <ChangedBadge count={changed} className="px-2 py-0.5 text-2xs" />
@@ -127,7 +127,7 @@ export function ParamForm(props: ParamFormProps) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-muted-foreground">Nilai default = setting strategi live ETH 4H.</p>
+        <p className="text-xs text-muted-foreground">Nilai default = preset 4H-ETH-Basic (setting live ETH 4H). Koin/timeframe lain biasanya butuh parameter sendiri.</p>
         <ParamSummary template={props.template} values={props.values} onChange={props.onChange} />
       </div>
       {main.length > 0 && <MainParams {...props} />}

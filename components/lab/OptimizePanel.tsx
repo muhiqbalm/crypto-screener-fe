@@ -7,7 +7,6 @@ import type { LabTemplate } from '@/lib/api/types/lab'
 import {
   TRIAL_OPTIONS,
   defaultOptimizeConfig,
-  estimateMinutes,
   paramLabel,
   type OptimizeConfig,
 } from '@/lib/lab/form'
@@ -21,7 +20,7 @@ interface Props {
 
 export function optimizeSummary(cfg: OptimizeConfig): string {
   const n = Object.values(cfg.ranges).filter((r) => r.enabled).length
-  return `${cfg.nTrials} percobaan · ${n} parameter · ±${estimateMinutes(cfg.nTrials)} mnt`
+  return `${cfg.nTrials} percobaan · ${n} parameter`
 }
 
 export function OptimizePanel({ template, value, errors, onChange }: Props) {
@@ -38,7 +37,6 @@ export function OptimizePanel({ template, value, errors, onChange }: Props) {
           {TRIAL_OPTIONS.map((n) => (
             <Chip key={n} active={value.nTrials === n} onClick={() => onChange({ ...value, nTrials: n })}>
               {n}
-              <span className="text-3xs opacity-70">±{estimateMinutes(n)} mnt</span>
             </Chip>
           ))}
         </div>
