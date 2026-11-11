@@ -3,6 +3,7 @@
 import { PageContainer, PageHeader } from '@/components/shell/page'
 import { StatTile } from '@/components/ui/stat-tile'
 import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { BookOpen, Check, Loader2, Pencil, RefreshCw, X } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -37,8 +38,11 @@ function fmtR(v: number | null | undefined): string {
 
 export function JournalView() {
   const accountsQ = usePaperAccounts()
-  const [draft, setDraft] = useState<JournalFilters>({ account_id: '', source: '', symbol: '', from: '', to: '' })
-  const [filters, setFilters] = useState<JournalFilters>({})
+  // ?account_id=<n> (deep link from Arena Paper) pre-filters the journal to one paper account
+  const accountParam = useSearchParams().get('account_id') ?? ''
+  const linkedAccount = /^\d{1,9}$/.test(accountParam) ? accountParam : ''
+  const [draft, setDraft] = useState<JournalFilters>({ account_id: linkedAccount, source: '', symbol: '', from: '', to: '' })
+  const [filters, setFilters] = useState<JournalFilters>(linkedAccount ? { account_id: linkedAccount } : {})
 
   return (
     <PageContainer>

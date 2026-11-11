@@ -1,3 +1,5 @@
+import { Suspense } from 'react'
+import { LoadingState } from '@/components/shell/states'
 import { JournalView } from '@/components/journal/JournalView'
 
 export const metadata = {
@@ -6,5 +8,10 @@ export const metadata = {
 }
 
 export default function JournalPage() {
-  return <JournalView />
+  // useSearchParams (?account_id= deep link) needs a Suspense boundary
+  return (
+    <Suspense fallback={<LoadingState rows={6} />}>
+      <JournalView />
+    </Suspense>
+  )
 }

@@ -14,6 +14,7 @@ import {
   TrendingUp,
   Trophy,
   Compass,
+  Swords,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -96,6 +97,12 @@ export const LAB_NAV: NavItem[] = [
     label: 'Catatan Sinyal',
     hint: 'Semua sinyal dicatat & dinilai: mana yang bekerja, mana yang noise',
     icon: ListChecks,
+  },
+  {
+    href: '/lab/arena',
+    label: 'Arena Paper',
+    hint: 'Semua preset paper berdampingan + cek penyimpangan vs backtest',
+    icon: Swords,
   },
 ]
 
