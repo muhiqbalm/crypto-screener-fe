@@ -3,6 +3,8 @@ import type { LabId } from './types/lab'
 export const PATHS = {
   // Screener
   screenerSummary: '/api/v1/screener/summary',
+  /** Signal Ledger track record per screener signal (Bearer JWT, any logged-in user). */
+  screenerTrackRecord: '/api/v1/screener/signal-track-record',
   health: '/api/v1/health',
 
   // Auth

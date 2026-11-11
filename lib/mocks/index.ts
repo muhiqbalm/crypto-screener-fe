@@ -15,6 +15,8 @@ export async function getMock(method: string, path: string, body?: unknown): Pro
   }
 
   if (method === 'GET' && path === PATHS.screenerSummary) return MOCK_SCREENER
+  // real ledger output (production lab.db copy, 2026-11-11)
+  if (method === 'GET' && path === PATHS.screenerTrackRecord) return (await import('./track-record.json')).default
   if (method === 'GET' && path === PATHS.webhookConfig) return MOCK_WEBHOOK_CONFIG
   if (method === 'POST' && path === PATHS.webhookConfig) return MOCK_WEBHOOK_CONFIG
   if (method === 'PATCH' && path === PATHS.webhookConfig) return MOCK_WEBHOOK_CONFIG

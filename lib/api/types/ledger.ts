@@ -126,3 +126,53 @@ export interface LedgerMeta {
   backfill_job: { id: LabId; status: string; progress: { stage?: string; done?: number; total?: number } | null; error: string | null } | null
   thresholds: { min_n_any: number; min_n_ok: number }
 }
+
+// ── Screener track record (GET /api/v1/screener/signal-track-record, any logged-in user) ──
+
+export type TrackVerdict = 'terbukti' | 'belum_terbukti' | 'negatif' | 'belum_cukup_data'
+export type TrackHorizon = '1d' | '3d'
+
+export interface TrackHorizonStats {
+  n: number
+  days: number
+  coins: number
+  hit_rate: number | null
+  hit_ci: [number, number] | null
+  mean_pct: number | null
+  mean_ci: [number, number] | null
+  median_pct: number | null
+  mean_rel_btc_pct: number | null
+  rel_btc_ci: [number, number] | null
+  hit_rel_btc: number | null
+  sample: LedgerSample
+  verdict: TrackVerdict
+  verdict_rel_btc: TrackVerdict
+}
+
+export interface TrackRecordItem {
+  signal_type: string
+  direction: LedgerDirection
+  n_signals: number
+  /** live screener signals; the rest are the causal reconstruction */
+  n_live: number
+  n_rekon: number
+  n_pending: number
+  first_ts: string | null
+  last_ts: string | null
+  /** headline (1d) verdicts */
+  verdict: TrackVerdict
+  verdict_rel_btc: TrackVerdict
+  stats: Record<TrackHorizon, TrackHorizonStats>
+}
+
+export interface SignalTrackRecord {
+  available: boolean
+  headline_horizon: TrackHorizon
+  secondary_horizon: TrackHorizon
+  sources: LedgerSource[]
+  thresholds: { min_n: number; min_days: number }
+  period: { from: string; to: string } | null
+  live_since: string | null
+  generated_at: string | null
+  items: TrackRecordItem[]
+}

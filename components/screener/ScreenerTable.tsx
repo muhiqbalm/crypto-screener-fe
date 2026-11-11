@@ -25,6 +25,8 @@ import {
 import { ChangeCell } from '@/components/screener/ChangeCell'
 import { SignalBadge } from '@/components/screener/SignalBadge'
 import { TierBadge } from '@/components/screener/TierBadge'
+import { TrackRecordHint } from '@/components/screener/TrackRecordHint'
+import { compositeKey, tierKey } from '@/lib/screener/track-record'
 import {
   formatPrice,
   formatVolume,
@@ -117,8 +119,11 @@ const columns: ColumnDef<AssetDetail>[] = [
     accessorKey: 'signal',
     header: 'Signal',
     enableSorting: false,
-    cell: ({ getValue }) => (
-      <SignalBadge signal={getValue<AssetDetail['signal']>()} />
+    cell: ({ getValue, row }) => (
+      <span className="inline-flex items-center gap-1">
+        <SignalBadge signal={getValue<AssetDetail['signal']>()} />
+        <TrackRecordHint k={compositeKey(row.original)} symbol={row.original.symbol} />
+      </span>
     ),
     // Equality filter for signal (Req 6.9–6.10)
     filterFn: (row, _columnId, filterValue: string) => {
@@ -142,8 +147,11 @@ const columns: ColumnDef<AssetDetail>[] = [
     accessorKey: 'tier',
     header: 'Tier',
     enableSorting: false,
-    cell: ({ getValue }) => (
-      <TierBadge tier={getValue<AssetDetail['tier']>()} />
+    cell: ({ getValue, row }) => (
+      <span className="inline-flex items-center gap-1">
+        <TierBadge tier={getValue<AssetDetail['tier']>()} />
+        <TrackRecordHint k={tierKey(row.original)} symbol={row.original.symbol} />
+      </span>
     ),
     // Equality filter for tier (Req 6.11–6.12)
     filterFn: (row, _columnId, filterValue: string) => {

@@ -1,6 +1,7 @@
 import { ApiError } from './errors'
 import { PATHS } from './paths'
 import type { ScreenerResponse } from './types/screener'
+import type { SignalTrackRecord } from './types/ledger'
 import type { IntelNewsResponse, IntelWhalesResponse } from './types/intel'
 import type {
   WebhookConfigResponse,
@@ -81,9 +82,13 @@ function isMockDataEnabled(): boolean {
   return process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true'
 }
 
-/** Strategy Lab endpoints use the same Bearer JWT as /trading/*. */
+/**
+ * Bearer-JWT endpoints outside /trading/*: the Strategy Lab, plus the screener's
+ * signal track record (read from the Lab's Signal Ledger, any logged-in user).
+ * Same refresh rules as the Lab: one reactive refresh on 401, never on 403.
+ */
 function isLabPath(path: string): boolean {
-  return path.startsWith(PATHS.labPrefix)
+  return path.startsWith(PATHS.labPrefix) || path === PATHS.screenerTrackRecord
 }
 
 // ---------------------------------------------------------------------------
@@ -288,6 +293,10 @@ async function _executeRequest<T>(
 export const api = {
   getScreenerSummary(signal?: AbortSignal): Promise<ScreenerResponse> {
     return request<ScreenerResponse>('GET', PATHS.screenerSummary, undefined, signal)
+  },
+
+  getSignalTrackRecord(signal?: AbortSignal): Promise<SignalTrackRecord> {
+    return request<SignalTrackRecord>('GET', PATHS.screenerTrackRecord, undefined, signal)
   },
 
   getWebhookConfig(signal?: AbortSignal): Promise<WebhookConfigResponse> {

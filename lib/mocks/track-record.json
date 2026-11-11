@@ -1,0 +1,789 @@
+{
+ "headline_horizon": "1d",
+ "secondary_horizon": "3d",
+ "sources": [
+  "screener",
+  "screener_rekon"
+ ],
+ "thresholds": {
+  "min_n": 10,
+  "min_days": 5
+ },
+ "generated_at": "2026-11-11T07:11:08.097731Z",
+ "items": [
+  {
+   "signal_type": "komposit",
+   "direction": 1,
+   "n_signals": 333,
+   "n_live": 1,
+   "n_rekon": 332,
+   "n_pending": 93,
+   "first_ts": "2026-10-15T07:00:00Z",
+   "last_ts": "2026-11-11T06:00:46Z",
+   "verdict": "belum_terbukti",
+   "verdict_rel_btc": "belum_terbukti",
+   "stats": {
+    "1d": {
+     "n": 321,
+     "days": 27,
+     "coins": 29,
+     "hit_rate": 0.4299,
+     "hit_ci": [
+      0.339,
+      0.5208
+     ],
+     "mean_pct": -0.3072,
+     "mean_ci": [
+      -1.0935,
+      0.4792
+     ],
+     "median_pct": -0.437,
+     "mean_rel_btc_pct": -0.0031,
+     "rel_btc_ci": [
+      -0.7018,
+      0.6955
+     ],
+     "hit_rel_btc": 0.4174,
+     "sample": "ok",
+     "verdict": "belum_terbukti",
+     "verdict_rel_btc": "belum_terbukti"
+    },
+    "3d": {
+     "n": 293,
+     "days": 25,
+     "coins": 29,
+     "hit_rate": 0.2765,
+     "hit_ci": [
+      0.1802,
+      0.3727
+     ],
+     "mean_pct": -2.0723,
+     "mean_ci": [
+      -3.1486,
+      -0.996
+     ],
+     "median_pct": -2.4291,
+     "mean_rel_btc_pct": -0.8603,
+     "rel_btc_ci": [
+      -1.685,
+      -0.0356
+     ],
+     "hit_rel_btc": 0.3174,
+     "sample": "ok",
+     "verdict": "negatif",
+     "verdict_rel_btc": "negatif"
+    }
+   }
+  },
+  {
+   "signal_type": "komposit",
+   "direction": -1,
+   "n_signals": 360,
+   "n_live": 3,
+   "n_rekon": 357,
+   "n_pending": 97,
+   "first_ts": "2026-10-15T08:00:00Z",
+   "last_ts": "2026-11-11T06:00:46Z",
+   "verdict": "belum_terbukti",
+   "verdict_rel_btc": "belum_terbukti",
+   "stats": {
+    "1d": {
+     "n": 345,
+     "days": 27,
+     "coins": 28,
+     "hit_rate": 0.5942,
+     "hit_ci": [
+      0.4708,
+      0.7176
+     ],
+     "mean_pct": 0.5895,
+     "mean_ci": [
+      -0.3477,
+      1.5268
+     ],
+     "median_pct": 0.5204,
+     "mean_rel_btc_pct": 0.1733,
+     "rel_btc_ci": [
+      -0.3856,
+      0.7323
+     ],
+     "hit_rel_btc": 0.5623,
+     "sample": "ok",
+     "verdict": "belum_terbukti",
+     "verdict_rel_btc": "belum_terbukti"
+    },
+    "3d": {
+     "n": 316,
+     "days": 25,
+     "coins": 28,
+     "hit_rate": 0.6994,
+     "hit_ci": [
+      0.5999,
+      0.7988
+     ],
+     "mean_pct": 1.8215,
+     "mean_ci": [
+      0.5789,
+      3.0641
+     ],
+     "median_pct": 2.1842,
+     "mean_rel_btc_pct": 0.7803,
+     "rel_btc_ci": [
+      -0.0045,
+      1.5651
+     ],
+     "hit_rel_btc": 0.6203,
+     "sample": "ok",
+     "verdict": "terbukti",
+     "verdict_rel_btc": "belum_terbukti"
+    }
+   }
+  },
+  {
+   "signal_type": "komposit_high",
+   "direction": 1,
+   "n_signals": 220,
+   "n_live": 1,
+   "n_rekon": 219,
+   "n_pending": 59,
+   "first_ts": "2026-10-15T08:00:00Z",
+   "last_ts": "2026-11-11T06:00:46Z",
+   "verdict": "belum_terbukti",
+   "verdict_rel_btc": "belum_terbukti",
+   "stats": {
+    "1d": {
+     "n": 216,
+     "days": 27,
+     "coins": 25,
+     "hit_rate": 0.412,
+     "hit_ci": [
+      0.3097,
+      0.5143
+     ],
+     "mean_pct": -0.1738,
+     "mean_ci": [
+      -1.2035,
+      0.8559
+     ],
+     "median_pct": -0.5995,
+     "mean_rel_btc_pct": 0.1787,
+     "rel_btc_ci": [
+      -0.6621,
+      1.0194
+     ],
+     "hit_rel_btc": 0.4167,
+     "sample": "ok",
+     "verdict": "belum_terbukti",
+     "verdict_rel_btc": "belum_terbukti"
+    },
+    "3d": {
+     "n": 199,
+     "days": 25,
+     "coins": 25,
+     "hit_rate": 0.2764,
+     "hit_ci": [
+      0.1794,
+      0.3734
+     ],
+     "mean_pct": -1.8019,
+     "mean_ci": [
+      -3.1222,
+      -0.4816
+     ],
+     "median_pct": -2.4086,
+     "mean_rel_btc_pct": -0.7382,
+     "rel_btc_ci": [
+      -1.8402,
+      0.3639
+     ],
+     "hit_rel_btc": 0.3266,
+     "sample": "ok",
+     "verdict": "negatif",
+     "verdict_rel_btc": "belum_terbukti"
+    }
+   }
+  },
+  {
+   "signal_type": "komposit_high",
+   "direction": -1,
+   "n_signals": 250,
+   "n_live": 0,
+   "n_rekon": 250,
+   "n_pending": 61,
+   "first_ts": "2026-10-15T08:00:00Z",
+   "last_ts": "2026-11-10T23:00:00Z",
+   "verdict": "belum_terbukti",
+   "verdict_rel_btc": "belum_terbukti",
+   "stats": {
+    "1d": {
+     "n": 241,
+     "days": 27,
+     "coins": 25,
+     "hit_rate": 0.5768,
+     "hit_ci": [
+      0.4417,
+      0.7119
+     ],
+     "mean_pct": 0.735,
+     "mean_ci": [
+      -0.079,
+      1.549
+     ],
+     "median_pct": 0.5004,
+     "mean_rel_btc_pct": 0.2719,
+     "rel_btc_ci": [
+      -0.1665,
+      0.7103
+     ],
+     "hit_rel_btc": 0.5851,
+     "sample": "ok",
+     "verdict": "belum_terbukti",
+     "verdict_rel_btc": "belum_terbukti"
+    },
+    "3d": {
+     "n": 220,
+     "days": 25,
+     "coins": 24,
+     "hit_rate": 0.6773,
+     "hit_ci": [
+      0.5505,
+      0.8041
+     ],
+     "mean_pct": 1.5214,
+     "mean_ci": [
+      0.3233,
+      2.7195
+     ],
+     "median_pct": 1.2465,
+     "mean_rel_btc_pct": 0.4806,
+     "rel_btc_ci": [
+      -0.123,
+      1.0843
+     ],
+     "hit_rel_btc": 0.6045,
+     "sample": "ok",
+     "verdict": "terbukti",
+     "verdict_rel_btc": "belum_terbukti"
+    }
+   }
+  },
+  {
+   "signal_type": "tier_a",
+   "direction": 1,
+   "n_signals": 366,
+   "n_live": 2,
+   "n_rekon": 364,
+   "n_pending": 100,
+   "first_ts": "2026-10-15T07:00:00Z",
+   "last_ts": "2026-11-11T06:00:46Z",
+   "verdict": "belum_terbukti",
+   "verdict_rel_btc": "belum_terbukti",
+   "stats": {
+    "1d": {
+     "n": 349,
+     "days": 27,
+     "coins": 29,
+     "hit_rate": 0.4241,
+     "hit_ci": [
+      0.3309,
+      0.5173
+     ],
+     "mean_pct": -0.4199,
+     "mean_ci": [
+      -1.2917,
+      0.4519
+     ],
+     "median_pct": -0.6049,
+     "mean_rel_btc_pct": -0.0992,
+     "rel_btc_ci": [
+      -0.8062,
+      0.6078
+     ],
+     "hit_rel_btc": 0.4097,
+     "sample": "ok",
+     "verdict": "belum_terbukti",
+     "verdict_rel_btc": "belum_terbukti"
+    },
+    "3d": {
+     "n": 318,
+     "days": 25,
+     "coins": 29,
+     "hit_rate": 0.2642,
+     "hit_ci": [
+      0.1679,
+      0.3604
+     ],
+     "mean_pct": -2.0148,
+     "mean_ci": [
+      -3.2591,
+      -0.7705
+     ],
+     "median_pct": -2.3457,
+     "mean_rel_btc_pct": -0.8616,
+     "rel_btc_ci": [
+      -1.7238,
+      0.0007
+     ],
+     "hit_rel_btc": 0.3239,
+     "sample": "ok",
+     "verdict": "negatif",
+     "verdict_rel_btc": "belum_terbukti"
+    }
+   }
+  },
+  {
+   "signal_type": "tier_c",
+   "direction": -1,
+   "n_signals": 361,
+   "n_live": 1,
+   "n_rekon": 360,
+   "n_pending": 99,
+   "first_ts": "2026-10-15T07:00:00Z",
+   "last_ts": "2026-11-11T06:00:46Z",
+   "verdict": "belum_terbukti",
+   "verdict_rel_btc": "belum_terbukti",
+   "stats": {
+    "1d": {
+     "n": 348,
+     "days": 27,
+     "coins": 28,
+     "hit_rate": 0.592,
+     "hit_ci": [
+      0.4796,
+      0.7043
+     ],
+     "mean_pct": 0.6278,
+     "mean_ci": [
+      -0.2367,
+      1.4923
+     ],
+     "median_pct": 0.5251,
+     "mean_rel_btc_pct": 0.1752,
+     "rel_btc_ci": [
+      -0.35,
+      0.7003
+     ],
+     "hit_rel_btc": 0.5402,
+     "sample": "ok",
+     "verdict": "belum_terbukti",
+     "verdict_rel_btc": "belum_terbukti"
+    },
+    "3d": {
+     "n": 317,
+     "days": 25,
+     "coins": 28,
+     "hit_rate": 0.6909,
+     "hit_ci": [
+      0.5811,
+      0.8006
+     ],
+     "mean_pct": 1.9708,
+     "mean_ci": [
+      0.8382,
+      3.1034
+     ],
+     "median_pct": 1.9035,
+     "mean_rel_btc_pct": 0.7956,
+     "rel_btc_ci": [
+      0.0976,
+      1.4935
+     ],
+     "hit_rel_btc": 0.6183,
+     "sample": "ok",
+     "verdict": "terbukti",
+     "verdict_rel_btc": "terbukti"
+    }
+   }
+  },
+  {
+   "signal_type": "momentum",
+   "direction": 1,
+   "n_signals": 50,
+   "n_live": 0,
+   "n_rekon": 50,
+   "n_pending": 13,
+   "first_ts": "2026-10-15T13:00:00Z",
+   "last_ts": "2026-11-10T06:00:00Z",
+   "verdict": "belum_terbukti",
+   "verdict_rel_btc": "belum_terbukti",
+   "stats": {
+    "1d": {
+     "n": 50,
+     "days": 23,
+     "coins": 22,
+     "hit_rate": 0.4,
+     "hit_ci": [
+      0.2431,
+      0.5569
+     ],
+     "mean_pct": 0.4445,
+     "mean_ci": [
+      -1.6816,
+      2.5706
+     ],
+     "median_pct": -0.5416,
+     "mean_rel_btc_pct": 0.5737,
+     "rel_btc_ci": [
+      -1.1703,
+      2.3177
+     ],
+     "hit_rel_btc": 0.4,
+     "sample": "ok",
+     "verdict": "belum_terbukti",
+     "verdict_rel_btc": "belum_terbukti"
+    },
+    "3d": {
+     "n": 46,
+     "days": 21,
+     "coins": 22,
+     "hit_rate": 0.2826,
+     "hit_ci": [
+      0.1524,
+      0.4255
+     ],
+     "mean_pct": -2.663,
+     "mean_ci": [
+      -4.4534,
+      -0.8726
+     ],
+     "median_pct": -2.7642,
+     "mean_rel_btc_pct": -1.4042,
+     "rel_btc_ci": [
+      -2.8816,
+      0.0732
+     ],
+     "hit_rel_btc": 0.2826,
+     "sample": "ok",
+     "verdict": "negatif",
+     "verdict_rel_btc": "belum_terbukti"
+    }
+   }
+  },
+  {
+   "signal_type": "momentum",
+   "direction": -1,
+   "n_signals": 72,
+   "n_live": 0,
+   "n_rekon": 72,
+   "n_pending": 15,
+   "first_ts": "2026-10-15T15:00:00Z",
+   "last_ts": "2026-11-09T08:00:00Z",
+   "verdict": "belum_terbukti",
+   "verdict_rel_btc": "belum_terbukti",
+   "stats": {
+    "1d": {
+     "n": 72,
+     "days": 26,
+     "coins": 24,
+     "hit_rate": 0.4722,
+     "hit_ci": [
+      0.3164,
+      0.628
+     ],
+     "mean_pct": -0.1352,
+     "mean_ci": [
+      -1.5209,
+      1.2504
+     ],
+     "median_pct": -0.2494,
+     "mean_rel_btc_pct": -0.6138,
+     "rel_btc_ci": [
+      -1.7197,
+      0.4922
+     ],
+     "hit_rel_btc": 0.5,
+     "sample": "ok",
+     "verdict": "belum_terbukti",
+     "verdict_rel_btc": "belum_terbukti"
+    },
+    "3d": {
+     "n": 67,
+     "days": 25,
+     "coins": 23,
+     "hit_rate": 0.7164,
+     "hit_ci": [
+      0.5587,
+      0.8741
+     ],
+     "mean_pct": 1.5165,
+     "mean_ci": [
+      0.0177,
+      3.0153
+     ],
+     "median_pct": 2.2136,
+     "mean_rel_btc_pct": 0.0508,
+     "rel_btc_ci": [
+      -1.1018,
+      1.2034
+     ],
+     "hit_rel_btc": 0.6567,
+     "sample": "ok",
+     "verdict": "terbukti",
+     "verdict_rel_btc": "belum_terbukti"
+    }
+   }
+  },
+  {
+   "signal_type": "funding",
+   "direction": 1,
+   "n_signals": 310,
+   "n_live": 1,
+   "n_rekon": 309,
+   "n_pending": 81,
+   "first_ts": "2026-10-15T08:00:00Z",
+   "last_ts": "2026-11-11T06:00:46Z",
+   "verdict": "belum_terbukti",
+   "verdict_rel_btc": "belum_terbukti",
+   "stats": {
+    "1d": {
+     "n": 299,
+     "days": 27,
+     "coins": 29,
+     "hit_rate": 0.4415,
+     "hit_ci": [
+      0.3181,
+      0.5648
+     ],
+     "mean_pct": -0.5639,
+     "mean_ci": [
+      -1.4412,
+      0.3133
+     ],
+     "median_pct": -0.4187,
+     "mean_rel_btc_pct": -0.1678,
+     "rel_btc_ci": [
+      -0.8379,
+      0.5022
+     ],
+     "hit_rel_btc": 0.4381,
+     "sample": "ok",
+     "verdict": "belum_terbukti",
+     "verdict_rel_btc": "belum_terbukti"
+    },
+    "3d": {
+     "n": 275,
+     "days": 25,
+     "coins": 29,
+     "hit_rate": 0.2836,
+     "hit_ci": [
+      0.1687,
+      0.3986
+     ],
+     "mean_pct": -2.0782,
+     "mean_ci": [
+      -3.456,
+      -0.7005
+     ],
+     "median_pct": -2.6316,
+     "mean_rel_btc_pct": -1.0404,
+     "rel_btc_ci": [
+      -1.9407,
+      -0.14
+     ],
+     "hit_rel_btc": 0.3636,
+     "sample": "ok",
+     "verdict": "negatif",
+     "verdict_rel_btc": "negatif"
+    }
+   }
+  },
+  {
+   "signal_type": "funding",
+   "direction": -1,
+   "n_signals": 351,
+   "n_live": 1,
+   "n_rekon": 350,
+   "n_pending": 93,
+   "first_ts": "2026-10-15T08:00:00Z",
+   "last_ts": "2026-11-11T06:00:46Z",
+   "verdict": "belum_terbukti",
+   "verdict_rel_btc": "belum_terbukti",
+   "stats": {
+    "1d": {
+     "n": 339,
+     "days": 27,
+     "coins": 29,
+     "hit_rate": 0.6195,
+     "hit_ci": [
+      0.4986,
+      0.7403
+     ],
+     "mean_pct": 1.1791,
+     "mean_ci": [
+      -0.079,
+      2.4371
+     ],
+     "median_pct": 0.8462,
+     "mean_rel_btc_pct": 0.4936,
+     "rel_btc_ci": [
+      -0.1569,
+      1.144
+     ],
+     "hit_rel_btc": 0.6224,
+     "sample": "ok",
+     "verdict": "belum_terbukti",
+     "verdict_rel_btc": "belum_terbukti"
+    },
+    "3d": {
+     "n": 308,
+     "days": 24,
+     "coins": 29,
+     "hit_rate": 0.7175,
+     "hit_ci": [
+      0.5956,
+      0.8395
+     ],
+     "mean_pct": 2.3086,
+     "mean_ci": [
+      0.7048,
+      3.9124
+     ],
+     "median_pct": 2.4874,
+     "mean_rel_btc_pct": 1.1039,
+     "rel_btc_ci": [
+      0.0936,
+      2.1141
+     ],
+     "hit_rel_btc": 0.6656,
+     "sample": "ok",
+     "verdict": "terbukti",
+     "verdict_rel_btc": "terbukti"
+    }
+   }
+  },
+  {
+   "signal_type": "oi",
+   "direction": 1,
+   "n_signals": 571,
+   "n_live": 3,
+   "n_rekon": 568,
+   "n_pending": 147,
+   "first_ts": "2026-10-15T07:00:00Z",
+   "last_ts": "2026-11-11T06:00:46Z",
+   "verdict": "belum_terbukti",
+   "verdict_rel_btc": "belum_terbukti",
+   "stats": {
+    "1d": {
+     "n": 552,
+     "days": 27,
+     "coins": 29,
+     "hit_rate": 0.4203,
+     "hit_ci": [
+      0.3139,
+      0.5267
+     ],
+     "mean_pct": -0.581,
+     "mean_ci": [
+      -1.477,
+      0.3149
+     ],
+     "median_pct": -0.5015,
+     "mean_rel_btc_pct": -0.1581,
+     "rel_btc_ci": [
+      -0.7885,
+      0.4724
+     ],
+     "hit_rel_btc": 0.3913,
+     "sample": "ok",
+     "verdict": "belum_terbukti",
+     "verdict_rel_btc": "belum_terbukti"
+    },
+    "3d": {
+     "n": 506,
+     "days": 25,
+     "coins": 29,
+     "hit_rate": 0.2925,
+     "hit_ci": [
+      0.196,
+      0.389
+     ],
+     "mean_pct": -1.9426,
+     "mean_ci": [
+      -3.1613,
+      -0.7238
+     ],
+     "median_pct": -2.2895,
+     "mean_rel_btc_pct": -0.9054,
+     "rel_btc_ci": [
+      -1.673,
+      -0.1379
+     ],
+     "hit_rel_btc": 0.336,
+     "sample": "ok",
+     "verdict": "negatif",
+     "verdict_rel_btc": "negatif"
+    }
+   }
+  },
+  {
+   "signal_type": "oi",
+   "direction": -1,
+   "n_signals": 543,
+   "n_live": 1,
+   "n_rekon": 542,
+   "n_pending": 136,
+   "first_ts": "2026-10-15T08:00:00Z",
+   "last_ts": "2026-11-11T06:00:46Z",
+   "verdict": "belum_terbukti",
+   "verdict_rel_btc": "belum_terbukti",
+   "stats": {
+    "1d": {
+     "n": 531,
+     "days": 27,
+     "coins": 29,
+     "hit_rate": 0.6064,
+     "hit_ci": [
+      0.4981,
+      0.7147
+     ],
+     "mean_pct": 0.8753,
+     "mean_ci": [
+      -0.0617,
+      1.8123
+     ],
+     "median_pct": 0.6989,
+     "mean_rel_btc_pct": 0.3999,
+     "rel_btc_ci": [
+      -0.1593,
+      0.959
+     ],
+     "hit_rel_btc": 0.5819,
+     "sample": "ok",
+     "verdict": "belum_terbukti",
+     "verdict_rel_btc": "belum_terbukti"
+    },
+    "3d": {
+     "n": 484,
+     "days": 25,
+     "coins": 29,
+     "hit_rate": 0.7376,
+     "hit_ci": [
+      0.6394,
+      0.8358
+     ],
+     "mean_pct": 2.5045,
+     "mean_ci": [
+      1.2352,
+      3.7739
+     ],
+     "median_pct": 2.3818,
+     "mean_rel_btc_pct": 1.1999,
+     "rel_btc_ci": [
+      0.4193,
+      1.9805
+     ],
+     "hit_rel_btc": 0.6405,
+     "sample": "ok",
+     "verdict": "terbukti",
+     "verdict_rel_btc": "terbukti"
+    }
+   }
+  }
+ ],
+ "period": {
+  "from": "2026-10-15T07:00:00Z",
+  "to": "2026-11-11T06:00:46Z"
+ },
+ "available": true,
+ "live_since": "2026-11-11T05:17:45Z"
+}

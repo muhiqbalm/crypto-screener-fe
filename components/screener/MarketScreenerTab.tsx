@@ -7,6 +7,7 @@ import { ScreenerFilters, type ScreenerFilterState } from '@/components/screener
 import { ScreenerTable } from '@/components/screener/ScreenerTable'
 import { MarketOverviewCards } from '@/components/screener/MarketOverviewCards'
 import { CoinDetailDrawer } from '@/components/screener/CoinDetailDrawer'
+import { TrackRecordFootnote, TrackRecordProvider } from '@/components/screener/TrackRecordHint'
 import { ErrorPanel } from '@/components/shell/ErrorPanel'
 import { EmptyPanel } from '@/components/shell/EmptyPanel'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -89,6 +90,7 @@ export function MarketScreenerTab() {
 
   // Data state (Req 7.4)
   return (
+    <TrackRecordProvider>
     <div className="space-y-6">
       {/* 1. Market Overview KPI Cards */}
       {summary && (
@@ -121,6 +123,7 @@ export function MarketScreenerTab() {
           filters={filters}
           onSelectAsset={setSelectedAsset}
         />
+        <TrackRecordFootnote />
       </div>
 
       {/* 4. Slide-over Detail Drawer */}
@@ -129,5 +132,6 @@ export function MarketScreenerTab() {
         onClose={() => setSelectedAsset(null)}
       />
     </div>
+    </TrackRecordProvider>
   )
 }

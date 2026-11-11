@@ -16,6 +16,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { TierBadge } from '@/components/screener/TierBadge'
+import { TrackRecordHint } from '@/components/screener/TrackRecordHint'
+import { compositeKey, factorKey, tierKey } from '@/lib/screener/track-record'
 import type { AssetDetail } from '@/lib/api/types/screener'
 import { cn } from '@/lib/utils/cn'
 import { baseAsset, formatFunding, formatPrice, formatScore, formatVolume } from '@/lib/utils/format'
@@ -71,6 +73,7 @@ function DrawerBody({ asset, onClose }: { asset: AssetDetail; onClose: () => voi
               <SheetTitle className="text-xl font-bold tracking-tight">{symbolClean}</SheetTitle>
               <span className="text-xs text-muted-foreground font-mono">/USDT Perp</span>
               <TierBadge tier={asset.tier} />
+              <TrackRecordHint k={tierKey(asset)} symbol={asset.symbol} />
             </div>
             <div className="mt-2 flex items-baseline gap-3">
               <span className="text-2xl font-bold font-mono tracking-tight">
@@ -133,8 +136,11 @@ function DrawerBody({ asset, onClose }: { asset: AssetDetail; onClose: () => voi
               </div>
               <div className="rounded-lg bg-card p-2.5 border border-border">
                 <span className="text-muted-foreground block text-2xs">Composite Signal</span>
-                <span className={cn('font-semibold text-sm', subSignalClass(asset.signal))}>
-                  {asset.signal ?? '—'}
+                <span className="flex items-center gap-1">
+                  <span className={cn('font-semibold text-sm', subSignalClass(asset.signal))}>
+                    {asset.signal ?? '—'}
+                  </span>
+                  <TrackRecordHint k={compositeKey(asset)} symbol={asset.symbol} />
                 </span>
               </div>
             </div>
@@ -156,6 +162,8 @@ function DrawerBody({ asset, onClose }: { asset: AssetDetail; onClose: () => voi
                     <span className="text-2xs text-muted-foreground">Weight: 30% • MA50 exhaustion check</span>
                   </div>
                 </div>
+                <div className="flex items-center gap-1">
+                <TrackRecordHint k={factorKey('momentum', momentum)} symbol={asset.symbol} />
                 <Badge
                   variant="outline"
                   className={cn(
@@ -169,6 +177,7 @@ function DrawerBody({ asset, onClose }: { asset: AssetDetail; onClose: () => voi
                 >
                   {momentum ?? '—'}
                 </Badge>
+                </div>
               </div>
 
               {/* Factor 2: Funding Rate */}
@@ -184,8 +193,11 @@ function DrawerBody({ asset, onClose }: { asset: AssetDetail; onClose: () => voi
                   <span className="font-semibold block">
                     {formatFunding(asset.funding_rate)}
                   </span>
-                  <span className={cn('text-3xs font-bold', subSignalClass(asset.funding_rate_signal))}>
-                    {asset.funding_rate_signal ?? '—'}
+                  <span className="flex items-center justify-end gap-1">
+                    <TrackRecordHint k={factorKey('funding', asset.funding_rate_signal)} symbol={asset.symbol} />
+                    <span className={cn('text-3xs font-bold', subSignalClass(asset.funding_rate_signal))}>
+                      {asset.funding_rate_signal ?? '—'}
+                    </span>
                   </span>
                 </div>
               </div>
@@ -203,8 +215,11 @@ function DrawerBody({ asset, onClose }: { asset: AssetDetail; onClose: () => voi
                   <span className="font-semibold block">
                     {formatVolume(asset.open_interest)}
                   </span>
-                  <span className={cn('text-3xs font-bold', subSignalClass(asset.oi_signal))}>
-                    {asset.oi_signal ?? '—'}
+                  <span className="flex items-center justify-end gap-1">
+                    <TrackRecordHint k={factorKey('oi', asset.oi_signal)} symbol={asset.symbol} />
+                    <span className={cn('text-3xs font-bold', subSignalClass(asset.oi_signal))}>
+                      {asset.oi_signal ?? '—'}
+                    </span>
                   </span>
                 </div>
               </div>
