@@ -16,6 +16,7 @@ import { ApiError, apiErrorDetail } from '@/lib/api/errors'
 import { formatPercent, formatScore, formatTimestamp, valueOrDash } from '@/lib/utils/format'
 import { notify } from '@/lib/utils/toast'
 import { cn } from '@/lib/utils/cn'
+import { lowerTfHint, missingDataCount, sortTimeframes } from '@/lib/lab/timeframes'
 import { useCreateLabScan, useLabScan, useLabScans, useLabSymbols, useLabTemplates } from '@/lib/queries/lab'
 import {
   DEFAULT_COSTS,
@@ -205,12 +206,23 @@ function ScanBuilder({ onCreated }: { onCreated: (id: LabId) => void }) {
           <div className="space-y-1.5">
             <span className="text-xs font-medium">Timeframe</span>
             <div className="flex flex-wrap gap-1.5">
-              {template.timeframes.map((tf) => (
-                <Chip key={tf} active={tfs.includes(tf)} onClick={() => setTfs(toggle(tfs, tf))} className="min-w-12 font-mono">
-                  {tf}
-                </Chip>
-              ))}
+              {sortTimeframes(template.timeframes).map((tf) => {
+                const missing = selected.length ? missingDataCount(symbols, selected, tf) : 0
+                return (
+                  <Chip
+                    key={tf}
+                    active={tfs.includes(tf)}
+                    onClick={() => setTfs(toggle(tfs, tf))}
+                    className="min-w-12 gap-1.5 font-mono"
+                    title={missing ? `${missing} koin terpilih belum punya data ${tf} (akan diunduh)` : undefined}
+                  >
+                    {tf}
+                    {missing > 0 && <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" aria-label="sebagian belum ada data" />}
+                  </Chip>
+                )
+              })}
             </div>
+            {lowerTfHint(tfs) && <p className="text-2xs text-warn">{lowerTfHint(tfs)}</p>}
             {errors.timeframes && <p className="text-2xs text-bearish">{errors.timeframes}</p>}
           </div>
           <div className="space-y-1.5">
