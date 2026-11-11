@@ -438,6 +438,11 @@ export function paramLabel(spec: LabParamSpec): string {
   return PARAM_COPY[spec.key]?.label ?? spec.label
 }
 
+/** Help text: the template's own (schema) text first, else the shared Rosyade copy. */
+export function paramHelp(spec: LabParamSpec): string | undefined {
+  return spec.help || PARAM_COPY[spec.key]?.help || undefined
+}
+
 export function groupLabel(group: string): string {
   return GROUP_COPY[group] ?? group
 }

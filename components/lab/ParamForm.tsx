@@ -7,10 +7,10 @@ import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils/cn'
 import type { LabParamSpec, LabTemplate } from '@/lib/api/types/lab'
 import {
-  PARAM_COPY,
   changedKeys,
   groupLabel,
   initialParamValues,
+  paramHelp,
   paramLabel,
   splitParams,
   type ParamFormValue,
@@ -154,7 +154,7 @@ function ParamSlider({
 }) {
   const id = `param-${spec.key}`
   const changed = isChanged(spec, value)
-  const copy = PARAM_COPY[spec.key]
+  const help = paramHelp(spec)
   const min = spec.min ?? 0
   const max = spec.max ?? Math.max(1, Number(spec.default) * 2)
   const step = spec.step ?? (spec.type === 'int' ? 1 : 0.1)
@@ -175,7 +175,7 @@ function ParamSlider({
         </label>
         {changed && <ChangedBadge />}
       </div>
-      {copy?.help && <p className="text-2xs leading-snug text-muted-foreground">{copy.help}</p>}
+      {help && <p className="text-2xs leading-snug text-muted-foreground">{help}</p>}
       <div className="mt-auto flex items-center gap-3">
         <input
           type="range"
@@ -232,6 +232,7 @@ function ParamField({
         <label htmlFor={id} className="text-xs font-medium">
           {paramLabel(spec)}
           {changed && <span className="ml-1.5 align-middle"><ChangedBadge /></span>}
+          {spec.help && <span className="mt-0.5 block text-3xs font-normal leading-snug text-muted-foreground">{spec.help}</span>}
         </label>
         <Switch id={id} checked={value === true} onCheckedChange={(c) => onChange(c)} />
       </div>
@@ -247,6 +248,7 @@ function ParamField({
         </span>
         <span className="shrink-0 font-mono text-3xs font-normal text-muted-foreground">default {fmtDefault(spec.default)}</span>
       </label>
+      {spec.help && <p className="text-3xs leading-snug text-muted-foreground">{spec.help}</p>}
       {spec.type === 'choice' ? (
         <select
           id={id}
