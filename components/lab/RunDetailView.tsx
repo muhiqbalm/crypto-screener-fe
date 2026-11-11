@@ -13,6 +13,7 @@ import { EmptyState, Eyebrow, Section } from '@/components/lab/Section'
 import { ModeBadge, StatusBadge, signClass } from '@/components/lab/LabBadges'
 import { ChecksList, HoldoutWarning, VerdictBanner } from '@/components/lab/HonestyReport'
 import { EquityChart } from '@/components/lab/EquityChart'
+import { CostDragSection } from '@/components/lab/CostDragSection'
 import { ApiError, apiErrorDetail } from '@/lib/api/errors'
 import { formatPercent, formatPrice, formatScore, formatTimestamp, valueOrDash } from '@/lib/utils/format'
 import { notify } from '@/lib/utils/toast'
@@ -529,6 +530,8 @@ export function RunDetailView({ id }: { id: string }) {
           <ChecksList checks={run.checks} />
         </Section>
       )}
+
+      {done && <CostDragSection run={run} />}
 
       {done && run.mode === 'optimize' && <OptimizeSection run={run} template={template} />}
 

@@ -130,6 +130,27 @@ export interface LabRunDetail extends LabRunSummary {
   trials_done?: number | null
   objective?: string | null
   top_trials?: LabTopTrial[] | null
+  /** How often this template+symbol was tried across timeframes (data-snooping warning). */
+  snooping?: LabSnooping | null
+}
+
+/** metrics.costs / oos_metrics.costs: what the costs eat on this timeframe. */
+export interface LabCostProfile {
+  round_trip_cost_pct: number | null
+  avg_bar_range_pct: number | null
+  cost_to_bar_range: number | null
+  zero_cost_net_return_pct: number | null
+  zero_cost_profit_factor: number | null
+  cost_drag_pct: number | null
+  fees_paid: number | null
+  trades_per_month: number | null
+}
+
+export interface LabSnooping {
+  timeframes_tested: string[]
+  holdout_touches_all_tf: number
+  validated_runs_all_tf: number
+  optimizer_trials_all_tf: number
 }
 
 export interface LabTopTrial {

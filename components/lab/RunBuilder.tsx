@@ -15,6 +15,7 @@ import { OptimizePanel, optimizeSummary } from '@/components/lab/OptimizePanel'
 import { ApiError, apiErrorDetail } from '@/lib/api/errors'
 import { notify } from '@/lib/utils/toast'
 import { formatTimestamp } from '@/lib/utils/format'
+import { hasTimeframeData, lowerTfHint, sortTimeframes } from '@/lib/lab/timeframes'
 import { cn } from '@/lib/utils/cn'
 import { useCreateLabRun, useLabDataStatus, useLabRun, useLabSymbols, useLabTemplates } from '@/lib/queries/lab'
 import {
@@ -254,12 +255,23 @@ export function RunBuilder() {
               <div className="space-y-1.5">
                 <span className="text-xs font-medium">Timeframe</span>
                 <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Timeframe">
-                  {template.timeframes.map((tf) => (
-                    <Chip key={tf} active={form.timeframe === tf} onClick={() => update({ timeframe: tf })} className="min-w-12 font-mono">
-                      {tf}
-                    </Chip>
-                  ))}
+                  {sortTimeframes(template.timeframes).map((tf) => {
+                    const noData = hasTimeframeData(symbolInfo, tf) === false
+                    return (
+                      <Chip
+                        key={tf}
+                        active={form.timeframe === tf}
+                        onClick={() => update({ timeframe: tf })}
+                        className="min-w-12 gap-1.5 font-mono"
+                        title={noData ? `Data ${tf} untuk ${form.symbol} belum ada, akan diunduh saat dipakai` : undefined}
+                      >
+                        {tf}
+                        {noData && <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" aria-label="belum ada data" />}
+                      </Chip>
+                    )
+                  })}
                 </div>
+                {lowerTfHint([form.timeframe]) && <p className="text-2xs text-warn">{lowerTfHint([form.timeframe])}</p>}
               </div>
 
               <div className="space-y-1.5">

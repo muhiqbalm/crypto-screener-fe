@@ -49,7 +49,7 @@ const UNIVERSE = [
 const MOCK_LAB_SYMBOLS: LabSymbol[] = UNIVERSE.map((symbol, i) => ({
   symbol,
   has_data: i < 12,
-  timeframes: i < 12 ? ['1h', '4h', '1d'] : [],
+  timeframes: i < 4 ? ['15m', '30m', '1h', '4h', '1d'] : i < 12 ? ['1h', '4h', '1d'] : [],
 }))
 
 function seeded(seed: number) {
@@ -333,7 +333,7 @@ function makeDataStatus(): LabDataStatus[] {
   return MOCK_LAB_SYMBOLS.filter((s) => s.has_data).flatMap((s) =>
     s.timeframes.map((tf) => ({
       symbol: s.symbol, timeframe: tf, first: '2020-01-01T00:00:00Z', last: '2026-11-09T00:00:00Z',
-      rows: tf === '1h' ? 60_456 : tf === '4h' ? 15_114 : 2_519,
+      rows: tf === '15m' ? 241_824 : tf === '30m' ? 120_912 : tf === '1h' ? 60_456 : tf === '4h' ? 15_114 : 2_519,
     })),
   )
 }
