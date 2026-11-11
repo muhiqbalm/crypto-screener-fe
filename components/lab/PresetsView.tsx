@@ -115,7 +115,7 @@ function PresetRow({ p }: { p: LabPreset }) {
   const h = p.holdout
   const many = p.snooping && (p.snooping.runs >= 4 || p.snooping.timeframes >= 3 || p.snooping.trials >= 100)
   return (
-    <tr className={cn(p.live_reference && 'bg-lab/[0.04]')}>
+    <tr id={`preset-${p.id}`} className={cn('scroll-mt-20', p.live_reference && 'bg-lab/[0.04]')}>
       <td className="px-3 py-2.5">
         <span className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold', presetTone(p))}>
           {p.readonly ? <Lock className="h-3 w-3" aria-label="read-only" /> : <Bookmark className="h-3 w-3" aria-hidden="true" />}
