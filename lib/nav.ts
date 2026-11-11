@@ -7,6 +7,7 @@ import {
   Grid3x3,
   Newspaper,
   Radar,
+  ScanSearch,
   Wallet,
   Webhook,
   Layers,
@@ -103,6 +104,10 @@ export const LAB_NAV: NavItem[] = [
     label: 'Arena Paper',
     hint: 'Semua preset paper berdampingan + cek penyimpangan vs backtest',
     icon: Swords,
+    href: '/lab/live-check',
+    label: 'Cek bot live',
+    hint: 'Sinyal 4H-ETH-Basic menurut Lab vs yang benar-benar dieksekusi bot',
+    icon: ScanSearch,
   },
 ]
 
