@@ -10,6 +10,7 @@ import {
   detectPreset,
   diffFromDefaults,
   estimateMinutes,
+  groupLabel,
   initialParamValues,
   presetRange,
   relativeTime,
@@ -121,5 +122,12 @@ describe('relativeTime', () => {
     expect(relativeTime('2026-11-10T09:00:00Z', now)).toBe('3 jam lalu')
     expect(relativeTime('2026-11-08T12:00:00Z', now)).toBe('2 hari lalu')
     expect(relativeTime(null, now)).toBe('—')
+  })
+})
+
+describe('groupLabel', () => {
+  it('translates the MTF entry-timing group and falls back to the backend name', () => {
+    expect(groupLabel('Entry timing (MTF)')).toBe('Timing entry (MTF, riset)')
+    expect(groupLabel('Unknown group')).toBe('Unknown group')
   })
 })

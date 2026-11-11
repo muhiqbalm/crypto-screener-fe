@@ -422,6 +422,7 @@ const GROUP_COPY: Record<string, string> = {
   'Order blocks': 'Order block',
   'Risk & sizing': 'Risiko & ukuran posisi',
   Engine: 'Engine',
+  'Entry timing (MTF)': 'Timing entry (MTF, riset)',
 }
 
 export function paramLabel(spec: LabParamSpec): string {
