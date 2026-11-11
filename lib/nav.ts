@@ -7,6 +7,7 @@ import {
   Grid3x3,
   Newspaper,
   Radar,
+  ScanSearch,
   Wallet,
   Webhook,
   Layers,
@@ -89,6 +90,12 @@ export const LAB_NAV: NavItem[] = [
     label: 'Catatan Sinyal',
     hint: 'Semua sinyal dicatat & dinilai: mana yang bekerja, mana yang noise',
     icon: ListChecks,
+  },
+  {
+    href: '/lab/live-check',
+    label: 'Cek bot live',
+    hint: 'Sinyal 4H-ETH-Basic menurut Lab vs yang benar-benar dieksekusi bot',
+    icon: ScanSearch,
   },
 ]
 
