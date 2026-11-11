@@ -3,6 +3,7 @@ import {
   BookOpen,
   Bookmark,
   CandlestickChart,
+  FileText,
   FlaskConical,
   Grid3x3,
   Newspaper,
@@ -89,6 +90,12 @@ export const LAB_NAV: NavItem[] = [
     label: 'Catatan Sinyal',
     hint: 'Semua sinyal dicatat & dinilai: mana yang bekerja, mana yang noise',
     icon: ListChecks,
+  },
+  {
+    href: '/lab/report',
+    label: 'Laporan Mingguan',
+    hint: 'Rangkuman per minggu: paper, sinyal, eksekusi, bot live, Lab & sistem',
+    icon: FileText,
   },
 ]
 

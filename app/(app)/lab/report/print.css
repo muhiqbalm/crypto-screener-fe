@@ -1,0 +1,40 @@
+/*
+ * Print / "Simpan PDF" for /lab/report only. Every rule is gated on the report
+ * marker ([data-report-print]) so this sheet (Next keeps imported global CSS after
+ * navigation) never affects other pages. Forces the light palette on paper.
+ */
+@media print {
+  html:root:has([data-report-print]) {
+    --color-background: #fff;
+    --color-foreground: #111;
+    --color-card: #fff;
+    --color-card-foreground: #111;
+    --color-muted: #f2f2f4;
+    --color-muted-foreground: #555;
+    --color-border: #d8d8dc;
+    --color-bullish: #0a7a3e;
+    --color-bearish: #b42318;
+    --color-brand: #0b6e5f;
+    --color-info: #1d5fa8;
+    --color-warn: #8a5a00;
+    --color-lab: #5b2bb5;
+    color-scheme: light;
+  }
+  body:has([data-report-print]) aside,
+  body:has([data-report-print]) header.sticky,
+  body:has([data-report-print]) nav[aria-label='Navigasi Lab'] {
+    display: none !important;
+  }
+  body:has([data-report-print]) .lg\:pl-sidebar {
+    padding-left: 0 !important;
+  }
+  body:has([data-report-print]) {
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+}
