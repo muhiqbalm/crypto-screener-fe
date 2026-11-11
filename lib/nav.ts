@@ -3,6 +3,7 @@ import {
   BookOpen,
   Bookmark,
   CandlestickChart,
+  FileText,
   FlaskConical,
   Grid3x3,
   Newspaper,
@@ -108,6 +109,10 @@ export const LAB_NAV: NavItem[] = [
     label: 'Cek bot live',
     hint: 'Sinyal 4H-ETH-Basic menurut Lab vs yang benar-benar dieksekusi bot',
     icon: ScanSearch,
+    href: '/lab/report',
+    label: 'Laporan Mingguan',
+    hint: 'Rangkuman per minggu: paper, sinyal, eksekusi, bot live, Lab & sistem',
+    icon: FileText,
   },
 ]
 

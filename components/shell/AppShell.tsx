@@ -8,6 +8,7 @@ import { Brand } from '@/components/shell/Brand'
 import { ApiStatus } from '@/components/shell/ApiStatus'
 import { SidebarNav } from '@/components/shell/SidebarNav'
 import { UserMenu } from '@/components/shell/UserMenu'
+import { NotificationBell } from '@/components/shell/NotificationBell'
 import { useSession } from '@/lib/utils/use-session'
 import { useLabMe } from '@/lib/queries/lab'
 
@@ -86,6 +87,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Brand className="lg:hidden" />
           <div className="ml-auto flex items-center gap-3">
             <ApiStatus className="hidden md:inline-flex lg:hidden xl:inline-flex" />
+            {isAdmin && <NotificationBell />}
             <UserMenu />
           </div>
         </header>
