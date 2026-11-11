@@ -123,3 +123,12 @@ describe('relativeTime', () => {
     expect(relativeTime(null, now)).toBe('—')
   })
 })
+
+describe('2-year period preset (15m default)', () => {
+  it('round-trips through presetRange / detectPreset', async () => {
+    const { presetRange, detectPreset } = await import('./form')
+    const today = new Date(Date.UTC(2026, 10, 11))
+    expect(presetRange('2y', today)).toEqual({ start: '2024-11-11', end: '' })
+    expect(detectPreset('2024-11-11', '', today)).toBe('2y')
+  })
+})

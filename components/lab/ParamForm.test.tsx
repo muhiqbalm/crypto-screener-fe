@@ -24,7 +24,7 @@ describe('ParamForm', () => {
     expect(screen.getByLabelText(/EMA cepat/)).toHaveValue(21)
     expect(screen.getByRole('switch')).toBeInTheDocument()
     expect(screen.getByLabelText(/Arah/)).toHaveValue('both')
-    expect(screen.getByText(/default = setting strategi live ETH 4H/i)).toBeInTheDocument()
+    expect(screen.getByText(/default = preset 4H-ETH-Basic \(setting live ETH 4H\)/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /reset ke default live/i })).toBeDisabled()
   })
 

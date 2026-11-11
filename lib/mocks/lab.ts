@@ -34,6 +34,7 @@ import type {
   PaperOrderRequest,
   PaperPosition,
 } from '@/lib/api/types/lab'
+import type { LabBoardRow, LabEstimateRequest, LabPreset } from '@/lib/api/types/lab-insights'
 
 const MOCK_LAB_TEMPLATES: LabTemplate[] = [templateJson as unknown as LabTemplate]
 const TPL = MOCK_LAB_TEMPLATES[0]
@@ -391,6 +392,132 @@ function num(id: string | undefined): number {
   return n
 }
 
+
+// ---------------------------------------------------------------------------
+// Planning / leaderboard / presets (feat/lab-compare)
+// ---------------------------------------------------------------------------
+
+const presets = new Map<number, LabPreset>()
+const TF_BAR_S: Record<string, number> = { '15m': 900, '30m': 1800, '1h': 3600, '4h': 14400, '1d': 86400 }
+
+function seedPresets() {
+  if (presets.size) return
+  presets.set(1, {
+    id: 1, name: '4H-ETH-Basic', label: 'Basic', template_id: TPL.id, symbol: 'ETHUSDT', timeframe: '4h', params: { ...DEFAULTS },
+    costs: { commission_pct: 0.05, slippage_pct: 0.05, funding: true }, notes: 'Setting live strategi ETH 4H (default template).',
+    readonly: true, live_reference: true, source_run_id: null, source_mode: null, verdict: null, holdout: null, snooping: null,
+    created_at: new Date().toISOString(), usage: { runs: 0, watches: 0 },
+  })
+}
+
+function mockNum(m: Record<string, unknown> | null | undefined, k: string): number | null {
+  const v = m?.[k]
+  return typeof v === 'number' ? v : null
+}
+
+function boardRows(): LabBoardRow[] {
+  const done = [...runs.values()].filter((r) => r.status === 'done' && r.mode !== 'backtest' && r.oos_metrics)
+  const rows = done.map((r): LabBoardRow => {
+    const o = r.oos_metrics as Record<string, unknown>
+    const same = done.filter((x) => x.symbol === r.symbol)
+    const att = { runs: same.length, timeframes: new Set(same.map((x) => x.timeframe)).size, trials: 0, runs_this_tf: same.filter((x) => x.timeframe === r.timeframe).length, holdout_touches: r.holdout_touches ?? 1 }
+    return {
+      run_id: r.id, scan_id: null, template_id: r.template_id, symbol: r.symbol, timeframe: r.timeframe, mode: r.mode as 'validate', verdict: r.verdict,
+      created_at: r.created_at, start: r.start, end: r.end, holdout_start: r.holdout_start ?? null, holdout_touches: r.holdout_touches, n_trials: null, trials_done: null,
+      holdout: { net_return_pct: mockNum(o, 'net_return_pct'), profit_factor: mockNum(o, 'profit_factor'), max_dd_pct: mockNum(o, 'max_dd_pct'), sharpe: mockNum(o, 'sharpe'), trades: mockNum(o, 'trades'), win_rate_pct: mockNum(o, 'win_rate_pct'), stress_net_return_pct: mockNum(o, 'stress_net_return_pct'), cost_drag_pct: null, trades_per_month: null },
+      in_sample: { net_return_pct: r.net_return_pct, profit_factor: r.profit_factor, max_dd_pct: r.max_dd_pct, sharpe: null, trades: r.trades, win_rate_pct: null },
+      failed_checks: (r.checks ?? []).filter((c) => !c.passed).map((c) => c.name),
+      attempts: att, snooping: att.runs >= 10 || att.timeframes >= 5 ? 'high' : att.runs >= 4 || att.timeframes >= 3 ? 'medium' : 'low', rank: null, preset: null, saved_as: [],
+    }
+  })
+  rows.sort((a, b) => (a.verdict === 'PASS' ? 0 : 1) - (b.verdict === 'PASS' ? 0 : 1) || (b.holdout.profit_factor ?? -1) - (a.holdout.profit_factor ?? -1))
+  let rank = 0
+  for (const r of rows) r.rank = r.verdict === 'PASS' ? ++rank : null
+  return rows
+}
+
+function insightsMock(method: string, seg: string[], qs: URLSearchParams, body: unknown): { hit: true; value: unknown } | null {
+  seedPresets()
+  const ok = (value: unknown) => ({ hit: true as const, value })
+  if (method === 'GET' && seg[0] === 'run-defaults') {
+    const y = (n: number) => { const d = new Date(); d.setUTCFullYear(d.getUTCFullYear() - n); return d.toISOString().slice(0, 10) }
+    return ok({
+      timeframes: { '15m': { start: y(2), n_trials: 10, reason: '15m: 2 tahun data & 10 percobaan.' }, '30m': { start: y(3), n_trials: 30, reason: '30m: 3 tahun data.' }, '1h': { start: '2020-01-01', n_trials: 30, reason: null }, '4h': { start: '2020-01-01', n_trials: 30, reason: null }, '1d': { start: '2020-01-01', n_trials: 30, reason: null } },
+      timeouts: { backtest: 3600, validate: 10800, optimize: 18000 }, trial_options: [10, 30, 60], max_trials: 60, slots: 1, scan_slots: 1, long_job_s: 2700, timeout_danger_fraction: 0.8,
+    })
+  }
+  if (method === 'POST' && seg[0] === 'estimate') {
+    const b = body as LabEstimateRequest
+    const cells = b.timeframes.flatMap((tf) => b.symbols.map((symbol) => {
+      const start = Date.parse(b.starts?.[tf] ?? b.start ?? '2020-01-01')
+      const bars = Math.max(0, Math.floor((Date.now() - start) / 1000 / (TF_BAR_S[tf] ?? 14400)))
+      const v = 20 + 0.0096 * bars
+      const sec = b.mode === 'backtest' ? 5 + 0.0006 * bars : b.mode === 'optimize' ? v + 0.00064 * bars * 0.8 * (b.n_trials ?? 30) * 1.6 : v
+      return { symbol, timeframe: tf, seconds: Math.round(sec), bars, cached: true }
+    }))
+    const total = cells.reduce((a, c) => a + c.seconds, 0)
+    const longest = Math.max(0, ...cells.map((c) => c.seconds))
+    const timeout = b.mode === 'optimize' ? 18000 : b.mode === 'backtest' ? 3600 : 10800
+    const byTf = Object.fromEntries(b.timeframes.map((tf) => { const s = cells.filter((c) => c.timeframe === tf).map((c) => c.seconds); return [tf, { seconds_each: Math.max(0, ...s), total_s: s.reduce((x, y) => x + y, 0) }] }))
+    return ok({ mode: b.mode, n_trials: b.n_trials ?? null, cells, by_timeframe: byTf, total_s: total, longest_s: longest, wall_s: total, parallel: 1, timeout_s: timeout,
+      exceeds_timeout: cells.filter((c) => c.seconds > timeout).map((c) => `${c.symbol} ${c.timeframe}`), near_timeout: longest > timeout * 0.8, long: longest > 2700,
+      queue: { ahead_jobs: 0, wait_s: 0, slots: 1, scan_slots: 1 }, eta_done_s: total, calibrated: false })
+  }
+  if (method === 'GET' && seg[0] === 'queue') return ok({ slots: 1, scan_slots: 1, jobs: [], backlog_s: 0, queued: 0, running: 0 })
+  if (method === 'POST' && seg[0] === 'scans' && seg[2] === 'cancel') return ok({ scan_id: seg[1], cancelled: 0, cancelling: 0 })
+  if (method === 'GET' && seg[0] === 'leaderboard') {
+    let rows = boardRows()
+    if (qs.get('timeframe')) rows = rows.filter((r) => r.timeframe === qs.get('timeframe'))
+    if (qs.get('verdict')) rows = rows.filter((r) => r.verdict === qs.get('verdict'))
+    const pass = rows.filter((r) => r.verdict === 'PASS').length
+    return ok({ sort: qs.get('sort') ?? 'oos_pf', summary: { runs: rows.length, pass, fail: rows.length - pass, trials: 0, combinations: rows.length }, rows, thresholds: { medium: { runs: 4, timeframes: 3, trials: 100 }, high: { runs: 10, timeframes: 5, trials: 300 } } })
+  }
+  if (seg[0] === 'presets') {
+    if (method === 'GET' && seg.length === 1) return ok([...presets.values()])
+    if (method === 'GET' && seg[1] === 'best') {
+      const cells: Record<string, unknown> = {}
+      for (const s of (qs.get('symbols') ?? '').split(',')) for (const tf of (qs.get('timeframes') ?? '').split(',')) {
+        const p = [...presets.values()].find((x) => x.symbol === s && x.timeframe === tf && (x.verdict === 'PASS' || x.live_reference))
+        cells[`${s}|${tf}`] = p ? { id: p.id, name: p.name, verdict: p.verdict, live_reference: p.live_reference, params: p.params, holdout: p.holdout } : null
+      }
+      return ok({ cells })
+    }
+    const p = presets.get(num(seg[1]))
+    if (!p) notFound()
+    if (method === 'GET' && seg.length === 2) return ok(p)
+    if (method === 'DELETE') {
+      if (p.readonly) throw new ApiError('auth', 403)
+      presets.delete(Number(p.id))
+      return ok({ id: p.id, deleted: true })
+    }
+    if (method === 'POST' && seg[2] === 'watch') {
+      const id = ++nextId
+      watches.set(id, { id, template_id: p.template_id, symbol: p.symbol, timeframe: p.timeframe, params: p.params, created_at: new Date().toISOString(), autopaper: null })
+      p.usage = { ...p.usage, watches: p.usage.watches + 1 }
+      return ok({ watch_id: id, preset_id: p.id, autopaper: null })
+    }
+  }
+  if (method === 'POST' && seg[0] === 'runs' && seg[2] === 'preset') {
+    const r = runs.get(num(seg[1]))
+    if (!r) notFound()
+    const label = (body as { label: string }).label
+    const name = `${r.timeframe.toUpperCase()}-${r.symbol.replace(/USDT$/, '')}-${label}`
+    if ([...presets.values()].some((x) => x.name === name)) throw new ApiError('server', 409)
+    const id = ++nextId
+    const o = r.oos_metrics as Record<string, unknown> | null
+    const preset: LabPreset = {
+      id, name, label, template_id: r.template_id, symbol: r.symbol, timeframe: r.timeframe, params: r.best_params ?? r.params, costs: r.costs,
+      notes: (body as { notes?: string }).notes ?? null, readonly: false, live_reference: false, source_run_id: r.id, source_mode: r.mode, verdict: r.verdict,
+      holdout: o ? { net_return_pct: mockNum(o, 'net_return_pct'), profit_factor: mockNum(o, 'profit_factor'), max_dd_pct: mockNum(o, 'max_dd_pct'), sharpe: mockNum(o, 'sharpe'), trades: mockNum(o, 'trades'), win_rate_pct: null, stress_net_return_pct: mockNum(o, 'stress_net_return_pct'), cost_drag_pct: null, start: null, end: null } : null,
+      snooping: { runs: [...runs.values()].filter((x) => x.symbol === r.symbol && x.mode !== 'backtest').length, timeframes: 1, trials: 0, holdout_touches: 1 },
+      created_at: new Date().toISOString(), usage: { runs: 0, watches: 0 },
+    }
+    presets.set(id, preset)
+    return ok(preset)
+  }
+  return null
+}
+
 export async function getLabMock(method: string, fullPath: string, body?: unknown): Promise<unknown> {
   seed()
   // Simulate network latency so loading states are visible in dev.
@@ -400,6 +527,8 @@ export async function getLabMock(method: string, fullPath: string, body?: unknow
   const qs = new URLSearchParams(query)
   const seg = path.split('/').filter(Boolean).map(decodeURIComponent)
 
+  const extra = insightsMock(method, seg, qs, body)
+  if (extra) return extra.value
   if (method === 'GET' && path === '/me') return { is_admin: true }
   if (method === 'GET' && path === '/templates') return MOCK_LAB_TEMPLATES
   if (method === 'GET' && path === '/symbols') return MOCK_LAB_SYMBOLS

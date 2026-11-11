@@ -2,16 +2,28 @@
 
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ChevronDown, Database, Info, Loader2, Play, ShieldCheck, SlidersHorizontal, Sparkles, Wand2 } from 'lucide-react'
+import { Bookmark, ChevronDown, Database, SlidersHorizontal, Sparkles, Wand2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorPanel } from '@/components/shell/ErrorPanel'
 import { Chip, EmptyState, Section } from '@/components/lab/Section'
 import { AdvancedParams, MainParams, ParamSummary } from '@/components/lab/ParamForm'
 import { CostDisclosure } from '@/components/lab/CostInputs'
 import { DOWNLOAD_HINT, SymbolPicker } from '@/components/lab/SymbolPicker'
 import { OptimizePanel, optimizeSummary } from '@/components/lab/OptimizePanel'
+import { PresetSelect } from '@/components/lab/PresetSelect'
+import { RunActionBar } from '@/components/lab/builder/RunActionBar'
+import { BuilderSkeleton } from '@/components/lab/builder/BuilderSkeleton'
+import {
+  fromPreset,
+  initialForm,
+  pickTimeframe,
+  tfDefaultsPatch,
+  type FormState,
+  type PrefillUse,
+} from '@/components/lab/builder/form-state'
+import { tfDefault } from '@/lib/lab/planning'
+import { useLabEstimate, useLabPresets, useLabRunDefaults } from '@/lib/queries/lab-insights'
 import { ApiError, apiErrorDetail } from '@/lib/api/errors'
 import { notify } from '@/lib/utils/toast'
 import { formatTimestamp } from '@/lib/utils/format'
@@ -20,89 +32,16 @@ import { cn } from '@/lib/utils/cn'
 import { useCreateLabRun, useLabDataStatus, useLabRun, useLabSymbols, useLabTemplates } from '@/lib/queries/lab'
 import {
   DATE_PRESETS,
-  DEFAULT_COSTS,
   buildRunRequest,
   changedKeys,
-  costsToForm,
   defaultOptimizeConfig,
-  detectPreset,
-  estimateMinutes,
   initialParamValues,
   presetRange,
   splitParams,
   validateOptimize,
   validateRunForm,
-  type CostFormValues,
-  type DatePreset,
-  type OptimizeConfig,
-  type ParamFormValues,
 } from '@/lib/lab/form'
-import type { LabParamValue, LabRunDetail, LabRunMode, LabSymbol, LabTemplate } from '@/lib/api/types/lab'
-
-interface FormState {
-  templateId: string
-  symbol: string
-  timeframe: string
-  preset: DatePreset
-  start: string
-  end: string
-  params: ParamFormValues
-  costs: CostFormValues
-  optimize: OptimizeConfig
-}
-
-type PrefillUse = 'params' | 'best' | 'trial'
-
-function pickTimeframe(t: LabTemplate, preferred?: string): string {
-  if (preferred && t.timeframes.includes(preferred)) return preferred
-  if (t.timeframes.includes('4h')) return '4h'
-  return t.timeframes[0] ?? ''
-}
-
-function prefillOverrides(
-  run: LabRunDetail | null,
-  use: PrefillUse,
-  rank: number | null,
-): Record<string, LabParamValue> | null {
-  if (!run) return null
-  if (use === 'best' && run.best_params) return run.best_params
-  if (use === 'trial' && rank !== null) {
-    const t = run.top_trials?.find((x) => x.rank === rank)
-    if (t) return { ...run.params, ...t.params }
-  }
-  return run.params
-}
-
-function initialForm(
-  templates: LabTemplate[],
-  symbols: LabSymbol[],
-  prefill: LabRunDetail | null,
-  use: PrefillUse,
-  rank: number | null,
-): FormState {
-  const template = (prefill && templates.find((t) => t.id === prefill.template_id)) || templates[0]
-  const names = symbols.map((s) => s.symbol)
-  const symbol =
-    prefill && names.includes(prefill.symbol) ? prefill.symbol : names.includes('ETHUSDT') ? 'ETHUSDT' : (names[0] ?? '')
-  const range = prefill ? { start: prefill.start ?? '', end: prefill.end ?? '' } : presetRange('since2020')!
-  return {
-    templateId: template.id,
-    symbol,
-    timeframe: pickTimeframe(template, prefill?.timeframe),
-    preset: prefill ? detectPreset(range.start, range.end) : 'since2020',
-    start: range.start,
-    end: range.end,
-    params: initialParamValues(template, prefillOverrides(prefill, use, rank)),
-    costs: prefill ? costsToForm(prefill.costs) : { ...DEFAULT_COSTS },
-    optimize: defaultOptimizeConfig(template),
-  }
-}
-
-const ACTIONS: { mode: LabRunMode; label: string; short: string; hint: string; Icon: typeof Play }[] = [
-  { mode: 'backtest', label: 'Backtest', short: 'Backtest', hint: 'cepat, tanpa rapor', Icon: Play },
-  { mode: 'validate', label: 'Validasi', short: 'Validasi', hint: 'rapor LOLOS/GAGAL', Icon: ShieldCheck },
-  { mode: 'optimize', label: 'Cari Parameter Terbaik', short: 'Cari terbaik', hint: 'optimize + uji holdout', Icon: Sparkles },
-]
+import type { LabRunMode } from '@/lib/api/types/lab'
 
 export function RunBuilder() {
   const router = useRouter()
@@ -110,6 +49,7 @@ export function RunBuilder() {
   const fromId = search.get('from')
   const useParam = search.get('use')
   const use: PrefillUse = useParam === 'best' ? 'best' : useParam === 'trial' ? 'trial' : 'params'
+  const presetParam = search.get('preset')
   const rankParam = search.get('rank')
   const rank = rankParam !== null && Number.isFinite(Number(rankParam)) ? Number(rankParam) : null
 
@@ -117,7 +57,10 @@ export function RunBuilder() {
   const symbolsQ = useLabSymbols()
   const prefillQ = useLabRun(fromId)
   const dataStatusQ = useLabDataStatus()
+  const defaultsQ = useLabRunDefaults()
+  const presetsQ = useLabPresets()
   const createRun = useCreateLabRun()
+  const [ack, setAck] = useState(false)
 
   const [form, setForm] = useState<FormState | null>(null)
   const [formKey, setFormKey] = useState<string | null>(null)
@@ -128,12 +71,22 @@ export function RunBuilder() {
   const templates = templatesQ.data ?? []
   const symbols = symbolsQ.data ?? []
   const prefillReady = !fromId || prefillQ.isSuccess || prefillQ.isError
-  const desiredKey = `${fromId ?? ''}|${use}|${rank ?? ''}`
+  const presetReady = !presetParam || presetsQ.isSuccess || presetsQ.isError
+  const urlPreset = presetParam ? (presetsQ.data ?? []).find((p) => String(p.id) === presetParam) ?? null : null
+  const desiredKey = `${fromId ?? ''}|${use}|${rank ?? ''}|${presetParam ?? ''}`
 
-  // Initialise (or re-initialise when ?from changes) during render, not in an effect.
-  if (templates.length > 0 && symbolsQ.isSuccess && prefillReady && formKey !== desiredKey) {
+  // Estimates for validate + optimize with the current inputs (backend model, calibrated on this server).
+  const estBase = form && form.symbol && form.timeframe
+    ? { template_id: form.templateId, symbols: [form.symbol], timeframes: [form.timeframe], start: form.start || undefined, end: form.end || undefined }
+    : null
+  const estValidate = useLabEstimate(estBase && { ...estBase, mode: 'validate' })
+  const estOptimize = useLabEstimate(estBase && { ...estBase, mode: 'optimize', n_trials: form?.optimize.nTrials })
+  const estBacktest = useLabEstimate(estBase && { ...estBase, mode: 'backtest' })
+
+  // Initialise (or re-initialise when ?from / ?preset changes) during render, not in an effect.
+  if (templates.length > 0 && symbolsQ.isSuccess && prefillReady && presetReady && formKey !== desiredKey) {
     setFormKey(desiredKey)
-    setForm(initialForm(templates, symbols, prefillQ.data ?? null, use, rank))
+    setForm(initialForm(templates, symbols, prefillQ.data ?? null, use, rank, defaultsQ.data, urlPreset))
     setErrors({})
     setSubmitError(null)
   }
@@ -178,8 +131,14 @@ export function RunBuilder() {
   const advancedCount = advanced.reduce((a, g) => a + g.params.length, 0)
   const update = (patch: Partial<FormState>) => {
     setSubmitError(null)
+    setAck(false)
     setForm({ ...form, ...patch })
   }
+  const presets = (presetsQ.data ?? []).filter((p) => templates.some((t) => t.id === p.template_id))
+  const activePreset = presets.find((p) => String(p.id) === form.presetId) ?? null
+  const tfDef = tfDefault(form.timeframe, defaultsQ.data)
+  const longerPeriod = form.periodTouched && (form.start === '' || form.start < tfDef.start) && tfDef.start > '2020-01-01'
+  const moreTrials = form.trialsTouched && form.optimize.nTrials > tfDef.nTrials
 
   const submit = (mode: LabRunMode) => {
     const state = { ...form, template }
@@ -191,7 +150,9 @@ export function RunBuilder() {
     }
     setPendingMode(mode)
     setSubmitError(null)
-    createRun.mutate(buildRunRequest(state, mode, mode === 'optimize' ? form.optimize : null), {
+    const req = buildRunRequest(state, mode, mode === 'optimize' ? form.optimize : null)
+    if (form.presetId) req.preset_id = form.presetId
+    createRun.mutate(req, {
       onSuccess: (res) => {
         notify.success('Run masuk antrian', { description: `Run #${res.run_id}` })
         router.push(`/lab/runs/${encodeURIComponent(String(res.run_id))}`)
@@ -231,7 +192,7 @@ export function RunBuilder() {
                     value={template.id}
                     onChange={(e) => {
                       const t = templates.find((x) => x.id === e.target.value) ?? templates[0]
-                      update({ templateId: t.id, params: initialParamValues(t), timeframe: pickTimeframe(t, form.timeframe), optimize: defaultOptimizeConfig(t) })
+                      update({ templateId: t.id, params: initialParamValues(t), timeframe: pickTimeframe(t, form.timeframe), optimize: defaultOptimizeConfig(t), presetId: null })
                     }}
                     className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-sm"
                   >
@@ -244,6 +205,30 @@ export function RunBuilder() {
                 <p className="text-xs text-muted-foreground" title={template.description}>
                   Strategi: <span className="font-medium text-foreground">{template.name}</span>
                 </p>
+              )}
+
+              {presets.length > 0 && (
+                <div className="space-y-1.5">
+                  <label htmlFor="lab-preset" className="flex items-center gap-1.5 text-xs font-medium">
+                    <Bookmark className="h-3.5 w-3.5 text-lab" aria-hidden="true" />
+                    Preset
+                  </label>
+                  <PresetSelect
+                    id="lab-preset"
+                    presets={presets}
+                    value={form.presetId}
+                    onChange={(p) => {
+                      if (!p) return update({ presetId: null })
+                      const next = fromPreset(form, templates, p)
+                      update({ ...next, ...tfDefaultsPatch(next, next.timeframe, defaultsQ.data) })
+                    }}
+                  />
+                  <p className="text-2xs text-muted-foreground">
+                    {activePreset
+                      ? `${activePreset.name}: parameter khusus ${activePreset.symbol.replace(/USDT$/, '')} ${activePreset.timeframe}.${activePreset.symbol !== form.symbol || activePreset.timeframe !== form.timeframe ? ' Dipakai di koin/TF lain — hasil bisa jauh berbeda.' : ''}`
+                      : 'Satu logika strategi, parameter berbeda per koin & timeframe. Pilih preset untuk mengisi form.'}
+                  </p>
+                </div>
               )}
 
               <div className="space-y-1.5">
@@ -261,7 +246,7 @@ export function RunBuilder() {
                       <Chip
                         key={tf}
                         active={form.timeframe === tf}
-                        onClick={() => update({ timeframe: tf })}
+                        onClick={() => update({ timeframe: tf, ...tfDefaultsPatch(form, tf, defaultsQ.data) })}
                         className="min-w-12 gap-1.5 font-mono"
                         title={noData ? `Data ${tf} untuk ${form.symbol} belum ada, akan diunduh saat dipakai` : undefined}
                       >
@@ -283,7 +268,7 @@ export function RunBuilder() {
                       active={form.preset === p.id}
                       onClick={() => {
                         const r = presetRange(p.id)
-                        update(r ? { preset: p.id, ...r } : { preset: 'custom' })
+                        update(r ? { preset: p.id, ...r, periodTouched: true } : { preset: 'custom', periodTouched: true })
                       }}
                     >
                       {p.label}
@@ -294,16 +279,25 @@ export function RunBuilder() {
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <div className="space-y-1">
                       <label htmlFor="lab-start" className="text-2xs text-muted-foreground">Mulai</label>
-                      <Input id="lab-start" type="date" value={form.start} onChange={(e) => update({ start: e.target.value })} className={cn('h-8 px-2 text-xs', errors.start && 'border-bearish')} />
+                      <Input id="lab-start" type="date" value={form.start} onChange={(e) => update({ start: e.target.value, periodTouched: true })} className={cn('h-8 px-2 text-xs', errors.start && 'border-bearish')} />
                     </div>
                     <div className="space-y-1">
                       <label htmlFor="lab-end" className="text-2xs text-muted-foreground">Sampai (kosong = terbaru)</label>
-                      <Input id="lab-end" type="date" value={form.end} onChange={(e) => update({ end: e.target.value })} className={cn('h-8 px-2 text-xs', errors.end && 'border-bearish')} />
+                      <Input id="lab-end" type="date" value={form.end} onChange={(e) => update({ end: e.target.value, periodTouched: true })} className={cn('h-8 px-2 text-xs', errors.end && 'border-bearish')} />
                     </div>
                   </div>
                 )}
                 {(errors.start || errors.end) && <p className="text-2xs text-bearish">{errors.end ?? errors.start}</p>}
                 <p className="text-2xs text-muted-foreground">20% data terakhir dikunci sebagai holdout untuk ujian akhir.</p>
+                {!form.periodTouched && tfDef.reason && <p className="text-2xs text-muted-foreground">Default {form.timeframe}: {tfDef.reason}</p>}
+                {longerPeriod && (
+                  <p className="text-2xs text-warn">
+                    Lebih panjang dari default {form.timeframe} (mulai {tfDef.start}) — run jauh lebih lama.{' '}
+                    <button type="button" className="underline cursor-pointer" onClick={() => update({ ...tfDefaultsPatch({ ...form, periodTouched: false }, form.timeframe, defaultsQ.data), periodTouched: false })}>
+                      Pakai default
+                    </button>
+                  </p>
+                )}
               </div>
 
               <p className="flex items-start gap-1.5 rounded-md bg-muted/40 px-2.5 py-2 text-2xs text-muted-foreground">
@@ -333,7 +327,13 @@ export function RunBuilder() {
                 <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
               </summary>
               <div className="px-4 pb-4 sm:px-5 sm:pb-5">
-                <OptimizePanel template={template} value={form.optimize} errors={errors} onChange={(optimize) => update({ optimize })} />
+                <OptimizePanel
+                  template={template}
+                  value={form.optimize}
+                  errors={errors}
+                  onChange={(optimize) => update({ optimize, trialsTouched: form.trialsTouched || optimize.nTrials !== form.optimize.nTrials })}
+                />
+                {moreTrials && <p className="pt-2 text-2xs text-warn">Lebih banyak dari default {form.timeframe} ({tfDef.nTrials} percobaan) — optimize jauh lebih lama.</p>}
               </div>
             </details>
           )}
@@ -345,7 +345,7 @@ export function RunBuilder() {
             <Section
               title="Parameter utama"
               icon={<SlidersHorizontal className="h-4 w-4 text-lab" />}
-              description="12 parameter yang paling berpengaruh. Default = setting live ETH 4H."
+              description="12 parameter yang paling berpengaruh. Default = 4H-ETH-Basic (setting live ETH 4H); koin/TF lain biasanya butuh nilai berbeda."
               action={<ParamSummary template={template} values={form.params} onChange={(params) => update({ params })} />}
             >
               <MainParams template={template} values={form.params} errors={errors} onChange={(params) => update({ params })} />
@@ -361,67 +361,24 @@ export function RunBuilder() {
         </div>
       </div>
 
-      {/* Sticky action bar */}
-      <div className="sticky bottom-3 z-30">
-        <div className="rounded-xl border border-border bg-background/90 p-3 shadow-lg backdrop-blur-md sm:p-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="min-w-0 space-y-0.5">
-              <p className="truncate text-sm font-semibold">
-                <span className="font-mono">{form.symbol}</span> · <span className="font-mono">{form.timeframe}</span> · {presetLabel}
-                {changed > 0 ? <span className="text-warn"> · {changed} parameter diubah</span> : <span className="text-muted-foreground"> · default live</span>}
-              </p>
-              <p className="flex items-center gap-1.5 text-2xs text-muted-foreground">
-                <Info className="h-3 w-3 shrink-0" />
-                Validasi &amp; optimize diuji jujur di periode holdout yang dikunci — tidak bisa diintip optimizer.
-              </p>
-              {submitError && <p role="alert" className="text-xs text-bearish">{submitError}</p>}
-            </div>
-            <div className="grid grid-cols-3 gap-2 lg:flex lg:shrink-0">
-              {ACTIONS.map(({ mode, label, short, hint, Icon }) => (
-                <Button
-                  key={mode}
-                  type="button"
-                  variant={mode === 'validate' ? 'default' : 'outline'}
-                  onClick={() => submit(mode)}
-                  disabled={createRun.isPending}
-                  className={cn('h-auto flex-col gap-0 px-2 py-2 whitespace-normal sm:px-4', mode === 'optimize' && 'border-lab/50 text-lab hover:text-lab')}
-                >
-                  <span className="flex items-center gap-1.5 text-xs font-semibold sm:text-sm">
-                    {pendingMode === mode ? <Loader2 className="animate-spin" /> : <Icon />}
-                    <span className="sm:hidden">{short}</span>
-                    <span className="hidden sm:inline">{label}</span>
-                  </span>
-                  <span className="hidden text-3xs font-normal opacity-75 sm:block">
-                    {mode === 'optimize' ? `${form.optimize.nTrials} percobaan · ±${estimateMinutes(form.optimize.nTrials)} mnt` : hint}
-                  </span>
-                </Button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function BuilderSkeleton() {
-  return (
-    <div className="grid gap-4 lg:grid-cols-[340px_1fr]" aria-busy="true" aria-label="Memuat builder">
-      <div className="space-y-3 rounded-xl border border-border p-5">
-        <Skeleton className="h-4 w-32" />
-        <Skeleton className="h-9 w-full" />
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-16 w-full" />
-      </div>
-      <div className="space-y-3 rounded-xl border border-border p-5">
-        <Skeleton className="h-4 w-40" />
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-28 w-full" />
-          ))}
-        </div>
-      </div>
+      <RunActionBar
+        summary={
+          <>
+            {activePreset && <span className="text-lab">{activePreset.name} · </span>}
+            <span className="font-mono">{form.symbol}</span> · <span className="font-mono">{form.timeframe}</span> · {presetLabel}
+            {changed > 0 ? <span className="text-warn"> · {changed} parameter diubah</span> : <span className="text-muted-foreground"> · default template</span>}
+          </>
+        }
+        submitError={submitError}
+        pendingMode={pendingMode}
+        disabled={createRun.isPending}
+        nTrials={form.optimize.nTrials}
+        estimates={{ backtest: estBacktest.data, validate: estValidate.data, optimize: estOptimize.data }}
+        estimating={estValidate.isFetching || estOptimize.isFetching}
+        ack={ack}
+        onAck={setAck}
+        onSubmit={submit}
+      />
     </div>
   )
 }
