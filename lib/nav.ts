@@ -13,6 +13,7 @@ import {
   ListChecks,
   TrendingUp,
   Trophy,
+  Compass,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -83,6 +84,12 @@ export const LAB_NAV: NavItem[] = [
     label: 'Koin Terkuat',
     hint: 'Ranking momentum & tren semua koin tiap 4H',
     icon: TrendingUp,
+  },
+  {
+    href: '/lab/outlook',
+    label: 'Outlook Koin',
+    hint: 'Bias long/short semua koin + faktor, bukti & proyeksi dana',
+    icon: Compass,
   },
   {
     href: '/lab/signals',

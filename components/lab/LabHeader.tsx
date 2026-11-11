@@ -4,6 +4,7 @@ import { FlaskConical } from 'lucide-react'
 import { PageHeader } from '@/components/shell/page'
 import { PageTabs } from '@/components/shell/PageTabs'
 import { LAB_NAV } from '@/lib/nav'
+import { RegimeBadge } from '@/components/lab/outlook/RegimeBadge'
 
 /**
  * Header for every Strategy Lab page: eyebrow + title + the Lab tab strip.
@@ -29,7 +30,12 @@ export function LabHeader({
       tone="lab"
       title={title}
       description={subtitle}
-      actions={actions}
+      actions={
+        <>
+          <RegimeBadge />
+          {actions}
+        </>
+      }
     >
       <PageTabs items={LAB_NAV} label="Navigasi Lab" />
     </PageHeader>
