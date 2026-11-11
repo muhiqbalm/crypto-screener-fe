@@ -9,6 +9,7 @@ import {
   Wallet,
   Webhook,
   Layers,
+  ListChecks,
   TrendingUp,
   type LucideIcon,
 } from 'lucide-react'
@@ -67,6 +68,12 @@ export const LAB_NAV: NavItem[] = [
     label: 'Koin Terkuat',
     hint: 'Ranking momentum & tren semua koin tiap 4H',
     icon: TrendingUp,
+  },
+  {
+    href: '/lab/signals',
+    label: 'Catatan Sinyal',
+    hint: 'Semua sinyal dicatat & dinilai: mana yang bekerja, mana yang noise',
+    icon: ListChecks,
   },
 ]
 
