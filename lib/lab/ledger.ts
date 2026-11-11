@@ -1,5 +1,6 @@
 /** Pure helpers for the Signal Ledger page (labels, honesty copy, formatting). */
 import type {
+  LedgerFilters,
   LedgerGroup,
   LedgerHorizon,
   LedgerHorizonStats,
@@ -119,4 +120,53 @@ export function daysBetween(fromIso: string | null | undefined, now: number = Da
   const t = Date.parse(fromIso)
   if (!Number.isFinite(t)) return null
   return Math.max(0, Math.floor((now - t) / 86_400_000))
+}
+
+// ── URL filters (/lab/signals?source=&type=&symbol=&since=&until=&split=1&h=) ──
+
+export interface LedgerFilterState extends LedgerFilters {
+  split: boolean
+}
+
+const SOURCES = Object.keys(SOURCE_LABEL) as LedgerSource[]
+const HORIZONS = Object.keys(HORIZON_LABEL) as LedgerHorizon[]
+const DAY = /^\d{4}-\d{2}-\d{2}$/
+
+interface ParamsLike {
+  get(name: string): string | null
+}
+
+/** Parse filters from the URL. Unknown/invalid values are dropped; `type` and `signal_type` both work. */
+export function filtersFromParams(p: ParamsLike): { filters: LedgerFilterState; horizon: LedgerHorizon } {
+  const src = p.get('source') ?? ''
+  const day = (k: string) => {
+    const v = p.get(k) ?? ''
+    return DAY.test(v) ? v : ''
+  }
+  const h = p.get('h') ?? ''
+  const symbol = (p.get('symbol') ?? '').toUpperCase().split(':')[0].replace('/', '')
+  return {
+    filters: {
+      source: (SOURCES as string[]).includes(src) ? (src as LedgerSource) : '',
+      signal_type: (p.get('type') ?? p.get('signal_type') ?? '').trim(),
+      symbol,
+      since: day('since'),
+      until: day('until'),
+      split: p.get('split') === '1' || p.get('split') === 'direction',
+    },
+    horizon: (HORIZONS as string[]).includes(h) ? (h as LedgerHorizon) : '1d',
+  }
+}
+
+/** Inverse of filtersFromParams; empty values and the default horizon are left out. */
+export function filtersToParams(f: LedgerFilterState, horizon: LedgerHorizon): string {
+  const qs = new URLSearchParams()
+  if (f.source) qs.set('source', f.source)
+  if (f.signal_type) qs.set('type', f.signal_type)
+  if (f.symbol) qs.set('symbol', f.symbol)
+  if (f.since) qs.set('since', f.since)
+  if (f.until) qs.set('until', f.until)
+  if (f.split) qs.set('split', '1')
+  if (horizon !== '1d') qs.set('h', horizon)
+  return qs.toString()
 }

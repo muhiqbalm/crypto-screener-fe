@@ -1,6 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { AlertTriangle, Check, Clock, History, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -26,8 +27,11 @@ import {
   isThin,
   pct,
   retCi,
+  filtersFromParams,
+  filtersToParams,
   sortGroups,
   typeLabel,
+  type LedgerFilterState,
 } from '@/lib/lab/ledger'
 import { useLedgerMeta, useLedgerSignals, useLedgerSummary } from '@/lib/queries/ledger'
 import type { LedgerFilters, LedgerHorizon, LedgerMeta, LedgerSignal, LedgerSource } from '@/lib/api/types/ledger'
@@ -120,9 +124,7 @@ function HonestyNote() {
 
 // ── filters ────────────────────────────────────────────────────────────────
 
-interface FilterState extends LedgerFilters {
-  split: boolean
-}
+type FilterState = LedgerFilterState
 
 function Filters({
   meta,
@@ -375,10 +377,26 @@ function RecentSignals({ filters }: { filters: LedgerFilters }) {
 
 // ── page ───────────────────────────────────────────────────────────────────
 
+/**
+ * Filters live in the URL (?source=&type=&symbol=&since=&until=&split=1&h=3d) so the
+ * screener can link here pre-filtered and a filtered view can be shared.
+ * Needs a Suspense boundary (useSearchParams) — see app/(app)/lab/signals/page.tsx.
+ */
 export function LedgerView() {
   const meta = useLedgerMeta()
-  const [f, setF] = useState<FilterState>({ source: '', signal_type: '', symbol: '', since: '', until: '', split: false })
-  const [horizon, setHorizon] = useState<LedgerHorizon>('1d')
+  const params = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
+  const { filters: f, horizon } = useMemo(() => filtersFromParams(params), [params])
+  const navigate = useCallback(
+    (next: FilterState, h: LedgerHorizon) => {
+      const qs = filtersToParams(next, h)
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+    },
+    [router, pathname],
+  )
+  const setF = (next: FilterState) => navigate(next, horizon)
+  const setHorizon = (h: LedgerHorizon) => navigate(f, h)
   const filters: LedgerFilters = useMemo(
     () => ({ source: f.source, signal_type: f.signal_type, symbol: f.symbol, since: f.since, until: f.until }),
     [f.source, f.signal_type, f.symbol, f.since, f.until],
