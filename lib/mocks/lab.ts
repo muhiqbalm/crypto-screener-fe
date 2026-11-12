@@ -35,8 +35,9 @@ import type {
   PaperPosition,
 } from '@/lib/api/types/lab'
 import type { LabBoardRow, LabEstimateRequest, LabPreset } from '@/lib/api/types/lab-insights'
+import { MOCK_FAMILY_TEMPLATES, labUjiMock } from './lab-uji'
 
-const MOCK_LAB_TEMPLATES: LabTemplate[] = [templateJson as unknown as LabTemplate]
+const MOCK_LAB_TEMPLATES: LabTemplate[] = [templateJson as unknown as LabTemplate, ...MOCK_FAMILY_TEMPLATES]
 const TPL = MOCK_LAB_TEMPLATES[0]
 const DEFAULTS: Record<string, LabParamValue> = Object.fromEntries(TPL.params.map((p) => [p.key, p.default]))
 
@@ -72,6 +73,8 @@ const scans = new Map<number, LabScanDetail>()
 const watches = new Map<number, LabWatch>()
 const paperAccounts = new Map<number, PaperAccount>()
 const journal = new Map<number, JournalEntry>()
+/** run id -> scan id (the real list endpoint returns scan_id per run). */
+const scanOf = new Map<number, number>()
 let nextId = 100
 
 function makeChecks(o: { pf: number; net: number; trades: number; mc: number; stress: number; unstable: number; liq: number }): LabCheck[] {
@@ -224,7 +227,7 @@ function makeRun(id: number, req: LabRunCreateRequest, createdAt: string, forceP
 
 function listItem(r: LabRunDetail) {
   const { id, template_id, symbol, timeframe, mode, status, verdict, net_return_pct, profit_factor, max_dd_pct, trades, created_at, job_id } = r
-  return { id, template_id, symbol, timeframe, mode, status, verdict, net_return_pct, profit_factor, max_dd_pct, trades, created_at, job_id }
+  return { id, template_id, symbol, timeframe, mode, status, verdict, net_return_pct, profit_factor, max_dd_pct, trades, created_at, job_id, scan_id: scanOf.get(Number(id)) ?? null }
 }
 
 const COSTS = { commission_pct: 0.05, slippage_pct: 0.05, funding: true }
@@ -259,10 +262,19 @@ function seed() {
       const id = 200 + si * 3 + ti
       const run = makeRun(id, { template_id: TPL.id, symbol, timeframe, mode: 'validate', params: DEFAULTS, costs: COSTS }, new Date(now - 3 * 3_600_000).toISOString())
       runs.set(id, run)
+      scanOf.set(id, 1)
       return scanRow(run)
     }),
   )
   scans.set(1, { id: 1, status: 'done', progress: { done: rows.length, total: rows.length }, rows, template_id: TPL.id, mode: 'validate', created_at: new Date(now - 3 * 3_600_000).toISOString() })
+
+  // Research templates (Donchian, Mean reversion) so lists show more than one strategy
+  for (const [i, [tpl, symbol, timeframe, pass]] of ([[MOCK_FAMILY_TEMPLATES[0], 'ETHUSDT', '4h', true], [MOCK_FAMILY_TEMPLATES[1], 'SOLUSDT', '4h', false]] as const).entries()) {
+    if (!tpl) continue
+    const id = 7 + i
+    const params = Object.fromEntries(tpl.params.map((p) => [p.key, p.default]))
+    runs.set(id, makeRun(id, { template_id: tpl.id, symbol, timeframe, mode: 'validate', params, costs: COSTS }, new Date(now - (6 + i) * 3_600_000).toISOString(), pass))
+  }
 
   // Paper account + journal history (mock only)
   paperAccounts.set(1, {
@@ -527,6 +539,8 @@ export async function getLabMock(method: string, fullPath: string, body?: unknow
   const qs = new URLSearchParams(query)
   const seg = path.split('/').filter(Boolean).map(decodeURIComponent)
 
+  const uji = labUjiMock(method, seg, qs)
+  if (uji) return uji.value
   const extra = insightsMock(method, seg, qs, body)
   if (extra) return extra.value
   if (method === 'GET' && path === '/me') return { is_admin: true }
@@ -544,7 +558,7 @@ export async function getLabMock(method: string, fullPath: string, body?: unknow
       return { run_id: id, job_id: id + 5000 }
     }
     if (method === 'GET' && seg.length === 1) {
-      return [...runs.values()].filter((r) => Number(r.id) < 200 || Number(r.id) > 300).sort((a, b) => b.created_at.localeCompare(a.created_at)).map(listItem)
+      return [...runs.values()].sort((a, b) => b.created_at.localeCompare(a.created_at)).map(listItem)
     }
     const run = runs.get(num(seg[1]))
     if (!run) notFound()
@@ -562,6 +576,7 @@ export async function getLabMock(method: string, fullPath: string, body?: unknow
           const runId = ++nextId
           const run = makeRun(runId, { template_id: req.template_id, symbol, timeframe, mode: req.mode, params: req.params ?? DEFAULTS, costs: req.costs }, new Date().toISOString())
           runs.set(runId, run)
+          scanOf.set(runId, id)
           return scanRow(run)
         }),
       )

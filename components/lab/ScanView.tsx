@@ -5,8 +5,9 @@ import { ScanBuilder } from '@/components/lab/scan/ScanBuilder'
 import { ScanResults } from '@/components/lab/scan/ScanResults'
 import { RecentScans } from '@/components/lab/scan/RecentScans'
 
-export { pfBucket, sortScanTable } from '@/components/lab/scan/ScanResults'
+export { scanCellTone, sortScanTable } from '@/components/lab/scan/ScanResults'
 
+/** Banyak koin: a result link (?id=, e.g. from a notification) shows the answer first, then the form. */
 export function ScanView() {
   const router = useRouter()
   const search = useSearchParams()
@@ -14,8 +15,8 @@ export function ScanView() {
 
   return (
     <div className="space-y-6">
-      <ScanBuilder onCreated={(id) => router.push(`/lab/scan?id=${encodeURIComponent(String(id))}`)} />
       {scanId && <ScanResults id={scanId} />}
+      <ScanBuilder onCreated={(id) => router.push(`/lab/scan?id=${encodeURIComponent(String(id))}`)} />
       <RecentScans activeId={scanId} />
     </div>
   )

@@ -124,9 +124,9 @@ export interface CompareMetricRow {
 }
 
 const METRICS: { key: string; label: string; higher: boolean | null }[] = [
-  { key: 'net_return_pct', label: 'Net return', higher: true },
-  { key: 'profit_factor', label: 'Profit factor', higher: true },
-  { key: 'max_dd_pct', label: 'Max drawdown', higher: false },
+  { key: 'net_return_pct', label: 'Hasil bersih', higher: true },
+  { key: 'profit_factor', label: 'PF', higher: true },
+  { key: 'max_dd_pct', label: 'Turun terdalam', higher: false },
   { key: 'sharpe', label: 'Sharpe', higher: true },
   { key: 'trades', label: 'Trade', higher: null },
   { key: 'cost_drag_pct', label: 'Beban biaya', higher: false },
