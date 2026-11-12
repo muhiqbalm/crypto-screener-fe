@@ -29,19 +29,19 @@ function Item({
       title={showHint ? undefined : item.hint}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'group relative flex items-start gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-        active ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground',
+        'group relative flex min-h-11 items-start gap-3 rounded-xl px-3 py-2.5 text-[15px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        active ? 'bg-brand/15 text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
       )}
     >
-      {active && <span className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-brand" aria-hidden="true" />}
+      {active && <span className="absolute inset-y-2 left-0 w-1 rounded-full bg-brand" aria-hidden="true" />}
       <Icon
-        className={cn('mt-0.5 h-4 w-4 shrink-0', active ? 'text-brand' : 'text-muted-foreground group-hover:text-foreground')}
+        className={cn('mt-0.5 h-5 w-5 shrink-0', active ? 'text-brand' : 'text-muted-foreground group-hover:text-foreground')}
         aria-hidden="true"
       />
       <span className="min-w-0">
         <span className="block truncate">{item.label}</span>
         {showHint && item.hint && (
-          <span className="block text-2xs font-normal leading-snug text-muted-foreground">{item.hint}</span>
+          <span className="mt-0.5 block text-2xs font-normal leading-snug text-muted-foreground">{item.hint}</span>
         )}
       </span>
     </Link>
@@ -72,18 +72,18 @@ export function SidebarNav({
   const { home, clusters } = navForRole(isAdmin)
 
   return (
-    <nav aria-label="Navigasi utama" className="flex flex-col gap-5">
+    <nav aria-label="Navigasi utama" className="flex flex-col gap-6">
       <div className="flex flex-col gap-0.5">
         <Item item={home} pathname={pathname} showHint={showHints} onNavigate={onNavigate} />
       </div>
       {clusters.map((cluster) => (
         <div key={cluster.id} className="flex flex-col gap-2">
-          <div className="eyebrow px-3">{cluster.label}</div>
+          <div className="eyebrow px-3 text-faint">{cluster.label}</div>
           {cluster.sections.map((section) => (
             <div key={section.id} className="flex flex-col gap-0.5">
               {section.label && (
-                <div className="flex items-center justify-between gap-2 px-3 pb-0.5 pt-1">
-                  <span className="truncate text-2xs font-medium text-muted-foreground">{section.label}</span>
+                <div className="flex items-center justify-between gap-2 px-3 pb-1 pt-1.5">
+                  <span className="truncate text-2xs font-semibold text-muted-foreground">{section.label}</span>
                   {section.mode && <StatusPill kind={section.mode} size="xs" />}
                 </div>
               )}
@@ -95,7 +95,7 @@ export function SidebarNav({
         </div>
       ))}
       {adminCheck === 'error' && (
-        <div role="status" className="mx-1 space-y-1.5 rounded-lg border border-warn/40 bg-warn/10 p-2.5 text-2xs text-foreground">
+        <div role="status" className="mx-1 space-y-2 rounded-2xl border border-warn/40 bg-warn/10 p-3 text-2xs text-foreground">
           <p className="flex items-start gap-1.5">
             <TriangleAlert className="mt-px h-3.5 w-3.5 shrink-0 text-warn" aria-hidden="true" />
             Akses admin tidak bisa dicek ke server, jadi alat khusus admin disembunyikan dulu.

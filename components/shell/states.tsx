@@ -28,14 +28,16 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed px-6 py-10 text-center',
+        'flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed px-6 py-12 text-center',
         className,
       )}
     >
-      <div className="text-muted-foreground/60">{icon ?? <Inbox className="h-8 w-8" aria-hidden="true" />}</div>
-      <div className="space-y-1">
-        <p className="text-sm font-medium">{title}</p>
-        {description && <p className="mx-auto max-w-sm text-xs text-muted-foreground">{description}</p>}
+      <div className="grid h-16 w-16 place-items-center rounded-2xl bg-brand/12 text-brand [&_svg]:h-8 [&_svg]:w-8">
+        {icon ?? <Inbox aria-hidden="true" />}
+      </div>
+      <div className="space-y-1.5">
+        <p className="display text-lg font-bold">{title}</p>
+        {description && <p className="mx-auto max-w-sm text-sm text-muted-foreground">{description}</p>}
       </div>
       {action}
     </div>
@@ -99,11 +101,13 @@ export function ErrorState({
         className,
       )}
     >
-      <AlertTriangle className={cn('text-bearish', compact ? 'h-6 w-6' : 'h-8 w-8')} aria-hidden="true" />
+      <div className={cn('grid place-items-center rounded-2xl bg-bearish/12 text-bearish', compact ? 'h-11 w-11' : 'h-14 w-14')}>
+        <AlertTriangle className={compact ? 'h-5 w-5' : 'h-7 w-7'} aria-hidden="true" />
+      </div>
       <div className="space-y-1">
-        {heading && <p className="text-sm font-medium">{heading}</p>}
+        {heading && <p className="text-base font-bold">{heading}</p>}
         <p className="mx-auto max-w-sm text-sm text-muted-foreground">{body}</p>
-        {tip && <p className="mx-auto max-w-sm text-xs text-muted-foreground">{tip}</p>}
+        {tip && <p className="mx-auto max-w-sm text-sm text-muted-foreground">{tip}</p>}
       </div>
       {(onRetry || action) && (
         <div className="flex flex-wrap items-center justify-center gap-2">
@@ -125,7 +129,7 @@ export function LoadingState({ rows = 4, className, label = 'Memuat…' }: { row
     <div className={cn('space-y-2', className)} aria-busy="true" aria-live="polite">
       <span className="sr-only">{label}</span>
       {Array.from({ length: rows }).map((_, i) => (
-        <Skeleton key={i} className="h-9 w-full" />
+        <Skeleton key={i} className="h-12 w-full" />
       ))}
     </div>
   )

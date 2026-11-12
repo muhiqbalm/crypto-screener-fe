@@ -64,15 +64,17 @@ export function AssistantSlot({
       aria-label={`${title}${context.label ? `: ${context.label}` : ''}`}
       data-assistant-context={context.kind}
       data-assistant-subject={context.subject}
-      className={cn('flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-xs', className)}
+      className={cn('flex flex-col gap-4 rounded-3xl border bg-card p-5 sm:p-6', className)}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="flex items-center gap-1.5 text-sm font-semibold">
-          <Sparkles className="h-4 w-4 text-info" aria-hidden="true" />
+        <h2 className="display flex items-center gap-2.5 text-lg font-bold">
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-lab/15 text-lab">
+            <Sparkles className="h-5 w-5" aria-hidden="true" />
+          </span>
           {title}
           {context.label && <span className="font-normal text-muted-foreground">· {context.label}</span>}
         </h2>
-        <span className="text-3xs font-medium uppercase tracking-wide text-muted-foreground">{sourceLabel}</span>
+        <span className="eyebrow">{sourceLabel}</span>
       </div>
       {loading ? (
         <div className="space-y-2" aria-busy="true">
@@ -85,15 +87,15 @@ export function AssistantSlot({
       ) : (
         <ul className="space-y-2">
           {items.map((it, i) => (
-            <li key={i} className="flex gap-2 text-sm leading-relaxed">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-info/70" aria-hidden="true" />
+            <li key={i} className="flex gap-3 text-base leading-relaxed">
+              <span className="mt-2.5 h-2 w-2 shrink-0 rounded-full bg-lab" aria-hidden="true" />
               <div className="min-w-0 space-y-0.5">
                 <p>
                   {it.text}
                   {it.href && (
                     <Link
                       href={it.href}
-                      className="ml-1.5 inline-flex items-center gap-0.5 whitespace-nowrap rounded-sm text-xs font-medium text-info hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="ml-2 inline-flex items-center gap-0.5 whitespace-nowrap rounded-sm text-sm font-semibold text-info hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       Lihat
                       <ArrowRight className="h-3 w-3" aria-hidden="true" />
@@ -101,7 +103,7 @@ export function AssistantSlot({
                   )}
                 </p>
                 {(it.evidence || it.at) && (
-                  <p className="text-2xs text-muted-foreground">{[it.evidence && `Bukti: ${it.evidence}`, it.at].filter(Boolean).join(' · ')}</p>
+                  <p className="text-sm text-muted-foreground">{[it.evidence && `Bukti: ${it.evidence}`, it.at].filter(Boolean).join(' · ')}</p>
                 )}
               </div>
             </li>

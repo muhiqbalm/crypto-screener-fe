@@ -39,23 +39,23 @@ export function UserHub({ isAdmin }: { isAdmin: boolean }) {
   const isDark = resolvedTheme !== 'light'
 
   return (
-    <div className="flex items-center gap-0.5 rounded-full border bg-card p-0.5 shadow-xs">
-      {isAdmin && <NotificationBell className="h-8 w-8 rounded-full" />}
+    <div className="flex items-center gap-1 rounded-full border bg-card p-1">
+      {isAdmin && <NotificationBell className="h-9 w-9 rounded-full" />}
       <DropdownMenu>
         <DropdownMenuTrigger
-          className="flex cursor-pointer items-center gap-2 rounded-full py-0.5 pl-0.5 pr-2 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex cursor-pointer items-center gap-2 rounded-full py-0.5 pl-0.5 pr-2.5 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           aria-label={`Menu akun${status.attention ? `, ${status.label}` : ''}`}
         >
-          <span className="relative flex h-7 w-7 items-center justify-center rounded-full border border-brand/30 bg-brand/15 font-mono text-xs font-bold text-brand">
+          <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand to-lab text-sm font-bold text-white">
             {initial}
             {status.attention && (
               <span
-                className={cn('absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-card', status.dotClass)}
+                className={cn('absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full ring-2 ring-card', status.dotClass)}
                 aria-hidden="true"
               />
             )}
           </span>
-          <span className="hidden max-w-[120px] truncate text-xs font-semibold sm:inline">{name}</span>
+          <span className="hidden max-w-[140px] truncate text-sm font-semibold sm:inline">{name}</span>
           <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-72 max-w-[calc(100vw-1.5rem)]">

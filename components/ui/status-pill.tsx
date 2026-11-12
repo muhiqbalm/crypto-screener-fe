@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
+import { LiveDot } from '@/components/ui/live-dot'
 
 /**
  * Mode pills mark where a number comes from; health pills say how something is.
@@ -62,9 +63,17 @@ export interface StatusPillProps {
   kind: StatusKind
   /** Override the visible text (keep the meaning, e.g. "LIVE · ETH 4H"). */
   label?: React.ReactNode
-  size?: 'xs' | 'sm'
+  /** xs: menus/tables · sm (default): cards · md/lg: status you read from a distance. */
+  size?: 'xs' | 'sm' | 'md' | 'lg'
   className?: string
 }
+
+const PILL_SIZE = {
+  xs: 'h-5 px-2 text-3xs [&_svg]:size-3 gap-1',
+  sm: 'h-7 px-3 text-2xs [&_svg]:size-3.5 gap-1.5',
+  md: 'h-8 px-3.5 text-xs [&_svg]:size-4 gap-1.5',
+  lg: 'h-10 px-4 text-sm [&_svg]:size-[18px] gap-2',
+} as const
 
 export function StatusPill({ kind, label, size = 'sm', className }: StatusPillProps) {
   const s = STATUS_PILL[kind]
@@ -73,14 +82,14 @@ export function StatusPill({ kind, label, size = 'sm', className }: StatusPillPr
     <span
       title={s.title}
       className={cn(
-        'inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border font-semibold leading-none',
-        size === 'xs' ? 'h-4 px-1.5 text-3xs [&_svg]:size-2.5' : 'h-5 px-2 text-2xs [&_svg]:size-3',
-        mode && 'font-mono tracking-wide',
+        'inline-flex shrink-0 items-center whitespace-nowrap rounded-full border font-bold leading-none',
+        PILL_SIZE[size],
+        mode && 'tracking-wider',
         s.className,
         className,
       )}
     >
-      <s.Icon aria-hidden="true" />
+      {kind === 'live' ? <LiveDot tone="bearish" size={size === 'xs' ? 'sm' : 'md'} /> : <s.Icon aria-hidden="true" />}
       {label ?? s.label}
       {mode && <span className="sr-only">{` (${s.title.split(': ')[1]})`}</span>}
     </span>
