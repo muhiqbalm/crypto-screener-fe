@@ -46,7 +46,11 @@ function board(o: Partial<RekamSkorResponse> = {}): RekamSkorResponse {
     by_grade: { A: group('A', { n_calls: 9, n_open: 9 }), B: group('B'), C: group('C', { n_calls: 11, n_open: 10, n_done: 1, n_pos: 1, mean_r: 0.2308, win_rate: 1 }), D: group('D') },
     recent: [{ id: 3, symbol: 'AAVEUSDT', bar: '2026-11-12T08:00:00Z', bar_close: '2026-11-12T12:00:00Z', side: 'short', fase: 'berjalan',
       kualitas: 'C', status: 'tp', r_net: 0.2308, price: 114.2, resolved_at: '2026-11-12T16:00:00Z', basis: 'dihitung_ulang' }],
-    simulasi: { split: '2024-07-01T00:00:00Z', computed_at: '2026-11-12T09:18:32Z', groups: [],
+    simulasi: { split: '2024-07-01T00:00:00Z', computed_at: '2026-11-12T09:18:32Z', groups: [
+      { key: 'short|baru', side: 'short', fase: 'baru', grade: 'A', before: { n_pos: 1529, mean_r: 0.16, lo95_r: 0.07 },
+        after: { n_cases: 1987, n_pos: 1987, mean_r: 0.13, lo95_r: 0.05, p_tp: 0.15, p_sl: 0.49, p_batal: 0.36 } },
+      { key: 'short|berjalan', side: 'short', fase: 'berjalan', grade: 'C', before: { n_pos: 1211, mean_r: 0.06, lo95_r: -0.03 },
+        after: { n_cases: 13727, n_pos: 1695, mean_r: 0.002, lo95_r: -0.08, p_tp: 0.19, p_sl: 0.28, p_batal: 0.53 } }],
       by_grade: { A: { n_cases: 1987, n_pos: 1987, mean_r: 0.1286, lo95_r: 0.0488, hi95_r: 0.2084 },
         B: { n_cases: 1286, n_pos: 1286, mean_r: 0.0985, lo95_r: 0.0564, hi95_r: 0.1406 },
         C: { n_cases: 29138, n_pos: 2923, mean_r: 0.021, lo95_r: -0.0303, hi95_r: 0.0724 } },
@@ -105,6 +109,7 @@ describe('Skor kualitas', () => {
     expect(within(c).queryByText(/untung 100%/)).not.toBeInTheDocument()     // no hit rate from one position
     expect(within(c).getByText('Belum cukup data: 1 dari 20 posisi selesai.')).toBeInTheDocument()
     expect(screen.getByText('SIMULASI · bukan hasil live')).toBeInTheDocument()
+    expect(screen.getByText('Kelompok: SHORT posisi baru → A · SHORT menyusul → C.')).toBeInTheDocument()
     expect(screen.getByText(/20 panggilan lama diberi skor belakangan/)).toBeInTheDocument()
     expect(screen.queryByText(/Terbukti untung di data live/)).not.toBeInTheDocument()
   })

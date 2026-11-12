@@ -95,7 +95,12 @@ function SimCheck({ sim }: { sim: NonNullable<RekamSkorResponse['simulasi']> }) 
           )
         })}
       </ul>
-      <p className="mt-3 text-2xs leading-relaxed text-muted-foreground">{sim.note}</p>
+      {sim.groups.length > 0 && (
+        <p className="mt-3 text-2xs leading-relaxed text-muted-foreground">
+          Kelompok: {sim.groups.map((x) => `${x.side.toUpperCase()} ${x.fase === 'baru' ? 'posisi baru' : 'menyusul'} → ${x.grade}`).join(' · ')}.
+        </p>
+      )}
+      <p className="mt-1 text-2xs leading-relaxed text-muted-foreground">{sim.note}</p>
     </div>
   )
 }
