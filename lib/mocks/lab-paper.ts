@@ -52,6 +52,7 @@ export const MOCK_PRESETS: LabPreset[] = [
   preset({ id: 4, name: '1D-BTC-Donchian', symbol: 'BTCUSDT', timeframe: '1d', template_id: 'donchian_breakout', verdict: 'PASS', source_run_id: 63, source_mode: 'validate', params: { sizing_mode: 'risk', risk_per_trade_pct: 1, max_notional_mult: 2 }, holdout: hold(11.2, 1.35, -7.8, 14, 43), snooping: { runs: 2, timeframes: 1, trials: 0, holdout_touches: 1 }, usage: { runs: 1, watches: 0 } }),
   preset({ id: 5, name: '4H-BNB-MR', symbol: 'BNBUSDT', timeframe: '4h', template_id: 'mean_reversion_range', verdict: 'FAIL', source_run_id: 70, source_mode: 'validate', params: { sizing_mode: 'risk', risk_per_trade_pct: 1, max_notional_mult: 2 }, holdout: hold(-6.3, 0.81, -14.2, 33, 39), snooping: { runs: 4, timeframes: 3, trials: 0, holdout_touches: 2 }, usage: { runs: 1, watches: 0 } }),
   preset({ id: 6, name: '1H-ETH-Opt1', symbol: 'ETHUSDT', timeframe: '1h', template_id: 'rosyade_family', notes: 'Disimpan manual, belum diuji.' }),
+  preset({ id: 8, name: '4H-ETH-DonchianDef', symbol: 'ETHUSDT', timeframe: '4h', template_id: 'donchian_breakout', verdict: 'PASS', source_mode: null, params: { sizing_mode: 'risk', risk_per_trade_pct: 1, max_notional_mult: 2 }, holdout: hold(7.1, 1.7, -4.5, 30, 40), snooping: { runs: 1, timeframes: 1, trials: 0, holdout_touches: 1 }, usage: { runs: 0, watches: 1 } }),
   preset({ id: 7, name: '4H-AVAX-v1', symbol: 'AVAXUSDT', timeframe: '4h', template_id: 'rosyade_family', verdict: 'PASS', source_run_id: 81, source_mode: 'validate', holdout: hold(9.7, 1.22, -10.5, 31, 45), snooping: { runs: 2, timeframes: 1, trials: 0, holdout_touches: 1 }, usage: { runs: 1, watches: 1 } }),
 ]
 
@@ -66,6 +67,7 @@ export const MOCK_PAPER_ACCOUNTS: PaperAccount[] = [
   account(12, 'Paper 4H-ETH-v2', 64, 10_936.1, 2),
   account(13, 'Paper 4H-SOL-Opt', 18, 9_412.8, 2),
   account(17, 'Paper 4H-AVAX-v1', 9, 9_980.4, 2),
+  account(18, 'Paper 4H-ETH-DonchianDef', 1, 10_000, 2, 1),
 ]
 
 const check = (key: DriftCheck['key'], status: DriftCheck['status'], observed: number | null, expected: number | null, range: [number, number] | null): DriftCheck => ({
@@ -75,6 +77,8 @@ const check = (key: DriftCheck['key'], status: DriftCheck['status'], observed: n
 function arenaRow(o: {
   presetId: number; accountId: number; days: number; equity: number; closed: number; wins: number; dd: number | null
   drift: ArenaRow['drift']['status']; checks?: DriftCheck[]; open?: boolean; auto?: boolean; family?: string
+  /** the strategy holds a position from before paper started (not copied) */
+  before?: boolean
 }): ArenaRow {
   const p = MOCK_PRESETS.find((x) => Number(x.id) === o.presetId)!
   const a = MOCK_PAPER_ACCOUNTS.find((x) => Number(x.id) === o.accountId)!
@@ -89,7 +93,8 @@ function arenaRow(o: {
     account: { id: o.accountId, name: a.name, starting_balance: 10_000, leverage_max: a.leverage_max ?? 2, risk_pct: a.risk_pct ?? 100, created_at: a.created_at },
     watch: {
       id: 200 + o.presetId, active: true, autopaper_enabled: o.auto ?? true, last_eval_at: ago(25 * 60_000), last_bar: ago(4 * HOUR),
-      last_signal: null, error: null, strategy_position: null,
+      last_signal: null, error: null,
+      strategy_position: o.before ? { side: 'short', entry_price: 3_204.5, entry_time: ago(4 * DAY + 2 * HOUR), opened_before_paper: true, mirrored: false } : null,
     },
     stats: {
       equity: o.equity, balance: o.equity, upnl: 0, return_pct: r2((o.equity / 10_000 - 1) * 100), n_closed: o.closed, n_closed_manual: 0,
@@ -129,6 +134,7 @@ const ROWS: ArenaRow[] = [
     checks: [check('frequency', 'sesuai', 10, 8.1, [3, 14]), check('win_rate', 'menyimpang', 22.2, 52, [25, 79]), check('drawdown', 'menyimpang', 14.9, 12.4, [13.8, 13.8])],
   }),
   arenaRow({ presetId: 7, accountId: 17, days: 9, equity: 9_980.4, closed: 2, wins: 1, dd: 1.1, drift: 'belum_cukup', auto: false }),
+  arenaRow({ presetId: 8, accountId: 18, days: 1, equity: 10_000, closed: 0, wins: 0, dd: null, drift: 'belum_cukup', before: true }),
 ]
 
 const report = (): ArenaReport => ({

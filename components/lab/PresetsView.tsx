@@ -23,6 +23,9 @@ import { ErrorState, LoadingState } from '@/components/shell/states'
 import { PaperProgress, PresetStatusPill } from '@/components/lab/arena/PaperBits'
 import { BigNumber, CardLink, CoinAvatar, CountUp, DeckCard, Meter, signTone, type Tone } from '@/components/lab/arena/deck'
 import { StartPaperDialog } from '@/components/lab/arena/StartPaperDialog'
+import { BasketPresetSection } from '@/components/lab/basket/BasketPresetSection'
+import { PrePaperHint } from '@/components/lab/basket/BasketBits'
+import { prePaperHint } from '@/lib/lab/basket'
 import { apiErrorDetail } from '@/lib/api/errors'
 import { cn } from '@/lib/utils/cn'
 import { coinOf, formatCount, formatNumber, formatPct, signClass } from '@/lib/utils/format'
@@ -342,6 +345,9 @@ function PresetCard({ row, templates, onDetail, onAction }: { row: Row; template
               </span>
             </div>
             <Meter value={status.progress.n} max={status.progress.of} tone={status.kind === 'menyimpang' ? 'warn' : 'lab'} label={`${status.progress.n} dari ${status.progress.of} transaksi paper`} />
+            {status.progress.n === 0 && !status.row?.open_position && (
+              <PrePaperHint text={prePaperHint(status.row?.watch.strategy_position, p.timeframe)} className="pt-1" />
+            )}
           </div>
         ) : (
           <p className="text-[13px] text-muted-foreground">
@@ -442,6 +448,8 @@ export function PresetsView() {
           <BigNumber label="Preset" value={formatCount(n('gagal'))} tone={n('gagal') ? 'bearish' : undefined} size="lg" hint="gagal uji jujur" />
         </DeckCard>
       </div>
+
+      <BasketPresetSection />
 
       <div className="flex flex-wrap gap-2" role="group" aria-label="Saring preset">
         {FILTERS.map((f) => {

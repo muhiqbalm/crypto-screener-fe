@@ -31,6 +31,11 @@ import {
   type ArenaGroupMode,
 } from '@/lib/lab/arena'
 import { useArenaCurves, useArenaReport } from '@/lib/queries/arena'
+import { useBaskets } from '@/lib/queries/basket'
+import { BASKET_PARAM, mergeKlasemen, parseBasketParam, prePaperHint } from '@/lib/lab/basket'
+import { BasketLeaderRow } from '@/components/lab/basket/BasketLeaderRow'
+import { BasketSheet } from '@/components/lab/basket/BasketSheet'
+import { PrePaperHint } from '@/components/lab/basket/BasketBits'
 import type { ArenaReport, ArenaRow } from '@/lib/api/types/arena'
 
 const TONE_OF: Record<string, Tone> = { baik: 'bullish', perlu_dicek: 'warn', menunggu: 'muted', info: 'info' }
@@ -86,6 +91,7 @@ function LeaderRow({ row, rank, reviewN, spark, highlighted, onOpen }: { row: Ar
           </div>
         </div>
         <ChevronRight className="hidden h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-0.5 lg:block" aria-hidden="true" />
+        {!row.open_position && <PrePaperHint text={prePaperHint(row.watch.strategy_position, row.preset.timeframe)} className="lg:col-span-full" />}
       </div>
     </DeckCard>
   )
@@ -146,9 +152,21 @@ function Method({ r }: { r: ArenaReport }) {
 export function ArenaView() {
   const q = useArenaReport()
   const curvesQ = useArenaCurves()
-  const highlight = parseHighlight(useSearchParams().get(HIGHLIGHT_PARAM))
+  const params = useSearchParams()
+  const highlight = parseHighlight(params.get(HIGHLIGHT_PARAM))
   const [mode, setMode] = useState<ArenaGroupMode>('all')
   const [openId, setOpenId] = useState<number | null>(null)
+  // a basket counts as ONE entry; `?basket=<id>` (bell, Preset page) opens its sheet
+  const basketsQ = useBaskets()
+  const baskets = useMemo(() => basketsQ.data?.rows ?? [], [basketsQ.data])
+  const basketParam = parseBasketParam(params.get(BASKET_PARAM))
+  const [openBasket, setOpenBasket] = useState<number | null>(basketParam)
+  const [seenParam, setSeenParam] = useState<number | null>(basketParam)
+  if (basketParam !== seenParam) {
+    // a new ?basket= while the page stays mounted (e.g. a bell link): follow it
+    setSeenParam(basketParam)
+    setOpenBasket(basketParam)
+  }
   const sparks = useMemo(() => {
     const m = new Map<number, number[]>()
     for (const s of curvesQ.data?.series ?? []) m.set(s.preset_id, s.points.slice(-40).map((p) => p.equity))
@@ -161,10 +179,12 @@ export function ArenaView() {
   const reviewN = r.review_min_trades || REVIEW_MIN_TRADES
   const a = arenaAnswer(r)
   const ranked = sortRows(r.rows)
-  const rankOf = new Map(ranked.map((row, i) => [row.preset.id, i + 1]))
   const groups = groupRows(ranked, mode)
   const picked = highlight ? arenaRowFor(highlight, r.rows) : null
   const openRow = openId === null ? null : arenaRowFor(openId, r.rows)
+  const openBasketRow = baskets.find((b) => b.basket.id === openBasket) ?? null
+  const entries = mergeKlasemen(ranked, baskets)
+  const rankOfEntry = new Map(entries.map((e, i) => [e.key, i + 1]))
   const tone = TONE_OF[a.tone] ?? 'info'
 
   return (
@@ -195,7 +215,7 @@ export function ArenaView() {
           </div>
         ))}
 
-      {r.rows.length === 0 ? (
+      {r.rows.length === 0 && baskets.length === 0 ? (
         <NextStep
           title="Belum ada preset di paper"
           description="Pilih preset yang lolos uji, lalu tekan Mulai paper."
@@ -215,6 +235,11 @@ export function ArenaView() {
               fill
             >
               <p className="text-xl font-semibold leading-snug tracking-tight sm:text-2xl">{a.text}</p>
+              {baskets.length > 0 && (
+                <p className="mt-3 text-[15px] text-muted-foreground">
+                  Basket: {baskets.map((b) => `${b.basket.name} ${b.progress.n}/${b.progress.of}`).join(' · ')} transaksi.
+                </p>
+              )}
               <div className="mt-auto space-y-4 pt-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <Pill tone={tone}>{TONE_WORD[a.tone] ?? 'Info'}</Pill>
@@ -226,7 +251,7 @@ export function ArenaView() {
               </div>
             </DeckCard>
             <DeckCard icon={PlayCircle} iconTone="lab" title="Berjalan">
-              <BigNumber label="Preset di paper" value={<CountUp value={a.running} format={(v) => formatCount(Math.round(v))} />} size="lg" hint={`${r.rows.length} punya akun simulasi`} />
+              <BigNumber label="Preset di paper" value={<CountUp value={a.running} format={(v) => formatCount(Math.round(v))} />} size="lg" hint={`${r.rows.length} punya akun simulasi${baskets.length ? ` · ${baskets.length} basket` : ''}`} />
             </DeckCard>
             <DeckCard icon={AlertTriangle} iconTone={a.drifting.length ? 'warn' : 'muted'} title="Menyimpang">
               <BigNumber
@@ -274,14 +299,39 @@ export function ArenaView() {
               }
             />
             <div className="space-y-3">
-              {groups.map((g) => (
+              {mode === 'all' && baskets.length > 0
+                ? entries.map((e) =>
+                    e.kind === 'basket' ? (
+                      <BasketLeaderRow key={e.key} row={e.row} rank={rankOfEntry.get(e.key) ?? 0} highlighted={e.row.basket.id === openBasket} onOpen={() => setOpenBasket(e.row.basket.id)} />
+                    ) : (
+                      <LeaderRow
+                        key={e.key}
+                        row={e.row}
+                        rank={rankOfEntry.get(e.key) ?? 0}
+                        reviewN={reviewN}
+                        spark={sparks.get(e.row.preset.id) ?? []}
+                        highlighted={e.row.preset.id === highlight}
+                        onOpen={() => setOpenId(e.row.preset.id)}
+                      />
+                    ),
+                  )
+                : null}
+              {mode !== 'all' && baskets.length > 0 && (
+                <>
+                  <div className="pt-2 text-sm font-semibold text-muted-foreground">{`Basket (banyak koin) · ${baskets.length} basket`}</div>
+                  {baskets.map((b) => (
+                    <BasketLeaderRow key={`b${b.basket.id}`} row={b} rank={rankOfEntry.get(`b${b.basket.id}`) ?? 0} highlighted={b.basket.id === openBasket} onOpen={() => setOpenBasket(b.basket.id)} />
+                  ))}
+                </>
+              )}
+              {(mode !== 'all' || baskets.length === 0) && groups.map((g) => (
                 <Fragment key={g.key}>
                   {mode !== 'all' && <div className="pt-2 text-sm font-semibold text-muted-foreground">{`${g.label} · ${g.items.length} preset`}</div>}
                   {g.items.map((row) => (
                     <LeaderRow
                       key={row.preset.id}
                       row={row}
-                      rank={rankOf.get(row.preset.id) ?? 0}
+                      rank={rankOfEntry.get(`p${row.preset.id}`) ?? 0}
                       reviewN={reviewN}
                       spark={sparks.get(row.preset.id) ?? []}
                       highlighted={row.preset.id === highlight}
@@ -299,6 +349,7 @@ export function ArenaView() {
       )}
 
       <PaperDetailSheet row={openRow} reviewN={reviewN} onClose={() => setOpenId(null)} />
+      <BasketSheet row={openBasketRow} onClose={() => setOpenBasket(null)} />
     </div>
   )
 }

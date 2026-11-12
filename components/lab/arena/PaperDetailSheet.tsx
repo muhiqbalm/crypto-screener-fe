@@ -12,6 +12,8 @@ import { formatNumber, formatPct, formatPrice, formatR, formatUsd, formatUsdSign
 import { formatAge, formatTime } from '@/lib/utils/time'
 import { CHECK_COPY, arenaLinks, checkValues, driftPlain, isRunning, lastActionLabel } from '@/lib/lab/arena'
 import type { ArenaRow } from '@/lib/api/types/arena'
+import { PrePaperHint } from '@/components/lab/basket/BasketBits'
+import { prePaperHint } from '@/lib/lab/basket'
 
 function Stat({ label, value, hint, className }: { label: React.ReactNode; value: React.ReactNode; hint?: React.ReactNode; className?: string }) {
   return (
@@ -85,12 +87,7 @@ export function PaperDetailSheet({ row, reviewN, onClose }: { row: ArenaRow | nu
                 Aksi terakhir: {lastActionLabel(row.last_action)}
                 {row.last_action && ` · ${formatAge(row.last_action.time)}`}. Sinyal dicek {formatAge(row.watch.last_eval_at)}.
               </p>
-              {sp && sp.opened_before_paper && !sp.mirrored && (
-                <p className="text-xs text-muted-foreground">
-                  Strategi sudah memegang posisi {sp.side} sejak {formatTime(sp.entry_time)}, sebelum akun paper dibuat. Posisi itu tidak diikuti; paper
-                  masuk di sinyal berikutnya.
-                </p>
-              )}
+              <PrePaperHint text={prePaperHint(sp, row.preset.timeframe)} />
               {row.watch.error && <p className="text-xs text-warn">Error terakhir saat menghitung sinyal: {row.watch.error}</p>}
             </section>
 
