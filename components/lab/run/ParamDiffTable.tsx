@@ -1,7 +1,7 @@
 import type { LabParamValue } from '@/lib/api/types/lab'
 import { fmtVal } from './format'
 
-export function ParamDiffTable({ rows, emptyText }: { rows: { key: string; label: string; def: LabParamValue; value: LabParamValue }[]; emptyText: string }) {
+export function ParamDiffTable({ rows, emptyText, live = false }: { rows: { key: string; label: string; def: LabParamValue; value: LabParamValue }[]; emptyText: string; live?: boolean }) {
   if (rows.length === 0) return <p className="text-sm text-muted-foreground">{emptyText}</p>
   return (
     <div className="-mx-4 overflow-x-auto sm:mx-0 sm:rounded-lg sm:border sm:border-border">
@@ -9,7 +9,7 @@ export function ParamDiffTable({ rows, emptyText }: { rows: { key: string; label
         <thead className="border-b border-border bg-muted/30">
           <tr>
             <th className="px-3 py-2 text-left text-2xs font-medium uppercase tracking-wide text-muted-foreground">Parameter</th>
-            <th className="px-3 py-2 text-right text-2xs font-medium uppercase tracking-wide text-muted-foreground">Default live</th>
+            <th className="px-3 py-2 text-right text-2xs font-medium uppercase tracking-wide text-muted-foreground">{live ? 'Default (live)' : 'Default'}</th>
             <th className="px-3 py-2 text-right text-2xs font-medium uppercase tracking-wide text-muted-foreground">Dipakai</th>
           </tr>
         </thead>

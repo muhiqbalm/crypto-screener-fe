@@ -1,48 +1,62 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Bookmark, ChevronDown, Database, SlidersHorizontal, Sparkles, Wand2 } from 'lucide-react'
+import { Wand2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { ErrorPanel } from '@/components/shell/ErrorPanel'
-import { Chip, EmptyState, Section } from '@/components/lab/Section'
-import { AdvancedParams, MainParams, ParamSummary } from '@/components/lab/ParamForm'
-import { CostDisclosure } from '@/components/lab/CostInputs'
-import { DOWNLOAD_HINT, SymbolPicker } from '@/components/lab/SymbolPicker'
-import { OptimizePanel, optimizeSummary } from '@/components/lab/OptimizePanel'
-import { PresetSelect } from '@/components/lab/PresetSelect'
-import { RunActionBar } from '@/components/lab/builder/RunActionBar'
+import { Skeleton } from '@/components/ui/skeleton'
+import { InfoTip } from '@/components/ui/info-tip'
+import { EmptyState, ErrorState } from '@/components/shell/states'
+import { describeError } from '@/components/shell/error-copy'
 import { BuilderSkeleton } from '@/components/lab/builder/BuilderSkeleton'
+import { Step } from '@/components/lab/builder/Step'
+import { StrategyStep } from '@/components/lab/builder/StrategyStep'
+import { ImportantParams } from '@/components/lab/builder/ImportantParams'
+import { AdvancedPanel } from '@/components/lab/builder/AdvancedPanel'
+import { HoldoutNote, RunStep } from '@/components/lab/builder/RunStep'
+import { OptimizeDialog } from '@/components/lab/builder/OptimizeDialog'
+import { onlyKeys } from '@/components/lab/OptimizePanel'
+import { useDebounced } from '@/components/lab/builder/useDebounced'
 import {
   fromPreset,
   initialForm,
-  pickTimeframe,
+  periodRange,
+  switchTemplate,
   tfDefaultsPatch,
   type FormState,
+  type Period,
   type PrefillUse,
 } from '@/components/lab/builder/form-state'
-import { tfDefault } from '@/lib/lab/planning'
-import { useLabEstimate, useLabPresets, useLabRunDefaults } from '@/lib/queries/lab-insights'
-import { ApiError, apiErrorDetail } from '@/lib/api/errors'
-import { notify } from '@/lib/utils/toast'
-import { formatTimestamp } from '@/lib/utils/format'
-import { hasTimeframeData, lowerTfHint, sortTimeframes } from '@/lib/lab/timeframes'
-import { cn } from '@/lib/utils/cn'
-import { useCreateLabRun, useLabDataStatus, useLabRun, useLabSymbols, useLabTemplates } from '@/lib/queries/lab'
+import { MODE_COPY } from '@/components/lab/run/copy'
+import { holdoutPeriodError, proposedHoldoutStart, tfDefault } from '@/lib/lab/planning'
 import {
-  DATE_PRESETS,
-  buildRunRequest,
-  changedKeys,
-  defaultOptimizeConfig,
-  initialParamValues,
-  presetRange,
-  splitParams,
-  validateOptimize,
-  validateRunForm,
-} from '@/lib/lab/form'
-import type { LabRunMode } from '@/lib/api/types/lab'
+  defaultSearchKeys,
+  importanceByKey,
+  localImportance,
+  stepKeys,
+  stepParams,
+} from '@/lib/lab/importance'
+import { useLabEstimate, useLabPresets, useLabRunDefaults } from '@/lib/queries/lab-insights'
+import { notify } from '@/lib/utils/toast'
+import { formatDate } from '@/lib/utils/time'
+import { cn } from '@/lib/utils/cn'
+import {
+  useCreateLabRun,
+  useLabDataStatus,
+  useLabHoldoutLock,
+  useLabImportance,
+  useLabRun,
+  useLabSymbols,
+  useLabTemplates,
+} from '@/lib/queries/lab'
+import { buildRunRequest, changedKeys, templateShort, validateOptimize, validateRunForm } from '@/lib/lab/form'
+import type { LabRunMode, LabTemplate } from '@/lib/api/types/lab'
 
+/**
+ * "Uji strategi" in 3 steps: (1) what is tested, (2) the params that matter, (3) one primary
+ * action. Everything else lives in the searchable "Lanjutan". Importance (research file / runs)
+ * only decides what is shown first; it never changes a value.
+ */
 export function RunBuilder() {
   const router = useRouter()
   const search = useSearchParams()
@@ -60,325 +74,297 @@ export function RunBuilder() {
   const defaultsQ = useLabRunDefaults()
   const presetsQ = useLabPresets()
   const createRun = useCreateLabRun()
-  const [ack, setAck] = useState(false)
 
   const [form, setForm] = useState<FormState | null>(null)
   const [formKey, setFormKey] = useState<string | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [pendingMode, setPendingMode] = useState<LabRunMode | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [ack, setAck] = useState(false)
+  const [advancedOpen, setAdvancedOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const [onlyChanged, setOnlyChanged] = useState(false)
+  const [optOpen, setOptOpen] = useState(false)
+  const advancedRef = useRef<HTMLElement>(null)
 
   const templates = templatesQ.data ?? []
   const symbols = symbolsQ.data ?? []
+  const defaults = defaultsQ.data
   const prefillReady = !fromId || prefillQ.isSuccess || prefillQ.isError
   const presetReady = !presetParam || presetsQ.isSuccess || presetsQ.isError
   const urlPreset = presetParam ? (presetsQ.data ?? []).find((p) => String(p.id) === presetParam) ?? null : null
   const desiredKey = `${fromId ?? ''}|${use}|${rank ?? ''}|${presetParam ?? ''}`
 
-  // Estimates for validate + optimize with the current inputs (backend model, calibrated on this server).
-  const estBase = form && form.symbol && form.timeframe
-    ? { template_id: form.templateId, symbols: [form.symbol], timeframes: [form.timeframe], start: form.start || undefined, end: form.end || undefined }
-    : null
-  const estValidate = useLabEstimate(estBase && { ...estBase, mode: 'validate' })
-  const estOptimize = useLabEstimate(estBase && { ...estBase, mode: 'optimize', n_trials: form?.optimize.nTrials })
-  const estBacktest = useLabEstimate(estBase && { ...estBase, mode: 'backtest' })
-
   // Initialise (or re-initialise when ?from / ?preset changes) during render, not in an effect.
   if (templates.length > 0 && symbolsQ.isSuccess && prefillReady && presetReady && formKey !== desiredKey) {
     setFormKey(desiredKey)
-    setForm(initialForm(templates, symbols, prefillQ.data ?? null, use, rank, defaultsQ.data, urlPreset))
+    setForm(initialForm(templates, symbols, prefillQ.data ?? null, use, rank, defaults, urlPreset))
     setErrors({})
     setSubmitError(null)
   }
+
+  const template: LabTemplate | undefined = form ? templates.find((t) => t.id === form.templateId) ?? templates[0] : undefined
+  const importanceQ = useLabImportance(template?.id, form?.timeframe)
+  const lockQ = useLabHoldoutLock(template?.id, form?.symbol, form?.timeframe)
+  // One debounced estimate for the primary action ("Uji jujur"); the optimize estimate is
+  // requested only while its dialog is open.
+  const estimateBody = useDebounced(
+    template && form && form.symbol && form.timeframe
+      ? { template_id: template.id, mode: 'validate' as const, symbols: [form.symbol], timeframes: [form.timeframe], start: form.start || undefined, end: form.end || undefined }
+      : null,
+    600,
+  )
+  const estimateQ = useLabEstimate(estimateBody)
 
   if (templatesQ.isPending || symbolsQ.isPending || (fromId && prefillQ.isPending)) return <BuilderSkeleton />
 
   const loadErr = templatesQ.error ?? symbolsQ.error
   if (loadErr) {
     return (
-      <Section>
-        <ErrorPanel
-          kind={loadErr instanceof ApiError ? loadErr.kind : 'server'}
-          onRetry={() => {
-            void templatesQ.refetch()
-            void symbolsQ.refetch()
-          }}
-          messageOverride="Gagal memuat template / daftar koin dari server Lab."
-        />
-      </Section>
+      <ErrorState
+        error={loadErr}
+        title="Strategi atau daftar koin gagal dimuat"
+        onRetry={() => {
+          void templatesQ.refetch()
+          void symbolsQ.refetch()
+        }}
+      />
     )
   }
-
   if (templates.length === 0 || symbols.length === 0) {
     return (
-      <Section>
-        <EmptyState
-          title={templates.length === 0 ? 'Belum ada template strategi' : 'Belum ada daftar koin'}
-          description="Server Lab belum mengirim data ini. Coba muat ulang sebentar lagi."
-          action={<Button variant="outline" size="sm" onClick={() => { void templatesQ.refetch(); void symbolsQ.refetch() }}>Muat ulang</Button>}
-        />
-      </Section>
+      <EmptyState
+        title={templates.length === 0 ? 'Belum ada strategi' : 'Belum ada daftar koin'}
+        description="Server Lab belum mengirim data ini. Coba muat ulang sebentar lagi."
+        action={<Button variant="outline" size="sm" onClick={() => { void templatesQ.refetch(); void symbolsQ.refetch() }}>Muat ulang</Button>}
+      />
     )
   }
+  if (!form || !template) return null
 
-  if (!form) return null
-
-  const template = templates.find((t) => t.id === form.templateId) ?? templates[0]
+  // ── derived ────────────────────────────────────────────────────────────
+  const measured = importanceQ.data && importanceQ.data.template_id === template.id ? importanceQ.data : null
+  const importance = measured ?? localImportance(template, form.timeframe)
+  const step = stepParams(template, importance)
+  const inStep = stepKeys(step)
+  const hiddenKeys = new Set(template.params.filter((p) => !inStep.has(p.key)).map((p) => p.key))
+  const changed = changedKeys(template, form.params)
+  const hiddenChanged = changed.filter((k) => hiddenKeys.has(k)).length
+  const impMap = importanceByKey(measured)
+  const importantSearch = new Set(defaultSearchKeys(template, step))
+  const search_ = form.searchTouched ? form.optimize : onlyKeys(template, form.optimize, importantSearch)
   const symbolInfo = symbols.find((s) => s.symbol === form.symbol)
   const dataRow = dataStatusQ.data?.find((d) => d.symbol === form.symbol && d.timeframe === form.timeframe)
-  const changed = changedKeys(template, form.params).length
-  const { main, advanced } = splitParams(template)
-  const advancedCount = advanced.reduce((a, g) => a + g.params.length, 0)
+  const tfDef = tfDefault(form.timeframe, defaults)
+  const lock = lockQ.data
+  const lockStart = lock?.locked ? lock.holdout_start : null
+  const periodError = holdoutPeriodError(lockStart, form.start, form.end)
+  const proposed = proposedHoldoutStart(form.start || dataRow?.first?.slice(0, 10) || '2020-01-01', form.end || dataRow?.last || null)
+  const presets = (presetsQ.data ?? []).filter((p) => p.template_id === template.id)
+  const combo = `${templateShort(template.id, template.name)} × ${form.symbol.replace(/USDT$/, '')} × ${form.timeframe}`
+
   const update = (patch: Partial<FormState>) => {
     setSubmitError(null)
     setAck(false)
     setForm({ ...form, ...patch })
   }
-  const presets = (presetsQ.data ?? []).filter((p) => templates.some((t) => t.id === p.template_id))
-  const activePreset = presets.find((p) => String(p.id) === form.presetId) ?? null
-  const tfDef = tfDefault(form.timeframe, defaultsQ.data)
-  const longerPeriod = form.periodTouched && (form.start === '' || form.start < tfDef.start) && tfDef.start > '2020-01-01'
-  const moreTrials = form.trialsTouched && form.optimize.nTrials > tfDef.nTrials
+
+  const openAdvancedChanged = () => {
+    setAdvancedOpen(true)
+    setOnlyChanged(true)
+    setQuery('')
+    requestAnimationFrame(() => advancedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
 
   const submit = (mode: LabRunMode) => {
     const state = { ...form, template }
-    const errs = { ...validateRunForm(state), ...(mode === 'optimize' ? validateOptimize(template, form.optimize) : {}) }
+    const errs = { ...validateRunForm(state), ...(mode === 'optimize' ? validateOptimize(template, search_) : {}) }
     setErrors(errs)
     if (Object.keys(errs).length > 0) {
-      notify.error('Masih ada input yang belum valid', { description: 'Cek kolom yang ditandai merah.' })
+      if (Object.keys(errs).some((k) => k.startsWith('search') || hiddenKeys.has(k) || k === 'commission_pct' || k === 'slippage_pct')) setAdvancedOpen(true)
+      notify.error('Masih ada isian yang belum valid', { description: 'Cek kolom yang ditandai merah.' })
+      return
+    }
+    if (mode !== 'backtest' && periodError) {
+      notify.error('Periode bentrok dengan data baru yang terkunci', { description: periodError })
       return
     }
     setPendingMode(mode)
     setSubmitError(null)
-    const req = buildRunRequest(state, mode, mode === 'optimize' ? form.optimize : null)
+    const req = buildRunRequest(state, mode, mode === 'optimize' ? search_ : null)
     if (form.presetId) req.preset_id = form.presetId
     createRun.mutate(req, {
       onSuccess: (res) => {
-        notify.success('Run masuk antrian', { description: `Run #${res.run_id}` })
+        setOptOpen(false)
+        notify.success(`${MODE_COPY[mode]} masuk antrian`, { description: `Uji #${res.run_id}` })
         router.push(`/lab/runs/${encodeURIComponent(String(res.run_id))}`)
       },
       onError: (err) => {
-        const detail = apiErrorDetail(err)
-        setSubmitError(detail ?? 'Server Lab menolak atau tidak bisa dihubungi.')
-        notify.error('Gagal membuat run', { description: detail ?? undefined })
+        const d = describeError(err)
+        setSubmitError(`${d.message}${d.hint ? ` ${d.hint}` : ''}`)
+        notify.error('Uji gagal dibuat', { description: d.message })
       },
       onSettled: () => setPendingMode(null),
     })
   }
 
-  const presetLabel = DATE_PRESETS.find((p) => p.id === form.preset)?.label ?? 'Custom'
+  const basisAside = (
+    <span className="inline-flex flex-wrap items-center justify-end gap-1">
+      <span>
+        Dasar: <span className="font-medium text-foreground">{importance.basis}</span>
+      </span>
+      <InfoTip title="Dasar urutan parameter" label="Penjelasan dasar urutan parameter" align="end">
+        <span className="block">{importance.basis_detail}</span>
+        {importance.note && <span className="mt-1 block">{importance.note}</span>}
+        {importanceQ.isError && <span className="mt-1 block">Server belum menyediakan data kepentingan parameter, jadi urutannya bawaan strategi.</span>}
+      </InfoTip>
+    </span>
+  )
 
   return (
     <div className="space-y-4">
       {fromId && (prefillQ.data || prefillQ.isError) && (
         <div className={cn('flex items-start gap-2 rounded-lg border px-3 py-2 text-xs', prefillQ.isError ? 'border-warn/40 bg-warn/10 text-warn' : 'border-lab/30 bg-lab/10 text-lab')}>
-          <Wand2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <Wand2 className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           {prefillQ.isError
-            ? `Run #${fromId} tidak bisa dimuat — form memakai default live.`
-            : `Diisi dari run #${fromId}${use === 'best' ? ' (parameter terbaik)' : use === 'trial' && rank !== null ? ` (kombinasi #${rank})` : ''}. Klik Validasi untuk menguji.`}
+            ? `Uji #${fromId} tidak bisa dimuat, jadi form memakai default.`
+            : `Diisi dari uji #${fromId}${use === 'best' ? ' (setting terbaik)' : use === 'trial' && rank !== null ? ` (kombinasi #${rank})` : ''}. Periksa, lalu klik Uji jujur.`}
         </div>
       )}
 
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)]">
-        {/* Left: market, period, costs, optimize settings */}
-        <div className="space-y-4 lg:sticky lg:top-20">
-          <Section title="Pasar & periode" icon={<Database className="h-4 w-4 text-lab" />}>
-            <div className="space-y-4">
-              {templates.length > 1 ? (
-                <div className="space-y-1.5">
-                  <label htmlFor="lab-template" className="text-xs font-medium">Template</label>
-                  <select
-                    id="lab-template"
-                    value={template.id}
-                    onChange={(e) => {
-                      const t = templates.find((x) => x.id === e.target.value) ?? templates[0]
-                      update({ templateId: t.id, params: initialParamValues(t), timeframe: pickTimeframe(t, form.timeframe), optimize: defaultOptimizeConfig(t), presetId: null })
-                    }}
-                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-sm"
-                  >
-                    {templates.map((t) => (
-                      <option key={t.id} value={t.id} className="bg-popover">{t.name}</option>
-                    ))}
-                  </select>
-                  {template.description && <p className="text-2xs leading-snug text-muted-foreground">{template.description}</p>}
-                </div>
-              ) : (
-                <p className="text-xs text-muted-foreground" title={template.description}>
-                  Strategi: <span className="font-medium text-foreground">{template.name}</span>
-                </p>
-              )}
+      <Step n={1} title="Apa yang diuji" description="Strategi, koin, timeframe dan periode. Defaultnya sudah terisi.">
+        <StrategyStep
+          templates={templates}
+          template={template}
+          presets={presets}
+          symbols={symbols}
+          form={form}
+          errors={errors}
+          dataRow={dataRow}
+          dataPending={dataStatusQ.isPending}
+          autoStart={tfDef.start}
+          autoReason={tfDef.reason}
+          onTemplate={(id) => {
+            const t = templates.find((x) => x.id === id) ?? templates[0]
+            update(switchTemplate(form, t, defaults))
+          }}
+          onPreset={(p) => {
+            if (!p) return update({ presetId: null })
+            const next = fromPreset(form, templates, p)
+            update({ ...next, ...tfDefaultsPatch(next, next.timeframe, defaults) })
+          }}
+          onSymbol={(s) => update({ symbol: s })}
+          onTimeframe={(tf) => update({ timeframe: tf, ...tfDefaultsPatch(form, tf, defaults) })}
+          onPeriod={(p: Period) => update({ period: p, ...periodRange(p, form.timeframe, form, defaults) })}
+          onDates={(d) => update(d)}
+        />
+        {symbolInfo === undefined && <p className="pt-2 text-2xs text-warn">Koin {form.symbol} tidak ada di daftar server.</p>}
+      </Step>
 
-              {presets.length > 0 && (
-                <div className="space-y-1.5">
-                  <label htmlFor="lab-preset" className="flex items-center gap-1.5 text-xs font-medium">
-                    <Bookmark className="h-3.5 w-3.5 text-lab" aria-hidden="true" />
-                    Preset
-                  </label>
-                  <PresetSelect
-                    id="lab-preset"
-                    presets={presets}
-                    value={form.presetId}
-                    onChange={(p) => {
-                      if (!p) return update({ presetId: null })
-                      const next = fromPreset(form, templates, p)
-                      update({ ...next, ...tfDefaultsPatch(next, next.timeframe, defaultsQ.data) })
-                    }}
-                  />
-                  <p className="text-2xs text-muted-foreground">
-                    {activePreset
-                      ? `${activePreset.name}: parameter khusus ${activePreset.symbol.replace(/USDT$/, '')} ${activePreset.timeframe}.${activePreset.symbol !== form.symbol || activePreset.timeframe !== form.timeframe ? ' Dipakai di koin/TF lain — hasil bisa jauh berbeda.' : ''}`
-                      : 'Satu logika strategi, parameter berbeda per koin & timeframe. Pilih preset untuk mengisi form.'}
-                  </p>
-                </div>
-              )}
-
-              <div className="space-y-1.5">
-                <label htmlFor="lab-symbol" className="text-xs font-medium">Koin (Binance perp)</label>
-                <SymbolPicker symbols={symbols} value={form.symbol} onChange={(s) => update({ symbol: s })} invalid={Boolean(errors.symbol)} />
-                {errors.symbol && <p className="text-2xs text-bearish">{errors.symbol}</p>}
-              </div>
-
-              <div className="space-y-1.5">
-                <span className="text-xs font-medium">Timeframe</span>
-                <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Timeframe">
-                  {sortTimeframes(template.timeframes).map((tf) => {
-                    const noData = hasTimeframeData(symbolInfo, tf) === false
-                    return (
-                      <Chip
-                        key={tf}
-                        active={form.timeframe === tf}
-                        onClick={() => update({ timeframe: tf, ...tfDefaultsPatch(form, tf, defaultsQ.data) })}
-                        className="min-w-12 gap-1.5 font-mono"
-                        title={noData ? `Data ${tf} untuk ${form.symbol} belum ada, akan diunduh saat dipakai` : undefined}
-                      >
-                        {tf}
-                        {noData && <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" aria-label="belum ada data" />}
-                      </Chip>
-                    )
-                  })}
-                </div>
-                {lowerTfHint([form.timeframe]) && <p className="text-2xs text-warn">{lowerTfHint([form.timeframe])}</p>}
-              </div>
-
-              <div className="space-y-1.5">
-                <span className="text-xs font-medium">Periode</span>
-                <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Periode">
-                  {DATE_PRESETS.map((p) => (
-                    <Chip
-                      key={p.id}
-                      active={form.preset === p.id}
-                      onClick={() => {
-                        const r = presetRange(p.id)
-                        update(r ? { preset: p.id, ...r, periodTouched: true } : { preset: 'custom', periodTouched: true })
-                      }}
-                    >
-                      {p.label}
-                    </Chip>
-                  ))}
-                </div>
-                {form.preset === 'custom' && (
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <div className="space-y-1">
-                      <label htmlFor="lab-start" className="text-2xs text-muted-foreground">Mulai</label>
-                      <Input id="lab-start" type="date" value={form.start} onChange={(e) => update({ start: e.target.value, periodTouched: true })} className={cn('h-8 px-2 text-xs', errors.start && 'border-bearish')} />
-                    </div>
-                    <div className="space-y-1">
-                      <label htmlFor="lab-end" className="text-2xs text-muted-foreground">Sampai (kosong = terbaru)</label>
-                      <Input id="lab-end" type="date" value={form.end} onChange={(e) => update({ end: e.target.value, periodTouched: true })} className={cn('h-8 px-2 text-xs', errors.end && 'border-bearish')} />
-                    </div>
-                  </div>
-                )}
-                {(errors.start || errors.end) && <p className="text-2xs text-bearish">{errors.end ?? errors.start}</p>}
-                <p className="text-2xs text-muted-foreground">20% data terakhir dikunci sebagai holdout untuk ujian akhir.</p>
-                {!form.periodTouched && tfDef.reason && <p className="text-2xs text-muted-foreground">Default {form.timeframe}: {tfDef.reason}</p>}
-                {longerPeriod && (
-                  <p className="text-2xs text-warn">
-                    Lebih panjang dari default {form.timeframe} (mulai {tfDef.start}) — run jauh lebih lama.{' '}
-                    <button type="button" className="underline cursor-pointer" onClick={() => update({ ...tfDefaultsPatch({ ...form, periodTouched: false }, form.timeframe, defaultsQ.data), periodTouched: false })}>
-                      Pakai default
-                    </button>
-                  </p>
-                )}
-              </div>
-
-              <p className="flex items-start gap-1.5 rounded-md bg-muted/40 px-2.5 py-2 text-2xs text-muted-foreground">
-                <Database className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                <span>
-                  {symbolInfo && !symbolInfo.has_data
-                    ? DOWNLOAD_HINT
-                    : dataStatusQ.isPending
-                      ? 'Cek data…'
-                      : dataRow
-                        ? `${dataRow.rows.toLocaleString('id-ID')} candle tersedia · ${formatTimestamp(dataRow.first).slice(0, 10)} → ${formatTimestamp(dataRow.last).slice(0, 10)}`
-                        : `Data ${form.timeframe} untuk ${form.symbol} akan diunduh saat dipakai (±1 menit).`}
-                </span>
-              </p>
-
-              <CostDisclosure value={form.costs} errors={errors} onChange={(costs) => update({ costs })} />
-            </div>
-          </Section>
-
-          {main.length > 0 && (
-            <details className="group rounded-xl border border-border bg-card shadow-sm" open={Boolean(errors.search) || Object.keys(errors).some((k) => k.startsWith('search.')) || undefined}>
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 sm:px-5 [&::-webkit-details-marker]:hidden">
-                <span className="min-w-0">
-                  <span className="flex items-center gap-2 text-sm font-semibold"><Sparkles className="h-4 w-4 text-lab" />Pengaturan cari parameter</span>
-                  <span className="block truncate text-2xs text-muted-foreground">{optimizeSummary(form.optimize)}</span>
-                </span>
-                <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
-              </summary>
-              <div className="px-4 pb-4 sm:px-5 sm:pb-5">
-                <OptimizePanel
-                  template={template}
-                  value={form.optimize}
-                  errors={errors}
-                  onChange={(optimize) => update({ optimize, trialsTouched: form.trialsTouched || optimize.nTrials !== form.optimize.nTrials })}
-                />
-                {moreTrials && <p className="pt-2 text-2xs text-warn">Lebih banyak dari default {form.timeframe} ({tfDef.nTrials} percobaan) — optimize jauh lebih lama.</p>}
-              </div>
-            </details>
+      <Step
+        n={2}
+        title="Parameter penting"
+        description={
+          importance.source === 'template'
+            ? 'Belum diukur untuk timeframe ini, jadi yang tampil parameter utama strategi.'
+            : 'Hanya parameter yang terbukti mengubah hasil. Sisanya ada di Lanjutan.'
+        }
+        aside={basisAside}
+      >
+        {importanceQ.isPending && importanceQ.fetchStatus !== 'idle' ? (
+          <div className="grid gap-3 md:grid-cols-2" aria-busy="true">
+            <Skeleton className="h-36 w-full rounded-lg" />
+            <Skeleton className="h-36 w-full rounded-lg" />
+          </div>
+        ) : (
+          <ImportantParams step={step} importance={importance} values={form.params} errors={errors} onChange={(params) => update({ params })} />
+        )}
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs text-muted-foreground">
+          <span>{hiddenKeys.size} parameter lain ada di Lanjutan.</span>
+          {hiddenChanged > 0 && (
+            <button type="button" onClick={openAdvancedChanged} className="cursor-pointer rounded-full bg-warn/15 px-2 py-0.5 font-semibold text-warn hover:underline">
+              {hiddenChanged} parameter lanjutan diubah · lihat
+            </button>
           )}
         </div>
+      </Step>
 
-        {/* Right: parameters */}
-        <div className="space-y-4">
-          {main.length > 0 && (
-            <Section
-              title="Parameter utama"
-              icon={<SlidersHorizontal className="h-4 w-4 text-lab" />}
-              description="12 parameter yang paling berpengaruh. Default = 4H-ETH-Basic (setting live ETH 4H); koin/TF lain biasanya butuh nilai berbeda."
-              action={<ParamSummary template={template} values={form.params} onChange={(params) => update({ params })} />}
-            >
-              <MainParams template={template} values={form.params} errors={errors} onChange={(params) => update({ params })} />
-            </Section>
-          )}
-          <Section
-            title="Parameter lanjutan"
-            description={`${advancedCount} parameter lain, dikelompokkan. Biasanya tidak perlu diubah.`}
-            action={main.length === 0 ? <ParamSummary template={template} values={form.params} onChange={(params) => update({ params })} /> : undefined}
-          >
-            <AdvancedParams template={template} values={form.params} errors={errors} onChange={(params) => update({ params })} />
-          </Section>
-        </div>
-      </div>
+      <AdvancedPanel
+        ref={advancedRef}
+        open={advancedOpen}
+        onOpenChange={setAdvancedOpen}
+        query={query}
+        onQuery={setQuery}
+        onlyChanged={onlyChanged}
+        onOnlyChanged={setOnlyChanged}
+        template={template}
+        values={form.params}
+        errors={errors}
+        onParams={(params) => update({ params })}
+        hiddenKeys={hiddenKeys}
+        hiddenChanged={hiddenChanged}
+        importance={impMap}
+        costs={form.costs}
+        onCosts={(costs) => update({ costs })}
+        optimize={search_}
+        onOptimize={(optimize) => update({ optimize, searchTouched: true, trialsTouched: form.trialsTouched || optimize.nTrials !== form.optimize.nTrials })}
+        importantKeys={importantSearch}
+        onQuickTest={() => submit('backtest')}
+        quickPending={pendingMode === 'backtest'}
+        disabled={createRun.isPending}
+      />
 
-      <RunActionBar
-        summary={
+      <Step
+        n={3}
+        title="Jalankan"
+        description={
           <>
-            {activePreset && <span className="text-lab">{activePreset.name} · </span>}
-            <span className="font-mono">{form.symbol}</span> · <span className="font-mono">{form.timeframe}</span> · {presetLabel}
-            {changed > 0 ? <span className="text-warn"> · {changed} parameter diubah</span> : <span className="text-muted-foreground"> · default template</span>}
+            <span className="num">{combo}</span> · {form.period === 'auto' ? `otomatis sejak ${formatDate(form.start)}` : form.start ? `sejak ${formatDate(form.start)}` : 'semua data'}
+            {changed.length > 0 ? ` · ${changed.length} parameter diubah` : ' · setting default'}
+            {hiddenChanged > 0 && (
+              <>
+                {' '}
+                <button type="button" onClick={openAdvancedChanged} className="cursor-pointer font-semibold text-warn hover:underline">
+                  ({hiddenChanged} di Lanjutan · lihat)
+                </button>
+              </>
+            )}
           </>
         }
-        submitError={submitError}
-        pendingMode={pendingMode}
-        disabled={createRun.isPending}
-        nTrials={form.optimize.nTrials}
-        estimates={{ backtest: estBacktest.data, validate: estValidate.data, optimize: estOptimize.data }}
-        estimating={estValidate.isFetching || estOptimize.isFetching}
-        ack={ack}
-        onAck={setAck}
-        onSubmit={submit}
+      >
+        <RunStep
+          holdout={
+            <HoldoutNote
+              lock={lock}
+              loading={lockQ.isPending && lockQ.fetchStatus !== 'idle'}
+              failed={lockQ.isError}
+              proposedStart={proposed}
+              combo={combo}
+              periodError={periodError}
+            />
+          }
+          estimate={estimateQ.data}
+          estimating={estimateQ.isFetching}
+          ack={ack}
+          onAck={setAck}
+          pendingMode={pendingMode}
+          disabled={createRun.isPending}
+          blockedReason={periodError ? 'Ubah periode dulu supaya tidak bentrok dengan data baru yang terkunci.' : null}
+          onValidate={() => submit('validate')}
+          onOptimize={() => setOptOpen(true)}
+          submitError={submitError}
+        />
+      </Step>
+
+      <OptimizeDialog
+        open={optOpen}
+        onOpenChange={setOptOpen}
+        template={template}
+        search={search_}
+        importance={impMap}
+        estimateBody={estimateBody ? { ...estimateBody, mode: 'optimize', n_trials: search_.nTrials } : null}
+        pending={pendingMode === 'optimize'}
+        onConfirm={() => submit('optimize')}
       />
     </div>
   )

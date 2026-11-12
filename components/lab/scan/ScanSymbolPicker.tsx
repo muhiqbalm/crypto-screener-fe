@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils/cn'
 import { MAJORS, MEMES, pickAvailable, topN } from '@/lib/lab/form'
 import type { LabSymbol } from '@/lib/api/types/lab'
 
-/** Multi-select coin picker with quick groups (Top 10 / Top 29 / Majors / Meme). */
+/** Multi-select coin picker with quick groups (10 teratas / semua screener / koin besar / meme). */
 export function ScanSymbolPicker({
   symbols,
   selected,
@@ -25,9 +25,9 @@ export function ScanSymbolPicker({
   const term = q.trim().toUpperCase()
   const visible = symbols.filter((s) => s.symbol.includes(term))
   const groups: { label: string; list: string[] }[] = [
-    { label: 'Top 10', list: topN(names, 10) },
-    { label: `Top ${Math.min(29, names.length)}`, list: topN(names, 29) },
-    { label: 'Majors', list: pickAvailable(MAJORS, names) },
+    { label: '10 teratas', list: topN(names, 10) },
+    { label: names.length <= 29 ? `Semua (${names.length})` : '29 teratas', list: topN(names, 29) },
+    { label: 'Koin besar', list: pickAvailable(MAJORS, names) },
     { label: 'Meme', list: pickAvailable(MEMES, names) },
   ].filter((p) => p.list.length > 0)
   const sameSet = (a: string[], b: string[]) => a.length === b.length && a.every((x) => b.includes(x))

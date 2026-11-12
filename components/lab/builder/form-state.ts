@@ -1,6 +1,6 @@
 /**
- * Run builder form state: initial values (template defaults, ?from= run,
- * ?preset=), per-timeframe defaults and preset prefill. Pure, no React.
+ * "Uji strategi" form state: initial values (template defaults, ?from= run, ?preset=), the
+ * period ("Otomatis" = the backend's per-timeframe default) and preset prefill. Pure, no React.
  */
 import { tfDefault } from '@/lib/lab/planning'
 import {
@@ -20,11 +20,23 @@ import {
 import type { LabParamValue, LabRunDetail, LabSymbol, LabTemplate } from '@/lib/api/types/lab'
 import type { LabPreset, LabRunDefaults } from '@/lib/api/types/lab-insights'
 
+/** 'auto' = start from the timeframe's default history (backend /run-defaults), up to the latest data. */
+export type Period = 'auto' | DatePreset
+
+export const PERIOD_OPTIONS: { id: Period; label: string }[] = [
+  { id: 'auto', label: 'Otomatis' },
+  { id: '1y', label: '1 tahun' },
+  { id: '2y', label: '2 tahun' },
+  { id: '3y', label: '3 tahun' },
+  { id: 'since2020', label: 'Sejak 2020' },
+  { id: 'custom', label: 'Pilih tanggal' },
+]
+
 export interface FormState {
   templateId: string
   symbol: string
   timeframe: string
-  preset: DatePreset
+  period: Period
   start: string
   end: string
   params: ParamFormValues
@@ -32,9 +44,10 @@ export interface FormState {
   optimize: OptimizeConfig
   /** Preset the form was filled from (sent as provenance; backend links only unchanged params). */
   presetId: string | null
-  /** User picked a period / trial count: stop applying per-timeframe defaults. */
-  periodTouched: boolean
+  /** User picked a trial count: stop applying per-timeframe defaults. */
   trialsTouched: boolean
+  /** User edited the search set in Lanjutan; otherwise "Cari setting terbaik" searches the step-2 params. */
+  searchTouched: boolean
 }
 
 export type PrefillUse = 'params' | 'best' | 'trial'
@@ -59,14 +72,20 @@ export function prefillOverrides(
   return run.params
 }
 
-/** Period + trial count for a timeframe unless the user already chose them. */
-export function tfDefaultsPatch(f: Pick<FormState, 'periodTouched' | 'trialsTouched' | 'optimize'>, tf: string, defaults?: LabRunDefaults | null): Partial<FormState> {
+/** start/end for a period choice; 'custom' keeps the current dates. */
+export function periodRange(period: Period, tf: string, current: { start: string; end: string }, defaults?: LabRunDefaults | null): { start: string; end: string } {
+  if (period === 'auto') return { start: tfDefault(tf, defaults).start, end: '' }
+  if (period === 'custom') return current
+  return presetRange(period) ?? current
+}
+
+/** Period dates + trial count for a timeframe (only what the user has not chosen). */
+export function tfDefaultsPatch(f: Pick<FormState, 'period' | 'trialsTouched' | 'optimize' | 'start' | 'end'>, tf: string, defaults?: LabRunDefaults | null): Partial<FormState> {
   const d = tfDefault(tf, defaults)
   const patch: Partial<FormState> = {}
-  if (!f.periodTouched) {
+  if (f.period === 'auto') {
     patch.start = d.start
     patch.end = ''
-    patch.preset = detectPreset(d.start, '')
   }
   if (!f.trialsTouched && (TRIAL_OPTIONS as readonly number[]).includes(d.nTrials)) {
     patch.optimize = { ...f.optimize, nTrials: d.nTrials as TrialCount }
@@ -87,6 +106,12 @@ export function fromPreset(f: FormState, templates: LabTemplate[], p: LabPreset)
   }
 }
 
+/** A run's own period: 'auto' when it equals the timeframe default, else the matching preset. */
+function periodOf(start: string, end: string, tf: string, defaults?: LabRunDefaults | null): Period {
+  if (!end && start === tfDefault(tf, defaults).start) return 'auto'
+  return detectPreset(start, end)
+}
+
 export function initialForm(
   templates: LabTemplate[],
   symbols: LabSymbol[],
@@ -100,21 +125,35 @@ export function initialForm(
   const names = symbols.map((s) => s.symbol)
   const symbol =
     prefill && names.includes(prefill.symbol) ? prefill.symbol : names.includes('ETHUSDT') ? 'ETHUSDT' : (names[0] ?? '')
-  const range = prefill ? { start: prefill.start ?? '', end: prefill.end ?? '' } : presetRange('since2020')!
+  const timeframe = pickTimeframe(template, prefill?.timeframe)
   const base: FormState = {
     templateId: template.id,
     symbol,
-    timeframe: pickTimeframe(template, prefill?.timeframe),
-    preset: prefill ? detectPreset(range.start, range.end) : 'since2020',
-    start: range.start,
-    end: range.end,
+    timeframe,
+    period: prefill ? periodOf(prefill.start ?? '', prefill.end ?? '', timeframe, defaults) : 'auto',
+    start: prefill?.start ?? '',
+    end: prefill?.end ?? '',
     params: initialParamValues(template, prefillOverrides(prefill, use, rank)),
     costs: prefill ? costsToForm(prefill.costs) : { ...DEFAULT_COSTS },
     optimize: defaultOptimizeConfig(template),
     presetId: prefill?.preset && use === 'params' ? String(prefill.preset.id) : null,
-    periodTouched: Boolean(prefill),
     trialsTouched: false,
+    searchTouched: false,
   }
   const f = preset && !prefill ? fromPreset(base, templates, preset) : base
   return { ...f, ...tfDefaultsPatch(f, f.timeframe, defaults) }
+}
+
+/** Switching strategy resets params, search and preset (they belong to one template). */
+export function switchTemplate(f: FormState, t: LabTemplate, defaults?: LabRunDefaults | null): FormState {
+  const next: FormState = {
+    ...f,
+    templateId: t.id,
+    params: initialParamValues(t),
+    timeframe: pickTimeframe(t, f.timeframe),
+    optimize: { ...defaultOptimizeConfig(t), nTrials: f.optimize.nTrials },
+    presetId: null,
+    searchTouched: false,
+  }
+  return { ...next, ...tfDefaultsPatch(next, next.timeframe, defaults) }
 }

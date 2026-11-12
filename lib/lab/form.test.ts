@@ -12,7 +12,6 @@ import {
   isLiveDefault,
   sortScanRows,
   toParamsPayload,
-  top30Available,
   validateParams,
   validateRunForm,
   verdictCopy,
@@ -123,10 +122,6 @@ describe('scan helpers', () => {
     expect(isLargeScan(11, 'optimize')).toBe(true)
   })
 
-  it('top30 only returns symbols the backend has', () => {
-    expect(top30Available(['ETHUSDT', 'FOOUSDT', 'BTCUSDT'])).toEqual(['BTCUSDT', 'ETHUSDT'])
-  })
-
   it('sorts PASS first then OOS PF desc, nulls last', () => {
     const row = (symbol: string, verdict: LabScanRow['verdict'], pf: number | null): LabScanRow => ({
       symbol, timeframe: '4h', run_id: symbol, status: 'done', verdict,
@@ -148,7 +143,8 @@ describe('verdict / holdout copy', () => {
   it('verdict tones', () => {
     expect(verdictCopy('PASS', 'validate', 'done').tone).toBe('pass')
     expect(verdictCopy('FAIL', 'validate', 'done').tone).toBe('fail')
-    expect(verdictCopy(null, 'backtest', 'done').title).toMatch(/belum divalidasi/i)
+    expect(verdictCopy(null, 'backtest', 'done').title).toMatch(/belum diuji jujur/i)
+    expect(verdictCopy(null, 'backtest', 'done').body).not.toMatch(/klik validasi/i)
     expect(verdictCopy('PASS', 'validate', 'running').tone).toBe('none')
   })
 })

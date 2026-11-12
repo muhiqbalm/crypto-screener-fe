@@ -9,7 +9,6 @@ import {
   defaultOptimizeConfig,
   detectPreset,
   diffFromDefaults,
-  estimateMinutes,
   groupLabel,
   initialParamValues,
   presetRange,
@@ -95,9 +94,6 @@ describe('optimize payload', () => {
     expect(validateOptimize(T, cfg).search).toBeDefined()
   })
 
-  it('uses measured timings', () => {
-    expect([10, 30, 60].map(estimateMinutes)).toEqual([3, 8, 15])
-  })
 })
 
 describe('check reasons', () => {
@@ -108,8 +104,8 @@ describe('check reasons', () => {
     expect(thresholdNumber(null)).toBeNull()
   })
   it('writes plain-language Indonesian', () => {
-    expect(checkReason(c('mc_dd_p95', -62, '> -50.0'))).toBe('Drawdown terburuk 95% bisa −62% (batas −50%)')
-    expect(checkReason(c('cost_stress', -3.25, '> 0'))).toContain('biaya 2× lipat, return holdout jadi −3.3%')
+    expect(checkReason(c('mc_dd_p95', -62, '> -50.0'))).toBe('Turun terdalam wajar bisa −62% (batas −50%)')
+    expect(checkReason(c('cost_stress', -3.25, '> 0'))).toContain('biaya dobel, hasil di data baru jadi −3.3%')
     expect(checkReason(c('oos_profit_factor', null, '>= 1.2'))).toContain('tidak ada data')
   })
 })

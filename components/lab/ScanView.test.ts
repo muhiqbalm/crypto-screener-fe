@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { pfBucket, sortScanTable } from './ScanView'
+import { scanCellTone, sortScanTable } from './ScanView'
 import type { LabScanRow } from '@/lib/api/types/lab'
 
 const row = (symbol: string, pf: number | null, verdict: LabScanRow['verdict'] = null): LabScanRow => ({
@@ -7,8 +7,13 @@ const row = (symbol: string, pf: number | null, verdict: LabScanRow['verdict'] =
 })
 
 describe('scan heatmap + table', () => {
-  it('buckets PF around 1.0', () => {
-    expect([0.5, 0.9, 1.1, 1.3, 2, null].map(pfBucket)).toEqual([-2, -1, 0, 1, 2, null])
+  it('colours a cell by its verdict, not by PF', () => {
+    expect(scanCellTone({ status: 'done', verdict: 'PASS' })).toBe('pass')
+    expect(scanCellTone({ status: 'done', verdict: 'FAIL' })).toBe('fail')   // a FAIL with PF 3 is never green
+    expect(scanCellTone({ status: 'running', verdict: null })).toBe('pending')
+    expect(scanCellTone({ status: 'done', verdict: null })).toBe('pending')
+    expect(scanCellTone({ status: 'error', verdict: null })).toBe('error')
+    expect(scanCellTone({ status: 'cancelled', verdict: null })).toBe('error')
   })
   it('default sort = LOLOS first then PF; column sort puts nulls last', () => {
     const rows = [row('A', 2), row('B', 1.3, 'PASS'), row('C', null), row('D', 1.5, 'PASS')]

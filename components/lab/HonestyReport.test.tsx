@@ -15,23 +15,23 @@ describe('VerdictBanner', () => {
     render(<VerdictBanner verdict="PASS" mode="validate" status="done" checks={CHECKS.slice(0, 1)} />)
     const banner = screen.getByTestId('verdict-banner')
     expect(banner).toHaveAttribute('data-tone', 'pass')
-    expect(banner).toHaveTextContent('LOLOS')
+    expect(banner).toHaveTextContent('Lolos')
     expect(screen.queryByRole('button')).toBeNull()
   })
 
   it('renders GAGAL with plain-language reasons from failed checks', () => {
     render(<VerdictBanner verdict="FAIL" mode="optimize" status="done" checks={CHECKS} />)
     expect(screen.getByTestId('verdict-banner')).toHaveAttribute('data-tone', 'fail')
-    expect(screen.getByText('GAGAL')).toBeInTheDocument()
+    expect(screen.getByText('Gagal')).toBeInTheDocument()
     const reasons = screen.getByTestId('verdict-reasons')
-    expect(reasons).toHaveTextContent('Gagal karena drawdown terburuk 95% bisa −62.3% (batas −50%)')
-    expect(reasons).toHaveTextContent('18 trade di holdout (minimal 30')
-    expect(reasons).not.toHaveTextContent('Profit factor')
+    expect(reasons).toHaveTextContent('Gagal karena turun terdalam wajar bisa −62.3% (batas −50%)')
+    expect(reasons).toHaveTextContent('18 trade di data baru (minimal 30')
+    expect(reasons).not.toHaveTextContent('PF di data baru')
   })
 
   it('backtest without verdict says it is not validated', () => {
     render(<VerdictBanner verdict={null} mode="backtest" status="done" />)
-    expect(screen.getByText(/belum divalidasi/i)).toBeInTheDocument()
+    expect(screen.getByText(/belum diuji jujur/i)).toBeInTheDocument()
   })
 })
 
@@ -43,16 +43,16 @@ describe('HoldoutWarning', () => {
 
   it('shown when > 1', () => {
     render(<HoldoutWarning touches={4} />)
-    expect(screen.getByTestId('holdout-warning')).toHaveTextContent('Hasil holdout sudah dilihat 4 kali — risiko overfitting')
+    expect(screen.getByTestId('holdout-warning')).toHaveTextContent('sudah dipakai 4 kali')
   })
 })
 
 describe('ChecksList', () => {
   it('shows Indonesian label, value and requirement per check', () => {
     render(<ChecksList checks={CHECKS} />)
-    expect(screen.getByText('Profit factor holdout')).toBeInTheDocument()
+    expect(screen.getByText('PF di data baru')).toBeInTheDocument()
     expect(screen.getByText('1.41')).toBeInTheDocument()
-    expect(screen.getByText('>= 1.2')).toBeInTheDocument()
+    expect(screen.getByText('minimal 1.2')).toBeInTheDocument()
     expect(screen.getAllByLabelText('gagal')).toHaveLength(2)
     expect(screen.getAllByLabelText('lolos')).toHaveLength(1)
   })

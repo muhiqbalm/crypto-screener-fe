@@ -4,6 +4,7 @@
  */
 import type { LabEquityPoint, LabMetrics, LabRunDetail } from '@/lib/api/types/lab'
 import type { LabBoardRow, LabEstimate, LabRunDefaults } from '@/lib/api/types/lab-insights'
+import { formatDate } from '@/lib/utils/time'
 
 // ---------------------------------------------------------------------------
 // Durations
@@ -47,11 +48,6 @@ export function tfDefault(tf: string, defaults?: LabRunDefaults | null, today: D
   if (!f.years) return { start: '2020-01-01', nTrials: f.nTrials, reason: null }
   const s = new Date(Date.UTC(today.getUTCFullYear() - f.years, today.getUTCMonth(), today.getUTCDate()))
   return { start: s.toISOString().slice(0, 10), nTrials: f.nTrials, reason: null }
-}
-
-/** Earlier start date than the TF default = more history = longer job. */
-export function longerThanDefault(start: string, def: TfDefault): boolean {
-  return Boolean(start) ? start < def.start : def.start > '2020-01-01'
 }
 
 // ---------------------------------------------------------------------------
@@ -128,9 +124,9 @@ export interface CompareMetricRow {
 }
 
 const METRICS: { key: string; label: string; higher: boolean | null }[] = [
-  { key: 'net_return_pct', label: 'Net return', higher: true },
-  { key: 'profit_factor', label: 'Profit factor', higher: true },
-  { key: 'max_dd_pct', label: 'Max drawdown', higher: false },
+  { key: 'net_return_pct', label: 'Hasil bersih', higher: true },
+  { key: 'profit_factor', label: 'PF', higher: true },
+  { key: 'max_dd_pct', label: 'Turun terdalam', higher: false },
   { key: 'sharpe', label: 'Sharpe', higher: true },
   { key: 'trades', label: 'Trade', higher: null },
   { key: 'cost_drag_pct', label: 'Beban biaya', higher: false },
@@ -196,7 +192,7 @@ export function normaliseEquity(points: LabEquityPoint[]): NormalisedPoint[] {
 // ---------------------------------------------------------------------------
 
 export function attemptsLabel(a: LabBoardRow['attempts']): string {
-  const parts = [`${a.runs} run`, `${a.timeframes} TF`]
+  const parts = [`${a.runs} uji`, `${a.timeframes} TF`]
   if (a.trials > 0) parts.push(`${a.trials} percobaan`)
   return parts.join(' · ')
 }
@@ -204,8 +200,8 @@ export function attemptsLabel(a: LabBoardRow['attempts']): string {
 /** Warning for the top of the leaderboard: the #1 out of many tries is optimistic. */
 export function boardSnoopingWarning(summary: { runs: number; trials: number; combinations: number }): string | null {
   if (summary.runs < 5 && summary.trials < 100) return null
-  const t = summary.trials > 0 ? ` dan ${summary.trials.toLocaleString('id-ID')} percobaan parameter` : ''
-  return `Peringkat ini memilih yang terbaik dari ${summary.runs} run (${summary.combinations} kombinasi koin × TF)${t}. Makin banyak yang dicoba, makin besar peluang juara #1 cuma beruntung — paper trade dulu sebelum percaya.`
+  const t = summary.trials > 0 ? ` dan ${summary.trials.toLocaleString('en-US')} percobaan parameter` : ''
+  return `Peringkat ini memilih yang terbaik dari ${summary.runs} uji (${summary.combinations} kombinasi strategi × koin × timeframe)${t}. Makin banyak yang dicoba, makin besar peluang juara #1 cuma kebetulan, jadi jalankan paper dulu sebelum percaya.`
 }
 
 // ---------------------------------------------------------------------------
@@ -229,4 +225,42 @@ export function suggestLabel(mode: string, taken: readonly string[]): string {
 /** Strategy family name shown neutrally (template name from the backend). */
 export function familyName(templateName: string | null | undefined): string {
   return templateName?.trim() || 'Rosyade family'
+}
+
+// ---------------------------------------------------------------------------
+// Holdout lock, checked before a run is queued (mirror of backend honesty.resolve_holdout)
+// ---------------------------------------------------------------------------
+
+export const HOLDOUT_FRACTION = 0.2
+const MIN_DEV_DAYS = 60
+
+/** Start of the last 20 % of [start, end): where a first validation would lock the holdout. */
+export function proposedHoldoutStart(start: string, end: string | null | undefined, now: Date = new Date()): string | null {
+  const a = Date.parse(/^\d{4}-\d{2}-\d{2}$/.test(start) ? `${start}T00:00:00Z` : start)
+  const b = end ? Date.parse(/^\d{4}-\d{2}-\d{2}$/.test(end) ? `${end}T00:00:00Z` : end) : now.getTime()
+  if (!Number.isFinite(a) || !Number.isFinite(b) || b <= a) return null
+  return new Date(a + (b - a) * (1 - HOLDOUT_FRACTION)).toISOString().slice(0, 10)
+}
+
+/**
+ * Indonesian error when the chosen period cannot respect a locked holdout, else null. Same
+ * three rules as the backend, so the run does not fail after it was queued.
+ */
+export function holdoutPeriodError(
+  lockStart: string | null | undefined,
+  start: string,
+  end: string,
+): string | null {
+  if (!lockStart || !start) return null
+  const hs = Date.parse(lockStart)
+  const a = Date.parse(`${start}T00:00:00Z`)
+  if (!Number.isFinite(hs) || !Number.isFinite(a)) return null
+  const day = formatDate(lockStart)
+  if (end) {
+    const b = Date.parse(`${end}T00:00:00Z`)
+    if (Number.isFinite(b) && b <= hs) return `Periode harus lewat dari ${day}, awal data baru yang terkunci.`
+  }
+  if (a >= hs) return `Periode mulai di dalam data baru yang terkunci (sejak ${day}). Pilih tanggal mulai sebelum itu.`
+  if (hs - a < MIN_DEV_DAYS * 86_400_000) return `Data latih sebelum ${day} kurang dari ${MIN_DEV_DAYS} hari. Mulai lebih awal.`
+  return null
 }
