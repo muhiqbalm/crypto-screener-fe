@@ -304,12 +304,14 @@ describe('formatTimestamp', () => {
     expect(formatTimestamp('not-a-date')).toBe(DASH)
   })
 
-  it('formats in WIB with Indonesian month, year and seconds (independent of the machine TZ)', () => {
-    expect(formatTimestamp('2025-01-15T12:00:00Z')).toBe('15 Jan 2025 19:00:00 WIB')
-    expect(formatTimestamp('2025-06-01T20:30:45Z')).toBe('2 Jun 2025 03:30:45 WIB')
+  it('keeps the fixed YYYY-MM-DD HH:mm:ss layout (callers slice it), in WIB, with the zone after it', () => {
+    expect(formatTimestamp('2025-01-15T12:00:00Z')).toBe('2025-01-15 19:00:00 WIB')
+    expect(formatTimestamp('2025-06-01T20:30:45Z')).toBe('2025-06-02 03:30:45 WIB')
+    expect(formatTimestamp('2025-06-01T20:30:45Z').slice(0, 10)).toBe('2025-06-02')
+    expect(formatTimestamp('2025-06-01T20:30:45Z').slice(0, 16)).toBe('2025-06-02 03:30')
   })
 
   it('treats a timestamp without zone as UTC (backend convention)', () => {
-    expect(formatTimestamp('2025-06-01 08:30:45')).toBe('1 Jun 2025 15:30:45 WIB')
+    expect(formatTimestamp('2025-06-01 08:30:45')).toBe('2025-06-01 15:30:45 WIB')
   })
 })

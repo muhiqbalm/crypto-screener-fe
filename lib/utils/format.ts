@@ -7,7 +7,7 @@
  * All formatters return "—" (em dash) for null, undefined, NaN or ±Infinity.
  * Times live in ./time.ts (WIB, Indonesian months).
  */
-import { formatDateTime } from './time'
+import { toDate, wibParts } from './time'
 
 const DASH = '—'
 
@@ -284,10 +284,17 @@ export function formatScore(v: number | null | undefined, fractionDigits = 2): s
 }
 
 /**
- * Full timestamp in WIB for logs and tables: "12 Nov 2026 08:00:15 WIB".
- * Kept for existing callers; new code uses `formatTime` from ./time.
+ * Fixed-width timestamp in WIB for logs and tables: "2025-01-15 19:00:00 WIB".
+ * The first 19 characters keep the old "YYYY-MM-DD HH:mm:ss" layout because
+ * callers slice it (`.slice(0, 10)` = date, `.slice(0, 16)` = date + minutes).
+ * Always WIB (UTC+7), never the machine's timezone. New code: use
+ * `formatTime` from ./time ("12 Nov 08:00 WIB").
  * Returns "—" for null/undefined/empty/invalid input.
  */
 export function formatTimestamp(v: string | null | undefined): string {
-  return formatDateTime(v)
+  const d = toDate(v)
+  if (!d) return DASH
+  const p = wibParts(d)
+  const two = (n: number) => String(n).padStart(2, '0')
+  return `${p.year}-${two(p.month + 1)}-${two(p.day)} ${two(p.hour)}:${two(p.minute)}:${two(p.second)} WIB`
 }
