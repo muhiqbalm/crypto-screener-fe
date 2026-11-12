@@ -16,6 +16,7 @@ const keys = {
   detail: (s: string, i: OutlookInputs) => [...keys.all, 'detail', s, i] as const,
   regime: () => ['lab', 'regime'] as const,
   track: () => [...keys.all, 'track-record'] as const,
+  rekamSkor: () => [...keys.all, 'rekam-skor'] as const,
   strength: () => ['koin', 'strength'] as const,
 }
 
@@ -62,6 +63,18 @@ export function useOutlookTrackRecord(enabled = true) {
   return useQuery({
     queryKey: keys.track(),
     queryFn: ({ signal }) => outlookApi.getTrackRecord(100, signal),
+    enabled,
+    staleTime: 5 * 60_000,
+    refetchInterval: 10 * 60_000,
+    refetchIntervalInBackground: false,
+  })
+}
+
+/** Rekam jejak skor (graded grade). Changes once per 4H bar; any logged-in user may read it. */
+export function useRekamSkor(enabled = true) {
+  return useQuery({
+    queryKey: keys.rekamSkor(),
+    queryFn: ({ signal }) => outlookApi.getRekamSkor(20, signal),
     enabled,
     staleTime: 5 * 60_000,
     refetchInterval: 10 * 60_000,

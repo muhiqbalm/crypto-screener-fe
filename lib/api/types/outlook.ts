@@ -3,6 +3,7 @@
  * src/lab/outlook/logic.py on the backend.
  */
 import type { LabId, LabVerdict } from './lab'
+import type { OutlookKualitas, QualityGrade, StoredGrade, StoredKualitasInfo } from './quality'
 
 export type OutlookSide = 'long' | 'short'
 export type OutlookBias = 'LONG' | 'SHORT' | 'NETRAL'
@@ -354,6 +355,8 @@ export interface OutlookRow {
   peluang?: OutlookPeluang
   positions?: OpenPosition[]
   coin_calibration?: { key: string; fase: CalibStats | null; side: CalibStats | null } | null
+  /** Skor kualitas sinyal (null = no call: the strategy is FLAT). Absent on older backends. */
+  kualitas?: OutlookKualitas | null
 }
 
 export interface OutlookMethod {
@@ -438,6 +441,7 @@ export interface OutlookCounts {
   posisi: Record<'ada' | 'tidak', number>
   peluang_positif: number
   sinyal_baru: number
+  kualitas?: Record<QualityGrade, number>
 }
 
 export interface OutlookResponse {
@@ -460,6 +464,8 @@ export interface OutlookResponse {
   ranking?: string[]
   calibration?: CalibrationBrief | null
   track_record?: { since: string | null; first_call: string | null; groups: Record<string, TrackGroup> }
+  /** the grading rule in plain sentences */
+  kualitas_rule?: string[]
 }
 
 export interface OutlookCall {
@@ -482,6 +488,9 @@ export interface OutlookCall {
   mfe_r: number | null
   bars_to_resolve: number | null
   resolved_at: string | null
+  /** skor kualitas the call had when it was made */
+  kualitas?: StoredGrade
+  kualitas_info?: StoredKualitasInfo | null
 }
 
 export interface OutlookTrackRecord {
@@ -517,6 +526,7 @@ export interface OutlookDetail extends OutlookRow {
   coin_calibration_all?: Record<string, CalibStats> | null
   can_refresh?: boolean
   positions_available?: { paper: boolean; live: boolean } | null
+  kualitas_rule?: string[]
 }
 
 export interface RegimeCurrent extends RegimeBrief {

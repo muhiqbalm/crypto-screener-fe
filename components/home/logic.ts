@@ -5,6 +5,8 @@
  * explicit "tidak tersedia".
  */
 import type { OutlookResponse, OutlookRow, Keyakinan } from '@/lib/api/types/outlook'
+import type { QualityGrade } from '@/lib/api/types/quality'
+import { gradeOf } from '@/lib/lab/quality'
 import type { ArenaReport } from '@/lib/api/types/arena'
 import type { LiveCheckReport } from '@/lib/api/types/livecheck'
 import type { LabNotification, ReportWeek, WeeklyReport } from '@/lib/api/types/report'
@@ -66,6 +68,8 @@ export interface WatchCoin {
   /** v2 "peluang" label in words, e.g. "Terbukti positif". */
   peluang: string | null
   peluangPositive: boolean
+  /** Skor kualitas A–D (null: no letter; undefined: older backend without the grade). */
+  grade?: QualityGrade | null
   /** Net dollars at the target / stop for the projection's capital (fees in, funding out). */
   tpUsd: number | null
   slUsd: number | null
@@ -125,6 +129,7 @@ function toWatchCoin(r: RowV2, now?: number): WatchCoin | null {
     reason: r.explanation?.summary?.trim() || null,
     peluang: label ? (PELUANG_LABEL[label] ?? null) : null,
     peluangPositive: label === 'positif',
+    grade: r.kualitas === undefined ? undefined : gradeOf(r),
     tpUsd: num(r.projection?.at_tp?.net),
     slUsd: num(r.projection?.at_sl?.net),
     capital: num(r.projection?.capital),

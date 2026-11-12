@@ -1,6 +1,7 @@
 import { request } from './client'
 import type { LabId } from './types/lab'
 import type { OutlookDetail, OutlookInputs, OutlookResponse, OutlookTrackRecord, RegimeResponse } from './types/outlook'
+import type { RekamSkorResponse } from './types/quality'
 
 const P = '/api/v1/lab'
 
@@ -31,6 +32,10 @@ export const outlookApi = {
   },
   getTrackRecord(limit = 100, signal?: AbortSignal): Promise<OutlookTrackRecord> {
     return request<OutlookTrackRecord>('GET', `${P}/outlook/track-record?limit=${limit}`, undefined, signal)
+  },
+  /** Rekam jejak skor: how the stored calls of each quality letter turned out (any logged-in user). */
+  getRekamSkor(recent = 20, signal?: AbortSignal): Promise<RekamSkorResponse> {
+    return request<RekamSkorResponse>('GET', `${P}/outlook/rekam-skor?recent=${recent}`, undefined, signal)
   },
   getRegime(signal?: AbortSignal): Promise<RegimeResponse> {
     return request<RegimeResponse>('GET', `${P}/regime`, undefined, signal)

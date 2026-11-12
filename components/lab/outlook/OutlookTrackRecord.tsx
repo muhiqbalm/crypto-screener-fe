@@ -4,6 +4,7 @@ import { RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/lab/outlook/OutlookBadges'
+import { GradeLetter } from '@/components/market/quality/GradeLetter'
 import { useCalibrateOutlook, useOutlookTrackRecord } from '@/lib/queries/outlook'
 import { coinLabel, formatProb, formatR, formatWib } from '@/lib/lab/outlook'
 import { relativeTime } from '@/lib/lab/form'
@@ -118,6 +119,7 @@ export function OutlookTrackRecord({ data }: { data: OutlookResponse }) {
             <ul className="mt-3 space-y-1 text-2xs">
               {recent.map((c) => (
                 <li key={c.id} className="flex flex-wrap items-center gap-1.5">
+                  {c.kualitas !== undefined && <GradeLetter grade={c.kualitas} size="xs" />}
                   <StatusBadge status={c.status} />
                   <span className="font-mono font-semibold">{coinLabel(c.symbol)}</span>
                   <span className={c.side === 'long' ? 'text-bullish' : 'text-bearish'}>{c.side?.toUpperCase()}</span>
