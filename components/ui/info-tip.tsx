@@ -43,15 +43,15 @@ export function InfoTip({ children, title, label, trigger, side = 'top', align =
         className={cn(
           trigger
             ? 'inline-flex cursor-help items-center gap-1 rounded-sm underline decoration-dotted decoration-muted-foreground/60 underline-offset-4 hover:decoration-foreground'
-            : '-m-1 inline-flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full align-middle text-muted-foreground transition-colors hover:text-foreground data-[state=open]:text-foreground',
+            : '-m-1 inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full align-middle text-muted-foreground transition-colors hover:text-foreground data-[state=open]:text-foreground',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           className,
         )}
       >
-        {trigger ?? <Info className="h-3.5 w-3.5" aria-hidden="true" />}
+        {trigger ?? <Info className="h-4 w-4" aria-hidden="true" />}
       </PopoverTrigger>
-      <PopoverContent side={side} align={align} className={cn('space-y-1 text-xs leading-relaxed', contentClassName)}>
-        {title && <p className="text-sm font-semibold text-foreground">{title}</p>}
+      <PopoverContent side={side} align={align} className={cn('space-y-1.5 rounded-2xl p-4 text-sm leading-relaxed', contentClassName)}>
+        {title && <p className="text-base font-bold text-foreground">{title}</p>}
         <div className="text-muted-foreground">{children}</div>
       </PopoverContent>
     </Popover>

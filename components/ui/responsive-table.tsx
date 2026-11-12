@@ -88,17 +88,17 @@ export function ResponsiveTable<T>({
       {/* ≥ sm: table. `relative` makes this scroll box the containing block, so
           absolutely positioned children (sr-only labels) are clipped by it
           instead of widening the page. */}
-      <div data-rt-scroll className="relative hidden overflow-x-auto rounded-xl border bg-card sm:block">
+      <div data-rt-scroll className="relative hidden overflow-x-auto rounded-3xl border bg-card sm:block">
         <table className="w-full caption-bottom text-sm">
           {caption && <caption className="sr-only">{caption}</caption>}
-          <thead className="border-b bg-muted/30">
+          <thead className="border-b bg-muted/40">
             <tr>
               {desktopCols.map((c) => (
                 <th
                   key={c.key}
                   scope="col"
                   className={cn(
-                    'h-9 whitespace-nowrap px-3 text-2xs font-semibold uppercase tracking-wide text-muted-foreground',
+                    'h-11 whitespace-nowrap px-4 text-3xs font-bold uppercase tracking-wider text-muted-foreground',
                     ALIGN[c.align ?? 'left'],
                     c.headerClassName,
                   )}
@@ -128,7 +128,7 @@ export function ResponsiveTable<T>({
                   onClick={clickable && !href ? () => onRowClick?.(row) : undefined}
                 >
                   {desktopCols.map((c) => (
-                    <td key={c.key} className={cn('px-3 py-2.5 align-middle', ALIGN[c.align ?? 'left'], c.className)}>
+                    <td key={c.key} className={cn('h-[52px] px-4 py-3 align-middle', ALIGN[c.align ?? 'left'], c.className)}>
                       {c.cell(row)}
                     </td>
                   ))}
@@ -138,7 +138,7 @@ export function ResponsiveTable<T>({
                         <Link
                           href={href}
                           aria-label={rowLabel?.(row) ?? 'Buka detail'}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
                           <ChevronRight className="h-4 w-4" aria-hidden="true" />
                         </Link>
@@ -150,7 +150,7 @@ export function ResponsiveTable<T>({
                             onRowClick?.(row)
                           }}
                           aria-label={rowLabel?.(row) ?? 'Buka detail'}
-                          className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
                           <ChevronRight className="h-4 w-4" aria-hidden="true" />
                         </button>
@@ -165,25 +165,25 @@ export function ResponsiveTable<T>({
       </div>
 
       {/* < sm: cards */}
-      <ul className="space-y-2 sm:hidden" aria-label={caption}>
+      <ul className="space-y-3 sm:hidden" aria-label={caption}>
         {rows.map((row, i) => {
           const href = rowHref?.(row) ?? null
           const clickable = Boolean(href || onRowClick)
           const body = (
             <>
               <div className="flex min-w-0 items-start justify-between gap-2">
-                <div className="min-w-0 truncate text-sm font-semibold">{title ? title.cell(row) : null}</div>
+                <div className="min-w-0 truncate text-base font-bold">{title ? title.cell(row) : null}</div>
                 <div className="flex shrink-0 items-center gap-1.5">
                   {badge?.cell(row)}
                   {clickable && <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />}
                 </div>
               </div>
               {fields.length > 0 && (
-                <dl className="mt-2 grid grid-cols-3 gap-2">
+                <dl className="mt-3 grid grid-cols-3 gap-3">
                   {fields.map((c) => (
                     <div key={c.key} className="min-w-0">
-                      <dt className="truncate text-3xs font-semibold uppercase tracking-wide text-muted-foreground">{labelOf(c)}</dt>
-                      <dd className="mt-0.5 min-w-0 truncate text-xs">{c.cell(row)}</dd>
+                      <dt className="truncate text-3xs font-bold uppercase tracking-wider text-muted-foreground">{labelOf(c)}</dt>
+                      <dd className="mt-1 min-w-0 truncate text-sm">{c.cell(row)}</dd>
                     </div>
                   ))}
                 </dl>
@@ -191,7 +191,7 @@ export function ResponsiveTable<T>({
             </>
           )
           const cardClass = cn(
-            'block w-full rounded-xl border bg-card p-3 text-left',
+            'block w-full rounded-2xl border bg-card p-4 text-left',
             clickable && 'transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
             isRowHighlighted?.(row) && 'border-brand/50 bg-brand/[0.07]',
           )

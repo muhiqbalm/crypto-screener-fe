@@ -2,145 +2,226 @@
 @plugin "tailwindcss-animate";
 
 /* ============================================================
-   BMTM design tokens (Tailwind v4 @theme).
-   Dark is the default token set; `html.light` overrides below.
-   See DESIGN.md for how to use them. Rule of thumb: components
-   never use raw palette colours (emerald-400, rose-500 …) — only
-   the semantic tokens defined here.
+   BMTM design tokens v2 (Tailwind v4 @theme): "like a presentation deck".
+   Dark (night navy, docs/bmtm-briefing.html) is the default; `html.light`
+   overrides below. Big type, airy cards, strong semantic colour.
+   Components never use raw palette colours, only these tokens.
+   See DESIGN.md.
    ============================================================ */
 @theme {
-  /* --- Fonts (Geist variables wired in app/layout.tsx) --- */
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  /* --- Fonts (wired in app/layout.tsx): Inter for text, Plus Jakarta Sans
+     for headings and big numbers, mono only for code --- */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-jakarta), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* --- Type scale additions: dense trading UI needs two sizes below xs --- */
-  --text-2xs: 0.6875rem;           /* 11px — table meta, captions */
-  --text-2xs--line-height: 1rem;
-  --text-3xs: 0.625rem;            /* 10px — eyebrows, tiny badges (minimum) */
-  --text-3xs--line-height: 0.875rem;
+  /* --- Type scale (bigger than Tailwind's default; nothing below 12px,
+     12px only for uppercase labels) --- */
+  --text-3xs: 0.75rem;             /* 12px: uppercase labels only */
+  --text-3xs--line-height: 1rem;
+  --text-2xs: 0.8125rem;           /* 13px: the smallest body text */
+  --text-2xs--line-height: 1.15rem;
+  --text-xs: 0.875rem;             /* 14px */
+  --text-xs--line-height: 1.3rem;
+  --text-sm: 0.9375rem;            /* 15px: dense body, tables */
+  --text-sm--line-height: 1.45rem;
+  --text-base: 1rem;               /* 16px: body */
+  --text-base--line-height: 1.6rem;
+  --text-lg: 1.125rem;             /* 18px: card titles */
+  --text-lg--line-height: 1.6rem;
+  --text-xl: 1.25rem;              /* 20px: section titles */
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.5rem;              /* 24px: answers */
+  --text-2xl--line-height: 2rem;
+  --text-3xl: 1.875rem;            /* 30px: page titles, KPI */
+  --text-3xl--line-height: 2.25rem;
+  --text-4xl: 2.25rem;             /* 36px: KPI */
+  --text-4xl--line-height: 2.5rem;
+  --text-5xl: 3rem;                /* 48px: hero numbers */
+  --text-5xl--line-height: 1.05;
+  --text-6xl: 3.5rem;              /* 56px: hero numbers */
+  --text-6xl--line-height: 1;
 
   /* --- Market direction --- */
-  --color-bullish:            oklch(0.74 0.16 152);
-  --color-bullish-foreground: oklch(0.16 0.03 152);
-  --color-bearish:            oklch(0.68 0.20 22);
-  --color-bearish-foreground: oklch(0.98 0.01 22);
+  --color-bullish:            #3ccf7f;
+  --color-bullish-foreground: #04210f;
+  --color-bearish:            #ff6464;
+  --color-bearish-foreground: #2a0505;
 
-  /* --- Semantic accents (status, not direction) --- */
-  --color-brand:              oklch(0.76 0.14 170);   /* BMTM teal-emerald */
-  --color-brand-foreground:   oklch(0.17 0.03 170);
-  --color-info:               oklch(0.74 0.12 235);   /* neutral info / links */
-  --color-warn:               oklch(0.83 0.15 80);    /* caution, stale data */
-  --color-lab:                oklch(0.78 0.12 293);   /* Strategy Lab / paper */
+  /* --- Semantic accents --- */
+  --color-brand:              #5b8cff;   /* moonlight blue: identity, active, focus */
+  --color-brand-foreground:   #ffffff;
+  --color-info:               #78a6ff;   /* links, information */
+  --color-warn:               #f4ad42;   /* look at this */
+  --color-lab:                #a78bfa;   /* simulation / paper */
+  --color-faint:              #5e6b86;   /* faintest text (meta) */
 
-  /* --- Surfaces (zinc, slightly cool) --- */
-  --color-background:          oklch(0.155 0.004 270);
-  --color-foreground:          oklch(0.97 0 0);
+  /* --- Surfaces (night navy) --- */
+  --color-background:          #0a1120;
+  --color-foreground:          #e9eef8;
+  --color-card:                #0f182b;
+  --color-card-foreground:     #e9eef8;
+  --color-popover:             #121d33;
+  --color-popover-foreground:  #e9eef8;
+  --color-sidebar:             #080f1d;
+  --color-primary:             #5b8cff;
+  --color-primary-foreground:  #ffffff;
+  --color-secondary:           #142039;
+  --color-secondary-foreground: #e9eef8;
+  --color-muted:               #142039;
+  --color-muted-foreground:    #8f9bb3;
+  --color-accent:              #17233f;
+  --color-accent-foreground:   #e9eef8;
+  --color-destructive:         #ff6464;
+  --color-destructive-foreground: #ffffff;
+  --color-border:              #22304d;
+  --color-input:               #2c3b5c;
+  --color-ring:                rgb(91 140 255 / 65%);
 
-  --color-card:                oklch(0.195 0.005 270);
-  --color-card-foreground:     oklch(0.97 0 0);
-
-  --color-popover:             oklch(0.215 0.006 270);
-  --color-popover-foreground:  oklch(0.97 0 0);
-
-  --color-sidebar:             oklch(0.17 0.005 270);
-
-  --color-primary:             oklch(0.97 0 0);
-  --color-primary-foreground:  oklch(0.205 0 0);
-
-  --color-secondary:           oklch(0.27 0.006 270);
-  --color-secondary-foreground: oklch(0.97 0 0);
-
-  --color-muted:               oklch(0.25 0.006 270);
-  --color-muted-foreground:    oklch(0.71 0.01 270);
-
-  --color-accent:              oklch(0.27 0.006 270);
-  --color-accent-foreground:   oklch(0.97 0 0);
-
-  --color-destructive:         oklch(0.68 0.20 22);
-  --color-destructive-foreground: oklch(0.98 0 0);
-
-  --color-border:              oklch(1 0 0 / 9%);
-  --color-input:               oklch(1 0 0 / 14%);
-  --color-ring:                oklch(0.76 0.14 170 / 60%);
-
-  /* --- Radius --- */
-  --radius: 0.625rem;
+  /* --- Radius: cards rounded-3xl, pills/buttons rounded-full --- */
+  --radius: 0.75rem;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
   /* --- Layout --- */
-  --spacing-sidebar: 15rem;
-  --spacing-topbar: 3.5rem;
+  --spacing-sidebar: 16.5rem;
+  --spacing-topbar: 4rem;
+
+  /* --- Motion --- */
+  --animate-live-pulse: live-pulse 1.8s ease-out infinite;
+  --animate-rise: rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+
+  @keyframes live-pulse {
+    0% { box-shadow: 0 0 0 0 color-mix(in oklab, currentColor 55%, transparent); }
+    100% { box-shadow: 0 0 0 7px color-mix(in oklab, currentColor 0%, transparent); }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
+  }
 }
 
 /* ============================================================
-   Light theme — next-themes sets class="light" on <html>.
-   Every accent is darkened to keep >= 4.5:1 on white.
+   Light theme (menu: Tema terang). Every accent darkened for
+   >= 4.5:1 on white.
    ============================================================ */
 :root.light {
-  --color-background:          oklch(0.985 0.002 270);
-  --color-foreground:          oklch(0.17 0.01 270);
+  --color-background:          #f4f6fb;
+  --color-foreground:          #0e1628;
+  --color-card:                #ffffff;
+  --color-card-foreground:     #0e1628;
+  --color-popover:             #ffffff;
+  --color-popover-foreground:  #0e1628;
+  --color-sidebar:             #eef2f9;
+  --color-primary:             #3d6df2;
+  --color-primary-foreground:  #ffffff;
+  --color-secondary:           #edf1f8;
+  --color-secondary-foreground: #0e1628;
+  --color-muted:               #edf1f8;
+  --color-muted-foreground:    #55607a;
+  --color-accent:              #e5ebf6;
+  --color-accent-foreground:   #0e1628;
+  --color-destructive:         #d33a3a;
+  --color-destructive-foreground: #ffffff;
+  --color-border:              #dbe2ee;
+  --color-input:               #cdd6e6;
+  --color-ring:                rgb(61 109 242 / 55%);
+  --color-faint:               #7a849b;
 
-  --color-card:                oklch(1 0 0);
-  --color-card-foreground:     oklch(0.17 0.01 270);
-
-  --color-popover:             oklch(1 0 0);
-  --color-popover-foreground:  oklch(0.17 0.01 270);
-
-  --color-sidebar:             oklch(0.97 0.003 270);
-
-  --color-primary:             oklch(0.21 0.006 285.885);
-  --color-primary-foreground:  oklch(0.985 0 0);
-
-  --color-secondary:           oklch(0.955 0.003 270);
-  --color-secondary-foreground: oklch(0.21 0.006 285.885);
-
-  --color-muted:               oklch(0.955 0.003 270);
-  --color-muted-foreground:    oklch(0.50 0.016 270);
-
-  --color-accent:              oklch(0.945 0.004 270);
-  --color-accent-foreground:   oklch(0.21 0.006 285.885);
-
-  --color-destructive:         oklch(0.55 0.22 25);
-  --color-destructive-foreground: oklch(0.985 0 0);
-
-  --color-border:              oklch(0.90 0.005 270);
-  --color-input:               oklch(0.88 0.006 270);
-  --color-ring:                oklch(0.50 0.11 170 / 60%);
-
-  --color-bullish:            oklch(0.50 0.15 152);
-  --color-bullish-foreground: oklch(0.98 0.01 152);
-  --color-bearish:            oklch(0.52 0.21 22);
-  --color-bearish-foreground: oklch(0.98 0.01 22);
-
-  --color-brand:              oklch(0.50 0.11 170);
-  --color-brand-foreground:   oklch(0.98 0.01 170);
-  --color-info:               oklch(0.50 0.14 240);
-  --color-warn:               oklch(0.53 0.13 60);
-  --color-lab:                oklch(0.48 0.21 293);
+  --color-bullish:            #12854a;
+  --color-bullish-foreground: #ffffff;
+  --color-bearish:            #d33a3a;
+  --color-bearish-foreground: #ffffff;
+  --color-brand:              #3d6df2;
+  --color-brand-foreground:   #ffffff;
+  --color-info:               #2a62d8;
+  --color-warn:               #a35f00;
+  --color-lab:                #6c4ad6;
 }
 
 /* ============================================================
    Utilities
    ============================================================ */
 
-/* Numbers: monospace + tabular digits so columns line up. */
+/* Numbers: Inter with tabular digits so columns line up (no mono font). */
 @utility num {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
 }
 
-/* Small uppercase label above values / sections. */
+/* Display font for page titles and big numbers. */
+@utility display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+/* Small uppercase label above values / sections (12px + tracking). */
 @utility eyebrow {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: var(--text-3xs);
   line-height: var(--text-3xs--line-height);
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--color-muted-foreground);
+}
+
+/* Section kicker like the deck: accent-coloured uppercase label. */
+@utility kicker {
+  font-family: var(--font-sans);
+  font-size: var(--text-3xs);
+  line-height: var(--text-3xs--line-height);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-brand);
+}
+
+/* Thin gradient border (blue → violet → green) for hero cards. Works on
+   transparent / glass backgrounds (mask, not background-clip). */
+@utility ring-gradient {
+  position: relative;
+  isolation: isolate;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    padding: 1px;
+    border-radius: inherit;
+    background: linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--color-brand) 90%, transparent),
+      color-mix(in oklab, var(--color-lab) 70%, transparent) 45%,
+      color-mix(in oklab, var(--color-bullish) 45%, transparent)
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+}
+
+/* Glass panel: hero cards only. */
+@utility glass {
+  background-color: color-mix(in oklab, var(--color-card) 78%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+}
+
+/* Soft glow behind a key number (uses the element's text colour). */
+@utility text-glow {
+  text-shadow: 0 0 28px color-mix(in oklab, currentColor 45%, transparent);
+}
+
+/* Hover lift for clickable cards. */
+@utility lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 40px -22px rgb(0 0 0 / 0.6);
+  }
 }
 
 /* ============================================================
@@ -162,8 +243,15 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.015em;
   }
 
   /* Consistent keyboard focus for links and custom controls that do not
@@ -183,6 +271,7 @@
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
     }
   }
 }

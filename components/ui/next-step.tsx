@@ -37,13 +37,13 @@ function ActionButton({ a, primary }: { a: NextStepAction; primary: boolean }) {
   const variant = primary ? 'default' : 'outline'
   if (a.href && !a.disabled && !a.loading) {
     return (
-      <Button asChild size="sm" variant={variant}>
+      <Button asChild variant={variant}>
         <Link href={a.href}>{body}</Link>
       </Button>
     )
   }
   return (
-    <Button size="sm" variant={variant} onClick={a.onClick} disabled={a.disabled || a.loading} aria-busy={a.loading || undefined}>
+    <Button variant={variant} onClick={a.onClick} disabled={a.disabled || a.loading} aria-busy={a.loading || undefined}>
       {body}
     </Button>
   )
@@ -59,11 +59,11 @@ export function NextStep({ title = 'Langkah berikutnya', description, action, se
   return (
     <section
       aria-label="Langkah berikutnya"
-      className={cn('flex flex-col gap-3 rounded-xl border border-dashed bg-card/60 p-4 sm:flex-row sm:items-center sm:justify-between', className)}
+      className={cn('flex flex-col gap-4 rounded-3xl border border-brand/30 bg-brand/[0.06] p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6', className)}
     >
-      <div className="min-w-0 space-y-0.5">
-        <p className="text-sm font-semibold">{title}</p>
-        {description && <p className="text-xs text-muted-foreground">{description}</p>}
+      <div className="min-w-0 space-y-1">
+        <p className="display text-lg font-bold">{title}</p>
+        {description && <p className="text-sm text-muted-foreground">{description}</p>}
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-2">
         {secondary && <ActionButton a={secondary} primary={false} />}
