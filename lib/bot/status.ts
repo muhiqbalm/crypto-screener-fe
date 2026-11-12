@@ -1,15 +1,33 @@
 /**
  * "Bot live aman?" — the one-sentence answer at the top of /bot (pure, no React).
+ * Shared (feat/ux-shared-bot) so Beranda and /bot always say the same thing.
  *
- * Inputs: the 7-day "Cek bot live" report (GET /lab/live-check?bars=42) and the webhook
- * summary (GET /lab/bot/status). Output: a tone, one sentence, 2–3 facts and the row filter
- * "Lihat bukti" should open with. Times go through the caller's formatters (WIB), so this
- * module has no clock or locale of its own.
+ * Inputs: the 7-day "Cek bot live" report (useLiveCheck(VERDICT_BARS) = GET
+ * /lab/live-check?bars=42) and the webhook summary (useBotStatus() = GET /lab/bot/status).
+ * Output: a tone, one sentence, 2–3 facts and the row filter "Lihat bukti" should open with.
+ * Times default to WIB (lib/utils/time); tests may inject their own formatters.
  */
 import type { BotAccount, BotStatus } from '@/lib/api/types/bot'
 import type { LiveCheckReport, LiveCheckRow, LiveCheckStatus } from '@/lib/api/types/livecheck'
+import { formatAge, formatTime } from '@/lib/utils/time'
 
 export type BotTone = 'ok' | 'warn' | 'bad' | 'wait'
+
+/** BotTone -> AnswerCard `tone` (components/ui/answer-card). */
+export const BOT_ANSWER_TONE: Record<BotTone, 'baik' | 'perlu_dicek' | 'buruk' | 'menunggu'> = {
+  ok: 'baik',
+  warn: 'perlu_dicek',
+  bad: 'buruk',
+  wait: 'menunggu',
+}
+
+/** BotTone -> StatusPill `kind` (components/ui/status-pill). */
+export const BOT_STATUS_KIND: Record<BotTone, 'sehat' | 'perlu_dicek' | 'bermasalah' | 'menunggu'> = {
+  ok: 'sehat',
+  warn: 'perlu_dicek',
+  bad: 'bermasalah',
+  wait: 'menunggu',
+}
 
 /** 7 days of 4H bars: the window of the answer. */
 export const VERDICT_BARS = 42
@@ -32,15 +50,18 @@ export interface BotVerdict {
 }
 
 export interface VerdictInput {
+  /** useLiveCheck(VERDICT_BARS).data */
   live?: LiveCheckReport | null
   liveError?: boolean
+  /** useBotStatus().data */
   bot?: BotStatus | null
   botError?: boolean
-  now: number
-  /** ISO -> "Sel 11 Nov 04:00 WIB" (or similar). */
-  fmt: (iso: string) => string
-  /** ISO -> "9 jam lalu". */
-  age: (iso: string) => string
+  /** Epoch ms (e.g. useNow()). null = unknown yet: the "data late" check is skipped. */
+  now?: number | null
+  /** ISO -> display time. Default formatTime: "11 Nov 04:00 WIB". */
+  fmt?: (iso: string) => string
+  /** ISO -> age. Default formatAge: "9 jam lalu". */
+  age?: (iso: string) => string
 }
 
 export const ALERT_STATUS_LABEL: Record<string, string> = {
@@ -114,7 +135,13 @@ function lastAlertFact(bot: BotStatus | null | undefined, fmt: (iso: string) => 
   return { label: 'Alert terakhir', value: `${fmt(a.at)} · ${alertStatusLabel(a.status)}`, tone: alertStatusTone(a.status) }
 }
 
-export function botVerdict(i: VerdictInput): BotVerdict {
+export function botVerdict(input: VerdictInput): BotVerdict {
+  const now = input.now ?? null
+  const i = {
+    ...input,
+    fmt: input.fmt ?? ((iso: string) => formatTime(iso, now === null ? {} : { now })),
+    age: input.age ?? ((iso: string) => formatAge(iso, now === null ? {} : { now })),
+  }
   const live = i.live ?? null
   const wh = readWebhook(i.bot, i.botError)
   const alertFact = lastAlertFact(i.bot, i.fmt)
@@ -167,7 +194,7 @@ export function botVerdict(i: VerdictInput): BotVerdict {
   if (!lc) return verdict('wait', 'Menunggu data: Cek bot live belum pernah dihitung. Biasanya jalan beberapa menit setelah candle 4H berikutnya tutup.')
   const finished = lc.finished ?? lc.started
   if (lc.error) return verdict('warn', `Perlu dicek: perhitungan Cek bot live terakhir gagal, jadi datanya belum yang terbaru.`)
-  if (finished && i.now - Date.parse(finished) > LIVECHECK_STALE_MS) {
+  if (finished && now !== null && now - Date.parse(finished) > LIVECHECK_STALE_MS) {
     return verdict('warn', `Perlu dicek: Cek bot live terakhir dihitung ${i.age(finished)}, padahal biasanya tiap 4 jam.`)
   }
 

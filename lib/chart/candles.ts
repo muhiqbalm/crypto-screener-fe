@@ -7,6 +7,8 @@
  * only at the chart boundary; everything else keeps real UTC seconds.
  */
 
+import { MONTHS_ID as MONTHS, WIB_OFFSET_MS } from '@/lib/utils/time'
+
 export interface Candle {
   /** Open time, unix seconds (UTC). */
   time: number
@@ -16,8 +18,8 @@ export interface Candle {
   close: number
 }
 
-export const WIB_SHIFT_S = 7 * 3600
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'] as const
+
+export const WIB_SHIFT_S = WIB_OFFSET_MS / 1000
 
 export function toChartTime(utcSec: number): number {
   return utcSec + WIB_SHIFT_S

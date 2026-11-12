@@ -17,7 +17,7 @@ import {
 } from './TradingChart'
 import { StrategyOverlayPanel } from './StrategyOverlayPanel'
 import { PaperTradePanel, EMPTY_DRAFT, type PaperDraft } from './PaperTradePanel'
-import { formatPrice } from '@/lib/utils/format'
+import { formatPct, formatPrice } from '@/lib/utils/format'
 import { cn } from '@/lib/utils/cn'
 import { api } from '@/lib/api/client'
 import { sameId } from '@/lib/api/types/lab'
@@ -103,13 +103,6 @@ function SegBtn({
 // Price ticker strip
 // ---------------------------------------------------------------------------
 
-/** "+1.23%" / "−0.40%" / "0.00%" — the sign is text, never only colour. */
-function pctText(v: number): string {
-  const r = Math.round(v * 100) / 100
-  if (r === 0) return '0.00%'
-  return `${r > 0 ? '+' : '−'}${Math.abs(r).toFixed(2)}%`
-}
-
 function ChangeChip({ value, label, title }: { value: number | null; label: string; title: string }) {
   if (value === null) return null
   const up = value > 0
@@ -123,7 +116,7 @@ function ChangeChip({ value, label, title }: { value: number | null; label: stri
         )}
       >
         {up ? <TrendingUp className="h-3.5 w-3.5" aria-hidden="true" /> : down ? <TrendingDown className="h-3.5 w-3.5" aria-hidden="true" /> : null}
-        {pctText(value)}
+        {formatPct(value, { digits: 2, signed: true })}
       </span>
       <span className="text-3xs text-muted-foreground">{label}</span>
     </span>
@@ -185,26 +178,34 @@ export function ChartContainer() {
   const runTradesQ = useLabRunTrades(runId ?? '', isAdmin && Boolean(runId) && runQ.data?.status === 'done')
 
   const watch = watchId ? watchesQ.data?.find((w) => sameId(w.id, watchId)) ?? null : null
-  const overlay = watch
-    ? { kind: 'watch' as const, symbol: watch.symbol, timeframe: watch.timeframe }
-    : runQ.data
-      ? { kind: 'run' as const, symbol: runQ.data.symbol, timeframe: runQ.data.timeframe }
-      : null
+  const runData = runQ.data
+  const overlay = useMemo(
+    () =>
+      watch
+        ? { kind: 'watch' as const, symbol: watch.symbol, timeframe: watch.timeframe }
+        : runData
+          ? { kind: 'run' as const, symbol: runData.symbol, timeframe: runData.timeframe }
+          : null,
+    [watch, runData],
+  )
 
   // The URL is the state: ?symbol=SOLUSDT (or SOL) and ?tf=4h, both validated. Default BTC 4h,
   // the timeframe the team's strategies run on. A strategy overlay (?watch / ?run) wins.
-  const pickedSymbol = parseSymbol(search.get('symbol')) ?? DEFAULT_SYMBOL
-  const pickedInterval: string = parseTf(search.get('tf')) ?? DEFAULT_TF
+  const symbolParam = search.get('symbol')
+  const tfParam = search.get('tf')
+  const pickedSymbol = useMemo(() => parseSymbol(symbolParam) ?? DEFAULT_SYMBOL, [symbolParam])
+  const pickedInterval = useMemo<string>(() => parseTf(tfParam) ?? DEFAULT_TF, [tfParam])
   const symbol = overlay?.symbol ?? pickedSymbol
   const interval = overlay?.timeframe ?? pickedInterval
 
   // Native history updates keep useSearchParams in sync without a navigation (Next.js docs:
   // "Native History API"), so the chart does not remount when you switch coin or timeframe.
+  const query = search.toString()
   const setParam = useCallback(
     (patch: Record<string, string | null>) => {
-      window.history.replaceState(null, '', `${window.location.pathname}${chartSearch(search, patch)}`)
+      window.history.replaceState(null, '', `${window.location.pathname}${chartSearch(query, patch)}`)
     },
-    [search],
+    [query],
   )
   const pickSymbol = (v: string) => setParam({ symbol: v })
   const pickInterval = (v: string) => setParam({ tf: v })

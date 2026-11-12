@@ -3,8 +3,9 @@
  *
  * The index is context, not direction, so the zones never use the up/down colours:
  * the two extremes are "worth a look" (warn), fear / greed are plain info, neutral is muted.
- * The zone label prefers the source's own classification; the numeric bands are only a
- * fallback when the classification is missing.
+ * The zone label prefers the source's own classification (alternative.me `value_classification`,
+ * passed through by the backend); the numeric bands are only a fallback when it is missing and
+ * match the market ribbon's bands (components/shell/market-ribbon-logic.ts).
  */
 
 export type FngZoneKey = 'sangat_takut' | 'takut' | 'netral' | 'serakah' | 'sangat_serakah'
@@ -21,9 +22,9 @@ export interface FngZone {
 
 export const FNG_ZONES: readonly FngZone[] = [
   { key: 'sangat_takut', label: 'Sangat takut', from: 0, to: 24, tone: 'warn' },
-  { key: 'takut', label: 'Takut', from: 25, to: 46, tone: 'info' },
-  { key: 'netral', label: 'Netral', from: 47, to: 54, tone: 'muted' },
-  { key: 'serakah', label: 'Serakah', from: 55, to: 75, tone: 'info' },
+  { key: 'takut', label: 'Takut', from: 25, to: 44, tone: 'info' },
+  { key: 'netral', label: 'Netral', from: 45, to: 55, tone: 'muted' },
+  { key: 'serakah', label: 'Serakah', from: 56, to: 75, tone: 'info' },
   { key: 'sangat_serakah', label: 'Sangat serakah', from: 76, to: 100, tone: 'warn' },
 ]
 

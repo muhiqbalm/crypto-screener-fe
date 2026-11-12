@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { BotStatus } from '@/lib/api/types/bot'
 import type { LiveCheckReport, LiveCheckRow, LiveCheckStatus } from '@/lib/api/types/livecheck'
-import { alertStatusLabel, botVerdict, liveAccounts, type VerdictInput } from './status'
+import { BOT_ANSWER_TONE, BOT_STATUS_KIND, alertStatusLabel, botVerdict, liveAccounts, type VerdictInput } from './status'
 
 const NOW = Date.parse('2026-11-12T05:00:00Z')
 const fmt = (iso: string) => `T(${iso.slice(5, 16)})`
@@ -167,6 +167,23 @@ describe('botVerdict', () => {
   it('never puts a passphrase-like field in the output', () => {
     const v = botVerdict(base({ live: report([]), bot: BOT_OK }))
     expect(JSON.stringify(v)).not.toMatch(/passphrase/i)
+  })
+})
+
+describe('defaults for other pages (Beranda)', () => {
+  it('formats times in WIB when no formatter is given, and skips the late check without a clock', () => {
+    const v = botVerdict({
+      live: report([row('tidak_terkirim', '2026-11-11T21:00:00Z')], { finished: '2026-11-01T00:00:00Z' }),
+      bot: BOT_OK,
+    })
+    expect(v.tone).toBe('bad')
+    expect(v.sentence).toContain('(12 Nov 04:00 WIB)')
+    expect(v.facts[2].value).toBe('12 Nov 11:00 WIB · berhasil')
+  })
+
+  it('maps tones onto AnswerCard and StatusPill', () => {
+    expect(BOT_ANSWER_TONE).toEqual({ ok: 'baik', warn: 'perlu_dicek', bad: 'buruk', wait: 'menunggu' })
+    expect(BOT_STATUS_KIND.bad).toBe('bermasalah')
   })
 })
 

@@ -1,10 +1,9 @@
 /**
  * Mock-mode data (NEXT_PUBLIC_USE_MOCK_DATA=true only) for Sentimen & berita, Arus besar and
- * Status bot: intel news/whales, Cek bot live, Kualitas eksekusi and the bot status summary.
+ * Status bot: intel news/whales, Cek bot live and Kualitas eksekusi (bot status: ./bot.ts).
  * Lazy-imported by ./index, so none of this reaches a production bundle. Shapes follow the
  * backend contracts; the numbers are illustrative, not real.
  */
-import type { BotStatus } from '@/lib/api/types/bot'
 import type { IntelNewsResponse, IntelWhalesResponse, NewsItem, WhaleTrade } from '@/lib/api/types/intel'
 import type { LiveCheckReport, LiveCheckRow, LiveCheckStatus } from '@/lib/api/types/livecheck'
 import type { ShadowCell, ShadowReport, ShadowSignal } from '@/lib/api/types/shadow'
@@ -239,24 +238,6 @@ function shadow(): ShadowReport {
   }
 }
 
-function botStatus(now: number): BotStatus {
-  const last = { at: iso(lastClose() + 3000), symbol: 'ETHUSDT', action: 'open' as const, side: 'short' as const, status: 'success' }
-  return {
-    generated_at: iso(now),
-    window_days: 7,
-    available: true,
-    reason: null,
-    active_accounts: 1,
-    accounts: [
-      { label: 'Rosyade', account_active: true, webhook_active: true, webhook_since: '2026-10-13T05:00:00Z', exchanges: ['binance'],
-        last_alert: last, alerts_window: 6, failed_window: 0, rejected_window: 0 },
-      { label: 'fa•••@bmtm.io', account_active: true, webhook_active: false, webhook_since: null, exchanges: [],
-        last_alert: null, alerts_window: 0, failed_window: 0, rejected_window: 0 },
-    ],
-    last_alert: { ...last, label: 'Rosyade' },
-  }
-}
-
 /** Returns `{ value }` when this module serves the request, null otherwise. */
 export function pasarBotMock(method: string, fullPath: string): { value: unknown } | null {
   if (method !== 'GET') return null
@@ -266,6 +247,5 @@ export function pasarBotMock(method: string, fullPath: string): { value: unknown
   if (path === '/api/v1/intel/whales') return { value: whales(now) }
   if (path === '/api/v1/lab/live-check') return { value: liveCheck(Number(new URLSearchParams(query).get('bars') ?? 270)) }
   if (path === '/api/v1/lab/shadow') return { value: shadow() }
-  if (path === '/api/v1/lab/bot/status') return { value: botStatus(now) }
   return null
 }

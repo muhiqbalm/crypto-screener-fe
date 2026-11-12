@@ -218,7 +218,6 @@ export function TradingChart({
       seriesRef.current = null
       priceLineRefs.current = []
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDark])   // recreate chart when theme changes
 
   // ── Load historical data ──

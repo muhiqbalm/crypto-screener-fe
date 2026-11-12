@@ -7,6 +7,7 @@
  * so the summary can never say "seimbang" while every coin says otherwise.
  */
 import type { IntelWhalesResponse, TopTraderRatio, WhaleTrade } from '@/lib/api/types/intel'
+import { formatUsdCompact } from '@/lib/utils/format'
 
 export const LEAN_LONG_ABOVE = 55
 export const LEAN_SHORT_BELOW = 45
@@ -65,17 +66,6 @@ export function flowSide(buy: number | null | undefined, sell: number | null | u
   return net > 0.1 ? 'beli' : net < -0.1 ? 'jual' : 'seimbang'
 }
 
-/** Compact dollars for sentences: $3.2M, $850K, $40K. Exchange style (dot decimals). */
-export function usdCompact(v: number | null | undefined): string {
-  if (v === null || v === undefined || !Number.isFinite(v)) return '—'
-  const a = Math.abs(v)
-  const sign = v < 0 ? '−' : ''
-  if (a >= 1e9) return `${sign}$${(a / 1e9).toFixed(2)}B`
-  if (a >= 1e6) return `${sign}$${(a / 1e6).toFixed(1)}M`
-  if (a >= 1e3) return `${sign}$${Math.round(a / 1e3)}K`
-  return `${sign}$${Math.round(a)}`
-}
-
 export interface WhaleAnswer {
   lean: Lean | null
   /** Average share of top-trader positions that are long, 0–100. */
@@ -106,7 +96,7 @@ export function whaleAnswer(intel: IntelWhalesResponse | null | undefined): Whal
   const win = windowPhrase(intel?.largeTradeWindowSeconds)
   if (side) {
     const when = win ? ` ${win} terakhir` : ''
-    const amounts = `beli ${usdCompact(intel?.largeTradeBuyUsd)}, jual ${usdCompact(intel?.largeTradeSellUsd)}`
+    const amounts = `beli ${formatUsdCompact(intel?.largeTradeBuyUsd)}, jual ${formatUsdCompact(intel?.largeTradeSellUsd)}`
     parts.push(
       side === 'seimbang'
         ? `Transaksi besar${when} seimbang (${amounts}).`

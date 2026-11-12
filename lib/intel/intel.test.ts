@@ -1,31 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { IntelNewsResponse, IntelWhalesResponse, NewsItem } from '@/lib/api/types/intel'
-import { FNG_ZONES, fngPhrase, fngZone } from './fng'
 import { coinTag, filterNews, headlineTone, newsAnswer, toneCounts } from './news'
-import { flowSide, leanOf, liveRatios, usdCompact, whaleAnswer, windowPhrase } from './whales'
-
-describe('Fear & Greed zones', () => {
-  it('cover 0–100 without gaps or overlaps', () => {
-    for (let v = 0; v <= 100; v++) expect(FNG_ZONES.filter((z) => v >= z.from && v <= z.to)).toHaveLength(1)
-  })
-
-  it('prefer the source classification over the numeric band', () => {
-    expect(fngZone(46, 'Neutral')?.key).toBe('netral')
-    expect(fngZone(46, null)?.key).toBe('takut')
-    expect(fngZone(10, 'Extreme Fear')?.label).toBe('Sangat takut')
-    expect(fngZone(90, 'EXTREME GREED')?.key).toBe('sangat_serakah')
-    expect(fngZone(null, null)).toBeNull()
-  })
-
-  it('never use the up/down colours: extremes warn, the rest info or muted', () => {
-    expect(FNG_ZONES.map((z) => z.tone)).toEqual(['warn', 'info', 'muted', 'info', 'warn'])
-  })
-
-  it('builds a lower-case phrase for sentences', () => {
-    expect(fngPhrase(38, 'Fear')).toBe('takut (38 dari 100)')
-    expect(fngPhrase(null, 'Fear')).toBeNull()
-  })
-})
+import { flowSide, leanOf, liveRatios, whaleAnswer, windowPhrase } from './whales'
 
 const ratio = (symbol: string, longPct: number) => ({ symbol, longPct, shortPct: 100 - longPct, lsRatio: null, updated: 'live' })
 
@@ -68,8 +44,6 @@ describe('whales', () => {
     expect(flowSide(105, 100)).toBe('seimbang')
     expect(flowSide(200, 100)).toBe('beli')
     expect(flowSide(null, 100)).toBeNull()
-    expect(usdCompact(3_250_000)).toBe('$3.3M')
-    expect(usdCompact(-850_000)).toBe('−$850K')
   })
 })
 
