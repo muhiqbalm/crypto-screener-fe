@@ -25,6 +25,10 @@ export async function getMock(method: string, path: string, body?: unknown): Pro
   const pasarBot = (await import('./pasar-bot')).pasarBotMock(method, path)
   if (pasarBot) return pasarBot.value
 
+  // Ringkasan AI (GET /api/v1/lab/ai/*); see lib/mocks/ai.ts
+  const ai = (await import('./ai')).getAiMock(method, path)
+  if (ai) return ai.value
+
   if (path.startsWith('/api/v1/lab/')) {
     const koin = await (await import('./outlook')).getOutlookMock(method, path)
     if (koin !== undefined) return koin
