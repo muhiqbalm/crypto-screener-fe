@@ -15,7 +15,7 @@ export function coinInitials(coin: string): string {
 }
 
 const SIZE = {
-  sm: 'h-7 w-7 text-[10px]',
+  sm: 'h-7 w-7 text-[13px]',
   md: 'h-9 w-9 text-xs',
   lg: 'h-12 w-12 text-sm',
 } as const
@@ -27,7 +27,9 @@ const SIZE = {
 export function CoinAvatar({ symbol, size = 'md', className }: { symbol: string; size?: keyof typeof SIZE; className?: string }) {
   const coin = coinOf(symbol)
   const hue = coinHue(coin)
-  const initials = coinInitials(coin)
+  // The ticker is always written next to the avatar, so the small size (table rows)
+  // is a one-letter monogram; four letters at 28px were unreadable.
+  const initials = size === 'sm' ? coinInitials(coin).slice(0, 1) : coinInitials(coin)
   return (
     <span
       aria-hidden="true"
@@ -37,7 +39,7 @@ export function CoinAvatar({ symbol, size = 'md', className }: { symbol: string;
         'text-[hsl(var(--coin-h)_90%_76%)] [.light_&]:text-[hsl(var(--coin-h)_70%_34%)]',
         SIZE[size],
         // four letters (DOGE, PEPE) must stay inside the circle
-        initials.length > 3 && (size === 'lg' ? 'text-xs tracking-tighter' : size === 'md' ? 'text-[9.5px] tracking-tighter' : 'text-[8px] tracking-tighter'),
+        initials.length > 3 && (size === 'lg' ? 'text-xs tracking-tighter' : 'text-[11px] tracking-tighter'),
         className,
       )}
       style={
