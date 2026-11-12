@@ -3,18 +3,21 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { AlertTriangle, Bookmark, Info, RefreshCw, Search, Trophy } from 'lucide-react'
+import { AlertTriangle, ArrowRight, Bookmark, Info, RefreshCw, Search, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Segmented } from '@/components/ui/segmented'
-import { VerdictBadge } from '@/components/ui/verdict-badge'
+import { BentoGrid, HeroCard } from '@/components/ui/hero-card'
+import { CoinAvatar } from '@/components/ui/coin-avatar'
 import { ResponsiveTable, type ResponsiveColumn } from '@/components/ui/responsive-table'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shell/states'
 import { Chip } from '@/components/lab/Section'
 import { CompareCheckbox, CompareTray } from '@/components/lab/compare/CompareTray'
 import { MODE_COPY } from '@/components/lab/run/copy'
+import { HeroKpi, Panel, StrategyChip, VerdictPill } from '@/components/lab/run/v2-ui'
 import { formatNumber, formatPct, signClass } from '@/lib/utils/format'
 import { cn } from '@/lib/utils/cn'
+import { signTone } from '@/components/ui/tone'
 import { checkLabel, templateShort } from '@/lib/lab/form'
 import { sortTimeframes } from '@/lib/lab/timeframes'
 import { MAX_COMPARE, attemptsLabel, boardSnoopingWarning, toggleId } from '@/lib/lab/planning'
@@ -23,6 +26,8 @@ import { useLabLeaderboard } from '@/lib/queries/lab-insights'
 import type { LabBoardRow, LabBoardSort, LabSnoopLevel } from '@/lib/api/types/lab-insights'
 
 type VerdictFilter = 'all' | 'PASS' | 'FAIL'
+
+const SORT_LABEL: Record<LabBoardSort, string> = { oos_pf: 'PF', oos_sharpe: 'Sharpe', oos_net: 'Hasil' }
 type ModeFilter = 'all' | 'validate' | 'optimize'
 
 const SNOOP_STYLE: Record<LabSnoopLevel, string> = {
@@ -72,6 +77,7 @@ export function LeaderboardView() {
   )
   const templates = templatesQ.data ?? []
   const nameOf = (id: string) => templateShort(id, templates.find((t) => t.id === id)?.name)
+  const fullName = (id: string) => templates.find((t) => t.id === id)?.name
   const tfs = sortTimeframes(Array.from(new Set(templates.flatMap((t) => t.timeframes))))
   const warning = boardSnoopingWarning(summary)
   const top = rows.find((r) => r.rank === 1)
@@ -86,22 +92,27 @@ export function LeaderboardView() {
         <CompareCheckbox id={String(r.run_id)} checked={picked.includes(String(r.run_id))} disabled={picked.length >= MAX_COMPARE} onToggle={(x) => setPicked(toggleId(picked, x))} label={`Bandingkan ${r.symbol} ${r.timeframe}`} />
       ),
     },
-    { key: 'rank', header: '#', mobile: 'hidden', cell: (r) => <span className="num text-xs font-bold">{r.rank ?? <span className="font-normal text-muted-foreground">—</span>}</span> },
+    { key: 'rank', header: '#', mobile: 'hidden', cell: (r) => <span className={cn('num display text-lg font-extrabold', r.rank === 1 && 'text-bullish')}>{r.rank ?? <span className="text-sm font-normal text-muted-foreground">—</span>}</span> },
     {
       key: 'what',
-      header: 'Strategi · koin · TF',
+      header: 'Koin · strategi',
       mobile: 'title',
       cell: (r) => (
-        <span className="block min-w-0">
-          <span className="text-xs font-medium">{nameOf(r.template_id)}</span>{' '}
-          <span className="num text-xs font-semibold">{r.symbol} <span className="font-normal text-muted-foreground">{r.timeframe}</span></span>
-          <span className="block text-3xs text-muted-foreground">
-            {r.rank ? `#${r.rank} · ` : ''}{MODE_COPY[r.mode]}
-            {r.scan_id !== null && <> · banyak koin #{String(r.scan_id)}</>}
+        <span className="block min-w-[210px] space-y-1">
+          <span className="flex items-center gap-2.5 whitespace-nowrap">
+            <CoinAvatar symbol={r.symbol} size="sm" />
+            <span className="num text-base font-semibold">{r.symbol.replace(/USDT$/, '')} <span className="font-normal text-muted-foreground">{r.timeframe}</span></span>
+            <StrategyChip templateId={r.template_id} name={fullName(r.template_id)} />
           </span>
+          {(r.mode !== 'validate' || r.scan_id !== null) && (
+            <span className="block text-2xs text-muted-foreground">
+              {MODE_COPY[r.mode]}
+              {r.scan_id !== null && <> · banyak koin #{String(r.scan_id)}</>}
+            </span>
+          )}
           {(r.preset || (r.saved_as ?? []).length > 0) && (
-            <span className="flex flex-wrap items-center gap-1 text-3xs text-lab">
-              <Bookmark className="h-2.5 w-2.5" aria-hidden="true" />
+            <span className="flex flex-wrap items-center gap-1.5 text-2xs text-lab">
+              <Bookmark className="h-3.5 w-3.5" aria-hidden="true" />
               <span className="num">{[r.preset?.name, ...(r.saved_as ?? []).map((n) => `→ ${n}`)].filter(Boolean).join(' · ')}</span>
             </span>
           )}
@@ -113,50 +124,50 @@ export function LeaderboardView() {
       header: 'Rapor',
       mobile: 'badge',
       cell: (r) => (
-        <span className="block">
-          <VerdictBadge verdict={r.verdict} />
-          {r.verdict !== 'PASS' && r.failed_checks.length > 0 && <span className="block max-w-[160px] truncate text-3xs text-muted-foreground">{FAILED_COPY(r.failed_checks)}</span>}
+        <span className="block space-y-1">
+          <VerdictPill verdict={r.verdict} />
+          {r.verdict !== 'PASS' && r.failed_checks.length > 0 && <span className="block max-w-[180px] truncate text-2xs text-muted-foreground">{FAILED_COPY(r.failed_checks)}</span>}
         </span>
       ),
     },
     {
       key: 'net',
-      header: 'Hasil data baru',
+      header: 'Hasil',
       mobile: 'field',
       align: 'right',
-      cell: (r) => <span className={cn('num text-xs', signClass(r.holdout.net_return_pct), sort === 'oos_net' && 'font-semibold')}>{formatPct(r.holdout.net_return_pct, { signed: true })}</span>,
+      cell: (r) => <span className={cn('num', signClass(r.holdout.net_return_pct), sort === 'oos_net' && 'font-bold')}>{formatPct(r.holdout.net_return_pct, { signed: true })}</span>,
     },
     {
       key: 'dd',
-      header: 'Turun terdalam',
+      header: 'Turun maks',
       mobile: 'field',
       align: 'right',
-      cell: (r) => <span className="num text-xs text-bearish">{r.holdout.max_dd_pct === null ? '—' : formatPct(-Math.abs(r.holdout.max_dd_pct))}</span>,
+      cell: (r) => <span className="num text-bearish">{r.holdout.max_dd_pct === null ? '—' : formatPct(-Math.abs(r.holdout.max_dd_pct))}</span>,
     },
-    { key: 'trades', header: 'Trade', mobile: 'field', align: 'right', cell: (r) => <span className="num text-xs">{formatNumber(r.holdout.trades, { digits: 0 })}</span> },
-    { key: 'pf', header: 'PF', mobile: 'hidden', align: 'right', cell: (r) => <span className={cn('num text-xs', sort === 'oos_pf' && 'font-semibold')}>{pf(r)}</span> },
-    { key: 'sharpe', header: 'Sharpe', mobile: 'hidden', align: 'right', cell: (r) => <span className={cn('num text-xs', sort === 'oos_sharpe' && 'font-semibold')}>{formatNumber(r.holdout.sharpe)}</span> },
+    { key: 'trades', header: 'Trade', mobile: 'field', align: 'right', cell: (r) => <span className="num">{formatNumber(r.holdout.trades, { digits: 0 })}</span> },
+    { key: 'pf', header: 'PF', mobile: 'hidden', align: 'right', cell: (r) => <span className={cn('num', sort === 'oos_pf' && 'font-bold')}>{pf(r)}</span> },
+    { key: 'sharpe', header: 'Sharpe', mobile: 'hidden', align: 'right', cell: (r) => <span className={cn('num', sort === 'oos_sharpe' && 'font-bold')}>{formatNumber(r.holdout.sharpe)}</span> },
     {
       key: 'stress',
       header: 'Biaya dobel',
       mobile: 'hidden',
       align: 'right',
-      cell: (r) => <span className={cn('num text-xs', signClass(r.holdout.stress_net_return_pct))}>{formatPct(r.holdout.stress_net_return_pct, { signed: true })}</span>,
+      cell: (r) => <span className={cn('num', signClass(r.holdout.stress_net_return_pct))}>{formatPct(r.holdout.stress_net_return_pct, { signed: true })}</span>,
     },
     {
       key: 'drag',
       header: 'Beban biaya',
       mobile: 'hidden',
       align: 'right',
-      cell: (r) => <span className="num text-xs">{r.holdout.cost_drag_pct === null ? '—' : `${formatNumber(r.holdout.cost_drag_pct, { digits: 1 })} poin %`}</span>,
+      cell: (r) => <span className="num">{r.holdout.cost_drag_pct === null ? '—' : `${formatNumber(r.holdout.cost_drag_pct, { digits: 1 })} poin %`}</span>,
     },
     {
       key: 'tries',
       header: 'Percobaan',
       mobile: 'hidden',
       cell: (r) => (
-        <span className={cn('inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-3xs', SNOOP_STYLE[r.snooping])}>
-          {r.snooping !== 'low' && <AlertTriangle className="h-2.5 w-2.5" aria-hidden="true" />}
+        <span className={cn('inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-2xs', SNOOP_STYLE[r.snooping])}>
+          {r.snooping !== 'low' && <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />}
           <span className="num">{attemptsLabel(r.attempts)}</span>
         </span>
       ),
@@ -164,28 +175,90 @@ export function LeaderboardView() {
   ]
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center">
+    <div className="space-y-6">
+      {boardQ.data && rows.length > 0 && (
+        <BentoGrid>
+          {top ? (
+            <HeroCard span={2} glow="bullish" className="sm:p-8" aria-labelledby="board-top">
+              <p className="kicker">Peringkat #1 · {SORT_LABEL[sort]} tertinggi di data baru</p>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <CoinAvatar symbol={top.symbol} size="lg" />
+                <h2 id="board-top" className="num display text-3xl font-extrabold sm:text-4xl">
+                  {top.symbol.replace(/USDT$/, '')} <span className="text-muted-foreground">{top.timeframe}</span>
+                </h2>
+                <StrategyChip templateId={top.template_id} name={fullName(top.template_id)} size="md" />
+                <VerdictPill verdict={top.verdict} size="md" />
+              </div>
+              <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+                <HeroKpi label="PF data baru" value={top.holdout.profit_factor} format={(v) => formatNumber(v)} />
+                <HeroKpi label="Hasil data baru" value={top.holdout.net_return_pct} format={(v) => formatPct(v, { signed: true })} tone={signTone(top.holdout.net_return_pct)} />
+                <HeroKpi
+                  label="Turun terdalam"
+                  value={top.holdout.max_dd_pct === null ? null : -Math.abs(top.holdout.max_dd_pct)}
+                  format={(v) => formatPct(v)}
+                  tone={top.holdout.max_dd_pct === null ? undefined : 'bearish'}
+                />
+              </div>
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+                <span className={cn('inline-flex h-8 items-center gap-1.5 rounded-full border px-3.5 text-sm', SNOOP_STYLE[top.snooping])}>
+                  {top.snooping !== 'low' && <AlertTriangle className="h-4 w-4" aria-hidden="true" />}
+                  <span className="num">{attemptsLabel(top.attempts)}</span>
+                </span>
+                <Button asChild className="h-11 gap-2 rounded-full px-5 text-base font-semibold">
+                  <Link href={`/lab/runs/${encodeURIComponent(String(top.run_id))}`}>
+                    Buka rapor
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </Link>
+                </Button>
+              </div>
+            </HeroCard>
+          ) : null}
+          <Panel className={top ? 'md:col-span-2 xl:col-span-1' : 'md:col-span-2 xl:col-span-3'} bodyClassName="flex h-full flex-col">
+            <p className="kicker">Ringkasan</p>
+            <p className="mt-3 flex items-baseline gap-3">
+              <span className="num display text-5xl font-extrabold text-bullish">{summary.pass}</span>
+              <span className="text-lg text-muted-foreground">
+                Lolos dari <span className="num font-semibold text-foreground">{summary.runs}</span> uji
+              </span>
+            </p>
+            <p className="mt-2 text-base text-muted-foreground">Hanya yang Lolos diberi peringkat. Semua angka dari data baru.</p>
+            {warning && (
+              <p
+                role="note"
+                className={cn(
+                  'mt-auto flex items-start gap-2 rounded-2xl border px-4 py-3 text-2xs',
+                  top?.snooping === 'high' ? 'border-warn/40 bg-warn/10 text-warn' : 'border-border bg-muted/30 text-muted-foreground',
+                )}
+              >
+                <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <span className="line-clamp-4">{warning}</span>
+              </p>
+            )}
+          </Panel>
+        </BentoGrid>
+      )}
+
+      <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
         {templates.length > 1 && (
-          <select aria-label="Strategi" value={templateId} onChange={(e) => setTemplateId(e.target.value)} className="h-8 rounded-md border border-input bg-transparent px-2 text-xs">
+          <select aria-label="Strategi" value={templateId} onChange={(e) => setTemplateId(e.target.value)} className="h-11 rounded-xl border border-input bg-transparent px-3 text-sm">
             <option value="" className="bg-popover">Semua strategi</option>
             {templates.map((t) => <option key={t.id} value={t.id} className="bg-popover">{nameOf(t.id)}</option>)}
           </select>
         )}
-        <div className="relative lg:w-40">
-          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari koin" aria-label="Cari koin" className="h-8 pl-8 font-mono text-xs" />
+        <div className="relative lg:w-48">
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari koin" aria-label="Cari koin" className="h-11 pl-10 text-base" />
         </div>
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter timeframe">
-          <Chip active={tf === ''} onClick={() => setTf('')} className="h-7 px-2.5">Semua TF</Chip>
-          {tfs.map((x) => <Chip key={x} active={tf === x} onClick={() => setTf(x)} className="h-7 px-2.5 font-mono">{x}</Chip>)}
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter timeframe">
+          <Chip active={tf === ''} onClick={() => setTf('')} className="h-10 px-4 text-sm">Semua TF</Chip>
+          {tfs.map((x) => <Chip key={x} active={tf === x} onClick={() => setTf(x)} className="num h-10 px-4 text-sm">{x}</Chip>)}
         </div>
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter rapor">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter rapor">
           {([['PASS', 'Lolos saja'], ['all', 'Semua rapor'], ['FAIL', 'Gagal saja']] as const).map(([v, l]) => (
-            <Chip key={v} active={verdict === v} onClick={() => setVerdict(v)} className="h-7 px-2.5">{l}</Chip>
+            <Chip key={v} active={verdict === v} onClick={() => setVerdict(v)} className="h-10 px-4 text-sm">{l}</Chip>
           ))}
         </div>
-        <select aria-label="Jenis uji" value={mode} onChange={(e) => setMode(e.target.value as ModeFilter)} className="h-8 rounded-md border border-input bg-transparent px-2 text-xs">
+        <select aria-label="Jenis uji" value={mode} onChange={(e) => setMode(e.target.value as ModeFilter)} className="h-11 rounded-xl border border-input bg-transparent px-3 text-sm">
           <option value="all" className="bg-popover">Semua jenis</option>
           <option value="validate" className="bg-popover">{MODE_COPY.validate}</option>
           <option value="optimize" className="bg-popover">{MODE_COPY.optimize}</option>
@@ -201,34 +274,10 @@ export function LeaderboardView() {
             { value: 'oos_net', label: 'Hasil' },
           ]}
         />
-        <Button variant="ghost" size="sm" onClick={() => boardQ.refetch()} disabled={boardQ.isFetching} className="h-8 gap-1.5 text-xs" aria-label="Muat ulang peringkat">
-          <RefreshCw className={cn('h-3.5 w-3.5', boardQ.isFetching && 'animate-spin')} />
+        <Button variant="ghost" onClick={() => boardQ.refetch()} disabled={boardQ.isFetching} className="h-10 w-10 rounded-full p-0" aria-label="Muat ulang peringkat">
+          <RefreshCw className={cn('h-4 w-4', boardQ.isFetching && 'animate-spin')} />
         </Button>
       </div>
-
-      {boardQ.data && (
-        <p className="text-xs text-muted-foreground">
-          <Trophy className="mr-1 inline h-3.5 w-3.5 text-lab" aria-hidden="true" />
-          {summary.pass} Lolos dari {summary.runs} uji. Semua angka dari data baru (holdout); hanya yang Lolos diberi peringkat.
-        </p>
-      )}
-      {warning && (
-        <p
-          role="note"
-          className={cn(
-            'flex items-start gap-2 rounded-lg border px-3 py-2 text-2xs',
-            top?.snooping === 'high' ? 'border-warn/40 bg-warn/10 text-warn' : 'border-border bg-muted/30 text-muted-foreground',
-          )}
-        >
-          <Info className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          <span>
-            {warning}
-            {top && top.snooping !== 'low' && (
-              <> Juara #1 (<span className="num">{nameOf(top.template_id)} {top.symbol} {top.timeframe}</span>) berasal dari {attemptsLabel(top.attempts)} untuk koin ini.</>
-            )}
-          </span>
-        </p>
-      )}
 
       {boardQ.isPending ? (
         <LoadingState rows={6} />

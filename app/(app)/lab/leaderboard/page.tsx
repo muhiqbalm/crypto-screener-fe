@@ -10,7 +10,7 @@ export default function LabLeaderboardPage() {
     <PageContainer width="wide">
       <LabHeader
         title="Hasil uji"
-        subtitle="Peringkat: hasil terbaik di data baru (holdout), lintas strategi, koin dan timeframe. Yang Gagal tidak pernah jadi juara."
+        subtitle="Peringkat: yang terbaik di data baru. Yang Gagal tidak pernah jadi juara."
         status={<StatusPill kind="riset" />}
         help={{ apaIni: 'Menjawab: setting mana yang paling bagus di data baru, dan berapa kali sudah dicoba?', istilah: ['verdict', 'holdout', 'profit_factor', 'data_snooping'] }}
       />

@@ -18,6 +18,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { StatusPill } from '@/components/ui/status-pill'
+import { BentoGrid } from '@/components/ui/hero-card'
 import { ErrorState } from '@/components/shell/states'
 import { describeError } from '@/components/shell/error-copy'
 import { LabHeader } from '@/components/lab/LabHeader'
@@ -74,10 +75,10 @@ export function RunDetailView({ id }: { id: string }) {
       <div className="space-y-6" aria-busy="true">
         <Skeleton className="h-5 w-28" />
         <Skeleton className="h-12 w-72" />
-        <div className="grid gap-6 lg:grid-cols-3">
-          <Skeleton className="h-72 rounded-3xl lg:col-span-2" />
-          <Skeleton className="h-72 rounded-3xl" />
-        </div>
+        <BentoGrid>
+          <Skeleton className="h-80 rounded-3xl md:col-span-2" />
+          <Skeleton className="h-80 rounded-3xl md:col-span-2 xl:col-span-1" />
+        </BentoGrid>
         <Skeleton className="h-96 w-full rounded-3xl" />
       </div>
     )
@@ -157,23 +158,23 @@ export function RunDetailView({ id }: { id: string }) {
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <VerdictHero run={run} strategyName={template?.name} className="lg:col-span-2" />
+      <BentoGrid>
+        <VerdictHero run={run} strategyName={template?.name} />
         {next ? (
-          <Panel className="flex flex-col" bodyClassName="flex flex-1 flex-col pt-5 sm:pt-6">
-            <p className="eyebrow text-xs">Langkah berikutnya</p>
-            <p className="mt-2 text-2xl font-bold tracking-tight">{next.title}</p>
+          <Panel className="flex flex-col md:col-span-2 xl:col-span-1" bodyClassName="flex flex-1 flex-col">
+            <p className="kicker">Langkah berikutnya</p>
+            <p className="display mt-2 text-2xl font-bold">{next.title}</p>
             <p className="mt-1 text-base text-muted-foreground">{next.line}</p>
-            <div className="mt-auto space-y-3 pt-6">
+            <div className="mt-auto space-y-4 pt-6">
               {next.href ? (
-                <Button asChild size="lg" className="h-12 w-full gap-2 rounded-full text-base font-semibold">
+                <Button asChild size="lg" className="h-auto min-h-12 w-full gap-2 whitespace-normal rounded-full px-5 py-3 text-center leading-snug text-base font-semibold shadow-[0_10px_32px_-10px] shadow-primary/60">
                   <Link href={next.href}>
                     <next.icon className="h-5 w-5" aria-hidden="true" />
                     {next.label}
                   </Link>
                 </Button>
               ) : (
-                <Button size="lg" onClick={next.onClick} className="h-12 w-full gap-2 rounded-full text-base font-semibold">
+                <Button size="lg" onClick={next.onClick} className="h-auto min-h-12 w-full gap-2 whitespace-normal rounded-full px-5 py-3 text-center leading-snug text-base font-semibold shadow-[0_10px_32px_-10px] shadow-primary/60">
                   <next.icon className="h-5 w-5" aria-hidden="true" />
                   {next.label}
                 </Button>
@@ -199,7 +200,7 @@ export function RunDetailView({ id }: { id: string }) {
               {done && run.template_id !== 'universal_v0' && (
                 <div className="flex justify-center">
                   {run.verdict === 'FAIL' ? (
-                    <button type="button" onClick={() => setPaperOpen(true)} className="cursor-pointer text-[13px] text-muted-foreground underline-offset-4 hover:underline">
+                    <button type="button" onClick={() => setPaperOpen(true)} className="cursor-pointer text-2xs text-muted-foreground underline-offset-4 hover:underline">
                       Tetap simpan sebagai preset &amp; mulai paper
                     </button>
                   ) : (
@@ -210,14 +211,18 @@ export function RunDetailView({ id }: { id: string }) {
             </div>
           </Panel>
         ) : (
-          active && <JobProgress job={jobQ.data} status={run.status} />
+          active && (
+            <div className="md:col-span-2 xl:col-span-1">
+              <JobProgress job={jobQ.data} status={run.status} />
+            </div>
+          )
         )}
-      </div>
+      </BentoGrid>
 
       {err && (
         <details className="rounded-3xl border border-bearish/30 bg-bearish/[0.05] px-5 py-4">
           <summary className="cursor-pointer text-sm font-medium text-bearish">Detail teknis error</summary>
-          <p className="mt-2 break-words font-mono text-[13px] text-muted-foreground">{run.error || 'Server tidak mengirim pesan error.'}</p>
+          <p className="mt-2 break-words font-mono text-2xs text-muted-foreground">{run.error || 'Server tidak mengirim pesan error.'}</p>
         </details>
       )}
 
@@ -226,10 +231,10 @@ export function RunDetailView({ id }: { id: string }) {
       <EquitySection run={run} enabled={done} />
 
       {done && (
-        <div className="grid gap-6 lg:grid-cols-3">
-          {(run.checks?.length ?? 0) > 0 && <ReportChecklist checks={run.checks} className="lg:col-span-2" />}
-          <KpiTiles run={run} className={(run.checks?.length ?? 0) > 0 ? undefined : 'lg:col-span-3'} />
-        </div>
+        <BentoGrid>
+          {(run.checks?.length ?? 0) > 0 && <ReportChecklist checks={run.checks} className="md:col-span-2" />}
+          <KpiTiles run={run} className={(run.checks?.length ?? 0) > 0 ? 'md:col-span-2 xl:col-span-1' : 'md:col-span-2 xl:col-span-3'} />
+        </BentoGrid>
       )}
 
       {done && <CostDragSection run={run} />}

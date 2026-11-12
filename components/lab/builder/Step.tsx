@@ -27,17 +27,17 @@ export function Step({
       <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2 px-5 pt-5 sm:px-8 sm:pt-7">
         <div className="flex min-w-0 items-center gap-4">
           <span
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-info/15 text-lg font-bold text-info"
+            className="display inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand/15 text-xl font-extrabold text-brand"
             aria-hidden="true"
           >
             {n}
           </span>
           <div className="min-w-0">
-            <h2 id={`step-${n}-title`} className="text-xl font-semibold tracking-tight sm:text-2xl">
+            <h2 id={`step-${n}-title`} className="text-xl font-bold tracking-tight sm:text-2xl">
               <span className="sr-only">Langkah {n}: </span>
               {title}
             </h2>
-            {description && <p className="line-clamp-1 text-[15px] text-muted-foreground">{description}</p>}
+            {description && <p className="line-clamp-1 text-base text-muted-foreground">{description}</p>}
           </div>
         </div>
         {aside && <div className="min-w-0 text-sm text-muted-foreground sm:pt-2">{aside}</div>}

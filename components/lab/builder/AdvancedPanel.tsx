@@ -75,11 +75,11 @@ export const AdvancedPanel = forwardRef<HTMLElement, {
             <span className="flex flex-wrap items-center gap-2 text-xl font-semibold tracking-tight">
               Lanjutan
               {hiddenChanged > 0 && (
-                <span className="rounded-full bg-warn/15 px-2.5 py-0.5 text-[13px] font-semibold text-warn">{hiddenChanged} diubah</span>
+                <span className="rounded-full bg-warn/15 px-2.5 py-0.5 text-2xs font-semibold text-warn">{hiddenChanged} diubah</span>
               )}
               {costError && <span className="text-sm font-normal text-bearish">biaya belum valid</span>}
             </span>
-            <span className="line-clamp-1 text-[15px] text-muted-foreground">
+            <span className="line-clamp-1 text-sm text-muted-foreground">
               {hiddenKeys.size} parameter lain · biaya · Cari setting terbaik · uji cepat
             </span>
           </span>
@@ -126,7 +126,7 @@ export const AdvancedPanel = forwardRef<HTMLElement, {
           </Block>
 
           <Block title="Uji cepat (tanpa rapor)" description="Seluruh data, tanpa data baru yang dikunci. Untuk coba-coba, bukan bukti.">
-            <Button type="button" variant="outline" onClick={onQuickTest} disabled={disabled} className="h-11 gap-2 rounded-full px-5 text-[15px]">
+            <Button type="button" variant="outline" onClick={onQuickTest} disabled={disabled} className="h-11 gap-2 rounded-full px-5 text-sm">
               {quickPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
               Jalankan uji cepat
             </Button>

@@ -59,7 +59,7 @@ export function OptimizeSection({ run, template }: { run: LabRunDetail; template
       title="Hasil Cari setting terbaik"
       icon={Sparkles}
       aside={
-        <span className="num text-[13px]">
+        <span className="num text-2xs">
           {[
             run.n_trials ? `${formatNumber(run.trials_done ?? 0, { digits: 0 })}/${formatNumber(run.n_trials, { digits: 0 })} percobaan` : null,
             run.search?.params?.length ? `${run.search.params.length} parameter dicari` : null,
@@ -76,7 +76,7 @@ export function OptimizeSection({ run, template }: { run: LabRunDetail; template
             <p className="text-sm text-muted-foreground">Server tidak mengirim parameter yang dicari.</p>
           ) : (
             <div className="overflow-x-auto rounded-lg border border-border">
-              <table className="w-full min-w-[480px] text-[15px]">
+              <table className="w-full min-w-[480px] text-sm">
                 <thead className="border-b border-border bg-muted/30">
                   <tr>
                     {['Parameter', 'Terbaik', `${ok} teratas`, 'Stabil di riset'].map((h, i) => (
@@ -92,7 +92,7 @@ export function OptimizeSection({ run, template }: { run: LabRunDetail; template
                       <td className="num px-4 py-2 text-right">{r.spread ?? '—'}</td>
                       <td className="num px-4 py-2 text-right">
                         {r.plateau ?? <span className="text-muted-foreground">tidak tersedia</span>}
-                        {r.inside === false && <span className="block text-3xs text-warn">terbaik di luar rentang</span>}
+                        {r.inside === false && <span className="block text-2xs text-warn">terbaik di luar rentang</span>}
                       </td>
                     </tr>
                   ))}
@@ -100,7 +100,7 @@ export function OptimizeSection({ run, template }: { run: LabRunDetail; template
               </table>
             </div>
           )}
-          <p className="text-[13px] text-muted-foreground">
+          <p className="text-2xs text-muted-foreground">
             Juara dipilih di data latih. Kalau kombinasi teratas tersebar jauh, nilai terbaik kemungkinan kebetulan; pakai nilai di tengah rentang.
           </p>
         </div>
@@ -141,7 +141,7 @@ export function OptimizeSection({ run, template }: { run: LabRunDetail; template
                         ) : (
                           <div className="flex max-w-[320px] flex-wrap gap-1">
                             {Object.entries(t.params).map(([k, v]) => (
-                              <span key={k} className="rounded bg-muted px-1.5 py-0.5 font-mono text-3xs">
+                              <span key={k} className="rounded bg-muted px-1.5 py-0.5 font-mono text-2xs">
                                 {labelOf(k)}: <b>{fmtVal(v)}</b>
                               </span>
                             ))}
@@ -165,7 +165,7 @@ export function OptimizeSection({ run, template }: { run: LabRunDetail; template
                 </tbody>
               </table>
             </div>
-            <p className="text-[13px] text-muted-foreground">Angka dari data latih (uji maju bertahap), bukan data baru.</p>
+            <p className="text-2xs text-muted-foreground">Angka dari data latih (uji maju bertahap), bukan data baru.</p>
           </div>
         )}
       </div>

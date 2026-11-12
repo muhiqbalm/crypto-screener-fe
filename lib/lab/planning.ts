@@ -201,7 +201,7 @@ export function attemptsLabel(a: LabBoardRow['attempts']): string {
 export function boardSnoopingWarning(summary: { runs: number; trials: number; combinations: number }): string | null {
   if (summary.runs < 5 && summary.trials < 100) return null
   const t = summary.trials > 0 ? ` dan ${summary.trials.toLocaleString('en-US')} percobaan parameter` : ''
-  return `Peringkat ini memilih yang terbaik dari ${summary.runs} uji (${summary.combinations} kombinasi strategi × koin × timeframe)${t}. Makin banyak yang dicoba, makin besar peluang juara #1 cuma kebetulan, jadi jalankan paper dulu sebelum percaya.`
+  return `Juara dipilih sebagai yang terbaik dari ${summary.runs} uji (${summary.combinations} kombinasi)${t}. Makin banyak dicoba, makin besar peluang juara #1 kebetulan, jadi paper dulu.`
 }
 
 // ---------------------------------------------------------------------------

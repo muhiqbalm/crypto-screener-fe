@@ -210,7 +210,7 @@ export function RunBuilder() {
 
   const basisAside = (
     <span className="inline-flex flex-wrap items-center justify-end gap-1.5">
-      <span className="rounded-full border border-border bg-muted/40 px-3 py-1 text-[13px]">
+      <span className="rounded-full border border-border bg-muted/40 px-3 py-1 text-2xs">
         Dasar: <span className="font-semibold text-foreground">{importance.basis}</span>
       </span>
       <InfoTip title="Dasar urutan parameter" label="Penjelasan dasar urutan parameter" align="end">
@@ -224,7 +224,7 @@ export function RunBuilder() {
   return (
     <div className="space-y-6">
       {fromId && (prefillQ.data || prefillQ.isError) && (
-        <div className={cn('flex items-start gap-3 rounded-2xl border px-5 py-3.5 text-[15px]', prefillQ.isError ? 'border-warn/40 bg-warn/10 text-warn' : 'border-lab/30 bg-lab/10 text-lab')}>
+        <div className={cn('flex items-start gap-3 rounded-2xl border px-5 py-3.5 text-sm', prefillQ.isError ? 'border-warn/40 bg-warn/10 text-warn' : 'border-lab/30 bg-lab/10 text-lab')}>
           <Wand2 className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
           {prefillQ.isError
             ? `Uji #${fromId} tidak bisa dimuat, jadi form memakai default.`
@@ -282,7 +282,7 @@ export function RunBuilder() {
         <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground">
           <span>{hiddenKeys.size} parameter lain ada di Lanjutan.</span>
           {hiddenChanged > 0 && (
-            <button type="button" onClick={openAdvancedChanged} className="cursor-pointer rounded-full bg-warn/15 px-3 py-1 text-[13px] font-semibold text-warn hover:underline">
+            <button type="button" onClick={openAdvancedChanged} className="cursor-pointer rounded-full bg-warn/15 px-3 py-1 text-2xs font-semibold text-warn hover:underline">
               {hiddenChanged} parameter lanjutan diubah · lihat
             </button>
           )}

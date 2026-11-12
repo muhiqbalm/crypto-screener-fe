@@ -3,6 +3,7 @@
 import { AlertTriangle, ShieldCheck } from 'lucide-react'
 import { Segmented } from '@/components/ui/segmented'
 import { InfoTip } from '@/components/ui/info-tip'
+import { ProgressBar } from '@/components/ui/progress-bar'
 import { ChangedBadge, ParamField, ParamSlider, isChanged } from '@/components/lab/ParamForm'
 import { cn } from '@/lib/utils/cn'
 import { formatNumber } from '@/lib/utils/format'
@@ -29,26 +30,24 @@ function valueLabel(key: string, v: LabParamValue): string {
   return choiceLabel(key, String(v))
 }
 
-/** Influence like the research deck (slide 10): a thick bar and the share in %. */
+/** Influence like the research deck (slide 10): a thick bar on a shared axis and the share in %. */
 function InfluenceBar({ pct, scale, tone }: { pct: number; scale: number; tone: 'stable' | 'unstable' | 'none' }) {
-  const w = Math.max(3, Math.min(100, (pct / scale) * 100))
   return (
-    <div className="flex items-center gap-3" role="img" aria-label={`Pengaruh ${formatNumber(pct, { digits: 1 })}% dari variasi hasil`}>
-      <span className="w-16 shrink-0 text-[13px] text-muted-foreground" aria-hidden="true">Pengaruh</span>
-      <span className="h-4 min-w-0 flex-1 overflow-hidden rounded-full bg-muted/70" aria-hidden="true">
-        <span
-          className={cn('block h-full rounded-full', tone === 'stable' ? 'bg-info' : tone === 'unstable' ? 'bg-warn' : 'bg-muted-foreground/40')}
-          style={{ width: `${w}%` }}
-        />
-      </span>
-      <span className="num w-14 shrink-0 text-right text-base font-bold" aria-hidden="true">{formatNumber(pct, { digits: 1 })}%</span>
-    </div>
+    <ProgressBar
+      value={pct}
+      max={scale}
+      size="lg"
+      tone={tone === 'stable' ? 'brand' : tone === 'unstable' ? 'warn' : 'muted'}
+      label="Pengaruh ke hasil"
+      showValue
+      valueText={`${formatNumber(pct, { digits: 1 })}%`}
+    />
   )
 }
 
 function StabilityChip({ row, importance }: { row: StepParam; importance: LabImportance }) {
   if (importance.source === 'template') {
-    return <span className="inline-flex h-7 items-center rounded-full border border-border px-3 text-[13px] text-muted-foreground">belum diukur</span>
+    return <span className="inline-flex h-7 items-center rounded-full border border-border px-3 text-2xs text-muted-foreground">belum diukur</span>
   }
   const detail = row.importance ? stabilityDetail(row.importance, importance) : null
   const stable = row.label === LABEL_STABLE
@@ -57,8 +56,8 @@ function StabilityChip({ row, importance }: { row: StepParam; importance: LabImp
     <span className="inline-flex items-center gap-1">
       <span
         className={cn(
-          'inline-flex h-7 items-center gap-1.5 rounded-full border px-3 text-[13px] font-semibold',
-          stable ? 'border-info/40 bg-info/10 text-info' : 'border-warn/40 bg-warn/10 text-warn',
+          'inline-flex h-7 items-center gap-1.5 rounded-full border px-3 text-2xs font-semibold',
+          stable ? 'border-brand/40 bg-brand/10 text-brand' : 'border-warn/40 bg-warn/10 text-warn',
         )}
       >
         {stable ? <ShieldCheck className="h-4 w-4" aria-hidden="true" /> : <AlertTriangle className="h-4 w-4" aria-hidden="true" />}
@@ -116,7 +115,7 @@ function ParamCard({
           {help && <p className="line-clamp-1 text-sm text-muted-foreground">{help}</p>}
         </div>
         <span className="flex flex-wrap items-center gap-1.5">
-          {changed && <ChangedBadge className="px-2 py-0.5 text-[13px]" />}
+          {changed && <ChangedBadge className="px-2 py-0.5 text-2xs" />}
           <StabilityChip row={row} importance={importance} />
         </span>
       </div>
@@ -182,9 +181,9 @@ export function ImportantParams({
       </p>
     )
   }
-  // Same axis idea as the research deck: 0 to the strongest shown share, rounded up to 10 %.
+  // One shared axis like the research deck: 0 to the strongest shown share, rounded up to 5 %.
   const top = Math.max(0, ...step.map((r) => (r.importance?.score ?? 0) * 100))
-  const scale = Math.max(10, Math.ceil(top / 10) * 10)
+  const scale = Math.max(5, Math.ceil(top / 5) * 5)
   return (
     <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
       {step.map((row) => (

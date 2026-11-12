@@ -3,16 +3,17 @@
 import { useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { AlertTriangle, Bookmark, CheckCircle2, Columns3, Plus, X, XCircle } from 'lucide-react'
+import { AlertTriangle, Bookmark, CheckCircle2, ClipboardCheck, Columns3, LineChart, Plus, Table2, X, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { CoinAvatar } from '@/components/ui/coin-avatar'
 import { ErrorState } from '@/components/shell/states'
-import { EmptyState, Section } from '@/components/lab/Section'
-import { VerdictBadge } from '@/components/ui/verdict-badge'
+import { EmptyState } from '@/components/lab/Section'
+import { Panel, StrategyChip, VerdictPill } from '@/components/lab/run/v2-ui'
 import { MODE_COPY, STATUS_COPY } from '@/components/lab/run/copy'
 import { COMPARE_COLORS, CompareEquityChart, type CompareSeries } from '@/components/lab/compare/CompareEquityChart'
 import { useTheme } from 'next-themes'
-import { formatNumber, formatPct } from '@/lib/utils/format'
+import { formatNumber, formatPct, signClass } from '@/lib/utils/format'
 import { formatDate } from '@/lib/utils/time'
 import { cn } from '@/lib/utils/cn'
 import { checkLabel, checkReason, templateShort } from '@/lib/lab/form'
@@ -64,7 +65,7 @@ export function CompareView() {
       aria-label="Tambah uji untuk dibandingkan"
       value=""
       onChange={(e) => e.target.value && go([...ids, e.target.value])}
-      className="h-8 rounded-md border border-input bg-transparent px-2 text-xs"
+      className="h-10 rounded-xl border border-input bg-transparent px-3 text-sm"
     >
       <option value="" className="bg-popover">+ Tambah uji…</option>
       {addable.slice(0, 60).map((r) => (
@@ -77,14 +78,14 @@ export function CompareView() {
 
   if (ids.length === 0) {
     return (
-      <Section>
+      <Panel>
         <EmptyState
           icon={<Columns3 className="h-8 w-8" />}
           title="Pilih 2–4 uji untuk dibandingkan"
           description="Centang uji di Riwayat atau Peringkat, lalu klik Bandingkan. Atau tambah langsung di sini."
-          action={<div className="flex flex-wrap justify-center gap-2">{addPicker}<Button asChild size="sm" variant="outline"><Link href="/lab/hasil">Buka Riwayat</Link></Button></div>}
+          action={<div className="flex flex-wrap justify-center gap-2">{addPicker}<Button asChild variant="outline" className="h-10 rounded-full px-4"><Link href="/lab/hasil">Buka Riwayat</Link></Button></div>}
         />
-      </Section>
+      </Panel>
     )
   }
 
@@ -97,60 +98,72 @@ export function CompareView() {
 
   return (
     <div className="space-y-6">
-      <Section
+      <Panel
         title="Uji yang dibandingkan"
-        icon={<Columns3 className="h-4 w-4 text-lab" />}
-        description="Maksimal 4. Nilai terbaik per baris hanya ditandai di antara uji yang Lolos."
-        action={addPicker || undefined}
+        icon={Columns3}
+        tone="lab"
+        description="Maks. 4. Nilai terbaik hanya ditandai di antara yang Lolos."
+        aside={addPicker || undefined}
       >
         {failed && <ErrorState error={failed.error} title="Sebagian uji gagal dimuat" onRetry={() => failed.refetch()} compact />}
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {ids.map((id, i) => {
             const r = details[i]?.data
-            if (!r) return details[i]?.isPending ? <Skeleton key={id} className="h-28 rounded-lg" /> : null
+            if (!r) return details[i]?.isPending ? <Skeleton key={id} className="h-44 rounded-2xl" /> : null
             const warn = snoopingWarning(r.snooping)
+            const head = (r.oos_metrics ?? (r.mode === 'backtest' ? r.metrics : null)) as Record<string, unknown> | null
+            const net = typeof head?.net_return_pct === 'number' ? head.net_return_pct : null
             return (
-              <div key={id} className="space-y-2 rounded-lg border border-border p-3">
+              <div key={id} className="flex min-w-0 flex-col gap-3 rounded-2xl border border-border bg-background/40 p-4 sm:p-5" style={{ borderTopColor: colors[i % colors.length], borderTopWidth: 3 }}>
                 <div className="flex items-start justify-between gap-2">
-                  <Link href={`/lab/runs/${encodeURIComponent(id)}`} className="flex items-center gap-2 hover:underline">
-                    <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: colors[i % colors.length] }} aria-hidden="true" />
-                    <span className="num text-sm font-semibold">{runLabel(r)}</span>
+                  <Link href={`/lab/runs/${encodeURIComponent(id)}`} className="num inline-flex min-w-0 items-center gap-2.5 text-base font-semibold hover:underline">
+                    <CoinAvatar symbol={r.symbol} size="sm" />
+                    <span>
+                      {r.symbol.replace(/USDT$/, '')} <span className="font-normal text-muted-foreground">{r.timeframe} #{r.id}</span>
+                    </span>
                   </Link>
-                  <button type="button" onClick={() => go(ids.filter((x) => x !== id))} aria-label={`Hapus uji #${id} dari perbandingan`} className="text-muted-foreground hover:text-foreground cursor-pointer">
+                  <button type="button" onClick={() => go(ids.filter((x) => x !== id))} aria-label={`Hapus uji #${id} dari perbandingan`} className="-m-1 inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground">
                     <X className="h-4 w-4" />
                   </button>
                 </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <StrategyChip templateId={r.template_id} />
+                  {r.status === 'done' ? <VerdictPill verdict={r.verdict} /> : <span className="text-sm text-muted-foreground">{STATUS_COPY[r.status]}</span>}
+                </div>
+                <div>
+                  <p className="eyebrow">{r.oos_metrics ? 'Hasil data baru' : 'Hasil seluruh periode'}</p>
+                  <p className={cn('num display mt-1 text-3xl font-extrabold', signClass(net))}>{net === null ? '—' : formatPct(net, { signed: true })}</p>
+                </div>
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="rounded-full border border-border px-2 py-0.5 text-2xs text-muted-foreground">{MODE_COPY[r.mode]}</span>
-                  {r.status === 'done' ? <VerdictBadge verdict={r.verdict} emptyLabel="Tanpa rapor" /> : <span className="text-2xs text-muted-foreground">{STATUS_COPY[r.status]}</span>}
+                  <span className="rounded-full border border-border px-2.5 py-0.5 text-2xs text-muted-foreground">{MODE_COPY[r.mode]}</span>
                   {r.preset && (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-lab/30 bg-lab/10 px-2 py-0.5 text-2xs text-lab">
-                      <Bookmark className="h-3 w-3" aria-hidden="true" />
+                    <span className="inline-flex items-center gap-1 rounded-full border border-lab/30 bg-lab/10 px-2.5 py-0.5 text-2xs text-lab">
+                      <Bookmark className="h-3.5 w-3.5" aria-hidden="true" />
                       <span className="num">{r.preset.name}</span>
                     </span>
                   )}
-                  {(r.saved_as ?? []).map((n) => <span key={n} className="num rounded-full border border-border px-2 py-0.5 text-2xs text-muted-foreground">→ {n}</span>)}
+                  {(r.saved_as ?? []).map((n) => <span key={n} className="num rounded-full border border-border px-2.5 py-0.5 text-2xs text-muted-foreground">→ {n}</span>)}
                 </div>
                 <p className="num text-2xs text-muted-foreground">{r.start ? formatDate(r.start) : 'awal data'} s/d {r.end ? formatDate(r.end) : 'terbaru'}{r.holdout_start ? ` · data baru sejak ${formatDate(r.holdout_start)}` : ''}</p>
-                {warn && <p className="flex items-start gap-1 text-2xs text-warn"><AlertTriangle className="mt-px h-3 w-3 shrink-0" />{r.snooping?.validated_runs_all_tf} uji · {r.snooping?.timeframes_tested.length} timeframe sudah dicoba untuk koin ini</p>}
+                {warn && <p className="flex items-start gap-1.5 text-2xs text-warn"><AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />{r.snooping?.validated_runs_all_tf} uji · {r.snooping?.timeframes_tested.length} timeframe sudah dicoba untuk koin ini</p>}
               </div>
             )
           })}
         </div>
-      </Section>
+      </Panel>
 
       {allLoaded && runs.length > 0 && (
         <>
-          <Section title="Angka" description="Seluruh periode vs data baru (holdout, dikunci dan tidak pernah dipakai menyetel). Beban biaya = selisih hasil tanpa biaya dan dengan biaya.">
-            <div className="-mx-4 overflow-x-auto sm:mx-0 sm:rounded-lg sm:border sm:border-border">
-              <table className="w-full min-w-[560px] text-sm">
-                <thead className="border-b border-border bg-muted/30">
+          <Panel title="Angka" icon={Table2} description="Seluruh periode vs data baru (dikunci, tak pernah dipakai menyetel).">
+            <div className="-mx-5 overflow-x-auto sm:mx-0 sm:rounded-2xl sm:border sm:border-border">
+              <table className="w-full min-w-[600px] text-sm">
+                <thead className="border-b border-border bg-muted/40">
                   <tr>
-                    <th className="px-3 py-2 text-left text-2xs font-medium uppercase tracking-wide text-muted-foreground">Angka</th>
+                    <th className="h-12 px-4 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Angka</th>
                     {runs.map((r, i) => (
-                      <th key={String(r.id)} className="px-3 py-2 text-right text-2xs font-medium text-muted-foreground">
+                      <th key={String(r.id)} className="h-12 px-4 text-right text-xs font-semibold text-muted-foreground">
                         <span className="inline-flex items-center gap-1.5">
-                          <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: colors[i % colors.length] }} aria-hidden="true" />
+                          <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: colors[i % colors.length] }} aria-hidden="true" />
                           <span className="num">{runLabel(r)}</span>
                         </span>
                       </th>
@@ -160,7 +173,7 @@ export function CompareView() {
                 <tbody className="divide-y divide-border/50">
                   {(['full', 'holdout'] as const).map((g) => [
                     <tr key={g} className="bg-muted/20">
-                      <td colSpan={runs.length + 1} className={cn('px-3 py-1.5 text-2xs font-semibold uppercase tracking-wide', g === 'holdout' ? 'text-lab' : 'text-muted-foreground')}>
+                      <td colSpan={runs.length + 1} className={cn('px-4 py-2.5 text-2xs font-bold uppercase tracking-wide', g === 'holdout' ? 'text-lab' : 'text-muted-foreground')}>
                         {g === 'full' ? 'Seluruh periode' : 'Data baru (holdout)'}
                       </td>
                     </tr>,
@@ -168,9 +181,9 @@ export function CompareView() {
                       const b = best(row)
                       return (
                         <tr key={row.key}>
-                          <td className="px-3 py-2 text-xs">{row.label}</td>
+                          <td className="h-[52px] px-4">{row.label}</td>
                           {row.values.map((v, i) => (
-                            <td key={i} className={cn('num px-3 py-2 text-right text-xs', b === i && 'font-bold text-foreground', b !== i && 'text-muted-foreground', row.key.endsWith('max_dd_pct') && v !== null && 'text-bearish')}>
+                            <td key={i} className={cn('num h-[52px] px-4 text-right', b === i && 'font-bold text-foreground', b !== i && 'text-muted-foreground', row.key.endsWith('max_dd_pct') && v !== null && 'text-bearish')}>
                               {fmt(row, v)}
                               {b === i && <span className="sr-only"> (terbaik di antara yang Lolos)</span>}
                             </td>
@@ -182,16 +195,16 @@ export function CompareView() {
                 </tbody>
               </table>
             </div>
-          </Section>
+          </Panel>
 
           {checkNames.length > 0 && (
-            <Section title="Rapor uji" description="Semua syarat harus terpenuhi supaya Lolos.">
-              <div className="-mx-4 overflow-x-auto sm:mx-0 sm:rounded-lg sm:border sm:border-border">
-                <table className="w-full min-w-[560px] text-sm">
-                  <thead className="border-b border-border bg-muted/30">
+            <Panel title="Rapor uji" icon={ClipboardCheck} tone="bullish" description="Semua syarat harus terpenuhi supaya Lolos.">
+              <div className="-mx-5 overflow-x-auto sm:mx-0 sm:rounded-2xl sm:border sm:border-border">
+                <table className="w-full min-w-[600px] text-sm">
+                  <thead className="border-b border-border bg-muted/40">
                     <tr>
-                      <th className="px-3 py-2 text-left text-2xs font-medium uppercase tracking-wide text-muted-foreground">Syarat</th>
-                      {runs.map((r) => <th key={String(r.id)} className="num px-3 py-2 text-left text-2xs font-medium text-muted-foreground">{runLabel(r)}</th>)}
+                      <th className="h-12 px-4 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Syarat</th>
+                      {runs.map((r) => <th key={String(r.id)} className="num h-12 px-4 text-left text-xs font-semibold text-muted-foreground">{runLabel(r)}</th>)}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/50">
@@ -199,17 +212,17 @@ export function CompareView() {
                       const first = runs.flatMap((r) => r.checks ?? []).find((c) => c.name === name) as LabCheck
                       return (
                         <tr key={name}>
-                          <td className="px-3 py-2 text-xs">{checkLabel(first)}</td>
+                          <td className="h-[52px] px-4">{checkLabel(first)}</td>
                           {runs.map((r) => {
                             const c = (r.checks ?? []).find((x) => x.name === name)
-                            if (!c) return <td key={String(r.id)} className="px-3 py-2 text-xs text-muted-foreground">—</td>
+                            if (!c) return <td key={String(r.id)} className="h-[52px] px-4 text-muted-foreground">—</td>
                             return (
-                              <td key={String(r.id)} className="px-3 py-2 text-2xs" title={checkReason(c)}>
-                                <span className={cn('inline-flex items-center gap-1 font-semibold', c.passed ? 'text-bullish' : 'text-bearish')}>
-                                  {c.passed ? <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> : <XCircle className="h-3.5 w-3.5" aria-hidden="true" />}
+                              <td key={String(r.id)} className="h-[52px] px-4" title={checkReason(c)}>
+                                <span className={cn('inline-flex items-center gap-1.5 font-semibold', c.passed ? 'text-bullish' : 'text-bearish')}>
+                                  {c.passed ? <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> : <XCircle className="h-4 w-4" aria-hidden="true" />}
                                   {c.passed ? 'Lolos' : 'Gagal'}
                                 </span>
-                                <span className="num ml-1.5 text-muted-foreground">{typeof c.value === 'number' ? formatNumber(c.value, { digits: Number.isInteger(c.value) ? 0 : 2 }) : String(c.value ?? '—')}</span>
+                                <span className="num ml-2 text-2xs text-muted-foreground">{typeof c.value === 'number' ? formatNumber(c.value, { digits: Number.isInteger(c.value) ? 0 : 2 }) : String(c.value ?? '—')}</span>
                               </td>
                             )
                           })}
@@ -219,20 +232,20 @@ export function CompareView() {
                   </tbody>
                 </table>
               </div>
-            </Section>
+            </Panel>
           )}
 
-          <Section title="Kurva modal (titik awal disamakan)" description="Tiap kurva mulai dari 0% di titik awalnya sendiri, jadi uji dengan periode berbeda tetap bisa dibandingkan.">
+          <Panel title="Kurva modal" icon={LineChart} description="Semua kurva mulai dari 0% supaya periode berbeda tetap bisa dibandingkan.">
             {series.every((x) => x.points.length === 0) ? (
-              equity.some((e) => e.isPending && e.fetchStatus !== 'idle') ? <Skeleton className="h-[260px] w-full" /> : <EmptyState title="Kurva modal tidak tersedia" description="Uji yang belum selesai tidak punya kurva." />
+              equity.some((e) => e.isPending && e.fetchStatus !== 'idle') ? <Skeleton className="h-[300px] w-full rounded-2xl" /> : <EmptyState title="Kurva modal tidak tersedia" description="Uji yang belum selesai tidak punya kurva." />
             ) : (
               <CompareEquityChart series={series} />
             )}
-          </Section>
+          </Panel>
         </>
       )}
       {ids.length === 1 && (
-        <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Plus className="h-3.5 w-3.5" aria-hidden="true" />Tambah minimal satu uji lagi untuk membandingkan.</p>
+        <p className="flex items-center gap-2 text-sm text-muted-foreground"><Plus className="h-4 w-4" aria-hidden="true" />Tambah minimal satu uji lagi untuk membandingkan.</p>
       )}
     </div>
   )

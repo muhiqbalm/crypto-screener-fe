@@ -98,9 +98,9 @@ export function SymbolPicker({ symbols, value, onChange, invalid }: SymbolPicker
 /** "siap" when the backend already has candles; otherwise it downloads on first use. */
 function DataTag({ hasData }: { hasData: boolean }) {
   return hasData ? (
-    <span className="rounded-full border border-border px-1.5 py-px font-sans text-3xs font-medium text-muted-foreground">data siap</span>
+    <span className="rounded-full border border-border px-1.5 py-px font-sans text-2xs font-medium text-muted-foreground">data siap</span>
   ) : (
-    <span className="font-sans text-3xs text-muted-foreground" title="Data akan diunduh saat dipakai (±1 menit)">
+    <span className="font-sans text-2xs text-muted-foreground" title="Data akan diunduh saat dipakai (±1 menit)">
       diunduh ±1 mnt
     </span>
   )

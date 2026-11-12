@@ -40,7 +40,7 @@ export function isChanged(spec: LabParamSpec, value: ParamFormValue | undefined)
 
 export function ChangedBadge({ count, className }: { count?: number; className?: string }) {
   return (
-    <span className={cn('inline-flex items-center rounded-full bg-warn/15 px-2.5 py-0.5 text-[13px] font-semibold text-warn', className)}>
+    <span className={cn('inline-flex items-center rounded-full bg-warn/15 px-2.5 py-0.5 text-2xs font-semibold text-warn', className)}>
       {count !== undefined ? `${count} diubah` : 'diubah'}
     </span>
   )
@@ -56,7 +56,7 @@ export function ParamSummary({ template, values, onChange }: Omit<ParamFormProps
   return (
     <div className="flex flex-wrap items-center gap-2">
       {changed === 0 ? (
-        <span className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-[13px] font-medium text-muted-foreground">
+        <span className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-2xs font-medium text-muted-foreground">
           {live ? `Sama dengan ${LIVE_PRESET_NAME} (setting live)` : 'Default strategi (setting riset)'}
         </span>
       ) : (
@@ -87,7 +87,7 @@ export function MainParams({ template, values, errors, onChange }: ParamFormProp
       {main.map((p) =>
         p.type === 'int' || p.type === 'float' ? (
           <div key={p.key} className="space-y-2">
-            <label htmlFor={`param-${p.key}`} className="text-[15px] font-medium">{paramLabel(p)}</label>
+            <label htmlFor={`param-${p.key}`} className="text-sm font-medium">{paramLabel(p)}</label>
             <ParamSlider spec={p} value={values[p.key]} error={errors[p.key]} onChange={(v) => set(p.key, v)} />
           </div>
         ) : (
@@ -127,7 +127,7 @@ export function AdvancedParams({
   )
   const groups = groupParams(listed)
   if (groups.length === 0) {
-    return <p className="rounded-2xl border border-dashed px-4 py-6 text-center text-[15px] text-muted-foreground">Tidak ada parameter yang cocok.</p>
+    return <p className="rounded-2xl border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">Tidak ada parameter yang cocok.</p>
   }
   const forceOpen = query.trim() !== '' || onlyChanged
   return (
@@ -191,13 +191,13 @@ function fmtDefault(spec: LabParamSpec): string {
 function ImportanceTag({ row }: { row: LabImportanceParam }) {
   if (row.label === LABEL_UNSTABLE) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full border border-warn/30 bg-warn/10 px-2 py-0.5 text-[13px] font-medium text-warn">
+      <span className="inline-flex items-center gap-1 rounded-full border border-warn/30 bg-warn/10 px-2 py-0.5 text-2xs font-medium text-warn">
         <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
         berpengaruh, tidak stabil
       </span>
     )
   }
-  if (row.label === LABEL_NONE) return <span className="text-[13px] text-muted-foreground">tidak berpengaruh (riset)</span>
+  if (row.label === LABEL_NONE) return <span className="text-2xs text-muted-foreground">tidak berpengaruh (riset)</span>
   return null
 }
 
@@ -277,7 +277,7 @@ export function ParamSlider({
       {error ? (
         <p id={`${id}-err`} className="text-sm text-bearish">{error}</p>
       ) : safe ? (
-        <div className="flex items-baseline justify-between gap-2 pr-28 text-[13px] text-muted-foreground">
+        <div className="flex items-baseline justify-between gap-2 pr-28 text-2xs text-muted-foreground">
           <span className="num">{min}</span>
           <span className={cn('text-center font-medium', inside === false ? 'text-warn' : 'text-bullish')}>
             aman <span className="num">{trim2(safe[0])}–{trim2(safe[1])}</span>
@@ -286,7 +286,7 @@ export function ParamSlider({
           <span className="num">{max}</span>
         </div>
       ) : (
-        <p className="num text-[13px] text-muted-foreground">
+        <p className="num text-2xs text-muted-foreground">
           default {fmtDefault(spec)} · batas {min}–{max}
         </p>
       )}
@@ -318,7 +318,7 @@ export function ParamField({
 
   if (bare && spec.type === 'bool') {
     return (
-      <div className="flex items-center gap-3 text-[15px]">
+      <div className="flex items-center gap-3 text-sm">
         <Switch id={id} checked={value === true} onCheckedChange={(c) => onChange(c)} aria-label={paramLabel(spec)} />
         <span className="text-muted-foreground">{value === true ? 'aktif' : 'mati'}</span>
       </div>
@@ -328,11 +328,11 @@ export function ParamField({
   if (spec.type === 'bool') {
     return (
       <div className={cn('flex items-center justify-between gap-4 rounded-2xl border px-4 py-3', changed ? 'border-warn/40 bg-warn/5' : 'border-border')}>
-        <label htmlFor={id} className="min-w-0 text-[15px] font-medium">
+        <label htmlFor={id} className="min-w-0 text-sm font-medium">
           {paramLabel(spec)}
           {changed && <span className="ml-2 align-middle"><ChangedBadge /></span>}
           {tag && <span className="ml-2 align-middle"><ImportanceTag row={tag} /></span>}
-          {help && <span className="mt-1 line-clamp-2 block text-[13px] font-normal leading-snug text-muted-foreground">{help}</span>}
+          {help && <span className="mt-1 line-clamp-2 block text-2xs font-normal leading-snug text-muted-foreground">{help}</span>}
         </label>
         <Switch id={id} checked={value === true} onCheckedChange={(c) => onChange(c)} />
       </div>
@@ -342,18 +342,18 @@ export function ParamField({
   return (
     <div className="space-y-1.5">
       {bare ? (
-        <p className="num text-[13px] text-muted-foreground">default {fmtDefault(spec)}</p>
+        <p className="num text-2xs text-muted-foreground">default {fmtDefault(spec)}</p>
       ) : (
         <>
-          <label htmlFor={id} className="flex items-start justify-between gap-2 text-[15px] font-medium">
+          <label htmlFor={id} className="flex items-start justify-between gap-2 text-sm font-medium">
             <span className="flex min-w-0 flex-wrap items-center gap-2">
               {paramLabel(spec)}
               {changed && <ChangedBadge />}
               {tag && <ImportanceTag row={tag} />}
             </span>
-            <span className="num shrink-0 pt-0.5 text-[13px] font-normal text-muted-foreground">default {fmtDefault(spec)}</span>
+            <span className="num shrink-0 pt-0.5 text-2xs font-normal text-muted-foreground">default {fmtDefault(spec)}</span>
           </label>
-          {help && <p className="line-clamp-2 text-[13px] leading-snug text-muted-foreground">{help}</p>}
+          {help && <p className="line-clamp-2 text-2xs leading-snug text-muted-foreground">{help}</p>}
         </>
       )}
       {spec.type === 'choice' ? (

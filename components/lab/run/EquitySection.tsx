@@ -24,7 +24,7 @@ export function EquitySection({ run, enabled }: { run: LabRunDetail; enabled: bo
     <Panel
       title="Kurva modal"
       icon={LineChart}
-      aside={run.holdout_start ? <span className="text-[13px]">data baru mulai {formatDate(run.holdout_start)}</span> : <span className="text-[13px]">seluruh periode</span>}
+      aside={run.holdout_start ? <span className="text-2xs">data baru mulai {formatDate(run.holdout_start)}</span> : <span className="text-2xs">seluruh periode</span>}
     >
       {body}
     </Panel>

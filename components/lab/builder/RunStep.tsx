@@ -54,7 +54,7 @@ export function HoldoutNote({
   const Icon = lock && lock.locked ? Lock : LockOpen
   return (
     <div className="space-y-2">
-      <div className={cn('flex items-center gap-3 rounded-2xl border px-4 py-3 text-[15px]', lock?.locked ? 'border-lab/30 bg-lab/[0.07]' : 'border-border bg-muted/30')}>
+      <div className={cn('flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm', lock?.locked ? 'border-lab/30 bg-lab/[0.07]' : 'border-border bg-muted/30')}>
         <Icon className="h-5 w-5 shrink-0 text-lab" aria-hidden="true" />
         <p className="min-w-0 flex-1">{body}</p>
         {tip && (
@@ -64,7 +64,7 @@ export function HoldoutNote({
         )}
       </div>
       {periodError && (
-        <p role="alert" className="flex items-start gap-2.5 rounded-2xl border border-bearish/40 bg-bearish/[0.08] px-4 py-3 text-[15px] text-bearish">
+        <p role="alert" className="flex items-start gap-2.5 rounded-2xl border border-bearish/40 bg-bearish/[0.08] px-4 py-3 text-sm text-bearish">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
           {periodError}
         </p>
@@ -145,7 +145,7 @@ export function RunStep({
       </div>
       {blockedReason && <p className="text-sm text-bearish">{blockedReason}</p>}
       {submitError && (
-        <p role="alert" className="rounded-2xl border border-bearish/40 bg-bearish/[0.08] px-4 py-3 text-[15px] text-bearish">{submitError}</p>
+        <p role="alert" className="rounded-2xl border border-bearish/40 bg-bearish/[0.08] px-4 py-3 text-sm text-bearish">{submitError}</p>
       )}
       <RuntimeEstimate estimate={estimate} loading={estimating} ack={ack} onAck={onAck} compact />
     </div>

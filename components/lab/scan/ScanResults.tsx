@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ArrowDown, ArrowUp, ArrowUpDown, Ban, Columns3, Grid3X3, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { CoinAvatar } from '@/components/ui/coin-avatar'
 import { ErrorState } from '@/components/shell/states'
 import { EmptyState } from '@/components/lab/Section'
 import { Panel, StrategyChip, VerdictPill } from '@/components/lab/run/v2-ui'
@@ -143,15 +144,20 @@ function ScanHeatmap({ rows }: { rows: LabScanRow[] }) {
           <tbody>
             {symbols.map((s) => (
               <tr key={s}>
-                <th scope="row" className="num pr-3 text-left text-[15px] font-semibold">{s.replace(/USDT$/, '')}</th>
+                <th scope="row" className="pr-3 text-left">
+                  <span className="num inline-flex items-center gap-2 text-sm font-semibold">
+                    <CoinAvatar symbol={s} size="sm" />
+                    {s.replace(/USDT$/, '')}
+                  </span>
+                </th>
                 {tfs.map((tf) => {
                   const r = at(s, tf)
                   if (!r) return <td key={tf} className="h-16 w-24 rounded-2xl bg-muted/20 sm:w-28" />
                   const tone = scanCellTone(r)
                   const content = (
                     <div className="flex h-16 w-24 flex-col items-center justify-center gap-0.5 sm:w-28">
-                      <span className={cn('text-[15px] font-bold', TONE_TEXT[tone])}>{cellWord(r)}</span>
-                      {r.status === 'done' && <span className="num text-[13px] text-muted-foreground">PF {formatNumber(r.oos_profit_factor)}</span>}
+                      <span className={cn('text-sm font-bold', TONE_TEXT[tone])}>{cellWord(r)}</span>
+                      {r.status === 'done' && <span className="num text-2xs text-muted-foreground">PF {formatNumber(r.oos_profit_factor)}</span>}
                     </div>
                   )
                   return (
@@ -175,7 +181,7 @@ function ScanHeatmap({ rows }: { rows: LabScanRow[] }) {
           </tbody>
         </table>
       </div>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-muted-foreground" aria-label="Legenda">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-2xs text-muted-foreground" aria-label="Legenda">
         {(
           [
             ['pass', 'Lolos'],
@@ -228,7 +234,7 @@ function ScanTable({ rows }: { rows: LabScanRow[] }) {
   )
   return (
     <div className="max-h-[640px] overflow-auto rounded-2xl border border-border">
-      <table className="w-full min-w-[640px] text-[15px]">
+      <table className="w-full min-w-[640px] text-sm">
         <thead className="sticky top-0 border-b border-border bg-card">
           <tr>
             {head('symbol', 'Koin', false)}
@@ -254,7 +260,7 @@ function ScanTable({ rows }: { rows: LabScanRow[] }) {
                 ) : (
                   <span className="num font-semibold">{r.symbol.replace(/USDT$/, '')} <span className="font-normal text-muted-foreground">{r.timeframe}</span></span>
                 )}
-                {r.preset && <span className="block truncate text-[13px] text-lab">{r.preset.name}</span>}
+                {r.preset && <span className="block truncate text-2xs text-lab">{r.preset.name}</span>}
               </td>
               <td className="px-4 py-2.5">
                 {r.status === 'done' ? <VerdictPill verdict={r.verdict} /> : <span className="text-sm text-muted-foreground">{STATUS_COPY[r.status as LabStatus] ?? r.status}</span>}
@@ -328,7 +334,7 @@ export function ScanResults({ id }: { id: string }) {
         <>
           {scan?.template_id && <StrategyChip templateId={scan.template_id} name={templateName} />}
           {scan && (
-            <span className="inline-flex h-7 items-center rounded-full border border-border px-3 text-[13px] font-medium">
+            <span className="inline-flex h-7 items-center rounded-full border border-border px-3 text-2xs font-medium">
               {scan.mode === 'optimize' ? 'Cari setting terbaik' : 'Uji jujur'} · {STATUS_COPY[scan.status]}
             </span>
           )}

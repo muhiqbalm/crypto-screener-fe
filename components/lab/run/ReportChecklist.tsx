@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils/cn'
 import { formatNumber } from '@/lib/utils/format'
 import { checkLabel, checkReason, thresholdText } from '@/lib/lab/form'
 import type { LabCheck } from '@/lib/api/types/lab'
+import { ProgressBar } from '@/components/ui/progress-bar'
 import { Panel } from './v2-ui'
 
 function value(v: LabCheck['value']): string {
@@ -20,22 +21,28 @@ function value(v: LabCheck['value']): string {
  */
 export function ReportChecklist({ checks, className }: { checks: LabCheck[]; className?: string }) {
   const passed = checks.filter((c) => c.passed).length
-  const pct = checks.length ? Math.round((passed / checks.length) * 100) : 0
   return (
     <Panel
       id="rapor"
       className={cn('scroll-mt-24', className)}
       title="Rapor uji"
       icon={ClipboardCheck}
+      tone={passed === checks.length ? 'bullish' : 'bearish'}
       aside={
         <span className="num text-base font-semibold text-foreground">
           {passed}/{checks.length} <span className="font-normal text-muted-foreground">syarat terpenuhi</span>
         </span>
       }
     >
-      <div className="mb-2 h-2 w-full overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={checks.length} aria-valuenow={passed} aria-label="Syarat rapor terpenuhi">
-        <div className={cn('h-full rounded-full', passed === checks.length ? 'bg-bullish' : 'bg-warn')} style={{ width: `${pct}%` }} />
-      </div>
+      <ProgressBar
+        value={passed}
+        max={checks.length}
+        tone={passed === checks.length ? 'bullish' : 'warn'}
+        size="lg"
+        label="Syarat rapor terpenuhi"
+        valueText={`${passed} dari ${checks.length}`}
+        className="mb-2"
+      />
       <ul className="divide-y divide-border/60">
         {checks.map((c) => (
           <li key={c.name} className="flex min-h-16 items-center gap-4 py-3">
@@ -51,8 +58,8 @@ export function ReportChecklist({ checks, className }: { checks: LabCheck[]; cla
               {!c.passed && <p className="text-sm text-bearish">{checkReason(c)}</p>}
             </div>
             <div className="shrink-0 text-right">
-              <p className={cn('num text-lg font-bold', !c.passed && 'text-bearish')}>{value(c.value)}</p>
-              <p className="text-[13px] text-muted-foreground">{thresholdText(c.threshold)}</p>
+              <p className={cn('num display text-xl font-extrabold', !c.passed && 'text-bearish')}>{value(c.value)}</p>
+              <p className="text-2xs text-muted-foreground">{thresholdText(c.threshold)}</p>
             </div>
           </li>
         ))}

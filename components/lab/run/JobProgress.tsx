@@ -12,7 +12,7 @@ export function JobProgress({ job, status }: { job: LabJob | undefined; status: 
   const done = p?.done ?? 0
   const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : null
   return (
-    <div className="flex flex-col justify-center gap-3 rounded-3xl border border-info/30 bg-info/[0.07] p-6" role="status">
+    <div className="flex h-full flex-col justify-center gap-3 rounded-3xl border border-info/30 bg-info/[0.07] p-6" role="status">
       <div className="flex flex-wrap items-center justify-between gap-2 text-base">
         <span className="flex items-center gap-2 font-semibold">
           <Loader2 className="h-5 w-5 animate-spin text-info motion-reduce:animate-none" />

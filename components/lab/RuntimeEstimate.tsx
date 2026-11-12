@@ -65,7 +65,7 @@ export function RuntimeEstimate({
     >
       <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
         <Clock className="h-4 w-4 shrink-0" aria-hidden="true" />
-        <span className="num text-[15px] font-semibold text-foreground">Perkiraan {head}</span>
+        <span className="num text-sm font-semibold text-foreground">Perkiraan {head}</span>
         {scan && tfParts.length > 0 && <span className="num">({tfParts.join(', ')} per koin)</span>}
         {!e.calibrated && <span title="Belum cukup run selesai di server ini untuk kalibrasi">· dari tarif terukur</span>}
       </p>
@@ -82,7 +82,7 @@ export function RuntimeEstimate({
               : 'Perkiraan mendekati batas waktu job — bisa dihentikan sebelum selesai. Perpendek periode atau kurangi percobaan.'}
           </p>
           {needsAck(level) && (
-            <label className="flex cursor-pointer items-center gap-2.5 text-[15px] text-foreground">
+            <label className="flex cursor-pointer items-center gap-2.5 text-sm text-foreground">
               <input type="checkbox" checked={ack} onChange={(ev) => onAck(ev.target.checked)} className="h-5 w-5 accent-current" />
               Saya paham, tetap jalankan
             </label>

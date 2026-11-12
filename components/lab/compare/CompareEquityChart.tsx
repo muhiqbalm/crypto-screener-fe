@@ -65,12 +65,12 @@ export function CompareEquityChart({ series }: { series: CompareSeries[] }) {
   const lastOf = (s: CompareSeries) => (s.points.length ? s.points[s.points.length - 1].value : null)
   return (
     <div className="space-y-2">
-      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-2xs text-muted-foreground" aria-label="Legenda run">
+      <ul className="flex flex-wrap gap-x-5 gap-y-1.5 text-2xs text-muted-foreground" aria-label="Legenda run">
         {series.map((s, i) => {
           const v = hover ? hover.values[i] : lastOf(s)
           return (
             <li key={s.key} className="flex items-center gap-1.5">
-              <span className="inline-block h-0.5 w-4 rounded" style={{ backgroundColor: colors[i % colors.length] }} aria-hidden="true" />
+              <span className="inline-block h-1 w-5 rounded-full" style={{ backgroundColor: colors[i % colors.length] }} aria-hidden="true" />
               <span className="num text-foreground">{s.label}</span>
               <span className="num">{v === null ? '—' : formatPercent(v, 1)}</span>
             </li>
@@ -78,7 +78,7 @@ export function CompareEquityChart({ series }: { series: CompareSeries[] }) {
         })}
         {hover && <li className="num">{new Date(hover.time * 1000).toISOString().slice(0, 10)}</li>}
       </ul>
-      <div ref={ref} className="h-[260px] w-full sm:h-[360px]" role="img" aria-label="Kurva equity dinormalisasi (% sejak awal) untuk run yang dibandingkan" />
+      <div ref={ref} className="h-[300px] w-full sm:h-[420px]" role="img" aria-label="Kurva equity dinormalisasi (% sejak awal) untuk run yang dibandingkan" />
     </div>
   )
 }

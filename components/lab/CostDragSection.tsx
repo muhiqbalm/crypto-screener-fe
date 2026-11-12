@@ -16,9 +16,9 @@ const BURDEN = {
 function Tile({ label, value, valueClassName, hint }: { label: string; value: string; valueClassName?: string; hint?: React.ReactNode }) {
   return (
     <div className="min-w-0 rounded-2xl bg-muted/30 p-4">
-      <div className="eyebrow truncate text-xs">{label}</div>
+      <div className="eyebrow truncate">{label}</div>
       <div className={cn('num mt-1 truncate text-2xl font-bold tracking-tight', valueClassName)}>{value}</div>
-      {hint && <div className="mt-0.5 truncate text-[13px] text-muted-foreground">{hint}</div>}
+      {hint && <div className="mt-0.5 truncate text-2xs text-muted-foreground">{hint}</div>}
     </div>
   )
 }
@@ -39,7 +39,7 @@ export function CostDragSection({ run }: { run: LabRunDetail }) {
   const pct = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null)
 
   return (
-    <Panel title={`Beban biaya · ${run.timeframe}`} icon={Coins} aside={<span className="text-[13px]">{ho ? 'di data baru' : 'seluruh periode'}</span>}>
+    <Panel title={`Beban biaya · ${run.timeframe}`} icon={Coins} aside={<span className="text-2xs">{ho ? 'di data baru' : 'seluruh periode'}</span>}>
       {c && (
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Tile
@@ -59,7 +59,7 @@ export function CostDragSection({ run }: { run: LabRunDetail }) {
         </div>
       )}
       {warn && (
-        <p className={cn('flex items-start gap-2 text-[13px] text-warn', c && 'mt-4')}>
+        <p className={cn('flex items-start gap-2 text-2xs text-warn', c && 'mt-4')}>
           <AlertTriangle className="mt-px h-4 w-4 shrink-0" aria-hidden="true" />
           <span className="line-clamp-2">{warn}</span>
         </p>

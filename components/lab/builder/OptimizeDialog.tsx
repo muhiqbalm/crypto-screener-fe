@@ -99,7 +99,7 @@ export function OptimizeDialog({
                 })}
               </ul>
             )}
-            <p className="text-[13px] text-muted-foreground">Hasilnya ditampilkan sebagai rentang dari kombinasi teratas, bukan hanya satu angka terbaik.</p>
+            <p className="text-2xs text-muted-foreground">Hasilnya ditampilkan sebagai rentang dari kombinasi teratas, bukan hanya satu angka terbaik.</p>
           </div>
           <RuntimeEstimate estimate={estimateQ.data} loading={estimateQ.isFetching} ack={ack} onAck={setAck} />
         </div>

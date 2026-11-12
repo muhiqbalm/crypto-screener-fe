@@ -48,7 +48,7 @@ export function OptimizePanel({ template, value, errors, onChange, importance, i
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <div className="text-[15px] font-medium">Jumlah percobaan</div>
+        <div className="text-sm font-medium">Jumlah percobaan</div>
         <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Jumlah percobaan">
           {TRIAL_OPTIONS.map((n) => (
             <Chip key={n} active={value.nTrials === n} onClick={() => onChange({ ...value, nTrials: n })}>
@@ -56,7 +56,7 @@ export function OptimizePanel({ template, value, errors, onChange, importance, i
             </Chip>
           ))}
         </div>
-        <p className="text-[13px] text-muted-foreground">
+        <p className="text-2xs text-muted-foreground">
           Makin banyak kombinasi dicoba, makin besar peluang juaranya cuma kebetulan. Hasilnya tetap diuji sekali di data baru (holdout).
         </p>
       </div>
@@ -64,16 +64,16 @@ export function OptimizePanel({ template, value, errors, onChange, importance, i
       {main.length > 0 && (
         <div className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-[15px] font-medium">Parameter yang dicari &amp; rentangnya</span>
+            <span className="text-sm font-medium">Parameter yang dicari &amp; rentangnya</span>
             <span className="flex flex-wrap gap-3">
               {importantKeys && importantKeys.size > 0 && (
-                <button type="button" className="cursor-pointer text-[13px] text-lab hover:underline" onClick={() => onChange(onlyKeys(template, value, importantKeys))}>
+                <button type="button" className="cursor-pointer text-2xs text-lab hover:underline" onClick={() => onChange(onlyKeys(template, value, importantKeys))}>
                   Hanya parameter penting
                 </button>
               )}
               <button
                 type="button"
-                className="cursor-pointer text-[13px] text-lab hover:underline"
+                className="cursor-pointer text-2xs text-lab hover:underline"
                 onClick={() => {
                   if (all) onChange({ ...value, ranges: Object.fromEntries(Object.entries(value.ranges).map(([k, r]) => [k, { ...r, enabled: false }])) })
                   else onChange({ ...defaultOptimizeConfig(template), nTrials: value.nTrials })
@@ -100,8 +100,8 @@ export function OptimizePanel({ template, value, errors, onChange, importance, i
                     />
                     <label htmlFor={`opt-${p.key}`} className="min-w-0 flex-1 text-sm">
                       {paramLabel(p)}
-                      {importantKeys?.has(p.key) && <span className="ml-1.5 rounded-full bg-lab/10 px-1.5 py-px text-[13px] font-medium text-lab">penting</span>}
-                      {plateau && <span className="num block text-[13px] text-muted-foreground">rentang stabil di riset: {plateau}</span>}
+                      {importantKeys?.has(p.key) && <span className="ml-1.5 rounded-full bg-lab/10 px-1.5 py-px text-2xs font-medium text-lab">penting</span>}
+                      {plateau && <span className="num block text-2xs text-muted-foreground">rentang stabil di riset: {plateau}</span>}
                     </label>
                     <span className="flex items-center gap-1">
                       <Input
@@ -111,9 +111,9 @@ export function OptimizePanel({ template, value, errors, onChange, importance, i
                         value={r.min}
                         disabled={!r.enabled}
                         onChange={(e) => setRange(p.key, { min: e.target.value })}
-                        className={cn('h-10 w-20 rounded-xl px-2 text-right font-mono text-[13px]', err && 'border-bearish')}
+                        className={cn('h-10 w-20 rounded-xl px-2 text-right font-mono text-2xs', err && 'border-bearish')}
                       />
-                      <span className="text-[13px] text-muted-foreground">–</span>
+                      <span className="text-2xs text-muted-foreground">–</span>
                       <Input
                         type="number"
                         step="any"
@@ -121,17 +121,17 @@ export function OptimizePanel({ template, value, errors, onChange, importance, i
                         value={r.max}
                         disabled={!r.enabled}
                         onChange={(e) => setRange(p.key, { max: e.target.value })}
-                        className={cn('h-10 w-20 rounded-xl px-2 text-right font-mono text-[13px]', err && 'border-bearish')}
+                        className={cn('h-10 w-20 rounded-xl px-2 text-right font-mono text-2xs', err && 'border-bearish')}
                       />
                     </span>
                   </div>
-                  {err && <p className="mt-1 pl-6 text-[13px] text-bearish">{err}</p>}
+                  {err && <p className="mt-1 pl-6 text-2xs text-bearish">{err}</p>}
                 </li>
               )
             })}
           </ul>
-          {errors.search && <p className="text-[13px] text-bearish">{errors.search}</p>}
-          <p className="text-[13px] text-muted-foreground">
+          {errors.search && <p className="text-2xs text-bearish">{errors.search}</p>}
+          <p className="text-2xs text-muted-foreground">
             Hanya parameter yang ditandai bisa dicari. Parameter lain (mis. dari riset) diubah manual di atas.
           </p>
         </div>
