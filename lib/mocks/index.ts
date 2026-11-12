@@ -17,6 +17,10 @@ export async function getMock(method: string, path: string, body?: unknown): Pro
     if (o) throw new ApiError('auth', 403)
   }
 
+  // Status bot summary (GET /api/v1/lab/bot/status); see lib/mocks/bot.ts
+  const bot = (await import('./bot')).botMock(method, path)
+  if (bot) return bot.value
+
   if (path.startsWith('/api/v1/lab/')) {
     const { getLabMock } = await import('./lab')
     try {
