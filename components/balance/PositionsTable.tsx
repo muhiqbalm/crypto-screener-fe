@@ -62,7 +62,7 @@ const OPEN_COLUMNS: ResponsiveColumn<OpenPositionResponse>[] = [
   {
     key: 'upnl',
     header: <Term k="upnl" short />,
-    mobileLabel: 'Untung/rugi berjalan',
+    mobileLabel: 'Untung/rugi',
     align: 'right',
     mobile: 'field',
     cell: (p) => <PnlCell value={p.unrealized_pnl} pct={p.unrealized_pnl_pct} />,
@@ -112,7 +112,7 @@ const HISTORY_COLUMNS: ResponsiveColumn<ClosedPositionResponse>[] = [
   {
     key: 'pnl',
     header: <Term k="realized_pnl" short />,
-    mobileLabel: 'Untung/rugi (perkiraan)',
+    mobileLabel: 'Untung/rugi',
     align: 'right',
     mobile: 'field',
     cell: (p) => <PnlCell value={pnlOf(p)} />,

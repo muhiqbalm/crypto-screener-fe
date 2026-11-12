@@ -24,6 +24,12 @@ function hasReason(row: TradeLogResponse): boolean {
   return row.status === 'failed' || row.status === 'rejected'
 }
 
+/** "5 mnt lalu" under recent rows only; older rows already show their date. */
+function RecentAge({ iso }: { iso: string }) {
+  const age = formatAge(iso)
+  return /lalu$|baru saja/.test(age) ? <div className="text-3xs text-muted-foreground">{age}</div> : null
+}
+
 function StatusCell({ row }: { row: TradeLogResponse }) {
   return (
     <span className="inline-flex items-center gap-1.5">
@@ -41,7 +47,7 @@ const COLUMNS: ResponsiveColumn<TradeLogResponse>[] = [
     cell: (r) => (
       <div className="num whitespace-nowrap text-xs">
         {formatTime(r.created_at, { zone: false, seconds: true })}
-        <div className="text-3xs text-muted-foreground">{formatAge(r.created_at)}</div>
+        <RecentAge iso={r.created_at} />
       </div>
     ),
   },
