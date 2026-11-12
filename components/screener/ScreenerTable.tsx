@@ -12,6 +12,8 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
 
 import {
@@ -27,7 +29,10 @@ import { SignalBadge } from '@/components/screener/SignalBadge'
 import { TierBadge } from '@/components/screener/TierBadge'
 import { TrackRecordHint } from '@/components/screener/TrackRecordHint'
 import { compositeKey, tierKey } from '@/lib/screener/track-record'
+import { scoreFraction, scorePosition } from '@/lib/screener/factors'
+import { koinHref } from '@/lib/lab/outlook'
 import {
+  coinOf,
   formatPrice,
   formatVolume,
   formatFunding,
@@ -39,127 +44,120 @@ import type { AssetDetail } from '@/lib/api/types/screener'
 import type { ScreenerFilterState } from '@/components/screener/ScreenerFilters'
 
 // ---------------------------------------------------------------------------
-// Column definitions
+// Column definitions (plain Indonesian; score shown as a position among the coins)
 // ---------------------------------------------------------------------------
 
-const columns: ColumnDef<AssetDetail>[] = [
-  {
-    id: 'rank',
-    accessorKey: 'rank',
-    header: '#',
-    enableSorting: true,
-    cell: ({ getValue }) => (
-      <span className="font-mono tabular-nums text-muted-foreground">
-        {valueOrDash(getValue<number | null>())}
-      </span>
-    ),
-  },
-  {
-    id: 'symbol',
-    accessorKey: 'symbol',
-    header: 'Symbol',
-    enableSorting: false,
-    cell: ({ getValue }) => (
-      <span className="font-semibold tracking-wide">
-        {getValue<string>()}
-      </span>
-    ),
-    // Custom filter function for case-insensitive substring match (Req 6.7–6.8)
-    filterFn: (row, _columnId, filterValue: string) => {
-      if (!filterValue) return true
-      return row.original.symbol
-        .toLowerCase()
-        .includes(filterValue.toLowerCase())
+type Pos = { pos: number; n: number }
+
+function buildColumns(positions: Map<string, Pos>): ColumnDef<AssetDetail>[] {
+  return [
+    {
+      id: 'rank',
+      accessorKey: 'rank',
+      header: '#',
+      enableSorting: true,
+      cell: ({ getValue }) => (
+        <span className="font-mono tabular-nums text-muted-foreground">{valueOrDash(getValue<number | null>())}</span>
+      ),
     },
-  },
-  {
-    id: 'price',
-    accessorKey: 'price',
-    header: 'Price',
-    enableSorting: true,
-    cell: ({ getValue }) => (
-      <span className="font-mono tabular-nums">
-        {formatPrice(getValue<number | null>())}
-      </span>
-    ),
-  },
-  {
-    id: 'change_24h',
-    accessorKey: 'change_24h',
-    header: '24h %',
-    enableSorting: true,
-    cell: ({ getValue }) => (
-      <ChangeCell value={getValue<number | null>()} />
-    ),
-  },
-  {
-    id: 'volume_24h',
-    accessorKey: 'volume_24h',
-    header: 'Volume',
-    enableSorting: true,
-    cell: ({ getValue }) => (
-      <span className="font-mono tabular-nums">
-        {formatVolume(getValue<number | null>())}
-      </span>
-    ),
-  },
-  {
-    id: 'funding_rate',
-    accessorKey: 'funding_rate',
-    header: 'Funding',
-    enableSorting: false,
-    cell: ({ getValue }) => (
-      <span className="font-mono tabular-nums text-xs">
-        {formatFunding(getValue<number | null>())}
-      </span>
-    ),
-  },
-  {
-    id: 'signal',
-    accessorKey: 'signal',
-    header: 'Signal',
-    enableSorting: false,
-    cell: ({ getValue, row }) => (
-      <span className="inline-flex items-center gap-1">
-        <SignalBadge signal={getValue<AssetDetail['signal']>()} />
-        <TrackRecordHint k={compositeKey(row.original)} symbol={row.original.symbol} />
-      </span>
-    ),
-    // Equality filter for signal (Req 6.9–6.10)
-    filterFn: (row, _columnId, filterValue: string) => {
-      if (!filterValue || filterValue === 'ALL') return true
-      return row.original.signal === filterValue
+    {
+      id: 'symbol',
+      accessorKey: 'symbol',
+      header: 'Koin',
+      enableSorting: false,
+      cell: ({ row }) => (
+        <span className="flex flex-col">
+          <Link href={koinHref(row.original.symbol)} onClick={(e) => e.stopPropagation()} className="font-semibold tracking-wide hover:underline">
+            {coinOf(row.original.symbol)}
+          </Link>
+          <span className="font-mono text-[10px] tabular-nums text-muted-foreground sm:hidden">{formatPrice(row.original.price)}</span>
+        </span>
+      ),
+      filterFn: (row, _columnId, filterValue: string) => {
+        if (!filterValue) return true
+        return row.original.symbol.toLowerCase().includes(filterValue.toLowerCase())
+      },
     },
-  },
-  {
-    id: 'composite_score',
-    accessorKey: 'composite_score',
-    header: 'Score',
-    enableSorting: true,
-    cell: ({ getValue }) => (
-      <span className="font-mono tabular-nums">
-        {formatScore(getValue<number | null>(), 4)}
-      </span>
-    ),
-  },
-  {
-    id: 'tier',
-    accessorKey: 'tier',
-    header: 'Tier',
-    enableSorting: false,
-    cell: ({ getValue, row }) => (
-      <span className="inline-flex items-center gap-1">
-        <TierBadge tier={getValue<AssetDetail['tier']>()} />
-        <TrackRecordHint k={tierKey(row.original)} symbol={row.original.symbol} />
-      </span>
-    ),
-    // Equality filter for tier (Req 6.11–6.12)
-    filterFn: (row, _columnId, filterValue: string) => {
-      if (!filterValue || filterValue === 'ALL') return true
-      return row.original.tier === filterValue
+    {
+      id: 'price',
+      accessorKey: 'price',
+      header: 'Harga',
+      enableSorting: true,
+      cell: ({ getValue }) => <span className="font-mono tabular-nums">{formatPrice(getValue<number | null>())}</span>,
     },
-  },
-]
+    {
+      id: 'change_24h',
+      accessorKey: 'change_24h',
+      header: '24 jam',
+      enableSorting: true,
+      cell: ({ getValue }) => <ChangeCell value={getValue<number | null>()} />,
+    },
+    {
+      id: 'volume_24h',
+      accessorKey: 'volume_24h',
+      header: 'Volume 24 jam',
+      enableSorting: true,
+      cell: ({ getValue }) => <span className="font-mono tabular-nums">{formatVolume(getValue<number | null>())}</span>,
+    },
+    {
+      id: 'funding_rate',
+      accessorKey: 'funding_rate',
+      header: 'Funding',
+      enableSorting: false,
+      cell: ({ getValue }) => <span className="font-mono tabular-nums text-xs">{formatFunding(getValue<number | null>())}</span>,
+    },
+    {
+      id: 'signal',
+      accessorKey: 'signal',
+      header: 'Sinyal',
+      enableSorting: false,
+      cell: ({ getValue, row }) => (
+        <span className="inline-flex items-center gap-1">
+          <SignalBadge signal={getValue<AssetDetail['signal']>()} />
+          <TrackRecordHint k={compositeKey(row.original)} symbol={row.original.symbol} />
+        </span>
+      ),
+      filterFn: (row, _columnId, filterValue: string) => {
+        if (!filterValue || filterValue === 'ALL') return true
+        return row.original.signal === filterValue
+      },
+    },
+    {
+      id: 'composite_score',
+      accessorKey: 'composite_score',
+      header: 'Posisi skor',
+      enableSorting: true,
+      cell: ({ row }) => {
+        const p = positions.get(row.original.symbol) ?? null
+        const frac = scoreFraction(p)
+        return p ? (
+          <span className="inline-flex items-center gap-1.5" title={`Skor ${formatScore(row.original.composite_score, 4)}`}>
+            <span className="relative h-1.5 w-12 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+              <span className="absolute inset-y-0 left-0 rounded-full bg-info" style={{ width: `${Math.round((frac ?? 0) * 100)}%` }} />
+            </span>
+            <span className="font-mono text-xs tabular-nums">ke-{p.pos}<span className="text-muted-foreground">/{p.n}</span></span>
+          </span>
+        ) : <span className="text-muted-foreground">—</span>
+      },
+    },
+    {
+      id: 'tier',
+      accessorKey: 'tier',
+      header: 'Kelompok',
+      enableSorting: false,
+      cell: ({ getValue, row }) => (
+        <span className="inline-flex items-center gap-1">
+          <TierBadge tier={getValue<AssetDetail['tier']>()} />
+          <TrackRecordHint k={tierKey(row.original)} symbol={row.original.symbol} />
+        </span>
+      ),
+      filterFn: (row, _columnId, filterValue: string) => {
+        if (!filterValue || filterValue === 'ALL') return true
+        return row.original.tier === filterValue
+      },
+    },
+  ]
+}
 
 // ---------------------------------------------------------------------------
 // Props
@@ -168,6 +166,7 @@ const columns: ColumnDef<AssetDetail>[] = [
 interface ScreenerTableProps {
   data: AssetDetail[]
   filters: ScreenerFilterState
+  /** Row click; defaults to opening the coin page /koin/[simbol]. */
   onSelectAsset?: (asset: AssetDetail) => void
 }
 
@@ -177,6 +176,16 @@ interface ScreenerTableProps {
 
 export function ScreenerTable({ data, filters, onSelectAsset }: ScreenerTableProps) {
   const visibleColumns = useColumnVisibility()
+  const router = useRouter()
+  const open = onSelectAsset ?? ((a: AssetDetail) => router.push(koinHref(a.symbol)))
+  const columns = React.useMemo(() => {
+    const m = new Map<string, Pos>()
+    for (const a of data) {
+      const p = scorePosition(a, data)
+      if (p) m.set(a.symbol, p)
+    }
+    return buildColumns(m)
+  }, [data])
 
   // Build TanStack column visibility state from the Set<ColumnId> (Req 14.1–14.3)
   const columnVisibility = React.useMemo<VisibilityState>(() => {
@@ -186,7 +195,7 @@ export function ScreenerTable({ data, filters, onSelectAsset }: ScreenerTablePro
       state[id] = visibleColumns.has(id as Parameters<typeof visibleColumns.has>[0])
     }
     return state
-  }, [visibleColumns])
+  }, [visibleColumns, columns])
 
   // Build columnFilters from the ScreenerFilterState (Req 6.7–6.13)
   const columnFilters = React.useMemo<ColumnFiltersState>(() => {
@@ -307,16 +316,16 @@ export function ScreenerTable({ data, filters, onSelectAsset }: ScreenerTablePro
             // we add it explicitly here for clarity and spec compliance)
             <TableRow
               key={row.id}
-              onClick={() => onSelectAsset?.(row.original)}
-              // Keyboard access: rows open the detail drawer like a button.
-              tabIndex={onSelectAsset ? 0 : undefined}
+              onClick={() => open(row.original)}
+              // Keyboard access: rows open the coin page like a link.
+              tabIndex={0}
               onKeyDown={(e) => {
-                if (onSelectAsset && (e.key === 'Enter' || e.key === ' ')) {
+                if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault()
-                  onSelectAsset(row.original)
+                  open(row.original)
                 }
               }}
-              aria-label={onSelectAsset ? `Rincian ${row.original.symbol}` : undefined}
+              aria-label={`Halaman koin ${coinOf(row.original.symbol)}`}
               className="cursor-pointer"
             >
               {row.getVisibleCells().map((cell) => (

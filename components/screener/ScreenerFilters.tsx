@@ -52,7 +52,7 @@ export function ScreenerFilters({ filters, onFiltersChange }: ScreenerFiltersPro
           htmlFor="signal-filter"
           className="text-xs text-muted-foreground"
         >
-          Sinyal
+          Sinyal screener
         </Label>
         <Select
           value={filters.signal}
@@ -69,9 +69,9 @@ export function ScreenerFilters({ filters, onFiltersChange }: ScreenerFiltersPro
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">Semua sinyal</SelectItem>
-            <SelectItem value="BULLISH">Bullish</SelectItem>
-            <SelectItem value="BEARISH">Bearish</SelectItem>
-            <SelectItem value="NEUTRAL">Neutral</SelectItem>
+            <SelectItem value="BULLISH">Naik</SelectItem>
+            <SelectItem value="BEARISH">Turun</SelectItem>
+            <SelectItem value="NEUTRAL">Netral</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -82,7 +82,7 @@ export function ScreenerFilters({ filters, onFiltersChange }: ScreenerFiltersPro
           htmlFor="tier-filter"
           className="text-xs text-muted-foreground"
         >
-          Tier
+          Kelompok skor
         </Label>
         <Select
           value={filters.tier}
@@ -93,15 +93,15 @@ export function ScreenerFilters({ filters, onFiltersChange }: ScreenerFiltersPro
           <SelectTrigger
             id="tier-filter"
             className="h-8 text-sm cursor-pointer transition-colors duration-200"
-            aria-label="Filter tier"
+            aria-label="Filter kelompok skor"
           >
-            <SelectValue placeholder="Semua tier" />
+            <SelectValue placeholder="Semua kelompok" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">Semua tier</SelectItem>
-            <SelectItem value="A">Tier A</SelectItem>
-            <SelectItem value="B">Tier B</SelectItem>
-            <SelectItem value="C">Tier C</SelectItem>
+            <SelectItem value="ALL">Semua kelompok</SelectItem>
+            <SelectItem value="A">Atas (sepertiga teratas)</SelectItem>
+            <SelectItem value="B">Tengah</SelectItem>
+            <SelectItem value="C">Bawah (sepertiga terbawah)</SelectItem>
           </SelectContent>
         </Select>
       </div>

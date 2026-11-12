@@ -5,6 +5,7 @@ import type { AssetDetail } from '@/lib/api/types/screener'
 
 const state: { data: SignalTrackRecord | undefined; admin: boolean } = { data: undefined, admin: false }
 
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }))
 vi.mock('@/lib/utils/use-session', () => ({ useSession: () => ({ accessToken: 't' }) }))
 vi.mock('@/lib/queries/screener', () => ({ useSignalTrackRecord: () => ({ data: state.data }) }))
 vi.mock('@/lib/queries/lab', () => ({ useLabMe: () => ({ data: { is_admin: state.admin }, isError: false }) }))
@@ -57,7 +58,7 @@ describe('TrackRecordHint in the screener table', () => {
     expect(icons[0]).toHaveAttribute('title', 'Tier A long: 1d hit 42% (n=349, 27 hari) — belum terbukti, vs BTC belum terbukti · 3d: negatif, vs BTC belum terbukti')
   })
 
-  it('clicking the indicator does not open the coin drawer', () => {
+  it('clicking the indicator does not open the coin page', () => {
     state.data = record
     const onSelect = renderTable()
     fireEvent.click(screen.getByRole('button', { name: /^Rekam jejak:/ }))

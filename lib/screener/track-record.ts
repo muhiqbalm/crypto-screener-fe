@@ -25,7 +25,7 @@ const SHORT_LABEL: Record<TrackSignalType, string> = {
   komposit_high: 'Komposit keyakinan TINGGI',
   tier_a: 'Tier A',
   tier_c: 'Tier C',
-  momentum: 'Momentum 30H',
+  momentum: 'Momentum 30 hari',
   funding: 'Funding kontrarian',
   oi: 'OI × harga',
 }
