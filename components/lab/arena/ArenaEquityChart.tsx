@@ -96,7 +96,7 @@ export function ArenaEquityChart({
         })}
         {hover && <li className="num">{new Date(hover.time * 1000).toISOString().slice(0, 16).replace('T', ' ')} UTC</li>}
       </ul>
-      <div ref={ref} className={`${height} w-full`} role="img" aria-label="Kurva equity paper dinormalisasi (% sejak saldo awal) per preset" />
+      <div ref={ref} className={`${height} w-full`} role="img" aria-label="Kurva modal paper (% sejak saldo awal) per preset" />
     </div>
   )
 }

@@ -255,7 +255,7 @@ export function UniversalRunView({ id }: { id: string }) {
 
   const startWatch = () =>
     watch.mutate(
-      { name: `Universal dari run #${run.id}`, params, costs: run.costs, autopaper: true, telegram: true, run_id: run.id },
+      { name: `Universal dari run #${run.id}`, params, costs: run.costs, autopaper: true, telegram: false, run_id: run.id },
       {
         onSuccess: () => { notify.success('Paper trading dimulai'); router.push('/lab/universal') },
         onError: (e) => notify.error('Gagal membuat watch', { description: apiErrorDetail(e) ?? undefined }),
@@ -278,7 +278,7 @@ export function UniversalRunView({ id }: { id: string }) {
           {active && run.job_id !== null && run.job_id !== undefined && (
             <Button variant="outline" size="sm" onClick={() => cancel.mutate(run.job_id!)} disabled={cancel.isPending}><Ban />Batalkan</Button>
           )}
-          {done && <Button size="sm" onClick={startWatch} disabled={watch.isPending}><Bot />Pantau (paper + Telegram)</Button>}
+          {done && <Button size="sm" onClick={startWatch} disabled={watch.isPending}><Bot />Pantau (paper)</Button>}
         </div>
       </div>
 

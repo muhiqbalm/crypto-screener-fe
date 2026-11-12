@@ -63,7 +63,7 @@ export function parseUniversalForm(params: UniversalParamSpec[], f: FormValues):
 const MODES: { id: LabRunMode; label: string; help: string }[] = [
   { id: 'validate', label: 'Validasi (rapor jujur)', help: 'Holdout terkunci + walk-forward + Monte Carlo + biaya 2×. ±30 detik.' },
   { id: 'backtest', label: 'Backtest cepat', help: 'Seluruh periode, tanpa rapor. Bukan bukti.' },
-  { id: 'optimize', label: 'Optimize', help: 'Cari parameter di data pengembangan saja, lalu uji sekali di holdout. Risiko overfitting.' },
+  { id: 'optimize', label: 'Cari setting terbaik', help: 'Cari parameter di data pengembangan saja, lalu uji sekali di holdout. Risiko overfitting.' },
 ]
 
 export function UniversalBuilder() {

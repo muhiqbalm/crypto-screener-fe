@@ -1,4 +1,6 @@
 import type { BadgeProps } from '@/components/ui/badge'
+import { formatCount, formatPct } from '@/lib/utils/format'
+import { MONTHS_ID, WEEKDAYS_ID, formatTime, toDate, wibParts } from '@/lib/utils/time'
 import type {
   LedgerVerdictCode,
   NotificationType,
@@ -31,29 +33,22 @@ export const NO_DATA = 'Tidak tersedia'
 
 // ── WIB (the report week runs Monday 07:00 WIB → next Monday 07:00 WIB) ─────
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'] as const
-const DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'] as const
-
-function wib(iso: string | null | undefined) {
-  const t = iso ? Date.parse(iso) : NaN
-  if (!Number.isFinite(t)) return null
-  const d = new Date(t + 7 * 3_600_000)
-  return { y: d.getUTCFullYear(), m: d.getUTCMonth(), d: d.getUTCDate(), wd: d.getUTCDay(), hh: d.getUTCHours(), mm: d.getUTCMinutes() }
+const wib = (iso: string | null | undefined) => {
+  const d = toDate(iso)
+  return d ? wibParts(d) : null
 }
 
 const two = (n: number) => String(n).padStart(2, '0')
 
 /** "12 Nov 08:00 WIB" ("—" when missing). */
 export function wibTime(iso: string | null | undefined, opts: { year?: boolean } = {}): string {
-  const w = wib(iso)
-  if (!w) return '—'
-  return `${w.d} ${MONTHS[w.m]}${opts.year ? ` ${w.y}` : ''} ${two(w.hh)}:${two(w.mm)} WIB`
+  return formatTime(iso, { year: opts.year ?? false })
 }
 
 /** "Senin 9 Nov 07:00 WIB" */
 export function wibDayTime(iso: string | null | undefined): string {
   const w = wib(iso)
-  return w ? `${DAYS[w.wd]} ${w.d} ${MONTHS[w.m]} ${two(w.hh)}:${two(w.mm)} WIB` : '—'
+  return w ? `${WEEKDAYS_ID[w.weekday]} ${w.day} ${MONTHS_ID[w.month]} ${two(w.hour)}:${two(w.minute)} WIB` : '—'
 }
 
 /** "9–16 Nov 2026": Monday to Monday in WIB (the same span the notification uses). */
@@ -61,8 +56,8 @@ export function weekLabel(w: Pick<ReportWeek, 'week' | 'start' | 'end'>): string
   const a = wib(w.start)
   const b = wib(w.end)
   if (!a || !b) return w.week
-  const range = a.m === b.m ? `${a.d}–${b.d} ${MONTHS[b.m]}` : `${a.d} ${MONTHS[a.m]} – ${b.d} ${MONTHS[b.m]}`
-  return `${range} ${b.y}`
+  const range = a.month === b.month ? `${a.day}–${b.day} ${MONTHS_ID[b.month]}` : `${a.day} ${MONTHS_ID[a.month]} – ${b.day} ${MONTHS_ID[b.month]}`
+  return `${range} ${b.year}`
 }
 
 /** "Senin 9 Nov 07:00 WIB – Senin 16 Nov 07:00 WIB (00:00 UTC)" */
@@ -121,15 +116,12 @@ export function reportHooks(hooks: readonly ReportHook[] | null | undefined, isA
     .filter((h) => isAdmin || !(HOOK_COPY[h.id]?.adminOnly ?? true))
 }
 
-/** Exchange-style signed percent with a real minus sign: +1.20% / −0.40% / 0.00%. */
+/** Signed percent, exchange style (+1.20% / −0.40% / 0.00%); "tidak tersedia" when missing. */
 export function signedPct(v: number | null | undefined, digits = 2): string {
-  if (v === null || v === undefined || !Number.isFinite(v)) return 'tidak tersedia'
-  const r = Number(v.toFixed(digits))
-  const body = Math.abs(r).toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })
-  return r > 0 ? `+${body}%` : r < 0 ? `−${body}%` : `${body}%`
+  return v === null || v === undefined || !Number.isFinite(v) ? 'tidak tersedia' : formatPct(v, { digits, signed: true })
 }
 
-const count = (n: number | null | undefined) => (n ?? 0).toLocaleString('en-US')
+const count = (n: number | null | undefined) => formatCount(n ?? 0)
 
 // ── "Ringkasan minggu ini": the 3 most important findings ──────────────────
 

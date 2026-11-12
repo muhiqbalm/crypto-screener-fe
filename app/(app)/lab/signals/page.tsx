@@ -3,27 +3,33 @@ import { PageContainer } from '@/components/shell/page'
 import { LoadingState } from '@/components/shell/states'
 import { LabHeader } from '@/components/lab/LabHeader'
 import { LedgerView } from '@/components/lab/ledger/LedgerView'
-import { ExecutionQuality } from '@/components/lab/shadow/ExecutionQuality'
 
 export const metadata = {
-  title: 'Catatan Sinyal',
-  description: 'Semua sinyal screener, Lab dan webhook dicatat otomatis lalu dinilai: hit rate dan return 4 jam – 7 hari.',
+  title: 'Rekam jejak sinyal',
+  description: 'Setiap sinyal screener, pantauan Lab dan webhook dicatat lalu dicek 4 jam sampai 7 hari kemudian: mana yang bekerja, mana yang cuma noise.',
 }
 
 export default function SignalsPage() {
   return (
     <PageContainer>
       <LabHeader
-        title="Catatan Sinyal"
-        subtitle="Setiap sinyal dari screener, Lab watch, Universal v0 dan webhook TradingView dicatat otomatis, lalu dinilai 4 jam, 1, 3 dan 7 hari kemudian. Tujuannya: tahu sinyal mana yang benar-benar bekerja dan mana yang cuma noise."
+        title="Rekam jejak sinyal"
+        subtitle="Sinyal mana yang benar-benar bekerja dan mana yang cuma noise, dari setiap sinyal yang tercatat."
+        help={{
+          apaIni:
+            'Setiap sinyal dari screener, pantauan Lab dan webhook TradingView dicatat otomatis, lalu dicek apakah arahnya benar 4 jam, 1 hari, 3 hari dan 7 hari kemudian.',
+          caraPakai: [
+            'Baca jawaban di atas dulu: jenis sinyal yang terbukti, yang negatif, dan yang belum bisa dibedakan dari kebetulan.',
+            'Ganti "Dicek setelah" untuk melihat jangka waktu lain. Ketuk satu jenis sinyal untuk melihat sinyal-sinyalnya.',
+            'Filter tersimpan di alamat halaman, jadi tampilan yang sama bisa dibagikan lewat tautan.',
+          ],
+          istilah: ['ledger', 'hit_rate', 'horizon', 'mean_move', 'vs_btc', 'uncertainty_range', 'terbukti', 'belum_cukup_data'],
+        }}
       />
       {/* useSearchParams (?type= / ?source= / ?symbol= filters) needs a Suspense boundary */}
       <Suspense fallback={<LoadingState rows={6} />}>
         <LedgerView />
       </Suspense>
-      <div className="mt-5">
-        <ExecutionQuality />
-      </div>
     </PageContainer>
   )
 }

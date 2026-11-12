@@ -282,3 +282,19 @@ export function parseHighlight(v: string | null | undefined): number | null {
 
 export const arenaHref = (presetId?: LabId | null) =>
   presetId === undefined || presetId === null ? '/lab/arena' : `/lab/arena?${HIGHLIGHT_PARAM}=${encodeURIComponent(String(presetId))}`
+
+// ── strategy names (never show a raw template id) ──────────────────────────
+
+export const STRATEGY_LABEL: Record<string, string> = {
+  rosyade_family: 'Rosyade',
+  donchian_breakout: 'Donchian breakout',
+  mean_reversion_range: 'Mean reversion (range)',
+}
+
+export function strategyLabel(templateId: string, templates?: readonly { id: string; name: string }[] | null): string {
+  if (STRATEGY_LABEL[templateId]) return STRATEGY_LABEL[templateId]
+  const t = templates?.find((x) => x.id === templateId)
+  if (t?.name) return t.name
+  const s = templateId.replace(/_/g, ' ').trim()
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}

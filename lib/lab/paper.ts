@@ -196,12 +196,12 @@ export function compareRows(c: Record<string, unknown> | null | undefined): Comp
 }
 
 export const COMPARE_LABEL: Record<string, string> = {
-  trades: 'Jumlah trade',
+  trades: 'Jumlah transaksi',
   open_positions: 'Posisi terbuka',
-  winrate: 'Winrate',
-  profit_factor: 'Profit factor',
-  net_pnl: 'Net P&L (USDT)',
-  net_return_pct: 'Net return (%)',
+  winrate: 'Persentase menang',
+  profit_factor: 'PF (rasio untung/rugi)',
+  net_pnl: 'Hasil bersih (USDT)',
+  net_return_pct: 'Hasil bersih (%)',
   avg_r: 'Rata-rata R',
 }
 
@@ -364,4 +364,9 @@ export function journalListQuery(f: JournalFilters, opts: { includeLive: boolean
  */
 export function journalStatsQuery(f: JournalFilters): JournalQuery {
   return compact({ ...f, exclude_source: f.source === 'bot' ? undefined : 'bot' })
+}
+
+/** Template defaults as a params object (for mirrorSizing when a preset stores only overrides). */
+export function templateDefaults(t: { params: { key: string; default: unknown }[] } | null | undefined): Record<string, unknown> {
+  return Object.fromEntries((t?.params ?? []).map((p) => [p.key, p.default]))
 }

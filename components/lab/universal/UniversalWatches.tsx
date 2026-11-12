@@ -7,6 +7,17 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { ErrorPanel } from '@/components/shell/ErrorPanel'
 import { EmptyState, Eyebrow, Section } from '@/components/lab/Section'
 import { signClass } from '@/components/lab/LabBadges'
@@ -85,14 +96,32 @@ function WatchCard({ w }: { w: UniversalWatch }) {
             <Switch id={`ap-${w.id}`} checked={w.autopaper} disabled={!w.account_id || patch.isPending} onCheckedChange={(v) => toggle({ autopaper: v })} />
             <Label htmlFor={`ap-${w.id}`} className="text-xs">Auto paper</Label>
           </div>
-          <div className="flex items-center gap-2">
-            <Switch id={`tg-${w.id}`} checked={w.telegram} disabled={patch.isPending} onCheckedChange={(v) => toggle({ telegram: v })} />
-            <Label htmlFor={`tg-${w.id}`} className="flex items-center gap-1 text-xs">{w.telegram ? <Bell className="h-3 w-3" /> : <BellOff className="h-3 w-3" />}Telegram</Label>
-          </div>
-          <Button variant="ghost" size="sm" className="h-8 text-xs text-bearish" disabled={del.isPending}
-            onClick={() => { if (window.confirm('Hentikan watch ini? Posisi paper yang masih terbuka tidak ditutup otomatis.')) del.mutate(w.id) }}>
-            <Trash2 className="h-3.5 w-3.5" />Hentikan
-          </Button>
+          {w.telegram ? (
+            <div className="flex items-center gap-2">
+              {/* Lab Telegram stays off (CEO): an old flag can only be switched off here, never on. */}
+              <Switch id={`tg-${w.id}`} checked disabled={patch.isPending} onCheckedChange={() => toggle({ telegram: false })} />
+              <Label htmlFor={`tg-${w.id}`} className="flex items-center gap-1 text-xs"><Bell className="h-3 w-3" aria-hidden="true" />Tanda Telegram lama (alert tetap mati)</Label>
+            </div>
+          ) : (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground"><BellOff className="h-3 w-3" aria-hidden="true" />Telegram mati</span>
+          )}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 text-xs text-bearish" disabled={del.isPending}>
+                <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />Hentikan
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Hentikan pantauan Universal ini?</AlertDialogTitle>
+                <AlertDialogDescription>Posisi paper yang masih terbuka tidak ditutup otomatis. Riwayat dan akun simulasinya tetap ada.</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Batal</AlertDialogCancel>
+                <AlertDialogAction onClick={() => del.mutate(w.id)}>Hentikan</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
@@ -151,16 +180,16 @@ export function UniversalWatches() {
   const create = useCreateUniversalWatch()
   const startDefault = () =>
     create.mutate(
-      { name: 'Universal v0 (default)', params: {}, costs: { commission_pct: 0.05, slippage_pct: 0.05, funding: true }, autopaper: true, telegram: true },
+      { name: 'Universal v0 (default)', params: {}, costs: { commission_pct: 0.05, slippage_pct: 0.05, funding: true }, autopaper: true, telegram: false },
       {
-        onSuccess: () => notify.success('Paper trading Universal dimulai', { description: 'Akun paper 10.000 USDT dibuat. Rebalance pertama setelah data diperbarui (±2 menit).' }),
+        onSuccess: () => notify.success('Paper Universal dimulai', { description: 'Akun simulasi 10,000 USDT dibuat. Rebalance pertama setelah data diperbarui (±2 menit).' }),
         onError: (e) => notify.error('Gagal membuat watch', { description: apiErrorDetail(e) ?? undefined }),
       },
     )
   return (
     <Section
-      title="Paper trading otomatis"
-      description="Setiap close candle 4H worker menghitung ulang; saat jadwal rebalance, akun paper diatur ke bobot target dan dicatat di jurnal (paper_auto). Alert ke grup Telegram BMTM bisa dimatikan per watch."
+      title="Pantauan paper (arsip)"
+      description="Pantauan lama tetap berjalan sampai dihentikan: tiap candle 4H tutup Lab menghitung ulang, dan saat jadwal rebalance akun simulasi diatur ke bobot target. Alert Telegram dari Lab mati."
       action={
         <Button size="sm" onClick={startDefault} disabled={create.isPending} className="h-8 gap-1.5 text-xs">
           <Plus className="h-3.5 w-3.5" />Mulai (setting default)
@@ -170,7 +199,7 @@ export function UniversalWatches() {
       {q.isPending ? <Skeleton className="h-40 w-full" /> : q.error ? (
         <ErrorPanel kind={q.error instanceof ApiError ? q.error.kind : 'server'} onRetry={() => q.refetch()} messageOverride="Gagal memuat watch Universal." />
       ) : (q.data ?? []).length === 0 ? (
-        <EmptyState title="Belum ada paper trading Universal" description="Mulai dengan setting default, atau buka hasil run lalu klik “Pantau (paper)”. Tidak ada order nyata." />
+        <EmptyState title="Tidak ada pantauan Universal" description="Strategi ini sudah diarsipkan. Tidak ada order nyata." />
       ) : (
         <div className="space-y-3">{q.data!.map((w) => <WatchCard key={String(w.id)} w={w} />)}</div>
       )}
