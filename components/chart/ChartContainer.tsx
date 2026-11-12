@@ -18,7 +18,7 @@ import {
 import { StrategyOverlayPanel } from './StrategyOverlayPanel'
 import { PaperTradePanel, EMPTY_DRAFT, type PaperDraft } from './PaperTradePanel'
 import { formatPct, formatPrice } from '@/lib/utils/format'
-import { CoinAvatar } from '@/components/bot/kit/CoinAvatar'
+import { CoinAvatar } from '@/components/ui/coin-avatar'
 import { cn } from '@/lib/utils/cn'
 import { api } from '@/lib/api/client'
 import { sameId } from '@/lib/api/types/lab'
@@ -393,7 +393,7 @@ export function ChartContainer() {
             <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
               <div>
                 <p className="flex items-center gap-2 text-[17px] font-bold">
-                  <CoinAvatar symbol={symbol} size={28} />
+                  <CoinAvatar symbol={symbol} size="sm" />
                   {symbolMeta?.label ?? symbol}
                   {source && (
                     <span

@@ -2,12 +2,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Activity } from 'lucide-react'
 import { useTradeLog } from '@/lib/queries/webhook'
-import { formatPrice, formatQty } from '@/lib/utils/format'
+import { coinOf, formatPrice, formatQty } from '@/lib/utils/format'
 import { formatAge, formatTime } from '@/lib/utils/time'
 import { notify } from '@/lib/utils/toast'
 import { TradeStatusIcon, TRADE_STATUS_LABEL } from './TradeStatusIcon'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { CoinAvatar } from '@/components/ui/coin-avatar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DirectionBadge } from '@/components/ui/direction-badge'
@@ -39,7 +40,7 @@ function StatusCell({ row }: { row: TradeLogResponse }) {
   )
 }
 
-const COLUMNS_BASE: ResponsiveColumn<TradeLogResponse>[] = [
+const COLUMNS: ResponsiveColumn<TradeLogResponse>[] = [
   {
     key: 'waktu',
     header: 'Waktu (WIB)',
@@ -51,7 +52,17 @@ const COLUMNS_BASE: ResponsiveColumn<TradeLogResponse>[] = [
       </div>
     ),
   },
-  { key: 'koin', header: 'Koin', mobile: 'title', cell: (r) => <span className="text-[15px] font-semibold">{r.symbol}</span> },
+  {
+    key: 'koin',
+    header: 'Koin',
+    mobile: 'title',
+    cell: (r) => (
+      <span className="inline-flex items-center gap-2 text-base font-bold" title={r.symbol}>
+        <CoinAvatar symbol={r.symbol} size="sm" />
+        {coinOf(r.symbol)}
+      </span>
+    ),
+  },
   {
     key: 'aksi',
     header: 'Aksi',
@@ -79,9 +90,6 @@ const COLUMNS_BASE: ResponsiveColumn<TradeLogResponse>[] = [
     cell: (r) => <span className="num text-[14px]">{r.filled_quantity != null ? formatQty(r.filled_quantity) : '—'}</span>,
   },
 ]
-
-/** Deck size: rows at least 52 px. */
-const COLUMNS = COLUMNS_BASE.map((c) => ({ ...c, className: `py-3.5 ${c.className ?? ''}` }))
 
 function Detail({ row, onClose }: { row: TradeLogResponse | null; onClose: () => void }) {
   return (

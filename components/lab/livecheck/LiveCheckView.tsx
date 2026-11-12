@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { AlertTriangle, CheckCircle2, Info, Radio, ScanSearch, TriangleAlert, XCircle } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Clock, Info, TriangleAlert, XCircle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Segmented } from '@/components/ui/segmented'
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
@@ -12,7 +12,9 @@ import { InfoTip } from '@/components/ui/info-tip'
 import { useNow } from '@/components/ui/use-now'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shell/states'
 import { Chip } from '@/components/lab/Section'
-import { DeckCard, KpiTile, SectionTitle } from '@/components/bot/kit/Tiles'
+import { KpiTile } from '@/components/ui/kpi'
+import { Panel } from '@/components/ui/hero-card'
+import { SectionHeading } from '@/components/shell/page'
 import { formatPrice } from '@/lib/utils/format'
 import { formatAge, formatTime } from '@/lib/utils/time'
 import { cn } from '@/lib/utils/cn'
@@ -68,23 +70,24 @@ function StatusBadge({ s }: { s: LiveCheckStatus }) {
   )
 }
 
+/** Four tiles in the same groups and colours as the strip legend (and the /bot donut). */
 function Tiles({ r }: { r: LiveCheckReport }) {
   const c = r.summary.counts
-  const days = Math.round(r.window.bars / 6)
-  const problems = PROBLEM.reduce((n, s) => n + (c[s] ?? 0), 0)
+  const failed = (c.gagal ?? 0) + (c.tidak_terkirim ?? 0)
+  const waiting = (c.menunggu ?? 0) + (c.tanpa_log ?? 0)
   return (
-    <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
-      <KpiTile icon={Radio} title="Sinyal strategi" value={r.summary.expected} hint={`${r.preset} · ${days} hari`} />
-      <KpiTile icon={CheckCircle2} title="Cocok" value={c.cocok} tone={c.cocok ? 'ok' : 'plain'} iconTone="ok" hint={c.harga_beda ? `+${c.harga_beda} harga beda` : 'Tereksekusi sesuai sinyal'} />
-      <KpiTile icon={XCircle} title="Bermasalah" value={problems} tone={problems ? 'bad' : 'plain'} iconTone="bad" hint="Gagal, tidak terkirim, tak terduga, harga beda" />
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-5">
+      <KpiTile icon={CheckCircle2} label="Cocok" value={c.cocok ?? 0} tone="bullish" toneValue={Boolean(c.cocok)} hint={`dari ${r.summary.expected} sinyal`} />
+      <KpiTile icon={TriangleAlert} label="Harga beda" value={c.harga_beda ?? 0} tone="warn" toneValue={Boolean(c.harga_beda)} hint="harga fill jauh" />
       <KpiTile
-        icon={TriangleAlert}
-        title="Perlu dicek"
-        value={r.summary.perlu_dicek}
-        tone={r.summary.perlu_dicek ? 'warn' : 'plain'}
-        iconTone="warn"
-        hint={`${c.tanpa_log} tanpa log · ${c.menunggu} menunggu`}
+        icon={XCircle}
+        label="Gagal"
+        value={failed}
+        tone="bearish"
+        toneValue={failed > 0}
+        hint={c.tak_terduga ? `+${c.tak_terduga} tak terduga` : 'atau tak terkirim'}
       />
+      <KpiTile icon={Clock} label="Menunggu" value={waiting} tone="muted" hint={c.tanpa_log ? `${c.tanpa_log} tanpa log` : 'belum dinilai'} />
     </div>
   )
 }
@@ -179,7 +182,7 @@ function SignalCell({ r }: { r: LiveCheckRow }) {
   )
 }
 
-const COLUMNS_BASE: ResponsiveColumn<LiveCheckRow>[] = [
+const COLUMNS: ResponsiveColumn<LiveCheckRow>[] = [
   {
     key: 'bar',
     header: 'Candle (WIB)',
@@ -260,9 +263,6 @@ const COLUMNS_BASE: ResponsiveColumn<LiveCheckRow>[] = [
     cell: (r) => <span className="line-clamp-2 text-[14px] text-muted-foreground">{r.reason ?? '—'}</span>,
   },
 ]
-
-/** Deck size: rows at least 52 px. */
-const COLUMNS: ResponsiveColumn<LiveCheckRow>[] = COLUMNS_BASE.map((c) => ({ ...c, className: cn('py-3.5', c.className) }))
 
 function Field({ k, children }: { k: string; children: React.ReactNode }) {
   return (
@@ -454,20 +454,18 @@ export function LiveCheckView({ bars: barsProp, onBarsChange, filter: filterProp
 
   return (
     <section id={id} className="scroll-mt-20 space-y-5" aria-labelledby={id ? `${id}-title` : undefined}>
-      <SectionTitle
-        icon={ScanSearch}
-        id={id ? `${id}-title` : undefined}
+      <SectionHeading
         title={
           <span className="inline-flex items-center gap-1.5">
-            Cek bot live
+            <span id={id ? `${id}-title` : undefined}>Cek bot live</span>
             <InfoTip title="Cek bot live">
               Untuk tiap candle 4H: sinyal {r?.preset ?? '4H-ETH-Basic'} yang dihitung Lab, kiriman TradingView ke webhook, dan hasil
               eksekusinya di akun bot. Hanya membaca, tidak pernah mengirim order.
             </InfoTip>
           </span>
         }
-        sub={<>Sinyal {r?.preset ?? '4H-ETH-Basic'} vs kiriman ke bot live (akun Rosyade).</>}
-        action={<Segmented aria-label="Rentang waktu" size="sm" value={bars} onChange={setBars} options={LIVECHECK_RANGES} />}
+        description={<>Sinyal {r?.preset ?? '4H-ETH-Basic'} vs kiriman ke bot live (akun Rosyade).</>}
+        actions={<Segmented aria-label="Rentang waktu" size="sm" value={bars} onChange={setBars} options={LIVECHECK_RANGES} />}
       />
       {q.isPending ? (
         <LoadingState rows={4} />
@@ -489,9 +487,9 @@ export function LiveCheckView({ bars: barsProp, onBarsChange, filter: filterProp
             stale={stale}
           />
           <Tiles r={r} />
-          <DeckCard>
+          <Panel as="div">
             <Timeline cells={cells} onPick={pickBar} />
-          </DeckCard>
+          </Panel>
           <div className="space-y-4">
             <Filters r={r} value={filter} onChange={setFilter} />
             <ResponsiveTable

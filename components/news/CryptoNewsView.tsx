@@ -2,9 +2,12 @@
 
 import { useState } from 'react'
 import { ArrowUpRight, Minus, Newspaper, RefreshCw, Search, TrendingDown, TrendingUp } from 'lucide-react'
-import { PageContainer, PageHeader } from '@/components/shell/page'
+import { PageContainer, PageHeader, SectionHeading } from '@/components/shell/page'
 import { EmptyState, ErrorState } from '@/components/shell/states'
-import { DeckCard, IconBadge, SectionTitle, TONE_TEXT } from '@/components/bot/kit/Tiles'
+import { Badge } from '@/components/ui/badge'
+import { CoinAvatar } from '@/components/ui/coin-avatar'
+import { Panel } from '@/components/ui/hero-card'
+import { IconChip } from '@/components/ui/icon-title'
 import { Button } from '@/components/ui/button'
 import { Freshness } from '@/components/ui/freshness'
 import { Input } from '@/components/ui/input'
@@ -29,10 +32,10 @@ import {
 import type { NewsItem } from '@/lib/api/types/intel'
 import { FearGreedCard } from './FearGreedCard'
 
-const TONE_STYLE: Record<HeadlineTone, { Icon: typeof TrendingUp; className: string; bar: string }> = {
-  positif: { Icon: TrendingUp, className: 'border-bullish/30 bg-bullish/10 text-bullish', bar: 'bg-bullish/70' },
-  negatif: { Icon: TrendingDown, className: 'border-bearish/30 bg-bearish/10 text-bearish', bar: 'bg-bearish/70' },
-  netral: { Icon: Minus, className: 'border-border bg-muted/50 text-muted-foreground', bar: 'bg-muted-foreground/40' },
+const TONE_STYLE: Record<HeadlineTone, { Icon: typeof TrendingUp; variant: 'bullish' | 'bearish' | 'muted'; bar: string }> = {
+  positif: { Icon: TrendingUp, variant: 'bullish', bar: 'bg-bullish' },
+  negatif: { Icon: TrendingDown, variant: 'bearish', bar: 'bg-bearish' },
+  netral: { Icon: Minus, variant: 'muted', bar: 'bg-muted-foreground/50' },
 }
 
 const MISSING_LABEL: Record<string, string> = {
@@ -45,65 +48,78 @@ function ToneBadge({ s }: { s: NewsItem['sentiment'] }) {
   const t = headlineTone(s)
   const st = TONE_STYLE[t]
   return (
-    <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[13px] font-bold', st.className)}>
-      <st.Icon className="h-3.5 w-3.5" aria-hidden="true" />
+    <Badge variant={st.variant} className="relative z-10">
+      <st.Icon aria-hidden="true" />
       {HEADLINE_TONE_LABEL[t]}
-    </span>
+    </Badge>
   )
 }
 
 function HeadlineBalance({ items, className }: { items: NewsItem[]; className?: string }) {
   const c = toneCounts(items)
   const n = items.length
-  const lead = c.positif > c.negatif ? 'ok' : c.negatif > c.positif ? 'bad' : 'plain'
+  const lead = c.positif > c.negatif ? 'positif' : c.negatif > c.positif ? 'negatif' : 'imbang'
   return (
-    <DeckCard className={cn('flex flex-col gap-4', className)}>
+    <Panel className={cn('flex flex-col gap-5', className)} aria-label="Sentimen judul">
       <div className="flex items-center gap-3">
-        <IconBadge icon={Newspaper} />
-        <p className="text-[17px] font-semibold">
+        <IconChip icon={Newspaper} tone="info" />
+        <h2 className="text-lg font-bold">
           <Term k="headline_sentiment" />
-        </p>
+        </h2>
       </div>
       {n === 0 ? (
-        <p className="text-[16px] text-muted-foreground">Judul berita tidak tersedia saat ini.</p>
+        <p className="text-base text-muted-foreground">Judul berita tidak tersedia saat ini.</p>
       ) : (
         <>
-          <p className="num flex items-baseline gap-2 text-[40px] font-bold leading-none tracking-tight">
-            <span className="text-bullish">{c.positif}</span>
-            <span className="text-[24px] text-muted-foreground">:</span>
-            <span className="text-bearish">{c.negatif}</span>
-          </p>
-          <p className={cn('text-[15px] font-semibold', TONE_TEXT[lead])}>
-            {lead === 'ok' ? 'Lebih banyak positif' : lead === 'bad' ? 'Lebih banyak negatif' : 'Berimbang'}
-            <span className="font-normal text-muted-foreground"> · {c.netral} netral dari {n}</span>
-          </p>
-          <div className="flex h-3 w-full gap-1 overflow-hidden rounded-full" role="img" aria-label={`${c.positif} positif, ${c.negatif} negatif, ${c.netral} netral`}>
-            {(['positif', 'netral', 'negatif'] as const).map((t) =>
-              c[t] ? <span key={t} className={cn('h-full rounded-full', TONE_STYLE[t].bar)} style={{ width: `${(c[t] / n) * 100}%` }} /> : null,
-            )}
+          <div className="space-y-2">
+            <p className="num display flex items-baseline gap-2 text-5xl font-extrabold leading-none">
+              <span className="text-bullish">{c.positif}</span>
+              <span className="text-2xl text-muted-foreground">:</span>
+              <span className="text-bearish">{c.negatif}</span>
+            </p>
+            <p className={cn('text-base font-semibold', lead === 'positif' ? 'text-bullish' : lead === 'negatif' ? 'text-bearish' : 'text-foreground')}>
+              {lead === 'positif' ? 'Lebih banyak positif' : lead === 'negatif' ? 'Lebih banyak negatif' : 'Berimbang'}
+            </p>
           </div>
-          <p className="mt-auto text-[13px] text-muted-foreground">Ditebak dari kata kunci di judul.</p>
+          <div className="space-y-3">
+            <div className="flex h-3.5 w-full gap-1 overflow-hidden rounded-full" role="img" aria-label={`${c.positif} positif, ${c.negatif} negatif, ${c.netral} netral dari ${n} judul`}>
+              {(['positif', 'netral', 'negatif'] as const).map((t) =>
+                c[t] ? <span key={t} className={cn('h-full rounded-full', TONE_STYLE[t].bar)} style={{ width: `${(c[t] / n) * 100}%` }} /> : null,
+              )}
+            </div>
+            <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm" aria-hidden="true">
+              {(['positif', 'netral', 'negatif'] as const).map((t) => (
+                <li key={t} className="inline-flex items-center gap-1.5">
+                  <span className={cn('h-2.5 w-2.5 rounded-[3px]', TONE_STYLE[t].bar)} />
+                  <b className="num">{c[t]}</b>
+                  <span className="text-muted-foreground">{t}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <p className="mt-auto text-2xs text-muted-foreground">{n} judul terbaru · ditebak dari kata kunci di judul.</p>
         </>
       )}
-    </DeckCard>
+    </Panel>
   )
 }
 
 function NewsCard({ item }: { item: NewsItem }) {
   const href = safeExternalUrl(item.linkUrl)
   return (
-    <article className="flex flex-col gap-4 rounded-3xl border border-border/70 bg-card p-6 transition duration-200 hover:-translate-y-0.5 hover:shadow-lg motion-reduce:transition-none motion-reduce:hover:translate-y-0">
+    <Panel as="article" interactive={Boolean(href)} className="relative flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <ToneBadge s={item.sentiment} />
         {item.publishedAt && (
-          <time dateTime={item.publishedAt} title={formatTime(item.publishedAt)} className="num text-[13px] text-muted-foreground">
+          <time dateTime={item.publishedAt} title={formatTime(item.publishedAt)} className="num text-2xs text-muted-foreground">
             {formatAge(item.publishedAt)}
           </time>
         )}
       </div>
-      <h3 className="line-clamp-3 text-[17px] font-semibold leading-snug">
+      <h3 className="line-clamp-3 text-lg font-bold leading-snug">
         {href ? (
-          <a href={href} target="_blank" rel="noopener noreferrer" className="hover:underline">
+          // The whole card is the link (stretched), so it lifts on hover like other clickable cards.
+          <a href={href} target="_blank" rel="noopener noreferrer" className="after:absolute after:inset-0 after:rounded-3xl hover:underline focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring">
             {item.title}
           </a>
         ) : (
@@ -111,20 +127,23 @@ function NewsCard({ item }: { item: NewsItem }) {
         )}
       </h3>
       <div className="mt-auto flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-1.5">
-          {item.affectedSymbols.map((sym) => (
-            <span key={sym} className="rounded-full border border-border/70 bg-muted/60 px-2.5 py-0.5 text-[13px] font-semibold">
-              {coinTag(sym)}
-            </span>
-          ))}
+        <div className="flex flex-wrap items-center gap-3">
+          {item.affectedSymbols.map((sym) => {
+            const tag = coinTag(sym)
+            return (
+              <span key={sym} className="inline-flex items-center gap-1.5 text-sm font-semibold">
+                {tag !== 'Umum' && <CoinAvatar symbol={sym} size="sm" />}
+                {tag}
+              </span>
+            )
+          })}
         </div>
-        {href && (
-          <a href={href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[14px] font-semibold text-info hover:underline">
-            {item.source} <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-          </a>
-        )}
+        <span className="inline-flex items-center gap-1 text-xs font-semibold text-info">
+          {item.source}
+          {href && <ArrowUpRight className="h-4 w-4" aria-hidden="true" />}
+        </span>
       </div>
-    </article>
+    </Panel>
   )
 }
 
@@ -184,12 +203,12 @@ export function CryptoNewsView() {
       ) : (
         <>
           {status === 'partial' && (
-            <p role="status" className="rounded-2xl border border-warn/40 bg-warn/10 px-4 py-3 text-[14px] text-warn">
+            <p role="status" className="rounded-2xl border border-warn/40 bg-warn/10 px-4 py-3 text-xs text-warn">
               Sebagian data tidak tersedia: {missing.length ? missing.join(', ') : 'sebagian sumber'}.
             </p>
           )}
 
-          <div className="grid items-stretch gap-6 lg:grid-cols-3">
+          <div className="grid gap-5 lg:grid-cols-3 lg:gap-6">
             <FearGreedCard
               className="lg:col-span-2"
               value={fng?.value}
@@ -202,44 +221,38 @@ export function CryptoNewsView() {
           <p className="sr-only">{newsAnswer(intel)}</p>
 
           <section aria-labelledby="judul-terbaru" className="space-y-5">
-            <SectionTitle
-              icon={Newspaper}
-              id="judul-terbaru"
-              title="Judul terbaru"
-              action={
-              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-                <div className="relative sm:w-64">
-                  <Search className="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                  <Input
-                    aria-label="Cari judul atau koin"
-                    placeholder="Cari judul atau koin…"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="h-10 rounded-full pl-10 text-[15px]"
-                  />
-                </div>
-                <Segmented
-                  aria-label="Saring nada judul"
-                  size="sm"
-                  value={tone}
-                  onChange={(v) => setTone(v as ToneFilter)}
-                  options={[
-                    { value: 'semua', label: `Semua ${items.length}` },
-                    { value: 'positif', label: `Positif ${counts.positif}` },
-                    { value: 'negatif', label: `Negatif ${counts.negatif}` },
-                    { value: 'netral', label: `Netral ${counts.netral}` },
-                  ]}
+            <SectionHeading title={<span id="judul-terbaru">Judul terbaru</span>} />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative sm:w-72">
+                <Search className="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                <Input
+                  aria-label="Cari judul atau koin"
+                  placeholder="Cari judul atau koin…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="h-10 rounded-full pl-10 text-sm"
                 />
               </div>
-              }
-            />
+              <Segmented
+                aria-label="Saring nada judul"
+                size="sm"
+                value={tone}
+                onChange={(v) => setTone(v as ToneFilter)}
+                options={[
+                  { value: 'semua', label: `Semua ${items.length}` },
+                  { value: 'positif', label: `Positif ${counts.positif}` },
+                  { value: 'negatif', label: `Negatif ${counts.negatif}` },
+                  { value: 'netral', label: `Netral ${counts.netral}` },
+                ]}
+              />
+            </div>
             {shown.length === 0 ? (
               <EmptyState
                 title={items.length ? 'Tidak ada judul yang cocok' : 'Judul berita tidak tersedia saat ini'}
                 description={items.length ? 'Ubah pencarian atau saringan nada judul.' : 'Sumber RSS sedang tidak bisa diambil. Tidak ada judul yang ditebak.'}
               />
             ) : (
-              <div className="grid gap-6 md:grid-cols-2">
+              <div className="grid gap-5 md:grid-cols-2 lg:gap-6">
                 {shown.map((item) => (
                   <NewsCard key={item.id} item={item} />
                 ))}

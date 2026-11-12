@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { AlertTriangle, Gauge, Radio, Scale, Timer } from 'lucide-react'
+import { AlertTriangle, Radio, Scale, Timer } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Segmented } from '@/components/ui/segmented'
 import { StatTile } from '@/components/ui/stat-tile'
-import { KpiTile, SectionTitle } from '@/components/bot/kit/Tiles'
+import { KpiTile } from '@/components/ui/kpi'
+import { SectionHeading } from '@/components/shell/page'
 import { StatusPill } from '@/components/ui/status-pill'
 import { DirectionBadge } from '@/components/ui/direction-badge'
 import { ResponsiveTable, type ResponsiveColumn } from '@/components/ui/responsive-table'
@@ -82,7 +83,7 @@ const closeCol: ResponsiveColumn<ShadowSignal> = {
 }
 
 /** What actually happened to each live signal (market order). */
-const ACTUAL_COLUMNS_BASE: ResponsiveColumn<ShadowSignal>[] = [
+const ACTUAL_COLUMNS: ResponsiveColumn<ShadowSignal>[] = [
   closeCol,
   { key: 'sinyal', header: 'Sinyal', mobile: 'badge', cell: (s) => <SignalLabel s={s} /> },
   {
@@ -118,9 +119,6 @@ const ACTUAL_COLUMNS_BASE: ResponsiveColumn<ShadowSignal>[] = [
       ),
   },
 ]
-
-/** Deck size: rows at least 52 px. */
-const ACTUAL_COLUMNS: ResponsiveColumn<ShadowSignal>[] = ACTUAL_COLUMNS_BASE.map((c) => ({ ...c, className: cn('py-3.5', c.className) }))
 
 function simColumns(k: number, ttl: number): ResponsiveColumn<ShadowSignal>[] {
   return [
@@ -331,12 +329,14 @@ export function ExecutionQuality({ id = 'eksekusi' }: { id?: string }) {
   const r = q.data
   return (
     <section id={id} className="scroll-mt-20 space-y-5" aria-labelledby={`${id}-title`}>
-      <SectionTitle
-        icon={Gauge}
-        id={`${id}-title`}
-        title="Kualitas eksekusi"
-        sub="Selisih harga eksekusi bot dari close candle, dan jeda alert."
-        action={<StatusPill kind="live" size="sm" />}
+      <SectionHeading
+        title={
+          <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span id={`${id}-title`}>Kualitas eksekusi</span>
+            <StatusPill kind="live" size="sm" />
+          </span>
+        }
+        description="Selisih harga eksekusi bot dari close candle, dan jeda alert."
       />
       {q.isPending ? (
         <LoadingState rows={4} />
@@ -347,20 +347,22 @@ export function ExecutionQuality({ id = 'eksekusi' }: { id?: string }) {
           <div className="grid gap-5 sm:grid-cols-3">
             <KpiTile
               icon={Radio}
-              title="Sinyal live"
-              value={formatCount(r.actual.n_counted)}
+              label="Sinyal live"
+              value={r.actual.n_counted}
+              format={(n) => formatCount(Math.round(n))}
               hint={`${r.actual.n_open} buka · ${r.actual.n_close} tutup${r.actual.n_off_close ? ` · ${r.actual.n_off_close} di luar close` : ''}`}
             />
             <KpiTile
               icon={Scale}
-              title={<Term k="slippage_bps" short noTip />}
+              label={<Term k="slippage_bps" short noTip />}
               value={r.actual.n_with_fill ? bps(r.actual.mean_slippage_bps) : '—'}
-              tone={r.actual.n_with_fill && r.actual.mean_slippage_bps ? (r.actual.mean_slippage_bps > 0 ? 'bad' : 'ok') : 'plain'}
+              tone={r.actual.n_with_fill && r.actual.mean_slippage_bps ? (r.actual.mean_slippage_bps > 0 ? 'bearish' : 'bullish') : 'brand'}
+              toneValue
               hint={r.actual.n_with_fill ? `rata-rata ${r.actual.n_with_fill} fill · + = lebih mahal` : `belum ada fill · perkiraan ${bps(r.actual.mean_drift_bps)}`}
             />
             <KpiTile
               icon={Timer}
-              title={<Term k="alert_latency" noTip />}
+              label={<Term k="alert_latency" noTip />}
               value={duration(r.actual.median_latency_s)}
               hint={r.actual.latency_upper_bound ? 'median · batas atas' : 'median · candle tutup → alert'}
             />

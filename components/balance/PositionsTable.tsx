@@ -6,6 +6,7 @@ import { Activity, History, RefreshCw } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { CoinAvatar } from '@/components/ui/coin-avatar'
 import { InfoTip } from '@/components/ui/info-tip'
 import { ResponsiveTable, type ResponsiveColumn } from '@/components/ui/responsive-table'
 import { Segmented } from '@/components/ui/segmented'
@@ -16,7 +17,7 @@ import { ExchangeLabel } from '@/components/trading/ExchangeLabel'
 import { SideBadge } from '@/components/trading/SideBadge'
 import { EmptyState, ErrorState } from '@/components/shell/states'
 import { useOpenPositions, usePositionsHistory } from '@/lib/queries/positions'
-import { formatPercent, formatPrice, formatQty, formatUsdSigned } from '@/lib/utils/format'
+import { coinOf, formatPercent, formatPrice, formatQty, formatUsdSigned } from '@/lib/utils/format'
 import { formatAge, formatTime } from '@/lib/utils/time'
 import { ApiError } from '@/lib/api/errors'
 import type { ClosedPositionResponse, OpenPositionResponse } from '@/lib/api/types/credentials'
@@ -38,6 +39,19 @@ function PnlCell({ value, pct }: { value: number | null; pct?: number | null }) 
   )
 }
 
+/** Coin + exchange in one cell (avatar, coin, exchange under it); the raw symbol stays in the tooltip. */
+function CoinCell({ symbol, exchange }: { symbol: string; exchange: string }) {
+  return (
+    <div className="flex min-w-0 items-center gap-2.5" title={symbol}>
+      <CoinAvatar symbol={symbol} size="sm" />
+      <div className="min-w-0 leading-tight">
+        <p className="text-base font-bold">{coinOf(symbol)}</p>
+        <ExchangeLabel exchange={exchange} className="text-2xs text-muted-foreground" />
+      </div>
+    </div>
+  )
+}
+
 function LoadError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const missingKey = error instanceof ApiError && error.kind === 'not_found'
   return missingKey ? (
@@ -55,9 +69,8 @@ function LoadError({ error, onRetry }: { error: unknown; onRetry: () => void }) 
   )
 }
 
-const OPEN_COLUMNS_BASE: ResponsiveColumn<OpenPositionResponse>[] = [
-  { key: 'koin', header: 'Koin', mobile: 'title', cell: (p) => <span className="font-mono text-sm font-semibold">{p.symbol}</span> },
-  { key: 'exchange', header: 'Exchange', mobile: 'hidden', cell: (p) => <ExchangeLabel exchange={p.exchange} /> },
+const OPEN_COLUMNS: ResponsiveColumn<OpenPositionResponse>[] = [
+  { key: 'koin', header: 'Koin', mobile: 'title', cell: (p) => <CoinCell symbol={p.symbol} exchange={p.exchange} /> },
   { key: 'arah', header: 'Arah', mobile: 'badge', cell: (p) => <SideBadge side={p.side} /> },
   {
     key: 'upnl',
@@ -105,9 +118,8 @@ function pnlOf(p: ClosedPositionResponse): number {
   return (p.exit_price - p.entry_price) * p.quantity * (p.side === 'long' ? 1 : -1)
 }
 
-const HISTORY_COLUMNS_BASE: ResponsiveColumn<ClosedPositionResponse>[] = [
-  { key: 'koin', header: 'Koin', mobile: 'title', cell: (p) => <span className="font-mono text-sm font-semibold">{p.symbol}</span> },
-  { key: 'exchange', header: 'Exchange', mobile: 'hidden', cell: (p) => <ExchangeLabel exchange={p.exchange} /> },
+const HISTORY_COLUMNS: ResponsiveColumn<ClosedPositionResponse>[] = [
+  { key: 'koin', header: 'Koin', mobile: 'title', cell: (p) => <CoinCell symbol={p.symbol} exchange={p.exchange} /> },
   { key: 'arah', header: 'Arah', mobile: 'badge', cell: (p) => <SideBadge side={p.side} /> },
   {
     key: 'pnl',
@@ -123,10 +135,6 @@ const HISTORY_COLUMNS_BASE: ResponsiveColumn<ClosedPositionResponse>[] = [
   { key: 'buka', header: 'Dibuka (WIB)', mobile: 'hidden', cell: (p) => <span className="num whitespace-nowrap text-[14px] text-muted-foreground">{formatTime(p.opened_at, { zone: false })}</span> },
   { key: 'tutup', header: 'Ditutup (WIB)', mobile: 'hidden', cell: (p) => <span className="num whitespace-nowrap text-[14px] text-muted-foreground">{formatTime(p.closed_at, { zone: false })}</span> },
 ]
-
-/** Deck size: rows at least 52 px, 15 px text. */
-const OPEN_COLUMNS = OPEN_COLUMNS_BASE.map((c) => ({ ...c, className: `py-3.5 text-[15px] ${c.className ?? ''}` }))
-const HISTORY_COLUMNS = HISTORY_COLUMNS_BASE.map((c) => ({ ...c, className: `py-3.5 text-[15px] ${c.className ?? ''}` }))
 
 function SectionTitle({
   icon,

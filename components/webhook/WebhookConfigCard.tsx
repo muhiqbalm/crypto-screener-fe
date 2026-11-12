@@ -15,8 +15,8 @@ import { maskPassphrase } from '@/lib/utils/mask'
 import { notify } from '@/lib/utils/toast'
 import { formatTime } from '@/lib/utils/time'
 import { ApiError } from '@/lib/api/errors'
-import { LiveDot } from '@/components/bot/kit/LiveDot'
-import { IconBadge } from '@/components/bot/kit/Tiles'
+import { LiveDot } from '@/components/ui/live-dot'
+import { IconChip } from '@/components/ui/icon-title'
 
 const WEBHOOK_URL =
   (process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000') +
@@ -76,7 +76,7 @@ function Header({ status, action }: { status: React.ReactNode; action?: React.Re
   return (
     <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 px-6 pb-3 pt-6">
       <div className="flex flex-wrap items-center gap-3">
-        <IconBadge icon={Webhook} />
+        <IconChip icon={Webhook} tone="brand" />
         <CardTitle className="text-[17px]">
           <Term k="webhook" />
         </CardTitle>
@@ -236,8 +236,8 @@ export function WebhookConfigCard() {
 
       <CardContent className="space-y-5 px-6 pb-6">
         <div className="flex items-center gap-3">
-          <LiveDot tone={isActive ? 'ok' : 'off'} label={isActive ? 'Otomasi aktif' : 'Tidak aktif'} />
-          <p className={`text-[28px] font-bold leading-none tracking-tight ${isActive ? 'text-bullish' : 'text-muted-foreground'}`}>
+          <LiveDot tone={isActive ? 'bullish' : 'muted'} pulse={isActive} size="lg" />
+          <p className={`display text-3xl font-extrabold leading-none ${isActive ? 'text-bullish' : 'text-muted-foreground'}`}>
             {isActive ? 'Aktif' : 'Tidak aktif'}
           </p>
         </div>

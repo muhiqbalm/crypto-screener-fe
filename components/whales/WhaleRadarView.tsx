@@ -2,10 +2,14 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowDownRight, ArrowUpRight, Radar, RefreshCw, Search, Users } from 'lucide-react'
-import { PageContainer, PageHeader } from '@/components/shell/page'
+import { ArrowDownRight, ArrowUpRight, Radar, RefreshCw, Search } from 'lucide-react'
+import { PageContainer, PageHeader, SectionHeading } from '@/components/shell/page'
 import { EmptyState, ErrorState } from '@/components/shell/states'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { CoinAvatar } from '@/components/ui/coin-avatar'
+import { Panel } from '@/components/ui/hero-card'
+import { KpiTile } from '@/components/ui/kpi'
 import { DirectionBadge } from '@/components/ui/direction-badge'
 import { Input } from '@/components/ui/input'
 import { ResponsiveTable, type ResponsiveColumn } from '@/components/ui/responsive-table'
@@ -17,8 +21,6 @@ import { formatNumber, formatUsdCompact } from '@/lib/utils/format'
 import { formatAge, formatTime } from '@/lib/utils/time'
 import { cn } from '@/lib/utils/cn'
 import { coinHref } from '@/lib/nav'
-import { CoinAvatar } from '@/components/bot/kit/CoinAvatar'
-import { KpiTile, SectionTitle } from '@/components/bot/kit/Tiles'
 import { LeanHero } from './LeanHero'
 import {
   LEAN_LABEL,
@@ -54,17 +56,21 @@ function RatioCard({ r }: { r: TopTraderRatio }) {
   const lean = leanOf(r.longPct)
   const ratio = r.lsRatio ?? (r.shortPct ? r.longPct / r.shortPct : null)
   return (
-    <div className="flex flex-col gap-4 rounded-3xl border border-border/70 bg-card p-6 transition duration-200 hover:-translate-y-0.5 hover:shadow-lg motion-reduce:transition-none motion-reduce:hover:translate-y-0">
+    <Panel as="article" interactive className="relative flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
-        <Link href={coinHref(r.symbol)} className="flex items-center gap-3 hover:underline">
-          <CoinAvatar symbol={coin} size={40} />
-          <span className="text-[17px] font-bold">{coin}</span>
+        {/* The whole card opens the coin page (stretched link). */}
+        <Link
+          href={coinHref(r.symbol)}
+          className="flex items-center gap-3 after:absolute after:inset-0 after:rounded-3xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
+        >
+          <CoinAvatar symbol={coin} />
+          <span className="display text-xl font-bold">{coin}</span>
         </Link>
         <DirectionBadge direction={leanDirection(r.longPct)} label={lean ? LEAN_LABEL[lean] : '—'} size="sm" />
       </div>
-      <p className="num text-[32px] font-bold leading-none tracking-tight">
+      <p className="num display text-4xl font-extrabold leading-none">
         <span className="text-bullish">{formatNumber(r.longPct, { digits: 0 })}%</span>
-        <span className="ml-2 text-[15px] font-semibold text-muted-foreground">long</span>
+        <span className="ml-2 text-base font-semibold text-muted-foreground">long</span>
       </p>
       <div
         className="flex h-3 w-full overflow-hidden rounded-full bg-bearish/60"
@@ -73,29 +79,29 @@ function RatioCard({ r }: { r: TopTraderRatio }) {
       >
         <div className="h-full rounded-l-full bg-bullish" style={{ width: `${Math.min(100, Math.max(0, r.longPct))}%` }} />
       </div>
-      <p className="num flex items-center justify-between text-[13px] text-muted-foreground">
+      <p className="num flex items-center justify-between text-2xs text-muted-foreground">
         <span>
           <Term k="long_short_ratio" short noTip /> {ratio === null ? '—' : formatNumber(ratio, { digits: 2 })}
         </span>
         <span>{typeof r.timestamp === 'number' ? formatTime(r.timestamp, { date: false }) : 'waktu tidak tersedia'}</span>
       </p>
-    </div>
+    </Panel>
   )
 }
 
-const TRADE_COLUMNS_BASE: ResponsiveColumn<WhaleTrade>[] = [
+const TRADE_COLUMNS: ResponsiveColumn<WhaleTrade>[] = [
   {
     key: 'waktu',
     header: 'Waktu',
     mobile: 'field',
     cell: (t) =>
       typeof t.tradeTime === 'number' ? (
-        <div className="num whitespace-nowrap text-[14px]">
+        <div className="num whitespace-nowrap text-sm">
           {formatTime(t.tradeTime, { date: false, seconds: true })}
-          <div className="text-[13px] text-muted-foreground">{formatAge(t.tradeTime, { seconds: true })}</div>
+          <div className="text-2xs text-muted-foreground">{formatAge(t.tradeTime, { seconds: true })}</div>
         </div>
       ) : (
-        <span className="text-[14px] text-muted-foreground">waktu tidak tersedia</span>
+        <span className="text-sm text-muted-foreground">waktu tidak tersedia</span>
       ),
   },
   {
@@ -103,18 +109,19 @@ const TRADE_COLUMNS_BASE: ResponsiveColumn<WhaleTrade>[] = [
     header: 'Koin',
     mobile: 'title',
     cell: (t) => (
-      <Link href={coinHref(t.symbol)} className="rounded-md border bg-muted/60 px-2 py-0.5 font-mono text-[13px] font-semibold hover:underline">
+      <Link href={coinHref(t.symbol)} className="inline-flex items-center gap-2 text-sm font-bold hover:underline">
+        <CoinAvatar symbol={t.symbol} size="sm" />
         {t.symbol}
       </Link>
     ),
   },
-  { key: 'jumlah', header: 'Jumlah', mobile: 'field', cell: (t) => <span className="num whitespace-nowrap text-[14px] text-muted-foreground">{t.amount}</span> },
+  { key: 'jumlah', header: 'Jumlah', mobile: 'field', cell: (t) => <span className="num whitespace-nowrap text-sm text-muted-foreground">{t.amount}</span> },
   {
     key: 'nilai',
     header: 'Nilai',
     align: 'right',
     mobile: 'field',
-    cell: (t) => <span className="num whitespace-nowrap text-[14px] font-bold">{typeof t.usdValueRaw === 'number' ? formatUsdCompact(t.usdValueRaw) : t.usdValue}</span>,
+    cell: (t) => <span className="num whitespace-nowrap text-base font-bold">{typeof t.usdValueRaw === 'number' ? formatUsdCompact(t.usdValueRaw) : t.usdValue}</span>,
   },
   {
     key: 'sisi',
@@ -123,19 +130,16 @@ const TRADE_COLUMNS_BASE: ResponsiveColumn<WhaleTrade>[] = [
     mobile: 'badge',
     cell: (t) =>
       isTakerBuy(t) ? (
-        <span className="inline-flex items-center gap-1 rounded-md border border-bullish/30 bg-bullish/10 px-2 py-0.5 text-[13px] font-semibold text-bullish">
-          <ArrowUpRight className="h-3 w-3" aria-hidden="true" /> Beli
-        </span>
+        <Badge variant="bullish">
+          <ArrowUpRight aria-hidden="true" /> Beli
+        </Badge>
       ) : (
-        <span className="inline-flex items-center gap-1 rounded-md border border-bearish/30 bg-bearish/10 px-2 py-0.5 text-[13px] font-semibold text-bearish">
-          <ArrowDownRight className="h-3 w-3" aria-hidden="true" /> Jual
-        </span>
+        <Badge variant="bearish">
+          <ArrowDownRight aria-hidden="true" /> Jual
+        </Badge>
       ),
   },
 ]
-
-/** Deck size: rows at least 52 px. */
-const TRADE_COLUMNS: ResponsiveColumn<WhaleTrade>[] = TRADE_COLUMNS_BASE.map((c) => ({ ...c, className: cn('py-3.5', c.className) }))
 
 /** /whales "Arus besar (whale)": where the biggest traders lean, and the latest large taker trades. */
 export function WhaleRadarView() {
@@ -154,6 +158,11 @@ export function WhaleRadarView() {
   const avg = averageLong(ratios)
   const coins = [...new Set(trades.map((t) => t.symbol))]
   const cachedAt = typeof intel?.cachedAt === 'number' ? intel.cachedAt : undefined
+  const buyUsd = intel?.largeTradeBuyUsd
+  const sellUsd = intel?.largeTradeSellUsd
+  const flowTotal = (typeof buyUsd === 'number' ? buyUsd : 0) + (typeof sellUsd === 'number' ? sellUsd : 0)
+  const buyShare = typeof buyUsd === 'number' && typeof sellUsd === 'number' && flowTotal > 0 ? Math.round((buyUsd / flowTotal) * 100) : null
+  const flowHint = win ? `${win} terakhir` : `transaksi ≥ ${minLabel}`
 
   const term = search.trim().toLowerCase()
   const shown = trades.filter(
@@ -189,8 +198,8 @@ export function WhaleRadarView() {
 
       {isPending ? (
         <div className="space-y-4" aria-busy="true">
-          <Skeleton className="h-36 w-full rounded-xl" />
-          <Skeleton className="h-48 w-full rounded-xl" />
+          <Skeleton className="h-72 w-full rounded-3xl" />
+          <Skeleton className="h-48 w-full rounded-3xl" />
         </div>
       ) : error ? (
         <ErrorState error={error} onRetry={() => refetch()} message="Data arus besar belum bisa dimuat." />
@@ -203,43 +212,48 @@ export function WhaleRadarView() {
       ) : (
         <>
           {status === 'partial' && (
-            <p role="status" className="rounded-2xl border border-warn/40 bg-warn/10 px-4 py-3 text-[14px] text-warn">
+            <p role="status" className="rounded-2xl border border-warn/40 bg-warn/10 px-4 py-3 text-xs text-warn">
               Sebagian data tidak tersedia: {missing.length ? missing.join(', ') : 'sebagian sumber'}.
             </p>
           )}
 
-          <div className="grid items-stretch gap-6 lg:grid-cols-3">
+          <div className="grid gap-5 lg:grid-cols-3 lg:gap-6">
             <LeanHero
               className="lg:col-span-2"
               avgLong={avg}
               lean={answer.lean}
-              coins={ratios.map((r) => r.symbol.replace(/USDT$/, ''))}
-              sentence={answer.sentence.split('. ').slice(1).join('. ') || answer.sentence}
+              sentence={answer.sentence.split('. ')[0].replace(/\.?$/, '.')}
               cachedAt={cachedAt}
             />
-            <div className="flex flex-col gap-5">
+            <div className="grid gap-5 lg:gap-6">
               <KpiTile
                 icon={ArrowUpRight}
-                title="Beli besar"
-                value={formatUsdCompact(intel?.largeTradeBuyUsd)}
-                tone="ok"
-                hint={win ? `${win} terakhir · transaksi ≥ ${minLabel}` : `transaksi ≥ ${minLabel}`}
+                label="Beli besar"
+                value={typeof buyUsd === 'number' ? buyUsd : '—'}
+                format={(n) => formatUsdCompact(n)}
+                tone="bullish"
+                toneValue
+                size="lg"
+                hint={buyShare === null ? flowHint : `${buyShare}% dari nilai · ${flowHint}`}
               />
               <KpiTile
                 icon={ArrowDownRight}
-                title="Jual besar"
-                value={formatUsdCompact(intel?.largeTradeSellUsd)}
-                tone="bad"
-                hint={win ? `${win} terakhir · transaksi ≥ ${minLabel}` : `transaksi ≥ ${minLabel}`}
+                label="Jual besar"
+                value={typeof sellUsd === 'number' ? sellUsd : '—'}
+                format={(n) => formatUsdCompact(n)}
+                tone="bearish"
+                toneValue
+                size="lg"
+                hint={buyShare === null ? flowHint : `${100 - buyShare}% dari nilai · ${flowHint}`}
               />
             </div>
           </div>
           <p className="sr-only">{answer.sentence}</p>
 
           <section aria-labelledby="per-koin" className="space-y-5">
-            <SectionTitle icon={Users} id="per-koin" title="Per koin" sub="Posisi long vs short akun terbesar (data 5 menit)." />
+            <SectionHeading title={<span id="per-koin">Per koin</span>} description="Posisi long vs short akun terbesar (data 5 menit)." />
             {ratios.length === 0 ? (
-              <p className="py-6 text-center text-[16px] text-muted-foreground">Posisi trader besar tidak tersedia saat ini.</p>
+              <p className="py-6 text-center text-base text-muted-foreground">Posisi trader besar tidak tersedia saat ini.</p>
             ) : (
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
                 {ratios.map((r) => (
@@ -250,12 +264,14 @@ export function WhaleRadarView() {
           </section>
 
           <section aria-labelledby="transaksi-besar" className="space-y-5">
-            <SectionTitle
-              icon={Radar}
-              id="transaksi-besar"
-              title={<Term k="whale_trades" />}
-              sub={<>Transaksi ≥ {minLabel}{win ? `, ${win} terakhir` : ''}{coins.length ? ` · ${coins.join(', ')}` : ''}</>}
-              action={
+            <SectionHeading
+              title={
+                <span id="transaksi-besar">
+                  <Term k="whale_trades" />
+                </span>
+              }
+              description={<>Transaksi ≥ {minLabel}{win ? `, ${win} terakhir` : ''}{coins.length ? ` · ${coins.join(', ')}` : ''}</>}
+              actions={
                 <Segmented
                   aria-label="Saring sisi transaksi"
                   size="sm"
@@ -271,7 +287,7 @@ export function WhaleRadarView() {
             />
             <div className="relative sm:w-64">
               <Search className="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground" aria-hidden="true" />
-              <Input aria-label="Cari koin" placeholder="Cari koin…" value={search} onChange={(e) => setSearch(e.target.value)} className="h-10 rounded-full pl-10 text-[15px]" />
+              <Input aria-label="Cari koin" placeholder="Cari koin…" value={search} onChange={(e) => setSearch(e.target.value)} className="h-10 rounded-full pl-10 text-sm" />
             </div>
             <ResponsiveTable
               rows={shown}
@@ -285,7 +301,7 @@ export function WhaleRadarView() {
                 />
               }
             />
-            <p className="text-[13px] text-muted-foreground">Beli/jual = sisi yang mengambil harga pasar (taker), dari 500 transaksi terakhir per koin.</p>
+            <p className="text-2xs text-muted-foreground">Beli/jual = sisi yang mengambil harga pasar (taker), dari 500 transaksi terakhir per koin.</p>
           </section>
         </>
       )}

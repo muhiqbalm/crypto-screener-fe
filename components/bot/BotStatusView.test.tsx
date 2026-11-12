@@ -35,7 +35,8 @@ describe('BotStatusView', () => {
   it('answers "Bot live aman?" first, in one sentence, with a LIVE label', async () => {
     setup()
     await waitFor(() => expect(screen.getByText(/^Perlu dicek: 5 dari 6 sinyal 7 hari terakhir sesuai/)).toBeInTheDocument(), { timeout: 5000 })
-    expect(screen.getByRole('region', { name: 'Bot live aman?' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Jawaban' })).toBeInTheDocument()
+    expect(screen.getByText(/Bot live aman\? · 7 hari/)).toBeInTheDocument()
     expect(screen.getByRole('img', { name: /5 cocok, 1 harga beda, 0 gagal atau tidak terkirim, 1 menunggu/ })).toBeInTheDocument() // the donut
     expect(screen.getAllByText('LIVE').length).toBeGreaterThan(0)
     // The answer opens the evidence on the problem rows.

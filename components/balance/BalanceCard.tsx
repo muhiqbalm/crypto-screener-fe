@@ -8,8 +8,10 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { StatusPill } from '@/components/ui/status-pill'
 import { Term } from '@/components/ui/term'
-import { LiveDot } from '@/components/bot/kit/LiveDot'
-import { HeroCard, IconBadge } from '@/components/bot/kit/Tiles'
+import { CoinAvatar } from '@/components/ui/coin-avatar'
+import { CountUp } from '@/components/ui/count-up'
+import { HeroCard } from '@/components/ui/hero-card'
+import { IconChip } from '@/components/ui/icon-title'
 import { EmptyState, ErrorState } from '@/components/shell/states'
 import { ExchangeLabel } from '@/components/trading/ExchangeLabel'
 import { useBalance } from '@/lib/queries/credentials'
@@ -30,17 +32,17 @@ function SettingsLink() {
 // One asset: a row on wide screens, two lines on phones (nothing cut off)
 // ---------------------------------------------------------------------------
 
+/** Same fluid columns for the header and the rows, so nothing overflows a half-width card. */
+const ASSET_GRID = 'grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.15fr)]'
+
 function AssetRow({ item }: { item: ExchangeBalanceResponse }) {
-  const usedPct = item.total > 0 ? (item.used / item.total) * 100 : 0
   return (
-    <div className="grid min-h-[52px] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 rounded-2xl px-3 py-3 hover:bg-muted/40 sm:grid-cols-[7rem_minmax(0,1fr)_6.5rem_6.5rem_7.5rem]">
-      <div className="min-w-0">
-        <p className="text-[15px] font-semibold leading-none">{item.currency}</p>
-        <p className="mt-0.5 text-[13px] capitalize text-muted-foreground">{item.account_type}</p>
-      </div>
-      <div className="hidden sm:block" aria-hidden="true">
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-          <div className="h-full rounded-full bg-muted-foreground/40" style={{ width: `${Math.min(usedPct, 100)}%` }} />
+    <div className={`${ASSET_GRID} min-h-[52px] items-center gap-y-1 rounded-2xl px-3 py-3 hover:bg-muted/40`}>
+      <div className="flex min-w-0 items-center gap-2.5">
+        <CoinAvatar symbol={item.currency} size="sm" />
+        <div className="min-w-0">
+          <p className="text-[15px] font-semibold leading-none">{item.currency}</p>
+          <p className="mt-0.5 text-[13px] capitalize text-muted-foreground">{item.account_type}</p>
         </div>
       </div>
       {/* Free and margin-in-use are neutral: neither is a gain or a loss. */}
@@ -71,7 +73,7 @@ function ExchangeBalanceCard({ exchange, items }: { exchange: string; items: Exc
             </Badge>
           </div>
           <div className="text-right">
-            <p className="num text-[30px] font-bold leading-none tracking-tight">{formatUsd(total)}</p>
+            <p className="num display text-3xl font-extrabold leading-none">{formatUsd(total)}</p>
             <p className="text-[13px] text-muted-foreground">
               <Term k="stablecoin_total" noTip />
             </p>
@@ -83,11 +85,10 @@ function ExchangeBalanceCard({ exchange, items }: { exchange: string; items: Exc
           <p className="py-6 text-center text-[15px] text-muted-foreground">Tidak ada aset</p>
         ) : (
           <div>
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 px-3 pb-1 text-[13px] font-medium uppercase tracking-wider text-muted-foreground sm:grid-cols-[7rem_minmax(0,1fr)_6.5rem_6.5rem_7.5rem]">
+            <div className={`${ASSET_GRID} px-3 pb-1 text-3xs font-bold uppercase tracking-wider text-muted-foreground`}>
               <span>Aset</span>
-              <span className="hidden sm:block" />
               <span className="hidden text-right sm:block">Bebas</span>
-              <span className="hidden text-right sm:block">Dipakai margin</span>
+              <span className="hidden text-right sm:block" title="Dipakai sebagai margin posisi">Di margin</span>
               <span className="text-right">Total</span>
             </div>
             {items.map((item, i) => (
@@ -114,23 +115,22 @@ function PortfolioSummary({
   isFetching: boolean
 }) {
   return (
-    <HeroCard glow="info" aria-label="Total stablecoin">
+    <HeroCard glow="brand" aria-label="Total stablecoin">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <IconBadge icon={Wallet} />
-          <p className="flex items-center gap-2 text-[17px] font-semibold">
+          <IconChip icon={Wallet} tone="brand" />
+          <h2 className="text-lg font-bold">
             <Term k="stablecoin_total" />
-          </p>
+          </h2>
         </div>
-        <span className="inline-flex items-center gap-2">
-          <LiveDot tone="ok" label="Data live dari exchange" />
-          <StatusPill kind="live" size="sm" />
-        </span>
+        <StatusPill kind="live" size="md" />
       </div>
-      <p className="num mt-5 text-[48px] font-bold leading-none tracking-tight sm:text-[56px]">{formatUsd(total)}</p>
-      <p className="mt-3 text-[15px] text-muted-foreground">Hanya USDT, USDC dan sejenisnya; bukan ekuitas akun.</p>
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-4">
-        <span className="text-[14px] text-muted-foreground">
+      <p className="num display mt-6 text-5xl font-extrabold leading-none sm:text-6xl">
+        <CountUp value={total} format={(n) => formatUsd(n)} />
+      </p>
+      <p className="mt-3 text-base text-muted-foreground">Hanya USDT, USDC dan sejenisnya; bukan ekuitas akun.</p>
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-4">
+        <span className="text-xs text-muted-foreground">
           {exchangeCount} exchange terhubung{updatedAt ? ` · diperbarui ${formatAge(updatedAt, { seconds: true })}` : ''}
         </span>
         <Button variant="outline" size="sm" onClick={onRefresh} disabled={isFetching} className="gap-1.5 rounded-full" aria-label="Muat ulang saldo">
@@ -145,9 +145,9 @@ function PortfolioSummary({
 function BalanceSkeleton() {
   return (
     <div className="space-y-4" aria-busy="true">
-      <Skeleton className="h-20 w-full rounded-xl" />
+      <Skeleton className="h-48 w-full rounded-3xl" />
       {[0, 1].map((i) => (
-        <Skeleton key={i} className="h-40 w-full rounded-xl" />
+        <Skeleton key={i} className="h-40 w-full rounded-3xl" />
       ))}
     </div>
   )
