@@ -228,19 +228,6 @@ export function familyName(templateName: string | null | undefined): string {
 }
 
 // ---------------------------------------------------------------------------
-// Paper berjalan hand-off (contract with the W3b arena page)
-// ---------------------------------------------------------------------------
-
-/**
- * After "Simpan sebagai preset & mulai paper" the user lands on Paper berjalan with that preset
- * highlighted. Contract: `/lab/arena?highlight=<presetId>` (the arena page reads `highlight` and
- * scrolls to / marks the row of that preset; unknown ids are ignored).
- */
-export function arenaHighlightHref(presetId: string | number): string {
-  return `/lab/arena?highlight=${encodeURIComponent(String(presetId))}`
-}
-
-// ---------------------------------------------------------------------------
 // Holdout lock, checked before a run is queued (mirror of backend honesty.resolve_holdout)
 // ---------------------------------------------------------------------------
 

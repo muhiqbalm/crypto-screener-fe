@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { arenaHighlightHref, holdoutPeriodError, proposedHoldoutStart } from './planning'
+import { holdoutPeriodError, proposedHoldoutStart } from './planning'
 import { COST_LIMITS, DEFAULT_COSTS, isLiveTemplate, matchesParamQuery, templateShort, thresholdText, validateCosts } from './form'
 import { initialForm, periodRange, switchTemplate, tfDefaultsPatch } from '@/components/lab/builder/form-state'
 import rosyadeJson from '@/lib/mocks/lab-template.json'
@@ -9,13 +9,6 @@ import type { LabRunDefaults } from '@/lib/api/types/lab-insights'
 
 const ROSYADE = rosyadeJson as unknown as LabTemplate
 const [DONCHIAN] = familiesJson as unknown as LabTemplate[]
-
-describe('Paper berjalan hand-off', () => {
-  it('links to the arena with the preset highlighted', () => {
-    expect(arenaHighlightHref(42)).toBe('/lab/arena?highlight=42')
-    expect(arenaHighlightHref('a b')).toBe('/lab/arena?highlight=a%20b')
-  })
-})
 
 describe('holdout lock before submit (mirror of honesty.resolve_holdout)', () => {
   const lock = '2025-07-15T00:00:00Z'

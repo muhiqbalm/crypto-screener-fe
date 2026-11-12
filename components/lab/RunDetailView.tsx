@@ -278,7 +278,7 @@ export function RunDetailView({ id }: { id: string }) {
         </p>
       )}
 
-      {done && <PresetPaperDialog run={run} open={paperOpen} onOpenChange={setPaperOpen} />}
+      {done && <PresetPaperDialog run={run} template={template} open={paperOpen} onOpenChange={setPaperOpen} />}
 
       <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
         <AlertDialogContent>
