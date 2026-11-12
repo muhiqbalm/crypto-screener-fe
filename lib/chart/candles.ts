@@ -7,6 +7,7 @@
  * only at the chart boundary; everything else keeps real UTC seconds.
  */
 
+import { formatNumber } from '@/lib/utils/format'
 import { MONTHS_ID as MONTHS, WIB_OFFSET_MS } from '@/lib/utils/time'
 
 export interface Candle {
@@ -77,4 +78,11 @@ export function change24h(candles: Candle[], current: Candle | null, stepSec: nu
     if (candles[i].time + stepSec <= target) return pctChange(candles[i].close, current.close)
   }
   return null
+}
+
+/** Price-axis label in exchange style, with enough decimals for cheap coins. */
+export function axisPrice(p: number): string {
+  const a = Math.abs(p)
+  const digits = a >= 1000 ? 2 : a >= 1 ? 4 : a >= 0.01 ? 6 : 8
+  return formatNumber(p, { minDigits: 2, maxDigits: digits })
 }

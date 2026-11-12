@@ -105,6 +105,7 @@ export function BotStatusView() {
         metrics={v.facts.map((f) => ({
           label: f.label,
           value: f.value,
+          hint: f.hint,
           valueClassName: cn('text-sm', f.tone ? TONE_TEXT[f.tone] : undefined),
         }))}
         evidenceHref="#cek"

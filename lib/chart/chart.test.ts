@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { change24h, chartTickLabel, chartTimeLabel, pctChange, previousClose, toChartTime, type Candle } from './candles'
+import { axisPrice, change24h, chartTickLabel, chartTimeLabel, pctChange, previousClose, toChartTime, type Candle } from './candles'
 import { chartSearch, DEFAULT_TF, parseSymbol, parseTf, tfLong, TF_SECONDS } from './params'
 
 describe('chart URL params', () => {
@@ -34,6 +34,12 @@ describe('WIB chart time', () => {
     expect(toChartTime(t) - t).toBe(7 * 3600)
     expect(chartTimeLabel(toChartTime(t))).toBe('12 Nov 08:00')
     expect(chartTimeLabel(toChartTime(Date.parse('2026-11-11T17:00:00Z') / 1000), true)).toBe('12 Nov 2026')
+  })
+
+  it('labels the price axis in exchange style', () => {
+    expect(axisPrice(67420.5)).toBe('67,420.50')
+    expect(axisPrice(2.34567)).toBe('2.3457')
+    expect(axisPrice(0.00001234)).toBe('0.00001234')
   })
 
   it('formats axis ticks with Indonesian months', () => {

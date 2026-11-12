@@ -388,8 +388,8 @@ export function ChartContainer() {
         {/* Chart card */}
         <Card className="overflow-hidden">
           {/* Card header — price + status */}
-          <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
               <div>
                 <p className="text-xs font-medium text-muted-foreground">
                   {symbolMeta?.label ?? symbol}
@@ -422,7 +422,6 @@ export function ChartContainer() {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-3xs text-muted-foreground"><span className="hidden sm:inline">Waktu: </span>WIB</span>
               {/* Feed state: "Tersambung" only once a websocket tick has actually arrived.
                   Not called "Live": LIVE in this app means real money. */}
               <Badge
@@ -489,6 +488,9 @@ export function ChartContainer() {
                 />
               )}
             </div>
+            <p className="border-t border-border px-4 py-1.5 text-3xs text-muted-foreground">
+              Waktu di chart: WIB (UTC+7). Persen dibanding harga tutup candle sebelumnya; &quot;24 jam&quot; dibanding sekitar 24 jam lalu.
+            </p>
           </CardContent>
         </Card>
 

@@ -16,7 +16,7 @@ import {
 import type { OverlayMarker, OverlayPriceLine } from '@/lib/lab/overlay'
 import { useTheme } from 'next-themes'
 import { getChartTheme } from '@/lib/chart-theme'
-import { chartTickLabel, chartTimeLabel, toChartTime } from '@/lib/chart/candles'
+import { axisPrice, chartTickLabel, chartTimeLabel, toChartTime } from '@/lib/chart/candles'
 
 // ---------------------------------------------------------------------------
 // REST: fetch historical klines from Binance
@@ -183,6 +183,8 @@ export function TradingChart({
       },
       localization: {
         timeFormatter: (time: Time) => `${chartTimeLabel(Number(time), dailyRef.current)} WIB`,
+        // Exchange style on the price axis too: 67,420.50 / 2.3457 / 0.00001234.
+        priceFormatter: axisPrice,
       },
       handleScroll: true,
       handleScale: true,

@@ -344,7 +344,7 @@ export function ExecutionQuality({ id = 'eksekusi' }: { id?: string }) {
           <p className="text-sm font-medium leading-snug">{executionAnswer(r)}</p>
           <Freshness updatedAt={r.last_cycle?.finished ?? undefined} timeframe="4h" nextDelayMin={10} />
           <SampleWarning r={r} />
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <StatTile
               label="Sinyal live"
               value={formatCount(r.actual.n_counted)}
@@ -357,6 +357,7 @@ export function ExecutionQuality({ id = 'eksekusi' }: { id?: string }) {
               hint={r.actual.n_with_fill ? `${r.actual.n_with_fill} fill vs close candle` : `Perkiraan dari harga pasar ${bps(r.actual.mean_drift_bps)}`}
             />
             <StatTile
+              className="col-span-2 sm:col-span-1"
               label={<Term k="alert_latency" noTip />}
               value={duration(r.actual.median_latency_s)}
               hint={r.actual.latency_upper_bound ? 'Median · batas atas (dicatat setelah order)' : 'Median · candle tutup → alert diterima'}
