@@ -239,7 +239,7 @@ export function RunsTable() {
 
       <p className="text-2xs text-muted-foreground">
         {active > 0 ? `${active} uji masih berjalan; daftar ini memperbarui diri. ` : ''}
-        200 uji satu koin terakhir dan 20 uji banyak koin terakhir. Klik baris untuk detail; centang 2–4 uji untuk dibandingkan.
+        Dari 200 uji terakhir; uji banyak koin (20 terakhir) tampil sebagai satu baris. Klik baris untuk detail; centang 2–4 uji untuk dibandingkan.
       </p>
 
       {loading ? (
