@@ -140,6 +140,15 @@ function Plan({ d, inputs, setInputs }: { d: OutlookDetail; inputs: OutlookInput
               </span>
             </p>
           )}
+          {st.tp1 !== null && st.tp1 !== undefined && (
+            <p className="mt-1 text-xs">
+              <span className="font-semibold">Target awal (bersyarat) {formatPrice(st.tp1)}</span>{' '}
+              <span className="text-muted-foreground">
+                — strategi hanya mengambil sebagian untung di sini bila momentum melemah
+                {pj.at_tp1 ? <> (modalmu: <span className={cn('num', signClass(pj.at_tp1.net))}>{formatUsdSigned(pj.at_tp1.net)}</span>)</> : null}.
+              </span>
+            </p>
+          )}
           {pl.invalidation && (
             <div className="mt-3 text-xs">
               <span className="font-semibold">Batal kalau:</span>

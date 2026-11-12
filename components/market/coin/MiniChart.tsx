@@ -15,6 +15,9 @@ export function MiniChart({ d }: { d: OutlookDetail }) {
     const st = d.strategy
     if (!st.side || st.entry_price === null || st.entry_price === undefined) return []
     const out = positionLines('outlook', { entry_price: st.entry_price, sl: st.sl ?? null, tp: st.tp ?? null, side: st.side })
+    if (st.tp1 !== null && st.tp1 !== undefined) {
+      out.push({ id: 'outlook-tp1', price: st.tp1, color: OVERLAY_COLORS.tp, title: 'target awal (bersyarat)', dashed: true })
+    }
     const z = d.plan?.entry_zone
     if (z) {
       out.push({ id: 'outlook-zone-lo', price: z[0], color: OVERLAY_COLORS.entry, title: 'zona entry', dashed: true })
