@@ -65,6 +65,7 @@ describe('formatAge', () => {
     expect(formatAge(NOW_2026 - 2 * 3_600_000, { now: NOW_2026 })).toBe('2 jam lalu')
     expect(formatAge(NOW_2026 - 3 * 86_400_000, { now: NOW_2026 })).toBe('3 hari lalu')
     expect(formatAge(NOW_2026 + 5 * 60_000, { now: NOW_2026 })).toBe('dalam 5 mnt')
+    expect(formatAge(NOW_2026 + 20_000, { now: NOW_2026 })).toBe('baru saja')
   })
   it('falls back to the date after a week', () => {
     expect(formatAge('2026-10-01T01:00:00Z', { now: NOW_2026 })).toBe('1 Okt')

@@ -154,7 +154,7 @@ export function MarketRibbon({ compact, className }: MarketRibbonProps) {
           term="net_flow"
           label="Transaksi besar"
           value={flow?.word ?? null}
-          sub={flow ? [flow.amount, flow.window].filter(Boolean).join(' · ') : null}
+          sub={flow ? [flow.amount, flow.window && `${flow.window} terakhir`].filter(Boolean).join(' · ') : null}
           tone={flow ? (flow.net > 0 ? 'up' : flow.net < 0 ? 'down' : 'flat') : 'none'}
           href="/whales"
           loading={whales.isPending}

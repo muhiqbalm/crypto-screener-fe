@@ -135,7 +135,9 @@ export function formatAge(
   const future = diff < 0
   const s = Math.abs(diff) / 1000
   const wrap = (txt: string) => (future ? `dalam ${txt}` : `${txt} lalu`)
-  if (s < 45) return opts.seconds && s >= 1 ? wrap(`${Math.round(s)} dtk`) : future ? 'sebentar lagi' : 'baru saja'
+  // Up to a minute "in the future" is clock skew / a stale `now`, not a future event.
+  if (future && s < 60) return 'baru saja'
+  if (s < 45) return opts.seconds && s >= 1 ? wrap(`${Math.round(s)} dtk`) : 'baru saja'
   const m = s / 60
   if (m < 60) return wrap(`${Math.max(1, Math.round(m))} mnt`)
   const h = m / 60
