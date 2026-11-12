@@ -17,21 +17,29 @@ const T: LabTemplate = {
 }
 
 describe('ParamForm', () => {
-  it('renders a field per param grouped by group, with the live-default note', () => {
+  it('renders a field per param grouped by group; no "live" wording for a research template', () => {
     render(<ParamForm template={T} values={initialParamValues(T)} errors={{}} onChange={() => {}} />)
     expect(screen.getByText('Trend')).toBeInTheDocument()
     expect(screen.getByText('Risk')).toBeInTheDocument()
     expect(screen.getByLabelText(/EMA cepat/)).toHaveValue(21)
     expect(screen.getByRole('switch')).toBeInTheDocument()
     expect(screen.getByLabelText(/Arah/)).toHaveValue('both')
-    expect(screen.getByText(/default = preset 4H-ETH-Basic \(setting live ETH 4H\)/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /reset ke default live/i })).toBeDisabled()
+    expect(screen.getByText('Default strategi (setting riset)')).toBeInTheDocument()
+    expect(screen.queryByText(/live/i)).toBeNull()
+    expect(screen.getByRole('button', { name: /^reset ke default$/i })).toBeDisabled()
+  })
+
+  it('says "setting live" only for the Rosyade family', () => {
+    const R: LabTemplate = { ...T, id: 'rosyade_family' }
+    render(<ParamForm template={R} values={initialParamValues(R)} errors={{}} onChange={() => {}} />)
+    expect(screen.getByText(/Sama dengan 4H-ETH-Basic \(setting live\)/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /reset ke setting live/i })).toBeDisabled()
   })
 
   it('reset button restores defaults', () => {
     const onChange = vi.fn()
     render(<ParamForm template={T} values={{ ...initialParamValues(T), ema_fast: '50' }} errors={{}} onChange={onChange} />)
-    fireEvent.click(screen.getByRole('button', { name: /reset ke default live/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^reset ke default$/i }))
     expect(onChange).toHaveBeenCalledWith(initialParamValues(T))
   })
 

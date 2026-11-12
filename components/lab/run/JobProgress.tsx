@@ -4,22 +4,7 @@ import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { formatDuration } from '@/lib/lab/planning'
 import type { LabJob } from '@/lib/api/types/lab'
-
-function stageLabel(stage: string | null | undefined): string {
-  const map: Record<string, string> = {
-    queued: 'Menunggu antrian',
-    data: 'Menyiapkan data',
-    download: 'Mengunduh data',
-    optimize: 'Mencari parameter',
-    walk_forward: 'Walk-forward',
-    backtest: 'Backtest',
-    sensitivity: 'Uji sensitivitas',
-    holdout: 'Ujian holdout',
-    monte_carlo: 'Monte Carlo',
-    report: 'Menyusun rapor',
-  }
-  return stage ? (map[stage] ?? stage.replace(/_/g, ' ')) : 'Memproses'
-}
+import { stageLabel } from './copy'
 
 export function JobProgress({ job, status }: { job: LabJob | undefined; status: string }) {
   const p = job && typeof job.progress === 'object' && job.progress ? job.progress : null
@@ -34,7 +19,7 @@ export function JobProgress({ job, status }: { job: LabJob | undefined; status: 
           {status === 'queued' ? 'Menunggu antrian…' : `${stageLabel(p?.stage)}…`}
         </span>
         <span className="font-mono text-xs text-muted-foreground">
-          {p?.trials_total ? `trial ${p.trials_done ?? 0}/${p.trials_total}` : total > 0 ? `${done}/${total}` : ''}
+          {p?.trials_total ? `percobaan ${p.trials_done ?? 0}/${p.trials_total}` : total > 0 ? `${done}/${total}` : ''}
         </span>
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct ?? undefined}>
@@ -44,7 +29,7 @@ export function JobProgress({ job, status }: { job: LabJob | undefined; status: 
         />
       </div>
       <JobEta job={job} status={status} />
-      <p className="text-2xs text-muted-foreground">Halaman update otomatis. Boleh ditinggal — hasilnya tersimpan di riwayat run.</p>
+      <p className="text-2xs text-muted-foreground">Halaman ini memperbarui diri. Boleh ditinggal; hasilnya tersimpan di Hasil uji.</p>
     </div>
   )
 }

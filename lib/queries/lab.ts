@@ -1,12 +1,12 @@
 'use client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/lib/api/client'
+import { api, request } from '@/lib/api/client'
 import type {
   LabId,
   LabRunCreateRequest,
-  LabRunSummary,
   LabScanCreateRequest,
 } from '@/lib/api/types/lab'
+import type { LabHoldoutLock, LabImportance, LabRunListItem } from '@/lib/api/types/lab-uji'
 import { isActiveStatus } from '@/lib/lab/form'
 
 const labKeys = {
@@ -15,15 +15,23 @@ const labKeys = {
   templates: () => [...labKeys.all, 'templates'] as const,
   symbols: () => [...labKeys.all, 'symbols'] as const,
   dataStatus: () => [...labKeys.all, 'data-status'] as const,
+  /** Prefix of every runs list (invalidate this); each limit has its own cache entry. */
   runs: () => [...labKeys.all, 'runs'] as const,
+  runsList: (limit: number) => [...labKeys.all, 'runs', limit] as const,
   run: (id: LabId) => [...labKeys.all, 'run', String(id)] as const,
   equity: (id: LabId) => [...labKeys.all, 'run', String(id), 'equity'] as const,
   trades: (id: LabId) => [...labKeys.all, 'run', String(id), 'trades'] as const,
   scans: () => [...labKeys.all, 'scans'] as const,
   scan: (id: LabId) => [...labKeys.all, 'scan', String(id)] as const,
+  importance: (templateId: string, timeframe: string) => [...labKeys.all, 'importance', templateId, timeframe] as const,
+  holdoutLock: (templateId: string, symbol: string, timeframe: string) =>
+    [...labKeys.all, 'holdout-lock', templateId, symbol, timeframe] as const,
 }
 
 const POLL_MS = 3_000
+/** Lists poll slower than a single run: they also tick for other people's scans. */
+const LIST_POLL_MS = 10_000
+const enc = (v: string) => encodeURIComponent(v)
 
 /** Admin check. Any error (403, network…) is treated as "not admin". */
 export function useLabMe(enabled = true) {
@@ -60,13 +68,14 @@ export function useLabDataStatus() {
   })
 }
 
+/** Latest runs. The cache key includes the limit, so a 200-row list never overwrites a 50-row one. */
 export function useLabRuns(limit = 50) {
   return useQuery({
-    queryKey: labKeys.runs(),
-    queryFn: ({ signal }) => api.getLabRuns(limit, signal),
+    queryKey: labKeys.runsList(limit),
+    queryFn: ({ signal }) => api.getLabRuns(limit, signal) as Promise<LabRunListItem[]>,
     refetchInterval: (query) => {
-      const rows = query.state.data as LabRunSummary[] | undefined
-      return rows?.some((r) => isActiveStatus(r.status)) ? POLL_MS : false
+      const rows = query.state.data as LabRunListItem[] | undefined
+      return rows?.some((r) => isActiveStatus(r.status)) ? LIST_POLL_MS : false
     },
     refetchIntervalInBackground: false,
   })
@@ -124,6 +133,8 @@ export function useLabScans() {
   return useQuery({
     queryKey: labKeys.scans(),
     queryFn: ({ signal }) => api.getLabScans(signal),
+    refetchInterval: (query) => (query.state.data?.some((s) => isActiveStatus(s.status)) ? LIST_POLL_MS : false),
+    refetchIntervalInBackground: false,
   })
 }
 
@@ -155,6 +166,39 @@ export function useLabJob(jobId: LabId | null | undefined, enabled: boolean) {
     enabled: enabled && jobId !== null && jobId !== undefined,
     refetchInterval: (query) => (isActiveStatus(query.state.data?.status ?? 'running') ? POLL_MS : false),
     refetchIntervalInBackground: false,
+    retry: false,
+  })
+}
+
+/**
+ * Which params matter for a template x timeframe (GET /lab/templates/{id}/importance).
+ * Read-only advice: never used to change a value automatically. Errors (older backend) are
+ * left to the caller, which falls back to the template's own tunable flags.
+ */
+export function useLabImportance(templateId: string | null | undefined, timeframe: string | null | undefined) {
+  return useQuery({
+    queryKey: labKeys.importance(templateId ?? '', timeframe ?? ''),
+    queryFn: ({ signal }) =>
+      request<LabImportance>('GET', `/api/v1/lab/templates/${enc(templateId!)}/importance?timeframe=${enc(timeframe!)}`, undefined, signal),
+    enabled: Boolean(templateId && timeframe),
+    staleTime: 10 * 60_000,
+    retry: false,
+  })
+}
+
+/** Locked holdout of template x symbol x timeframe (read-only; never creates a lock). */
+export function useLabHoldoutLock(templateId: string | null | undefined, symbol: string | null | undefined, timeframe: string | null | undefined) {
+  return useQuery({
+    queryKey: labKeys.holdoutLock(templateId ?? '', symbol ?? '', timeframe ?? ''),
+    queryFn: ({ signal }) =>
+      request<LabHoldoutLock>(
+        'GET',
+        `/api/v1/lab/holdout-lock?template_id=${enc(templateId!)}&symbol=${enc(symbol!)}&timeframe=${enc(timeframe!)}`,
+        undefined,
+        signal,
+      ),
+    enabled: Boolean(templateId && symbol && timeframe),
+    staleTime: 60_000,
     retry: false,
   })
 }

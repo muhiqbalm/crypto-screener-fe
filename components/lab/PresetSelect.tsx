@@ -32,7 +32,7 @@ export function PresetSelect({
             .map((p) => (
               <option key={String(p.id)} value={String(p.id)} className="bg-popover">
                 {p.name}
-                {p.live_reference ? ' (live)' : p.verdict === 'PASS' ? ' ✓ LOLOS' : p.verdict === 'FAIL' ? ' ✗ GAGAL' : ''}
+                {p.live_reference ? ' · setting live' : p.verdict === 'PASS' ? ' · Lolos' : p.verdict === 'FAIL' ? ' · Gagal' : ' · tanpa rapor'}
               </option>
             ))}
         </optgroup>

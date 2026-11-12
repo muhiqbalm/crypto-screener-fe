@@ -155,6 +155,9 @@ export const DEFAULT_COSTS: CostFormValues = {
   funding: true,
 }
 
+/** Backend limits per side (src/api/lab_models.py Costs): fee <= 1 %, slippage <= 2 %. */
+export const COST_LIMITS = { commission_pct: 1, slippage_pct: 2 } as const
+
 export function validateCosts(c: CostFormValues): Record<string, string> {
   const errors: Record<string, string> = {}
   for (const key of ['commission_pct', 'slippage_pct'] as const) {
@@ -162,7 +165,7 @@ export function validateCosts(c: CostFormValues): Record<string, string> {
     const n = Number(s)
     if (s === '' || !Number.isFinite(n)) errors[key] = 'Harus angka'
     else if (n < 0) errors[key] = 'Tidak boleh negatif'
-    else if (n > 5) errors[key] = 'Maksimal 5%'
+    else if (n > COST_LIMITS[key]) errors[key] = `Maksimal ${COST_LIMITS[key]}%`
   }
   return errors
 }
@@ -309,19 +312,6 @@ export function sortScanRows(rows: LabScanRow[]): LabScanRow[] {
   })
 }
 
-/**
- * "Top 30" quick-select: the most liquid Binance USDT-M perps. This is a
- * static universe list (names only, no numbers); it is intersected with the
- * symbols the backend reports so we never offer something it cannot run.
- */
-const TOP_30_SYMBOLS = [
-  'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'DOGEUSDT',
-  'ADAUSDT', 'AVAXUSDT', 'LINKUSDT', 'TRXUSDT', 'DOTUSDT', 'LTCUSDT',
-  'BCHUSDT', 'SUIUSDT', 'NEARUSDT', 'APTUSDT', 'ARBUSDT', 'OPUSDT',
-  'TONUSDT', 'UNIUSDT', 'ATOMUSDT', 'FILUSDT', 'ETCUSDT', 'INJUSDT',
-  'AAVEUSDT', 'WLDUSDT', 'SEIUSDT', 'TIAUSDT', 'HBARUSDT', 'XLMUSDT',
-] as const
-
 /** Quick-select groups for the scan picker (intersected with /symbols). */
 export const MAJORS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT']
 export const MEMES = ['DOGEUSDT', '1000PEPEUSDT', '1000SHIBUSDT', 'WIFUSDT', '1000BONKUSDT', '1000FLOKIUSDT', 'PEPEUSDT', 'SHIBUSDT', 'BONKUSDT', 'FLOKIUSDT']
@@ -339,11 +329,6 @@ export function pickAvailable(list: readonly string[], available: string[]): str
   return list.filter((s) => set.has(s))
 }
 
-export function top30Available(available: string[]): string[] {
-  const set = new Set(available)
-  return TOP_30_SYMBOLS.filter((s) => set.has(s))
-}
-
 // ---------------------------------------------------------------------------
 // Status / verdict / honesty
 // ---------------------------------------------------------------------------
@@ -354,7 +339,25 @@ export function isActiveStatus(s: LabStatus | null | undefined): boolean {
 
 export function holdoutWarning(touches: number | null | undefined): string | null {
   if (typeof touches !== 'number' || !Number.isFinite(touches) || touches <= 1) return null
-  return `Hasil holdout sudah dilihat ${touches} kali — risiko overfitting.`
+  return `Data baru (holdout) kombinasi ini sudah dipakai ${touches} kali, jadi hasilnya bisa terlalu pas dengan masa lalu.`
+}
+
+/** Threshold like ">= 1.2" / "> -50.0" / "<= 3" -> "minimal 1.2" / "di atas −50" / "maksimal 3". */
+export function thresholdText(t: LabCheck['threshold']): string {
+  const trim = (x: number) => String(Math.round(x * 1000) / 1000)
+  if (typeof t === 'number') return `batas ${trim(t)}`
+  if (typeof t !== 'string') return '—'
+  const m = t.trim().match(/^(>=|>|<=|<|=)?\s*(-?\d+(?:\.\d+)?)$/)
+  if (!m) return t
+  const v = Number(m[2])
+  const n = `${v < 0 ? '−' : ''}${trim(Math.abs(v))}`
+  switch (m[1]) {
+    case '>=': return `minimal ${n}`
+    case '>': return `di atas ${n}`
+    case '<=': return `maksimal ${n}`
+    case '<': return `di bawah ${n}`
+    default: return n
+  }
 }
 
 interface VerdictCopy {
@@ -365,32 +368,32 @@ interface VerdictCopy {
 
 export function verdictCopy(verdict: LabVerdict, mode: LabRunMode, status: LabStatus): VerdictCopy {
   if (status === 'queued' || status === 'running') {
-    return { tone: 'none', title: 'Sedang diuji…', body: 'Rapor LOLOS/GAGAL muncul setelah run selesai.' }
+    return { tone: 'none', title: 'Sedang diuji…', body: 'Rapor Lolos/Gagal muncul setelah uji selesai.' }
   }
   if (status !== 'done') {
-    return { tone: 'none', title: 'Tidak ada rapor', body: 'Run tidak selesai, jadi tidak ada rapor kejujuran.' }
+    return { tone: 'none', title: 'Tidak ada rapor', body: 'Uji tidak selesai, jadi tidak ada rapor.' }
   }
   if (verdict === 'PASS') {
     return {
       tone: 'pass',
-      title: 'LOLOS',
-      body: 'Lolos semua cek di periode holdout yang dikunci. Tetap bukan jaminan profit — paper trade dulu sebelum live.',
+      title: 'Lolos',
+      body: 'Semua syarat rapor terpenuhi di data baru (holdout) yang dikunci. Tetap bukan jaminan untung: jalankan paper dulu.',
     }
   }
   if (verdict === 'FAIL') {
     return {
       tone: 'fail',
-      title: 'GAGAL',
-      body: 'Jangan dipakai live. Minimal satu cek kejujuran gagal di periode holdout.',
+      title: 'Gagal',
+      body: 'Minimal satu syarat rapor tidak terpenuhi di data baru (holdout). Jangan dipakai untuk uang asli.',
     }
   }
   return {
     tone: 'none',
-    title: mode === 'backtest' ? 'Belum divalidasi' : 'Tanpa rapor',
+    title: mode === 'backtest' ? 'Belum diuji jujur' : 'Tanpa rapor',
     body:
       mode === 'backtest'
-        ? 'Ini backtest cepat (in-sample) — bukan bukti. Klik Validasi untuk dapat rapor LOLOS/GAGAL.'
-        : 'Backend tidak mengembalikan verdict untuk run ini.',
+        ? 'Ini uji cepat di seluruh data lama, tanpa rapor, jadi bukan bukti. Jalankan Uji jujur untuk mendapat rapor Lolos/Gagal.'
+        : 'Server tidak mengirim rapor untuk uji ini.',
   }
 }
 
@@ -398,40 +401,164 @@ export function verdictCopy(verdict: LabVerdict, mode: LabRunMode, status: LabSt
 // Main ("tunable") vs advanced params
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Strategy (template) copy: "live" wording only for the Rosyade family
+// ---------------------------------------------------------------------------
+
+/** The template whose defaults ARE the live strategy (preset 4H-ETH-Basic). */
+export const LIVE_TEMPLATE_ID = 'rosyade_family'
+export const LIVE_PRESET_NAME = '4H-ETH-Basic'
+
+export function isLiveTemplate(templateId: string | null | undefined): boolean {
+  return templateId === LIVE_TEMPLATE_ID
+}
+
+interface TemplateCopy {
+  /** Short name for tables and chips. */
+  short: string
+  /** One or two plain sentences about what the strategy does. */
+  description: string
+  /** What the default parameters are. */
+  defaults: string
+}
+
+const TEMPLATE_COPY: Record<string, TemplateCopy> = {
+  rosyade_family: {
+    short: 'Rosyade',
+    description:
+      'Strategi bot live. Masuk saat harga menembus struktur swing, disaring volume, tren timeframe besar, RSI, ADX, MACD dan filter pasar sideways.',
+    defaults: 'Default = setting live 4H-ETH-Basic (ETH 4 jam). Koin dan timeframe lain biasanya butuh setting sendiri.',
+  },
+  donchian_breakout: {
+    short: 'Donchian',
+    description:
+      'Ikut tren: masuk saat harga menembus titik tertinggi atau terendah N candle, keluar lewat channel lawan atau stop yang ikut bergerak (ATR).',
+    defaults: 'Default = setting riset, belum pernah dipakai bot.',
+  },
+  mean_reversion_range: {
+    short: 'Mean reversion',
+    description:
+      'Melawan arah di pasar sideways: masuk saat harga keluar lalu kembali ke pita Bollinger/Keltner, ambil untung di garis tengah.',
+    defaults: 'Default = setting riset, belum pernah dipakai bot.',
+  },
+  universal_v0: {
+    short: 'Universal (arsip)',
+    description: 'Strategi multi-koin yang dihentikan setelah uji jujur.',
+    defaults: '',
+  },
+}
+
+/** Short strategy name for lists ("Rosyade", "Donchian"); falls back to the backend name or id. */
+export function templateShort(templateId: string | null | undefined, backendName?: string | null): string {
+  if (!templateId) return backendName?.trim() || 'Strategi'
+  return TEMPLATE_COPY[templateId]?.short ?? (backendName?.trim() || templateId)
+}
+
+export function templateDescription(t: Pick<LabTemplate, 'id' | 'description'>): string {
+  return TEMPLATE_COPY[t.id]?.description ?? t.description
+}
+
+export function templateDefaultsCopy(templateId: string): string {
+  return TEMPLATE_COPY[templateId]?.defaults ?? 'Default = setting bawaan strategi, belum pernah dipakai bot.'
+}
+
+// ---------------------------------------------------------------------------
+// Parameter copy (Indonesian label + one plain sentence)
+// ---------------------------------------------------------------------------
+
 /**
- * Indonesian copy for the 12 tunable Rosyade params. Anything not listed
- * falls back to the backend label.
+ * Labels and one-line explanations for the params the form can show in step 2 (tunable +
+ * research-important, all templates). Anything not listed falls back to the backend label.
  */
 export const PARAM_COPY: Record<string, { label: string; help: string }> = {
-  swing_len: { label: 'Panjang swing', help: 'Berapa bar kiri/kanan untuk menandai swing high/low. Kecil = lebih sering entry.' },
-  long_sl_pct: { label: 'Stop loss long (%)', help: 'Jarak SL dari harga entry untuk posisi long.' },
-  short_sl_pct: { label: 'Stop loss short (%)', help: 'Jarak SL dari harga entry untuk posisi short.' },
-  ema_exit_len: { label: 'EMA exit', help: 'Panjang EMA untuk exit saat harga menembus balik EMA.' },
-  structure_pivot_len: { label: 'Pivot struktur', help: 'Panjang pivot untuk deteksi break of structure (exit).' },
-  atr_mult_medium_long: { label: 'Trailing ATR long', help: 'Pengali ATR untuk trailing stop long di regime volatilitas sedang.' },
-  atr_mult_medium_short: { label: 'Trailing ATR short', help: 'Pengali ATR untuk trailing stop short di regime volatilitas sedang.' },
-  adx_strong_threshold: { label: 'Batas ADX trend kuat', help: 'ADX di atas angka ini dianggap trend kuat.' },
-  entry_vol_mult: { label: 'Filter volume entry', help: 'Volume bar entry minimal sekian kali rata-rata volume.' },
-  ema_htf_len: { label: 'EMA timeframe besar', help: 'Panjang EMA filter trend di timeframe lebih besar.' },
-  chop_limit: { label: 'Batas choppiness', help: 'Di atas angka ini pasar dianggap sideways — entry diblokir.' },
-  cooldown_bars: { label: 'Jeda antar trade (bar)', help: 'Berapa bar menunggu setelah exit sebelum boleh entry lagi.' },
+  // Rosyade: the 12 tunables
+  swing_len: { label: 'Panjang swing', help: 'Berapa bar kiri/kanan untuk menandai titik balik (swing). Kecil = lebih sering masuk.' },
+  long_sl_pct: { label: 'Stop loss long (%)', help: 'Jarak stop loss dari harga masuk untuk posisi long.' },
+  short_sl_pct: { label: 'Stop loss short (%)', help: 'Jarak stop loss dari harga masuk untuk posisi short.' },
+  ema_exit_len: { label: 'EMA keluar', help: 'Panjang EMA untuk keluar saat harga menembus balik EMA.' },
+  structure_pivot_len: { label: 'Pivot struktur', help: 'Panjang pivot untuk mendeteksi struktur yang patah (sinyal keluar).' },
+  atr_mult_medium_long: { label: 'Stop ikut gerak long (tren sedang)', help: 'Jarak stop ikut gerak untuk long saat tren sedang, dalam kelipatan ATR.' },
+  atr_mult_medium_short: { label: 'Stop ikut gerak short (tren sedang)', help: 'Jarak stop ikut gerak untuk short saat tren sedang, dalam kelipatan ATR.' },
+  adx_strong_threshold: { label: 'Batas ADX tren kuat', help: 'ADX di atas angka ini dianggap tren kuat.' },
+  entry_vol_mult: { label: 'Filter volume masuk', help: 'Volume candle masuk minimal sekian kali rata-rata volume.' },
+  ema_htf_len: { label: 'EMA timeframe besar', help: 'Panjang EMA penyaring arah tren di timeframe yang lebih besar.' },
+  chop_limit: { label: 'Batas pasar sideways', help: 'Di atas angka choppiness ini pasar dianggap sideways, jadi entry diblokir.' },
+  cooldown_bars: { label: 'Jeda antar trade (bar)', help: 'Berapa bar menunggu setelah trade rugi sebelum boleh masuk lagi.' },
+  // Rosyade: research-important (riset 12 Nov)
+  atr_mult_weak_long: { label: 'Stop ikut gerak long (tren lemah)', help: 'Jarak stop ikut gerak untuk long saat tren lemah, dalam kelipatan ATR. Makin besar makin longgar.' },
+  long_tp1_pct: { label: 'Target TP1 long (%)', help: 'Jarak target pertama long dari harga masuk.' },
+  long_tp2_pct: { label: 'Target TP2 long (%)', help: 'Jarak target kedua long dari harga masuk.' },
+  short_tp1_pct: { label: 'Target TP1 short (%)', help: 'Jarak target pertama short dari harga masuk.' },
+  atr_lookback_short: { label: 'Lookback stop short (bar)', help: 'Berapa bar ke belakang untuk mencari titik terendah stop ikut gerak short.' },
+  short_max_drop_pct: { label: 'Filter short: batas turun (%)', help: 'Short diblokir kalau harga sudah turun lebih dari angka ini dalam beberapa bar terakhir.' },
+  short_drop_lookback: { label: 'Filter short: lookback (bar)', help: 'Jumlah bar untuk mengukur seberapa jauh harga sudah turun.' },
+  short_rsi_min: { label: 'Filter short: RSI minimum', help: 'Short hanya bila RSI di atas angka ini (tidak short di pasar yang sudah jenuh jual).' },
+  vol_lookback: { label: 'Lookback gejolak (bar)', help: 'Panjang data untuk mengukur gejolak pada mode ukuran posisi ikut gejolak.' },
+  risk_per_trade_pct: { label: 'Risiko per trade (%)', help: 'Persen modal yang dipertaruhkan per trade (mode ukuran posisi "risk").' },
+  entry_atr_len: { label: 'Panjang ATR entry', help: 'Panjang ATR untuk jarak pullback/limit saat timing entry di timeframe kecil.' },
+  entry_atr_mult: { label: 'Jarak pullback (× ATR)', help: 'Seberapa jauh menunggu pullback sebelum masuk, dalam kelipatan ATR (mode timing entry).' },
+  entry_rsi_len: { label: 'Panjang RSI entry', help: 'Panjang RSI untuk filter masuk.' },
+  macd_slow_len: { label: 'MACD lambat', help: 'Panjang EMA lambat MACD untuk filter masuk.' },
+  slope_len: { label: 'Panjang EMA kemiringan', help: 'Panjang EMA yang kemiringannya dipakai untuk mendeteksi pasar datar.' },
+  slope_th: { label: 'Batas kemiringan (%)', help: 'Kemiringan EMA di bawah angka ini dianggap pasar datar.' },
+  dcb_vol_thresh: { label: 'Batas volume DCB', help: 'Batas lonjakan volume untuk sinyal dead-cat-bounce.' },
+  be_lock_short_pct: { label: 'Kunci impas short (%)', help: 'Setelah untung sekian persen, stop short digeser ke harga masuk.' },
+  // Donchian breakout
+  enable_long: { label: 'Aktifkan long', help: 'Boleh membuka posisi long.' },
+  enable_short: { label: 'Aktifkan short', help: 'Boleh membuka posisi short.' },
+  dc_entry_len: { label: 'Channel masuk (N candle)', help: 'Masuk saat close menembus titik tertinggi/terendah N candle sebelumnya.' },
+  dc_exit_len: { label: 'Channel keluar (M candle)', help: 'Keluar saat close menembus titik terendah/tertinggi M candle sebelumnya.' },
+  dc_atr_len: { label: 'Panjang ATR', help: 'Panjang ATR untuk stop ikut gerak.' },
+  dc_atr_mult: { label: 'Stop ikut gerak (× ATR)', help: 'Jarak stop dari titik ekstrem sejak masuk, dalam kelipatan ATR. Hanya bergerak searah untung.' },
+  use_ema_htf: { label: 'Filter tren timeframe besar', help: 'Long hanya di atas EMA timeframe besar, short hanya di bawahnya.' },
+  // Mean reversion (range)
+  mr_regime: { label: 'Filter pasar sideways', help: 'Cara menentukan pasar sedang sideways: ADX rendah, choppiness tinggi, atau keduanya.' },
+  mr_chop_len: { label: 'Panjang choppiness', help: 'Jumlah candle untuk menghitung choppiness (seberapa datar pasar).' },
+  mr_chop_min: { label: 'Choppiness minimum', help: 'Hanya masuk bila choppiness di atas angka ini (pasar cukup sideways).' },
+  mr_len: { label: 'Panjang rata-rata (candle)', help: 'Jumlah candle untuk garis tengah pita.' },
+  mr_mult: { label: 'Lebar pita (k)', help: 'Seberapa jauh pita dari garis tengah. Makin lebar, makin jarang masuk.' },
+  mr_stop_atr_mult: { label: 'Stop keras (× ATR)', help: 'Stop tetap sejauh k × ATR dari harga masuk.' },
+  mr_max_bars: { label: 'Batas lama posisi (candle)', help: 'Posisi ditutup setelah sekian candle bila target atau stop belum kena (0 = mati).' },
+}
+
+/** Indonesian names for choice values (falls back to the raw value). */
+const CHOICE_COPY: Record<string, Record<string, string>> = {
+  mr_regime: { adx: 'ADX rendah', chop: 'Choppiness tinggi', adx_chop: 'Keduanya', off: 'Tanpa filter' },
+  mr_band: { bb: 'Bollinger', kc: 'Keltner' },
+  mr_trigger: { reenter: 'Kembali ke dalam pita', outside: 'Keluar pita' },
+  sizing_mode: { margin: 'Margin (seperti live)', risk: 'Risiko per trade', vol_target: 'Ikut gejolak' },
+  entry_mode: { bar_close: 'Saat candle tutup (live)', ltf_close: 'Close TF kecil', ltf_pullback: 'Pullback TF kecil', ltf_limit: 'Limit TF kecil' },
+  entry_timeout: { skip: 'Lewati', market: 'Masuk harga pasar' },
+  entry_band: { atr: 'ATR', ema: 'EMA' },
+}
+
+export function choiceLabel(key: string, value: string): string {
+  return CHOICE_COPY[key]?.[value] ?? value
 }
 
 const GROUP_COPY: Record<string, string> = {
+  // Rosyade (backend group names are English)
   Direction: 'Arah',
   'TP / SL': 'TP / SL',
-  'TP check': 'Cek TP (exhaustion)',
-  Exits: 'Exit',
-  'ATR trailing': 'Trailing ATR',
-  Regime: 'Regime volatilitas',
-  'Entry filters': 'Filter entry',
-  'Anti-sideways': 'Anti-sideways',
+  'TP check': 'Cek TP (tren melemah)',
+  Exits: 'Keluar',
+  'ATR trailing': 'Stop ikut gerak (ATR)',
+  Regime: 'Kekuatan tren',
+  'Entry filters': 'Filter masuk',
+  'Anti-sideways': 'Anti pasar sideways',
   'Short filters': 'Filter short',
-  'Breakeven lock': 'Kunci breakeven',
-  'Order blocks': 'Order block',
-  'Risk & sizing': 'Risiko & ukuran posisi',
-  Engine: 'Engine',
+  'Breakeven lock': 'Kunci impas',
+  'Order blocks': 'Zona order',
+  'Risk & sizing': 'Risiko',
+  Engine: 'Mesin uji',
   'Entry timing (MTF)': 'Timing entry (MTF, riset)',
+  // Donchian / Mean reversion (already Indonesian, made consistent)
+  'Filter trend HTF': 'Filter tren timeframe besar',
+  'Sinyal breakout': 'Sinyal masuk (breakout)',
+  'Exit & trailing stop': 'Keluar & stop ikut gerak',
+  'Filter regime (range)': 'Filter pasar sideways',
+  'Sinyal fade': 'Sinyal masuk (fade)',
+  Exit: 'Keluar',
 }
 
 export function paramLabel(spec: LabParamSpec): string {
@@ -445,6 +572,19 @@ export function paramHelp(spec: LabParamSpec): string | undefined {
 
 export function groupLabel(group: string): string {
   return GROUP_COPY[group] ?? group
+}
+
+/** One short line for the step-2 cards: the curated copy first, else the schema's own help. */
+export function paramShortHelp(spec: LabParamSpec): string | undefined {
+  return PARAM_COPY[spec.key]?.help || spec.help || undefined
+}
+
+/** Search in "Lanjutan": Indonesian label, backend label, key or group (case-insensitive). */
+export function matchesParamQuery(spec: LabParamSpec, query: string): boolean {
+  const q = query.trim().toLowerCase()
+  if (!q) return true
+  return [paramLabel(spec), spec.label, spec.key, spec.key.replace(/_/g, ' '), groupLabel(spec.group ?? '')]
+    .some((s) => s.toLowerCase().includes(q))
 }
 
 /** Main = params flagged tunable; advanced = the rest, grouped. */
@@ -527,13 +667,6 @@ export function detectPreset(start: string, end: string, today: Date = new Date(
 export const TRIAL_OPTIONS = [10, 30, 60] as const
 export type TrialCount = (typeof TRIAL_OPTIONS)[number]
 
-/** Measured backend timing: 10 trials ≈ 3 min, 30 ≈ 8 min, 60 ≈ 15 min. */
-const TRIAL_MINUTES: Record<number, number> = { 10: 3, 30: 8, 60: 15 }
-
-export function estimateMinutes(nTrials: number): number {
-  return TRIAL_MINUTES[nTrials] ?? Math.round(nTrials / 4)
-}
-
 export interface SearchRange {
   enabled: boolean
   min: string
@@ -608,12 +741,12 @@ function fmtSignedPct(v: number): string {
 }
 
 const CHECK_LABEL: Record<string, string> = {
-  oos_profit_factor: 'Profit factor holdout',
-  oos_net_return: 'Return bersih holdout',
-  mc_dd_p95: 'Drawdown terburuk (Monte Carlo 95%)',
-  min_oos_trades: 'Jumlah trade holdout',
-  cost_stress: 'Tahan biaya 2×',
-  sensitivity: 'Parameter rapuh',
+  oos_profit_factor: 'PF di data baru',
+  oos_net_return: 'Hasil bersih di data baru',
+  mc_dd_p95: 'Turun terdalam wajar (uji acak)',
+  min_oos_trades: 'Jumlah trade di data baru',
+  cost_stress: 'Tahan biaya dobel',
+  sensitivity: 'Setting rapuh',
   no_liquidation: 'Likuidasi',
 }
 
@@ -625,20 +758,20 @@ export function checkLabel(c: LabCheck): string {
 export function checkReason(c: LabCheck): string {
   const v = typeof c.value === 'number' && Number.isFinite(c.value) ? c.value : null
   const t = thresholdNumber(c.threshold)
-  if (v === null) return `${checkLabel(c)}: tidak ada data (dihitung GAGAL)`
+  if (v === null) return `${checkLabel(c)}: tidak ada data (dihitung Gagal)`
   switch (c.name) {
     case 'oos_profit_factor':
-      return `Profit factor di periode holdout ${v >= 999 ? 'tak terhingga (tanpa rugi)' : fmtNum(v)} (minimal ${t ?? 1.2})`
+      return `PF di data baru ${v >= 999 ? 'tak terhingga (tanpa rugi)' : fmtNum(v)} (minimal ${t ?? 1.2})`
     case 'oos_net_return':
-      return `Return bersih holdout setelah biaya ${fmtSignedPct(v)} (harus di atas ${t ?? 0}%)`
+      return `Hasil bersih di data baru setelah biaya ${fmtSignedPct(v)} (harus di atas ${t ?? 0}%)`
     case 'mc_dd_p95':
-      return `Drawdown terburuk 95% bisa ${fmtSignedPct(v)} (batas ${fmtSignedPct(t ?? -50)})`
+      return `Turun terdalam wajar bisa ${fmtSignedPct(v)} (batas ${fmtSignedPct(t ?? -50)})`
     case 'min_oos_trades':
-      return `${fmtNum(v, 0)} trade di holdout (minimal ${t ?? 30} supaya hasilnya bermakna)`
+      return `${fmtNum(v, 0)} trade di data baru (minimal ${t ?? 30} supaya hasilnya bermakna)`
     case 'cost_stress':
-      return `Kalau biaya 2× lipat, return holdout jadi ${fmtSignedPct(v)} (harus di atas 0%)`
+      return `Kalau biaya dobel, hasil di data baru jadi ${fmtSignedPct(v)} (harus di atas 0%)`
     case 'sensitivity':
-      return `${fmtNum(v, 0)} parameter rapuh — hasil berubah drastis kalau digeser sedikit (maks ${t ?? 3})`
+      return `${fmtNum(v, 0)} setting rapuh: hasilnya berubah jauh kalau digeser sedikit (maks ${t ?? 3})`
     case 'no_liquidation':
       return `${fmtNum(v, 0)} kali kena likuidasi (harus 0)`
     default:

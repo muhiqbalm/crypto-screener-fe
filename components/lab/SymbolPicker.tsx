@@ -13,7 +13,7 @@ interface SymbolPickerProps {
   invalid?: boolean
 }
 
-/** Searchable single-select for Binance perp symbols. */
+/** Searchable single-select for Binance perp coins. */
 export function SymbolPicker({ symbols, value, onChange, invalid }: SymbolPickerProps) {
   const [open, setOpen] = useState(false)
   const [q, setQ] = useState('')
@@ -44,7 +44,7 @@ export function SymbolPicker({ symbols, value, onChange, invalid }: SymbolPicker
           invalid && 'border-bearish',
         )}
       >
-        <span className={cn('truncate', !value && 'text-muted-foreground')}>{value || 'Pilih symbol…'}</span>
+        <span className={cn('truncate', !value && 'text-muted-foreground')}>{value || 'Pilih koin…'}</span>
         <span className="flex items-center gap-2">
           {selected && <DataTag hasData={selected.has_data} />}
           <ChevronDown className="h-4 w-4 opacity-50" />
@@ -60,12 +60,12 @@ export function SymbolPicker({ symbols, value, onChange, invalid }: SymbolPicker
               onChange={(e) => setQ(e.target.value)}
               placeholder="Cari, mis. SOL"
               className="h-8 pl-8 font-mono text-xs"
-              aria-label="Cari symbol"
+              aria-label="Cari koin"
             />
           </div>
           <ul role="listbox" className="max-h-64 overflow-auto">
             {filtered.length === 0 && (
-              <li className="px-2 py-3 text-center text-xs text-muted-foreground">Symbol tidak ditemukan</li>
+              <li className="px-2 py-3 text-center text-xs text-muted-foreground">Koin tidak ditemukan</li>
             )}
             {filtered.map((s) => (
               <li key={s.symbol}>
@@ -98,7 +98,7 @@ export function SymbolPicker({ symbols, value, onChange, invalid }: SymbolPicker
 /** "siap" when the backend already has candles; otherwise it downloads on first use. */
 function DataTag({ hasData }: { hasData: boolean }) {
   return hasData ? (
-    <span className="rounded-full bg-bullish/10 px-1.5 py-px font-sans text-3xs font-medium text-bullish">siap</span>
+    <span className="rounded-full border border-border px-1.5 py-px font-sans text-3xs font-medium text-muted-foreground">data siap</span>
   ) : (
     <span className="font-sans text-3xs text-muted-foreground" title="Data akan diunduh saat dipakai (±1 menit)">
       diunduh ±1 mnt

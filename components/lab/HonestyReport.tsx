@@ -2,14 +2,14 @@
 
 import { CheckCircle2, Eye, HelpCircle, Loader2, ShieldCheck, ShieldX, XCircle } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
-import { formatScore } from '@/lib/utils/format'
-import { checkLabel, checkReason, holdoutWarning, verdictCopy, verdictReasons } from '@/lib/lab/form'
+import { formatNumber } from '@/lib/utils/format'
+import { checkLabel, checkReason, holdoutWarning, thresholdText, verdictCopy, verdictReasons } from '@/lib/lab/form'
 import type { LabCheck, LabRunMode, LabStatus, LabVerdict } from '@/lib/api/types/lab'
 
 function fmtCheckValue(v: LabCheck['value']): string {
   if (v === null || v === undefined) return '—'
   if (typeof v === 'boolean') return v ? 'ya' : 'tidak'
-  if (typeof v === 'number') return v >= 999 ? '∞' : Number.isInteger(v) ? String(v) : formatScore(v)
+  if (typeof v === 'number') return v >= 999 ? '∞' : Number.isInteger(v) ? formatNumber(v, { digits: 0 }) : formatNumber(v)
   return v
 }
 
@@ -101,7 +101,7 @@ export function HoldoutWarning({ touches }: { touches: number | null | undefined
   return (
     <div role="alert" data-testid="holdout-warning" className="flex items-start gap-3 rounded-lg border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn">
       <Eye className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-      <span>{msg} Makin sering holdout diintip, makin tidak bisa dipercaya.</span>
+      <span>{msg} Makin sering dipakai, makin kurang bisa dipercaya.</span>
     </div>
   )
 }
@@ -109,7 +109,7 @@ export function HoldoutWarning({ touches }: { touches: number | null | undefined
 /** Checks as a table: status icon · check · value · requirement · plain-language note. */
 export function ChecksList({ checks }: { checks: LabCheck[] }) {
   if (checks.length === 0) {
-    return <p className="text-sm text-muted-foreground">Tidak ada cek kejujuran untuk run ini (mode backtest tidak menjalankan cek).</p>
+    return <p className="text-sm text-muted-foreground">Uji ini tidak punya rapor (uji cepat tidak menjalankan syarat rapor).</p>
   }
   return (
     <div className="-mx-4 overflow-x-auto sm:mx-0 sm:rounded-lg sm:border sm:border-border">
@@ -117,9 +117,9 @@ export function ChecksList({ checks }: { checks: LabCheck[] }) {
         <thead className="border-b border-border bg-muted/30">
           <tr>
             <th className="w-10 px-3 py-2"><span className="sr-only">Status</span></th>
-            <th className="px-3 py-2 text-left text-2xs font-medium uppercase tracking-wide text-muted-foreground">Cek</th>
+            <th className="px-3 py-2 text-left text-2xs font-medium uppercase tracking-wide text-muted-foreground">Syarat</th>
             <th className="px-3 py-2 text-right text-2xs font-medium uppercase tracking-wide text-muted-foreground">Nilai</th>
-            <th className="hidden px-3 py-2 text-right text-2xs font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">Syarat</th>
+            <th className="hidden px-3 py-2 text-right text-2xs font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">Batas</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border/50">
@@ -140,7 +140,7 @@ export function ChecksList({ checks }: { checks: LabCheck[] }) {
                 {fmtCheckValue(c.value)}
               </td>
               <td className="hidden whitespace-nowrap px-3 py-2.5 text-right align-top font-mono text-xs text-muted-foreground sm:table-cell">
-                {typeof c.threshold === 'number' ? `batas ${fmtCheckValue(c.threshold)}` : String(c.threshold ?? '—')}
+                {thresholdText(c.threshold)}
               </td>
             </tr>
           ))}
