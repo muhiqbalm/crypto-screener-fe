@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { daysBetween, hitCi, hitPct, isThin, pct, retCi, sortGroups, typeLabel } from './ledger'
+import { VERDICT_COPY, daysBetween, groupName, hitCi, hitPct, isThin, ledgerAnswer, pct, retCi, sortGroups, typeLabel } from './ledger'
 import { ledgerQuery } from '@/lib/api/ledger'
-import type { LedgerGroup, LedgerHorizonStats } from '@/lib/api/types/ledger'
+import type { LedgerGroup, LedgerHorizonStats, LedgerVerdict } from '@/lib/api/types/ledger'
 
 const stats = (n: number): LedgerHorizonStats => ({
   n, hit_rate: null, hit_ci: null, mean_pct: null, mean_ci: null, median_pct: null, mean_rel_btc_pct: null,
@@ -53,5 +53,45 @@ describe('ledgerQuery', () => {
   it('drops empty values', () => {
     expect(ledgerQuery({ source: '', symbol: 'ETHUSDT', limit: 50, since: undefined })).toBe('?symbol=ETHUSDT&limit=50')
     expect(ledgerQuery({})).toBe('')
+  })
+})
+
+const judged = (source: LedgerGroup['source'], t: string, verdict: LedgerVerdict, mean: number | null, direction: LedgerGroup['direction'] = null): LedgerGroup => {
+  const g = group(source, t, 40)
+  g.direction = direction
+  g.horizons['1d'] = { ...stats(40), verdict, mean_pct: mean }
+  return g
+}
+
+describe('ledgerAnswer (answer first)', () => {
+  it('lists what works and what is noise in one sentence', () => {
+    const a = ledgerAnswer(
+      [
+        judged('screener', 'tier_a', 'positive', 0.3),
+        judged('screener', 'momentum', 'positive', 0.8),
+        judged('screener', 'funding', 'negative', -0.4),
+        judged('screener', 'oi', 'inconclusive', 0.1),
+        judged('webhook', 'tv_open', 'insufficient', null),
+      ],
+      '1d',
+    )
+    expect(a.tone).toBe('baik')
+    expect(a.proven.map((g) => g.signal_type)).toEqual(['momentum', 'tier_a'])          // best average first
+    expect(a.negative.map((g) => g.signal_type)).toEqual(['funding'])
+    expect(a.text).toContain('2 jenis sinyal terbukti benar arahnya setelah 1 hari')
+    expect(a.text).toContain('1 cenderung salah arah')
+    expect(a.text).toContain('2 lainnya belum bisa dibedakan dari kebetulan (1 masih menunggu cukup data)')
+  })
+  it('says nothing is proven yet without inventing a winner', () => {
+    const a = ledgerAnswer([judged('screener', 'oi', 'inconclusive', 0.1)], '7d')
+    expect(a.tone).toBe('menunggu')
+    expect(a.text).toContain('Belum ada jenis sinyal yang terbukti setelah 7 hari')
+    expect(ledgerAnswer([], '1d').tone).toBe('info')
+  })
+  it('uses one name per verdict (glossary) and one name per group', () => {
+    expect(VERDICT_COPY.positive.label).toBe('Terbukti')
+    expect(VERDICT_COPY.insufficient.label).toBe('Belum cukup data')
+    expect(groupName(judged('screener', 'tier_a', 'positive', 1, 1))).toBe('Masuk Tier A → Long · Screener (live)')
+    expect(groupName(judged('lab_watch', 'rosyade_family_4h', 'positive', 1, -1))).toBe('Rosyade family 4H short · Pantau Lab')
   })
 })

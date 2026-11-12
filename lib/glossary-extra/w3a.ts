@@ -9,7 +9,7 @@ export const GLOSSARY_EXTRA_W3A = {
   param_stability: {
     label: 'Stabil antar koin dan tahun',
     short: 'Stabil',
-    tip: 'Penting & stabil: berpengaruh di sebagian besar koin dan tahun uji. Penting tapi tidak stabil: berpengaruh, tapi arahnya beda-beda antar koin atau tahun, jadi hati-hati mengubahnya.',
+    tip: 'Stabil: berpengaruh di sebagian besar koin dan tahun uji. Tidak stabil: berpengaruh, tapi arahnya beda-beda antar koin atau tahun.',
     values: {
       'penting & stabil': 'penting & stabil',
       'penting tapi tidak stabil': 'penting tapi tidak stabil',

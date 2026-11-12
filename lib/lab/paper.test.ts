@@ -1,11 +1,19 @@
 import { describe, it, expect } from 'vitest'
 import type { JournalEntry, PaperAccount } from '@/lib/api/types/lab'
 import {
+  JOURNAL_SOURCE_LABEL,
   compareRows,
   computePaperSize,
+  exitReasonLabel,
+  isLiveSource,
+  journalListQuery,
+  journalStatsQuery,
+  mirrorSizing,
   normalizeBreakdown,
   openPaperPositions,
+  paperAccountName,
   parseTags,
+  reusablePaperAccount,
   unrealisedPnl,
   validatePaperOrder,
   winratePct,
@@ -96,5 +104,70 @@ describe('misc', () => {
       { metric: 'trades', paper: undefined, backtest: 3 },
     ])
     expect(compareRows({ foo: 1 })).toBeNull()
+  })
+})
+
+describe('mirrorSizing (same rule as ops/lab_seed_presets.py)', () => {
+  it('margin sizing (Rosyade live): risk 100%, cap = leverage × margin%', () => {
+    const s = mirrorSizing({}, { sizing_mode: 'margin', leverage: 4, portfolio_risk: 50 })
+    expect(s).toMatchObject({ ok: true, risk_pct: 100, leverage_max: 2, mode: 'margin' })
+    expect(mirrorSizing({ leverage: 3, portfolio_risk: 50 })).toMatchObject({ ok: true, leverage_max: 1.5 })
+  })
+  it('risk and vol_target sizing', () => {
+    expect(mirrorSizing({ sizing_mode: 'risk', risk_per_trade_pct: 1, max_notional_mult: 2 })).toMatchObject({ ok: true, risk_pct: 1, leverage_max: 2 })
+    expect(mirrorSizing({ sizing_mode: 'vol_target', max_notional_mult: 3 })).toMatchObject({ ok: true, risk_pct: 100, leverage_max: 3 })
+  })
+  it('refuses what the paper engine cannot copy', () => {
+    expect(mirrorSizing({ sizing_mode: 'risk', risk_per_trade_pct: 1, max_notional_mult: 2, dd_derisk_pct: 20 }).ok).toBe(false)
+    expect(mirrorSizing({ sizing_mode: 'kelly' }).ok).toBe(false)
+    expect(mirrorSizing({ leverage: 1, portfolio_risk: 50 }).ok).toBe(false)          // 0.5× < 1×
+    expect(mirrorSizing({ sizing_mode: 'risk' }).ok).toBe(false)                       // incomplete
+  })
+  it('explains the sizing in words', () => {
+    const s = mirrorSizing({ sizing_mode: 'risk', risk_per_trade_pct: 0.5, max_notional_mult: 2 })
+    expect(s.ok && s.summary).toBe('risiko 0.5% per trade, posisi maks. 2× modal')
+  })
+})
+
+describe('reusablePaperAccount', () => {
+  const acct = (over: Partial<PaperAccount>): PaperAccount => ({
+    id: 1, name: 'Paper 4H-ETH-v2', balance: 10_000, equity: 10_000, open_positions: 0, realized_pnl: 0,
+    created_at: 't', starting_balance: 10_000, ...over,
+  })
+  it('reuses only an untouched account with the same name', () => {
+    expect(reusablePaperAccount([acct({})], 'Paper 4H-ETH-v2')?.id).toBe(1)
+    expect(reusablePaperAccount([acct({ realized_pnl: 5, balance: 10_005 })], 'Paper 4H-ETH-v2')).toBeNull()
+    expect(reusablePaperAccount([acct({ open_positions: 1 })], 'Paper 4H-ETH-v2')).toBeNull()
+    expect(reusablePaperAccount([acct({ name: 'Paper lain' })], 'Paper 4H-ETH-v2')).toBeNull()
+    expect(reusablePaperAccount([acct({ starting_balance: null })], 'Paper 4H-ETH-v2')).toBeNull()
+  })
+  it('builds the account name like the seed script', () => {
+    expect(paperAccountName('4H-ETH-v2')).toBe('Paper 4H-ETH-v2')
+  })
+})
+
+describe('journal queries: paper by default, live bot only on request', () => {
+  it('lists newest first without live-bot trades by default', () => {
+    expect(journalListQuery({ account_id: '3', symbol: '' }, { includeLive: false, limit: 200 })).toEqual({
+      account_id: '3', limit: 200, order: 'desc', exclude_source: 'bot',
+    })
+  })
+  it('includes live-bot trades only when switched on or picked', () => {
+    expect(journalListQuery({}, { includeLive: true, limit: 200 })).toEqual({ limit: 200, order: 'desc' })
+    expect(journalListQuery({ source: 'bot' }, { includeLive: false, limit: 9999 })).toEqual({ source: 'bot', limit: 5000, order: 'desc' })
+  })
+  it('keeps statistics to one kind of money', () => {
+    expect(journalStatsQuery({ symbol: 'ETHUSDT', from: '2026-11-01' })).toEqual({ symbol: 'ETHUSDT', from: '2026-11-01', exclude_source: 'bot' })
+    expect(journalStatsQuery({ source: 'bot' })).toEqual({ source: 'bot' })
+  })
+  it('labels sources and exit reasons in plain words', () => {
+    expect(JOURNAL_SOURCE_LABEL.bot).toBe('Bot live (uang asli)')
+    expect(isLiveSource('bot')).toBe(true)
+    expect(isLiveSource('paper_auto')).toBe(false)
+    expect(exitReasonLabel('hard_tp')).toBe('Kena target (TP)')
+    expect(exitReasonLabel('bot_close')).toBe('Ditutup bot live')
+    expect(exitReasonLabel('strategy_exit:flat')).toBe('Strategi keluar')
+    expect(exitReasonLabel('strategy_exit:trail_stop')).toBe('Strategi keluar (trail stop)')
+    expect(exitReasonLabel(null)).toBe('tidak tersedia')
   })
 })

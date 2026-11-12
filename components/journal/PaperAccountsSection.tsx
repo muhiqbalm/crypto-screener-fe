@@ -9,7 +9,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorPanel } from '@/components/shell/ErrorPanel'
 import { signClass } from '@/components/lab/LabBadges'
 import { ApiError } from '@/lib/api/errors'
-import { formatUsd, formatUsdSigned, formatTimestamp } from '@/lib/utils/format'
+import { formatUsd, formatUsdSigned } from '@/lib/utils/format'
+import { formatTime } from '@/lib/utils/time'
+import { StatusPill } from '@/components/ui/status-pill'
 import { notify } from '@/lib/utils/toast'
 import { cn } from '@/lib/utils/cn'
 import { openPositionCount } from '@/lib/lab/paper'
@@ -31,9 +33,9 @@ function validateAccountForm(f: FormState): Record<string, string> {
   const bal = Number(f.starting_balance)
   if (!Number.isFinite(bal) || bal <= 0) e.starting_balance = 'Saldo awal harus > 0'
   const risk = Number(f.risk_pct)
-  if (!Number.isFinite(risk) || risk <= 0 || risk > 10) e.risk_pct = 'Risk 0–10%'
+  if (!Number.isFinite(risk) || risk <= 0 || risk > 100) e.risk_pct = 'Risiko 0–100%'
   const lev = Number(f.leverage_max)
-  if (!Number.isFinite(lev) || lev < 1 || lev > 125) e.leverage_max = 'Leverage 1–125'
+  if (!Number.isFinite(lev) || lev < 1 || lev > 125) e.leverage_max = 'Leverage 1–125×'
   return e
 }
 
@@ -57,11 +59,11 @@ export function PaperAccountsSection() {
       },
       {
         onSuccess: () => {
-          notify.success('Akun paper dibuat')
+          notify.success('Akun simulasi dibuat')
           setForm(INITIAL)
           setOpen(false)
         },
-        onError: () => notify.error('Gagal membuat akun paper'),
+        onError: () => notify.error('Akun simulasi gagal dibuat', { description: 'Cek isian lalu coba lagi.' }),
       },
     )
   }
@@ -72,8 +74,9 @@ export function PaperAccountsSection() {
     <Card className="border-border">
       <CardHeader className="flex-row items-center justify-between gap-2 pb-3">
         <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-tight">
-          <Wallet className="h-4 w-4 text-warn" />
-          Akun paper
+          <Wallet className="h-4 w-4 text-lab" aria-hidden="true" />
+          Akun simulasi
+          <StatusPill kind="paper" size="xs" />
         </CardTitle>
         <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setOpen((o) => !o)}>
           <Plus className="h-3.5 w-3.5" /> Akun baru
@@ -86,8 +89,8 @@ export function PaperAccountsSection() {
               [
                 ['name', 'Nama', 'text'],
                 ['starting_balance', 'Saldo awal (USDT)', 'number'],
-                ['risk_pct', 'Risk per trade (%)', 'number'],
-                ['leverage_max', 'Leverage maks', 'number'],
+                ['risk_pct', 'Risiko per transaksi (%)', 'number'],
+                ['leverage_max', 'Leverage maks. (×)', 'number'],
               ] as const
             ).map(([key, label, type]) => (
               <div key={key} className="space-y-1">
@@ -116,23 +119,23 @@ export function PaperAccountsSection() {
         {q.isPending ? (
           <Skeleton className="h-20 w-full" />
         ) : q.error ? (
-          <ErrorPanel kind={q.error instanceof ApiError ? q.error.kind : 'server'} onRetry={() => q.refetch()} messageOverride="Gagal memuat akun paper." />
+          <ErrorPanel kind={q.error instanceof ApiError ? q.error.kind : 'server'} onRetry={() => q.refetch()} messageOverride="Akun simulasi tidak bisa dimuat." />
         ) : accounts.length === 0 ? (
-          <p className="py-4 text-center text-sm text-muted-foreground">Belum ada akun paper. Klik &quot;Akun baru&quot; untuk mulai.</p>
+          <p className="py-4 text-center text-sm text-muted-foreground">Belum ada akun simulasi. Tombol &quot;Mulai paper&quot; di Preset membuatnya otomatis, atau klik &quot;Akun baru&quot;.</p>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {accounts.map((a) => (
               <div key={a.id} className="rounded-lg border border-border bg-card p-3">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">{a.name}</span>
-                  <span className="font-mono text-3xs text-muted-foreground">{formatTimestamp(a.created_at)}</span>
+                  <span className="text-3xs text-muted-foreground">dibuat {formatTime(a.created_at)}</span>
                 </div>
                 <dl className="mt-2 grid grid-cols-2 gap-1 font-mono text-xs">
-                  <dt className="text-muted-foreground">Balance</dt>
+                  <dt className="text-muted-foreground">Saldo</dt>
                   <dd className="text-right">{formatUsd(a.balance)}</dd>
-                  <dt className="text-muted-foreground">Equity</dt>
+                  <dt className="text-muted-foreground">Ekuitas</dt>
                   <dd className="text-right font-bold">{formatUsd(a.equity)}</dd>
-                  <dt className="text-muted-foreground">Realized P&amp;L</dt>
+                  <dt className="text-muted-foreground">Hasil tertutup</dt>
                   <dd className={cn('text-right', signClass(a.realized_pnl))}>{formatUsdSigned(a.realized_pnl)}</dd>
                   <dt className="text-muted-foreground">Posisi terbuka</dt>
                   <dd className="text-right">{openPositionCount(a)}</dd>
