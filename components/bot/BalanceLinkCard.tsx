@@ -1,8 +1,7 @@
 import Link from 'next/link'
 import { ArrowRight, Wallet } from 'lucide-react'
-import { Section } from '@/components/lab/Section'
-import { Button } from '@/components/ui/button'
 import { StatusPill } from '@/components/ui/status-pill'
+import { DeckCard, IconBadge } from './kit/Tiles'
 
 /**
  * Link to Saldo & posisi. Deliberately no balance numbers here: those come straight from the
@@ -10,24 +9,21 @@ import { StatusPill } from '@/components/ui/status-pill'
  */
 export function BalanceLinkCard({ className }: { className?: string }) {
   return (
-    <Section
-      className={className}
-      icon={<Wallet className="h-4 w-4 text-muted-foreground" aria-hidden="true" />}
-      title="Saldo & posisi"
-      description="Uang asli di exchange."
-      action={<StatusPill kind="live" size="xs" />}
-    >
-      <div className="flex h-full flex-col justify-between gap-3">
-        <p className="text-xs text-muted-foreground">
-          Saldo, posisi terbuka, dan riwayat posisi dibaca langsung dari akun exchange di halaman tersendiri, supaya halaman ini
-          tidak memanggil exchange terus-menerus.
-        </p>
-        <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
-          <Link href="/balance">
-            Buka Saldo & posisi <ArrowRight aria-hidden="true" />
-          </Link>
-        </Button>
+    <DeckCard className={`flex flex-col gap-3 ${className ?? ''}`}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <IconBadge icon={Wallet} tone="info" />
+          <p className="text-[17px] font-semibold">Saldo & posisi</p>
+        </div>
+        <StatusPill kind="live" size="sm" />
       </div>
-    </Section>
+      <p className="text-[14px] text-muted-foreground">Uang asli dan posisi terbuka, langsung dari exchange.</p>
+      <Link
+        href="/balance"
+        className="mt-1 inline-flex items-center justify-center gap-1.5 rounded-full border border-border bg-muted/40 px-4 py-2.5 text-[15px] font-semibold transition hover:bg-muted"
+      >
+        Buka Saldo & posisi <ArrowRight className="h-4 w-4" aria-hidden="true" />
+      </Link>
+    </DeckCard>
   )
 }

@@ -52,7 +52,7 @@ export function PaperBadge({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded border border-warn/40 bg-warn/15 px-1.5 py-0.5 font-mono text-3xs font-bold text-warn',
+        'inline-flex items-center gap-1 rounded border border-warn/40 bg-warn/15 px-1.5 py-0.5 font-mono text-[13px] font-bold text-warn',
         className,
       )}
     >
@@ -127,11 +127,11 @@ export function PaperTradePanel(p: Props) {
   const autoOn = Boolean(p.watch?.autopaper?.enabled && (!account || sameId(p.watch?.autopaper?.account_id, account.id)))
 
   return (
-    <Card className="border-warn/30">
+    <Card className="rounded-3xl border-warn/30">
       <CardHeader className="space-y-2 pb-2">
-        <CardTitle className="flex items-center justify-between gap-2 text-sm font-semibold tracking-tight">
+        <CardTitle className="flex items-center justify-between gap-2 text-[17px] font-semibold tracking-tight">
           <span>Paper trade (simulasi)</span>
-          <Link href="/journal" className="inline-flex items-center gap-1 text-3xs font-semibold normal-case text-info hover:underline">
+          <Link href="/journal" className="inline-flex items-center gap-1 text-[13px] font-semibold normal-case text-info hover:underline">
             <FileText className="h-3 w-3" /> Jurnal
           </Link>
         </CardTitle>
@@ -142,22 +142,22 @@ export function PaperTradePanel(p: Props) {
         {p.accounts.isPending ? (
           <Skeleton className="h-9 w-full" />
         ) : p.accounts.isError ? (
-          <p className="text-xs text-bearish">
+          <p className="text-[14px] text-bearish">
             Gagal memuat akun paper.{' '}
             <button type="button" className="underline cursor-pointer" onClick={() => p.accounts.refetch()}>Coba lagi</button>
           </p>
         ) : (p.accounts.data ?? []).length === 0 ? (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[14px] text-muted-foreground">
             Belum ada akun paper. <Link href="/journal" className="underline">Buat akun di halaman Jurnal</Link>.
           </p>
         ) : (
           <div className="space-y-1">
-            <label htmlFor="paper-account" className="text-2xs font-medium">Akun paper</label>
+            <label htmlFor="paper-account" className="text-[13px] font-medium">Akun paper</label>
             <select
               id="paper-account"
               value={account?.id ?? ''}
               onChange={(e) => p.onAccountChange(e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-xs shadow-sm"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-[14px] shadow-sm"
             >
               {(p.accounts.data ?? []).map((a) => (
                 <option key={String(a.id)} value={String(a.id)} className="bg-popover">
@@ -166,7 +166,7 @@ export function PaperTradePanel(p: Props) {
               ))}
             </select>
             {account && (
-              <p className="font-mono text-3xs text-muted-foreground">
+              <p className="font-mono text-[13px] text-muted-foreground">
                 Risiko {account.risk_pct ?? '—'}% per trade · leverage maks {account.leverage_max ?? '—'}x
               </p>
             )}
@@ -196,25 +196,25 @@ export function PaperTradePanel(p: Props) {
                 <ArrowDownRight /> Short
               </Button>
             </div>
-            {errors.side && <p className="text-2xs text-bearish">{errors.side}</p>}
+            {errors.side && <p className="text-[13px] text-bearish">{errors.side}</p>}
 
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <label htmlFor="paper-sl" className="text-2xs font-medium">Stop loss *</label>
-                <Input id="paper-sl" type="number" inputMode="decimal" step="any" value={draft.sl} onChange={(e) => set({ sl: e.target.value })} className={cn('h-8 font-mono text-xs', errors.sl && 'border-bearish')} />
+                <label htmlFor="paper-sl" className="text-[13px] font-medium">Stop loss *</label>
+                <Input id="paper-sl" type="number" inputMode="decimal" step="any" value={draft.sl} onChange={(e) => set({ sl: e.target.value })} className={cn('h-8 font-mono text-[14px]', errors.sl && 'border-bearish')} />
               </div>
               <div className="space-y-1">
-                <label htmlFor="paper-tp" className="text-2xs font-medium">Take profit</label>
-                <Input id="paper-tp" type="number" inputMode="decimal" step="any" value={draft.tp} onChange={(e) => set({ tp: e.target.value })} className={cn('h-8 font-mono text-xs', errors.tp && 'border-bearish')} />
+                <label htmlFor="paper-tp" className="text-[13px] font-medium">Take profit</label>
+                <Input id="paper-tp" type="number" inputMode="decimal" step="any" value={draft.tp} onChange={(e) => set({ tp: e.target.value })} className={cn('h-8 font-mono text-[14px]', errors.tp && 'border-bearish')} />
               </div>
             </div>
             {(errors.sl || errors.tp || errors.price) && (
-              <p className="text-2xs text-bearish">{errors.sl ?? errors.tp ?? errors.price}</p>
+              <p className="text-[13px] text-bearish">{errors.sl ?? errors.tp ?? errors.price}</p>
             )}
             {p.strategyPosition && (
               <button
                 type="button"
-                className="text-2xs text-info underline cursor-pointer"
+                className="text-[13px] text-info underline cursor-pointer"
                 onClick={() =>
                   set({
                     side: p.strategyPosition!.side.toLowerCase() === 'short' ? 'short' : 'long',
@@ -226,10 +226,10 @@ export function PaperTradePanel(p: Props) {
                 Isi dari posisi simulasi strategi ({p.strategyPosition.side.toUpperCase()})
               </button>
             )}
-            <p className="text-3xs text-muted-foreground">Garis SL/TP draft tampil di chart (oranye putus-putus). Ubah lewat input.</p>
+            <p className="text-[13px] text-muted-foreground">Garis SL/TP draft tampil di chart (oranye putus-putus). Ubah lewat input.</p>
 
             {/* Size */}
-            <div className="rounded-md border border-border bg-muted/20 p-2 text-2xs">
+            <div className="rounded-md border border-border bg-muted/20 p-2 text-[13px]">
               {size ? (
                 <div className="space-y-0.5 font-mono">
                   <div className="flex justify-between"><span className="text-muted-foreground">Risiko</span><span>{formatUsd(size.riskAmount)}</span></div>
@@ -245,19 +245,19 @@ export function PaperTradePanel(p: Props) {
                     : 'Isi SL untuk lihat ukuran posisi dari risk %.'}
                 </p>
               )}
-              <p className="pt-1 text-3xs text-muted-foreground">Fill pakai harga market saat server menerima order; backend menghitung ulang ukuran.</p>
+              <p className="pt-1 text-[13px] text-muted-foreground">Fill pakai harga market saat server menerima order; backend menghitung ulang ukuran.</p>
             </div>
 
-            <details className="text-2xs">
+            <details className="text-[13px]">
               <summary className="cursor-pointer text-muted-foreground">Opsi lanjutan</summary>
               <div className="mt-2 space-y-2">
                 <div className="space-y-1">
                   <label htmlFor="paper-qty" className="font-medium">Jumlah manual (opsional)</label>
-                  <Input id="paper-qty" type="number" inputMode="decimal" step="any" value={draft.qty} onChange={(e) => set({ qty: e.target.value })} className={cn('h-8 font-mono text-xs', errors.qty && 'border-bearish')} />
+                  <Input id="paper-qty" type="number" inputMode="decimal" step="any" value={draft.qty} onChange={(e) => set({ qty: e.target.value })} className={cn('h-8 font-mono text-[14px]', errors.qty && 'border-bearish')} />
                 </div>
                 <div className="space-y-1">
                   <label htmlFor="paper-note" className="font-medium">Catatan</label>
-                  <Input id="paper-note" value={draft.note} onChange={(e) => set({ note: e.target.value })} className="h-8 text-xs" />
+                  <Input id="paper-note" value={draft.note} onChange={(e) => set({ note: e.target.value })} className="h-8 text-[14px]" />
                 </div>
               </div>
             </details>
@@ -267,7 +267,7 @@ export function PaperTradePanel(p: Props) {
                 Review order PAPER
               </Button>
             ) : (
-              <div role="alertdialog" aria-label="Konfirmasi order paper" className="space-y-2 rounded-md border border-warn/50 bg-warn/10 p-3 text-xs">
+              <div role="alertdialog" aria-label="Konfirmasi order paper" className="space-y-2 rounded-md border border-warn/50 bg-warn/10 p-3 text-[14px]">
                 <p className="flex items-center gap-1.5 font-bold text-warn">
                   <AlertTriangle className="h-3.5 w-3.5" /> Konfirmasi — {PAPER_LABEL}
                 </p>
@@ -291,9 +291,9 @@ export function PaperTradePanel(p: Props) {
             {/* Auto-follow */}
             {p.watchId && (
               <div className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2">
-                <label htmlFor="autopaper" className="text-2xs">
+                <label htmlFor="autopaper" className="text-[13px]">
                   <span className="font-medium">Paper otomatis</span>
-                  <span className="block text-3xs text-muted-foreground">Sinyal pantauan ini otomatis dicatat sebagai PAPER di akun ini.</span>
+                  <span className="block text-[13px] text-muted-foreground">Sinyal pantauan ini otomatis dicatat sebagai PAPER di akun ini.</span>
                 </label>
                 <Switch
                   id="autopaper"
@@ -320,13 +320,13 @@ export function PaperTradePanel(p: Props) {
               {p.positionsLoading ? (
                 <Skeleton className="h-10 w-full" />
               ) : p.positions.length === 0 ? (
-                <p className="text-2xs text-muted-foreground">Tidak ada.</p>
+                <p className="text-[13px] text-muted-foreground">Tidak ada.</p>
               ) : (
                 <ul className="space-y-1.5">
                   {p.positions.map((pos) => {
                     const upnl = unrealisedPnl(pos, p.lastPrice) ?? pos.unrealized_pnl ?? null
                     return (
-                      <li key={pos.id} className="flex items-center justify-between gap-2 rounded border border-border px-2 py-1.5 font-mono text-2xs">
+                      <li key={pos.id} className="flex items-center justify-between gap-2 rounded border border-border px-2 py-1.5 font-mono text-[13px]">
                         <span>
                           <span className={pos.side === 'long' ? 'text-bullish' : 'text-bearish'}>{pos.side.toUpperCase()}</span>{' '}
                           {formatQty(pos.qty)} @ {formatPrice(pos.entry_price)}
@@ -339,7 +339,7 @@ export function PaperTradePanel(p: Props) {
                             <Button
                               size="sm"
                               variant="destructive"
-                              className="h-6 px-2 text-3xs"
+                              className="h-6 px-2 text-[13px]"
                               disabled={close.isPending}
                               onClick={() =>
                                 close.mutate(pos.id, {
@@ -358,7 +358,7 @@ export function PaperTradePanel(p: Props) {
                             </Button>
                           </span>
                         ) : (
-                          <Button size="sm" variant="outline" className="h-6 px-2 text-3xs" onClick={() => setClosingId(pos.id)}>
+                          <Button size="sm" variant="outline" className="h-6 px-2 text-[13px]" onClick={() => setClosingId(pos.id)}>
                             Tutup
                           </Button>
                         )}

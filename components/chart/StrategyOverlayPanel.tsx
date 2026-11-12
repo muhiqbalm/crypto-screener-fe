@@ -105,9 +105,9 @@ function WatchSelector({ watchId, watches }: { watchId: string | null; watches: 
   }
 
   return (
-    <Card className="border-border">
+    <Card className="rounded-3xl border-border">
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-center justify-between gap-2 text-sm font-semibold tracking-tight">
+        <CardTitle className="flex items-center justify-between gap-2 text-[17px] font-semibold tracking-tight">
           <span className="flex items-center gap-2">
             <Eye className="h-4 w-4 text-lab" aria-hidden="true" />
             Pantau sinyal (simulasi)
@@ -119,7 +119,7 @@ function WatchSelector({ watchId, watches }: { watchId: string | null; watches: 
         {watches.isPending ? (
           <Skeleton className="h-9 w-full" />
         ) : watches.isError ? (
-          <p className="text-xs text-bearish">
+          <p className="text-[14px] text-bearish">
             Gagal memuat daftar pantauan.{' '}
             <button type="button" className="underline cursor-pointer" onClick={() => watches.refetch()}>
               Coba lagi
@@ -127,7 +127,7 @@ function WatchSelector({ watchId, watches }: { watchId: string | null; watches: 
           </p>
         ) : list.length === 0 ? (
           <div className="space-y-2">
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[14px] text-muted-foreground">
               Belum ada strategi yang dipantau. Buka hasil uji yang sudah selesai di Lab, lalu pilih &quot;Tampilkan di Chart&quot;.
             </p>
             <Button asChild size="sm" variant="outline" className="w-full">
@@ -141,7 +141,7 @@ function WatchSelector({ watchId, watches }: { watchId: string | null; watches: 
               id="watch-select"
               value={watchId ?? ''}
               onChange={(e) => router.push(e.target.value ? `/chart?watch=${encodeURIComponent(e.target.value)}` : '/chart')}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 font-mono text-xs shadow-sm"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 font-mono text-[14px] shadow-sm"
             >
               <option value="" className="bg-popover">— tanpa simulasi —</option>
               {list.map((w) => (
@@ -154,7 +154,7 @@ function WatchSelector({ watchId, watches }: { watchId: string | null; watches: 
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 gap-1.5 text-xs text-bearish"
+                className="h-7 gap-1.5 text-[14px] text-bearish"
                 disabled={del.isPending}
                 onClick={() => setConfirmOpen(true)}
               >
@@ -203,7 +203,7 @@ function WatchSelector({ watchId, watches }: { watchId: string | null; watches: 
 
 function Row({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className="flex items-center justify-between gap-2 py-1 text-xs">
+    <div className="flex items-center justify-between gap-2 py-1 text-[14px]">
       <span className="text-muted-foreground">{label}</span>
       <span className={cn('font-mono tabular-nums', className)}>{children}</span>
     </div>
@@ -226,9 +226,9 @@ function LiveSignalCard({
   const upnl = pos ? unrealisedPct(pos.side, pos.entry_price, lastPrice) : null
 
   return (
-    <Card className="border-border">
+    <Card className="rounded-3xl border-border">
       <CardHeader className="flex-row items-center justify-between gap-2 pb-2">
-        <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-tight">
+        <CardTitle className="flex items-center gap-2 text-[17px] font-semibold tracking-tight">
           <Activity className="h-4 w-4 text-lab" aria-hidden="true" />
           Sinyal strategi (simulasi)
         </CardTitle>
@@ -241,7 +241,7 @@ function LiveSignalCard({
         {state.isPending ? (
           <Skeleton className="h-32 w-full" />
         ) : state.isError || !s ? (
-          <p className="text-xs text-bearish">
+          <p className="text-[14px] text-bearish">
             Gagal memuat status pantauan.{' '}
             <button type="button" className="underline cursor-pointer" onClick={() => state.refetch()}>
               Coba lagi
@@ -265,7 +265,7 @@ function LiveSignalCard({
                   <Row label="Target (TP)">{formatPrice(pos.tp)}</Row>
                   <Row label="Untung/rugi berjalan (tanpa leverage)" className={signClass(upnl)}>{formatPercent(upnl)}</Row>
                   {priceSource === 'spot' && (
-                    <p className="pt-1 text-3xs text-warn">Untung/rugi berjalan dihitung dari harga spot (data perpetual tidak tersedia).</p>
+                    <p className="pt-1 text-[13px] text-warn">Untung/rugi berjalan dihitung dari harga spot (data perpetual tidak tersedia).</p>
                   )}
                 </>
               )}
@@ -284,7 +284,7 @@ function LiveSignalCard({
             <div className="pt-2">
               <Row label="Candle terakhir">{wib(s.last_bar)}</Row>
               <Row label="Dihitung">{wib(s.computed_at)}</Row>
-              <p className="pt-1 text-3xs text-muted-foreground">
+              <p className="pt-1 text-[13px] text-muted-foreground">
                 Diperbarui tiap {WATCH_STATE_POLL_MS / 1000} detik. Sinyal dihitung saat candle tutup. Ini simulasi Lab, bukan bot live.
                 {markersOffscreen > 0 && ` ${markersOffscreen} penanda di luar rentang candle yang dimuat.`}
               </p>
@@ -309,9 +309,9 @@ function RunOverlayCard({
 }) {
   const r = run.data
   return (
-    <Card className="border-border">
+    <Card className="rounded-3xl border-border">
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-center justify-between gap-2 text-sm font-semibold tracking-tight">
+        <CardTitle className="flex items-center justify-between gap-2 text-[17px] font-semibold tracking-tight">
           Hasil uji di chart (simulasi)
           <SimBadge />
         </CardTitle>
@@ -320,7 +320,7 @@ function RunOverlayCard({
         {run.isPending ? (
           <Skeleton className="h-24 w-full" />
         ) : run.isError || !r ? (
-          <p className="text-xs text-bearish">Hasil uji tidak bisa dimuat.</p>
+          <p className="text-[14px] text-bearish">Hasil uji tidak bisa dimuat.</p>
         ) : (
           <>
             <div className="flex items-center gap-2 pb-1">
@@ -335,11 +335,11 @@ function RunOverlayCard({
             </Row>
             <Row label="Penanda di chart">{markerCount}</Row>
             {markersOffscreen > 0 && (
-              <p className="text-3xs text-muted-foreground">
+              <p className="text-[13px] text-muted-foreground">
                 {markersOffscreen} transaksi di luar 500 candle terakhir, jadi tidak tampil di chart.
               </p>
             )}
-            <p className="pt-1 text-3xs text-muted-foreground">Ini transaksi hasil uji historis (simulasi), bukan posisi bot live.</p>
+            <p className="pt-1 text-[13px] text-muted-foreground">Ini transaksi hasil uji historis (simulasi), bukan posisi bot live.</p>
           </>
         )}
       </CardContent>

@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { StatusPill } from '@/components/ui/status-pill'
 import { Term } from '@/components/ui/term'
+import { LiveDot } from '@/components/bot/kit/LiveDot'
+import { HeroCard, IconBadge } from '@/components/bot/kit/Tiles'
 import { EmptyState, ErrorState } from '@/components/shell/states'
 import { ExchangeLabel } from '@/components/trading/ExchangeLabel'
 import { useBalance } from '@/lib/queries/credentials'
@@ -31,10 +33,10 @@ function SettingsLink() {
 function AssetRow({ item }: { item: ExchangeBalanceResponse }) {
   const usedPct = item.total > 0 ? (item.used / item.total) * 100 : 0
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 rounded-lg px-3 py-2.5 hover:bg-muted/40 sm:grid-cols-[7rem_minmax(0,1fr)_6.5rem_6.5rem_7.5rem]">
+    <div className="grid min-h-[52px] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 rounded-2xl px-3 py-3 hover:bg-muted/40 sm:grid-cols-[7rem_minmax(0,1fr)_6.5rem_6.5rem_7.5rem]">
       <div className="min-w-0">
-        <p className="font-mono text-sm font-semibold leading-none">{item.currency}</p>
-        <p className="mt-0.5 text-2xs capitalize text-muted-foreground">{item.account_type}</p>
+        <p className="text-[15px] font-semibold leading-none">{item.currency}</p>
+        <p className="mt-0.5 text-[13px] capitalize text-muted-foreground">{item.account_type}</p>
       </div>
       <div className="hidden sm:block" aria-hidden="true">
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -42,10 +44,10 @@ function AssetRow({ item }: { item: ExchangeBalanceResponse }) {
         </div>
       </div>
       {/* Free and margin-in-use are neutral: neither is a gain or a loss. */}
-      <p className="hidden truncate text-right font-mono text-sm tabular-nums sm:block">{formatAmount(item.free, item.currency)}</p>
-      <p className="hidden truncate text-right font-mono text-sm tabular-nums text-muted-foreground sm:block">{formatAmount(item.used, item.currency)}</p>
-      <p className="truncate text-right font-mono text-sm font-semibold tabular-nums">{formatAmount(item.total, item.currency)}</p>
-      <p className="col-span-2 font-mono text-2xs tabular-nums text-muted-foreground sm:hidden">
+      <p className="num hidden truncate text-right text-[15px] sm:block">{formatAmount(item.free, item.currency)}</p>
+      <p className="num hidden truncate text-right text-[15px] text-muted-foreground sm:block">{formatAmount(item.used, item.currency)}</p>
+      <p className="num truncate text-right text-[15px] font-semibold">{formatAmount(item.total, item.currency)}</p>
+      <p className="col-span-2 font-mono text-[13px] tabular-nums text-muted-foreground sm:hidden">
         Bebas {formatAmount(item.free, item.currency)} · dipakai margin {formatAmount(item.used, item.currency)}
       </p>
     </div>
@@ -57,31 +59,31 @@ function ExchangeBalanceCard({ exchange, items }: { exchange: string; items: Exc
   // values), so only USD stablecoins can be summed.
   const total = items.filter((i) => isUsdStable(i.currency)).reduce((sum, i) => sum + i.total, 0)
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="pb-2 pt-4">
-        <div className="flex flex-wrap items-start justify-between gap-2">
+    <Card className="overflow-hidden rounded-3xl">
+      <CardHeader className="px-6 pb-3 pt-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-base">
-              <ExchangeLabel exchange={exchange} className="text-base font-semibold" />
+            <CardTitle className="text-[17px]">
+              <ExchangeLabel exchange={exchange} className="text-[17px] font-semibold" />
             </CardTitle>
             <Badge variant="muted" size="xs">
               {items.length} aset
             </Badge>
           </div>
           <div className="text-right">
-            <p className="font-mono text-lg font-bold tabular-nums">{formatUsd(total)}</p>
-            <p className="text-2xs text-muted-foreground">
+            <p className="num text-[30px] font-bold leading-none tracking-tight">{formatUsd(total)}</p>
+            <p className="text-[13px] text-muted-foreground">
               <Term k="stablecoin_total" noTip />
             </p>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="px-3 pb-3 pt-1">
+      <CardContent className="px-4 pb-5 pt-1">
         {items.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">Tidak ada aset</p>
+          <p className="py-6 text-center text-[15px] text-muted-foreground">Tidak ada aset</p>
         ) : (
           <div>
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 px-3 pb-1 text-2xs font-medium uppercase tracking-wider text-muted-foreground sm:grid-cols-[7rem_minmax(0,1fr)_6.5rem_6.5rem_7.5rem]">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 px-3 pb-1 text-[13px] font-medium uppercase tracking-wider text-muted-foreground sm:grid-cols-[7rem_minmax(0,1fr)_6.5rem_6.5rem_7.5rem]">
               <span>Aset</span>
               <span className="hidden sm:block" />
               <span className="hidden text-right sm:block">Bebas</span>
@@ -112,31 +114,31 @@ function PortfolioSummary({
   isFetching: boolean
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-5 py-4 shadow-xs">
-      <div className="flex items-center gap-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-          <Wallet className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
-        </div>
-        <div>
-          <p className="eyebrow flex items-center gap-1.5">
-            <Term k="stablecoin_total" /> <StatusPill kind="live" size="xs" />
-          </p>
-          <p className="font-mono text-2xl font-bold tabular-nums tracking-tight">{formatUsd(total)}</p>
-          <p className="text-2xs text-muted-foreground">
-            Hanya USDT, USDC dan sejenisnya; bukan ekuitas akun dan belum termasuk untung/rugi berjalan.
+    <HeroCard glow="info" aria-label="Total stablecoin">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <IconBadge icon={Wallet} />
+          <p className="flex items-center gap-2 text-[17px] font-semibold">
+            <Term k="stablecoin_total" />
           </p>
         </div>
+        <span className="inline-flex items-center gap-2">
+          <LiveDot tone="ok" label="Data live dari exchange" />
+          <StatusPill kind="live" size="sm" />
+        </span>
       </div>
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="text-xs text-muted-foreground">
+      <p className="num mt-5 text-[48px] font-bold leading-none tracking-tight sm:text-[56px]">{formatUsd(total)}</p>
+      <p className="mt-3 text-[15px] text-muted-foreground">Hanya USDT, USDC dan sejenisnya; bukan ekuitas akun.</p>
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-4">
+        <span className="text-[14px] text-muted-foreground">
           {exchangeCount} exchange terhubung{updatedAt ? ` · diperbarui ${formatAge(updatedAt, { seconds: true })}` : ''}
         </span>
-        <Button variant="outline" size="sm" onClick={onRefresh} disabled={isFetching} className="gap-1.5" aria-label="Muat ulang saldo">
+        <Button variant="outline" size="sm" onClick={onRefresh} disabled={isFetching} className="gap-1.5 rounded-full" aria-label="Muat ulang saldo">
           <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} aria-hidden="true" />
           {isFetching ? 'Memuat…' : 'Muat ulang'}
         </Button>
       </div>
-    </div>
+    </HeroCard>
   )
 }
 

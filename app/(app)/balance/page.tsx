@@ -17,7 +17,7 @@ export default function BalancePage() {
         eyebrowIcon={Wallet}
         title="Saldo & posisi"
         status={<StatusPill kind="live" />}
-        description="Saldo dan posisi terbuka dibaca langsung dari akun exchange. Riwayat posisi diambil dari catatan bot."
+        description="Saldo dan posisi langsung dari exchange; riwayat dari catatan bot."
         help={{
           apaIni:
             'Uang asli di exchange yang terhubung ke akunmu: saldo per exchange, posisi yang sedang terbuka, dan posisi yang sudah ditutup bot. Halaman ini hanya membaca; tidak ada tombol yang membuka atau menutup posisi.',

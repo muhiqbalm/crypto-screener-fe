@@ -85,11 +85,11 @@ export function AlertPayloadTemplate() {
   }
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden rounded-3xl">
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 pb-3 pt-4">
         <div className="flex items-center gap-2">
           <FileCode2 className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-          <CardTitle className="text-base">
+          <CardTitle className="text-[17px]">
             <Term k="alert_payload" />
           </CardTitle>
         </div>
@@ -124,7 +124,7 @@ export function AlertPayloadTemplate() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 gap-1 px-2 text-2xs"
+              className="h-7 gap-1 px-2 text-[13px]"
               aria-pressed={showPassphrase}
               onClick={() => setShowPassphrase((v) => !v)}
             >
@@ -134,11 +134,11 @@ export function AlertPayloadTemplate() {
           )}
         </div>
         <div className="rounded-lg border border-border bg-muted/50 p-4">
-          <pre className="overflow-x-auto font-mono text-xs leading-relaxed">
+          <pre className="overflow-x-auto font-mono text-[14px] leading-relaxed">
             <code>{renderHighlighted(display)}</code>
           </pre>
         </div>
-        <ul className="list-disc space-y-1 pl-4 text-2xs text-muted-foreground">
+        <ul className="list-disc space-y-1 pl-4 text-[13px] text-muted-foreground">
           <li>
             Satu alert untuk satu aksi: buat alert terpisah untuk buka dan tutup posisi. Skrip Pine tim sudah mengirim format ini
             sendiri.

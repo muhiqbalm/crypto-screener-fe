@@ -16,7 +16,7 @@ export default function ChartPage() {
         eyebrow="Pasar"
         eyebrowIcon={CandlestickChart}
         title="Chart"
-        description="Candle Binance perpetual (USDT) yang bergerak langsung. Default 4 jam, waktu WIB."
+        description="Candle perpetual Binance real-time · default 4 jam · waktu WIB."
         help={{
           apaIni:
             'Chart harga kontrak perpetual Binance. Admin juga bisa menampilkan simulasi strategi Lab (PAPER) di atasnya: sinyal, posisi pura-pura, dan transaksi hasil uji. Simulasi tidak pernah mengirim order sungguhan.',

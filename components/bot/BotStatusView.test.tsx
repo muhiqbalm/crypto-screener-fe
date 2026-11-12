@@ -35,19 +35,21 @@ describe('BotStatusView', () => {
   it('answers "Bot live aman?" first, in one sentence, with a LIVE label', async () => {
     setup()
     await waitFor(() => expect(screen.getByText(/^Perlu dicek: 5 dari 6 sinyal 7 hari terakhir sesuai/)).toBeInTheDocument(), { timeout: 5000 })
-    expect(screen.getByText('Bot live aman?')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Bot live aman?' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: /5 cocok, 0 bermasalah, 1 perlu dicek, 1 menunggu/ })).toBeInTheDocument() // the donut
     expect(screen.getAllByText('LIVE').length).toBeGreaterThan(0)
     // The answer opens the evidence on the problem rows.
-    expect(screen.getByRole('link', { name: /lihat baris bermasalah/i })).toHaveAttribute('href', '#cek')
+    expect(screen.getByRole('link', { name: /lihat yang bermasalah/i })).toHaveAttribute('href', '#cek')
   })
 
   it('shows the webhook state per bot account and never asks for or renders a passphrase', async () => {
     const { view, webhookConfig } = setup()
-    await waitFor(() => expect(screen.getByText('Webhook aktif')).toBeInTheDocument(), { timeout: 5000 })
-    expect(screen.getByText('Webhook tidak aktif')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByText('Aktif')).toBeInTheDocument(), { timeout: 5000 })
+    expect(screen.getByText('Tidak aktif')).toBeInTheDocument()
     expect(webhookConfig).not.toHaveBeenCalled()
     expect(view.container.textContent).not.toMatch(/xK9mP2nQ4rT7vW3z/) // the mock webhook passphrase
     expect(screen.getByText(/Kata sandi webhook tidak ditampilkan/)).toBeInTheDocument()
+    expect(screen.queryByText(/passphrase/i)).toBeNull()
   })
 
   it('has the anchors other pages link to', async () => {
