@@ -11,8 +11,8 @@ export interface BotVerdictView {
   tone: Extract<StatusKind, 'sehat' | 'perlu_dicek' | 'bermasalah' | 'menunggu'>
   /** One sentence: "Bot live aman?" */
   sentence: string
-  /** Optional small lines under it (last alert, window). */
-  details?: string[]
+  /** Key facts (signals 7 days, webhook, last alert) as label / value / hint. */
+  facts?: { label: string; value: string; hint?: string }[]
 }
 
 export interface WebhookView {
@@ -76,11 +76,17 @@ export function BotLiveCard({
             <div className="space-y-1.5">
               <StatusPill kind={verdict.tone} />
               <p className="text-sm font-medium leading-snug">{verdict.sentence}</p>
-              {verdict.details?.map((d) => (
-                <p key={d} className="text-2xs text-muted-foreground">
-                  {d}
-                </p>
-              ))}
+              {verdict.facts && verdict.facts.length > 0 && (
+                <dl className="grid grid-cols-2 gap-x-3 gap-y-2 pt-1 sm:grid-cols-3">
+                  {verdict.facts.map((f) => (
+                    <div key={f.label} className="min-w-0">
+                      <dt className="truncate text-3xs font-semibold uppercase tracking-wide text-muted-foreground">{f.label}</dt>
+                      <dd className="num text-xs font-medium">{f.value}</dd>
+                      {f.hint && <dd className="text-2xs text-muted-foreground">{f.hint}</dd>}
+                    </div>
+                  ))}
+                </dl>
+              )}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">Status bot live tidak tersedia.</p>

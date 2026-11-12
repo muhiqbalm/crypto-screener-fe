@@ -120,7 +120,7 @@ export function BerandaView() {
     ? {
         tone: BOT_STATUS_KIND[bot.tone],
         sentence: bot.sentence,
-        details: bot.facts.map((f) => `${f.label}: ${f.value}`),
+        facts: bot.facts.map((f) => ({ label: f.label, value: f.value, hint: f.hint })),
       }
     : null
 

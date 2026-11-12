@@ -115,6 +115,21 @@ describe('attentionItems', () => {
     expect(items[2].text).toBe('AAA: strategi baru masuk SHORT (keyakinan sedang).')
   })
 
+  it('bot row carries the facts that are not OK, hint included', () => {
+    const [it0] = attentionItems({
+      bot: {
+        tone: 'bad',
+        sentence: 'Belum aman: 1 sinyal gagal dieksekusi.',
+        facts: [
+          { label: 'Sinyal 7 hari', value: '3 dari 4 sesuai', tone: 'bad' },
+          { label: 'Webhook', value: 'aktif (Rosyade)', tone: 'ok' },
+          { label: 'Alert terakhir', value: '12 Nov 11:00 WIB', hint: 'gagal', tone: 'bad' },
+        ],
+      },
+    })
+    expect(it0.detail).toBe('Sinyal 7 hari: 3 dari 4 sesuai · Alert terakhir: 12 Nov 11:00 WIB (gagal)')
+  })
+
   it('uses the same bot answer as /bot: warn → penting, ok/wait → nothing', () => {
     expect(attentionItems({ bot: { tone: 'warn', sentence: 'Perlu dicek: webhook bot sedang tidak aktif.' } })[0]).toMatchObject({
       level: 'penting',

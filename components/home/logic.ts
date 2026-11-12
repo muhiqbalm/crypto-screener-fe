@@ -191,8 +191,23 @@ export interface AttentionItem {
   id: string
   level: AttentionLevel
   text: string
+  /** Small second line (e.g. the bot facts that are not OK). */
+  detail?: string
   href: string
   linkLabel: string
+}
+
+/** A fact of the bot verdict (lib/bot/status.ts BotFact): value + optional hint. */
+export interface FactLike {
+  label: string
+  value: string
+  hint?: string
+  tone?: string
+}
+
+/** "Alert terakhir: 12 Nov 11:00 WIB (gagal)". */
+export function factText(f: FactLike): string {
+  return `${f.label}: ${f.value}${f.hint ? ` (${f.hint})` : ''}`
 }
 
 /** The bot verdict's lead ("Belum aman: …", "Perlu dicek: …") is dropped: the row's level says it. */
@@ -210,7 +225,7 @@ export function stripVerdictLead(sentence: string): string {
 export function attentionItems(
   input: {
     /** botVerdict(...) from lib/bot/status.ts. */
-    bot?: { tone: 'ok' | 'warn' | 'bad' | 'wait'; sentence: string } | null
+    bot?: { tone: 'ok' | 'warn' | 'bad' | 'wait'; sentence: string; facts?: FactLike[] } | null
     arena?: ArenaReport
     outlook?: OutlookResponse
   },
@@ -220,10 +235,12 @@ export function attentionItems(
   const out: AttentionItem[] = []
 
   if (input.bot && (input.bot.tone === 'bad' || input.bot.tone === 'warn')) {
+    const off = (input.bot.facts ?? []).filter((f) => f.tone === 'bad' || f.tone === 'warn')
     out.push({
       id: 'bot',
       level: input.bot.tone === 'bad' ? 'kritis' : 'penting',
       text: stripVerdictLead(input.bot.sentence),
+      detail: off.length ? off.map(factText).join(' · ') : undefined,
       href: '/bot',
       linkLabel: 'Status bot',
     })

@@ -43,6 +43,7 @@ export function AttentionList({ items, loading }: { items: AttentionItem[]; load
                   <span>
                     <span className={cn('mr-1.5 text-2xs font-semibold uppercase tracking-wide', l.cls)}>{l.label}</span>
                     {it.text}
+                    {it.detail && <span className="mt-0.5 block text-2xs text-muted-foreground">{it.detail}</span>}
                   </span>
                 </p>
                 <Link
