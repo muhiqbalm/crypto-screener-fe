@@ -125,7 +125,7 @@ function PaperBlock({ r, isAdmin }: { r: WeeklyReport; isAdmin: boolean }) {
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
-            <BigNumber label="Transaksi" value={formatCount(s.trades_week ?? 0)} hint={`minggu ini · ${formatCount(s.trades_total ?? 0)} total`} />
+            <BigNumber label="Transaksi" value={formatCount(s.trades_week ?? 0)} hint="minggu ini" />
             <BigNumber label="Aktif" value={formatCount(rows.filter((p) => p.active).length)} hint={`dari ${rows.length} preset`} />
             <BigNumber
               label="Terbaik"
@@ -150,9 +150,11 @@ function PaperBlock({ r, isAdmin }: { r: WeeklyReport; isAdmin: boolean }) {
                     {!p.active && ' · paper mati'}
                   </div>
                 </div>
-                <div className={cn('text-[15px] font-semibold tabular-nums', signClass(p.trades_week ? p.week_return_pct : null))}>
-                  {p.trades_week ? formatPct(p.week_return_pct, { digits: 2, signed: true }) : '—'}
-                  <span className="ml-2 text-[13px] font-normal text-muted-foreground">minggu ini</span>
+                <div>
+                  <div className={cn('text-[15px] font-semibold tabular-nums', signClass(p.trades_week ? p.week_return_pct : null))}>
+                    {p.trades_week ? formatPct(p.week_return_pct, { digits: 2, signed: true }) : '—'}
+                  </div>
+                  <div className="text-[13px] text-muted-foreground">minggu ini</div>
                 </div>
                 <div className="space-y-1.5">
                   <div className="flex justify-between text-[13px]">
@@ -214,11 +216,20 @@ function LiveBotBlock({ r, isAdmin }: { r: WeeklyReport; isAdmin: boolean }) {
                 <span className="text-[11px] text-muted-foreground">order</span>
               </span>
             </Ring>
-            <div className="grid flex-1 grid-cols-3 gap-5">
-              <BigNumber label="Sinyal" value={formatCount(s.signals ?? 0)} hint="alert TradingView" />
-              <BigNumber label="Tereksekusi" value={formatCount(executed)} tone="bullish" />
-              <BigNumber label="Ditolak" value={formatCount(s.rejected ?? 0)} tone={s.rejected ? 'bearish' : undefined} />
-            </div>
+            <dl className="min-w-[160px] flex-1 space-y-2">
+              {(
+                [
+                  ['sinyal (alert)', formatCount(s.signals ?? 0), undefined],
+                  ['order tereksekusi', formatCount(executed), 'text-bullish'],
+                  ['order ditolak', formatCount(s.rejected ?? 0), s.rejected ? 'text-bearish' : undefined],
+                ] as const
+              ).map(([label, value, cls]) => (
+                <div key={label} className="flex items-baseline gap-3">
+                  <dd className={cn('font-display w-12 text-right text-[28px] font-bold leading-none tabular-nums', cls)}>{value}</dd>
+                  <dt className="text-[15px] text-muted-foreground">{label}</dt>
+                </div>
+              ))}
+            </dl>
           </div>
           <details className={foldCls}>
             <summary className={sumCls}>Lihat alert ({(s.alerts ?? []).length})</summary>
@@ -241,7 +252,7 @@ function ExecutionBlock({ r, isAdmin }: { r: WeeklyReport; isAdmin: boolean }) {
         <NoData s={s}>{s.overall ? `Tidak ada sinyal live minggu ini (${formatCount(s.overall.n_signals)} sejak mulai dicatat).` : null}</NoData>
       ) : (
         <div className="space-y-5">
-          <div className="grid grid-cols-3 gap-5">
+          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3">
             <BigNumber label="Slippage" value={a.mean_slippage_bps === null ? '—' : formatBps(a.mean_slippage_bps)} hint="rata-rata" />
             <BigNumber label="Jeda alert" value={a.mean_latency_s === null ? '—' : `${formatNumber(a.mean_latency_s, { digits: 1 })} dtk`} hint={a.latency_upper_bound ? 'batas atas' : 'rata-rata'} />
             <BigNumber label="Terisi" value={`${formatCount(a.n_with_fill)}/${formatCount(a.n_counted)}`} hint="sinyal" />
@@ -374,10 +385,10 @@ function LabBlock({ r, isAdmin }: { r: WeeklyReport; isAdmin: boolean }) {
       ) : (
         <div className="space-y-5">
           <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
-            <BigNumber label="Uji" value={formatCount(s.runs ?? 0)} hint={`${formatCount(s.scans ?? 0)} uji banyak koin`} />
+            <BigNumber label="Uji" value={formatCount(s.runs ?? 0)} hint={`${formatCount(s.scans ?? 0)} banyak koin`} />
             <BigNumber label="Lolos" value={formatCount(s.pass ?? 0)} tone={s.pass ? 'bullish' : undefined} />
             <BigNumber label="Gagal" value={formatCount(s.fail ?? 0)} tone={s.fail ? 'bearish' : undefined} />
-            <BigNumber label="Preset baru" value={formatCount(s.presets_saved?.length ?? 0)} />
+            <BigNumber label="Preset" value={formatCount(s.presets_saved?.length ?? 0)} hint="baru" />
           </div>
           {warnings.length > 0 && (
             <p className="flex items-start gap-2 rounded-2xl border border-warn/40 bg-warn/10 px-4 py-3 text-[15px]">
@@ -424,7 +435,7 @@ function SystemBlock({ r }: { r: WeeklyReport }) {
           <BigNumber label="Pembaruan" value={d.available ? formatCount(d.live ?? 0) : '—'} hint={d.available ? 'sistem' : NO_DATA} />
           <BigNumber label="Gagal" value={d.available ? formatCount(d.failed ?? 0) : '—'} tone={d.failed ? 'bearish' : undefined} hint="pembaruan" />
           <BigNumber label="Cadangan" value={b.available ? `${formatCount(b.ok ?? 0)} ok` : '—'} hint={b.available ? `${b.failed ?? 0} gagal` : NO_DATA} />
-          <BigNumber label="Terakhir" value={b.last ? formatTime(b.last.ts, { date: true, time: false }) : '—'} size="sm" hint={b.last ? `cadangan ${formatTime(b.last.ts, { date: false })}` : undefined} />
+          <BigNumber label="Terakhir" value={b.last ? formatTime(b.last.ts, { date: true, time: false }) : '—'} size="sm" hint={b.last ? formatTime(b.last.ts, { date: false }) : undefined} />
         </div>
         {s.processes ? (
           <div className="flex flex-wrap gap-2">

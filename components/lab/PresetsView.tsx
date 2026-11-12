@@ -305,7 +305,7 @@ function PresetCard({ row, templates, onDetail, onAction }: { row: Row; template
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               {p.readonly && <Lock className="h-4 w-4 shrink-0 text-lab" aria-label="Terkunci: setting bot live" />}
-              <h3 className="font-display truncate text-lg font-semibold tracking-tight">{p.name}</h3>
+              <h3 className="font-display text-lg font-semibold leading-snug tracking-tight [overflow-wrap:anywhere]">{p.name}</h3>
             </div>
             <div className="truncate text-[13px] text-muted-foreground">
               {strategyLabel(p.template_id, templates)} · {formatTimeframe(p.timeframe)}
@@ -329,7 +329,7 @@ function PresetCard({ row, templates, onDetail, onAction }: { row: Row; template
           tone={h?.max_dd_pct ? 'bearish' : undefined}
           size="sm"
         />
-        <BigNumber label="Transaksi uji" value={h?.trades === null || h?.trades === undefined ? '—' : formatCount(h.trades)} size="sm" />
+        <BigNumber label="Transaksi" value={h?.trades === null || h?.trades === undefined ? '—' : formatCount(h.trades)} size="sm" />
       </div>
 
       <div className="mt-5 min-h-[44px]">
