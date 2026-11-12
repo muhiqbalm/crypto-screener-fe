@@ -85,8 +85,10 @@ export function ResponsiveTable<T>({
 
   return (
     <div className={cn('min-w-0', className)}>
-      {/* ≥ sm: table */}
-      <div className="hidden overflow-x-auto rounded-xl border bg-card sm:block">
+      {/* ≥ sm: table. `relative` makes this scroll box the containing block, so
+          absolutely positioned children (sr-only labels) are clipped by it
+          instead of widening the page. */}
+      <div data-rt-scroll className="relative hidden overflow-x-auto rounded-xl border bg-card sm:block">
         <table className="w-full caption-bottom text-sm">
           {caption && <caption className="sr-only">{caption}</caption>}
           <thead className="border-b bg-muted/30">

@@ -1,6 +1,5 @@
 'use client'
 
-import { cn } from '@/lib/utils/cn'
 import { useApiHealth } from '@/lib/queries/health'
 
 export type SystemState = 'mock' | 'pending' | 'healthy' | 'degraded' | 'offline'
@@ -52,22 +51,4 @@ export function useSystemStatus(): SystemStatus {
     attention: state === 'degraded' || state === 'offline' || state === 'mock',
     dotClass: DOT[state],
   }
-}
-
-/** Status pill (dot + words). Kept for pages that want it inline; the shell shows it in the User Hub. */
-export function ApiStatus({ className }: { className?: string }) {
-  const s = useSystemStatus()
-  return (
-    <div
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border bg-muted/40 px-2.5 py-1 text-2xs text-foreground',
-        className,
-      )}
-      role="status"
-      aria-live="polite"
-    >
-      <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', s.dotClass)} aria-hidden="true" />
-      <span className="truncate">{s.label}</span>
-    </div>
-  )
 }

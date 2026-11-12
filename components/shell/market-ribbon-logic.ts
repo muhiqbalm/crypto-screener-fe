@@ -1,6 +1,7 @@
 import type { IntelNewsResponse, IntelWhalesResponse } from '@/lib/api/types/intel'
 import type { RegimeBrief, RegimeLabel } from '@/lib/api/types/outlook'
 import { formatPct, formatUsdCompact } from '@/lib/utils/format'
+import { fngZone } from '@/lib/intel/fng'
 import { formatDuration } from '@/lib/utils/time'
 
 /** Pure helpers behind <MarketRibbon> (unit-tested). Words follow the glossary. */
@@ -11,24 +12,19 @@ export function regimeWord(r: Pick<RegimeBrief, 'label'> | null | undefined): st
   return r?.label ? REGIME_WORD[r.label] : null
 }
 
-/** Fear & Greed 0–100 → Indonesian zone (alternative.me bands). */
-export function fearGreedZone(v: number): string {
-  if (v < 25) return 'sangat takut'
-  if (v < 45) return 'takut'
-  if (v <= 55) return 'netral'
-  if (v <= 75) return 'serakah'
-  return 'sangat serakah'
-}
-
 export interface FearGreed {
   value: number
+  /** Lower-case zone, e.g. "takut"; same words as /news (lib/intel/fng.ts). */
   zone: string
 }
 
+/** Fear & Greed with the source's own classification first (fngZone), numeric bands as fallback. */
 export function fearGreed(news: IntelNewsResponse | undefined): FearGreed | null {
-  const v = news?.fearAndGreed?.value
+  const fg = news?.fearAndGreed
+  const v = fg?.value
   if (typeof v !== 'number' || !Number.isFinite(v)) return null
-  return { value: Math.round(v), zone: fearGreedZone(v) }
+  const z = fngZone(v, fg?.classification)
+  return z ? { value: Math.round(v), zone: z.label.toLowerCase() } : null
 }
 
 export interface TraderStance {
@@ -62,7 +58,7 @@ export interface LargeFlow {
   word: string
   /** "+$1.2M". */
   amount: string
-  /** "dalam 12 mnt terakhir" or null. */
+  /** "12 mnt" (window the flow covers) or null. */
   window: string | null
 }
 
@@ -75,7 +71,7 @@ export function largeFlow(w: IntelWhalesResponse | undefined): LargeFlow | null 
     net,
     word,
     amount: formatUsdCompact(net, { signed: true }),
-    window: typeof secs === 'number' && secs > 0 ? `dalam ${formatDuration(secs * 1000)} terakhir` : null,
+    window: typeof secs === 'number' && secs > 0 ? formatDuration(secs * 1000) : null,
   }
 }
 

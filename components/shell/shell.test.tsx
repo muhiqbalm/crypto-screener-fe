@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { HubTabs } from './HubTabs'
 import { SidebarNav } from './SidebarNav'
-import { fearGreed, fearGreedZone, fundingInfo, largeFlow, ribbonSentence, traderStance } from './market-ribbon-logic'
+import { fearGreed, fundingInfo, largeFlow, ribbonSentence, traderStance } from './market-ribbon-logic'
 
 let mockPath = '/lab/leaderboard'
 vi.mock('next/navigation', () => ({ usePathname: () => mockPath }))
@@ -50,13 +50,10 @@ describe('SidebarNav', () => {
 })
 
 describe('market ribbon logic', () => {
-  it('fear & greed zones in Indonesian', () => {
-    expect(fearGreedZone(10)).toBe('sangat takut')
-    expect(fearGreedZone(38)).toBe('takut')
-    expect(fearGreedZone(50)).toBe('netral')
-    expect(fearGreedZone(62)).toBe('serakah')
-    expect(fearGreedZone(90)).toBe('sangat serakah')
+  it('fear & greed: the source label wins, bands are the fallback (same as /news)', () => {
     expect(fearGreed({ fearAndGreed: { value: 38, classification: 'Fear' } })).toEqual({ value: 38, zone: 'takut' })
+    expect(fearGreed({ fearAndGreed: { value: 30, classification: 'Extreme Fear' } })).toEqual({ value: 30, zone: 'sangat takut' })
+    expect(fearGreed({ fearAndGreed: { value: 62, classification: null } })?.zone).toBe('serakah')
     expect(fearGreed({ fearAndGreed: null })).toBeNull()
   })
 
@@ -76,7 +73,7 @@ describe('market ribbon logic', () => {
     const f = largeFlow(w)
     expect(f?.word).toBe('jual > beli')
     expect(f?.amount).toBe('−$1.3M')
-    expect(f?.window).toBe('dalam 12 mnt terakhir')
+    expect(f?.window).toBe('12 mnt')
   })
 
   it('funding says who pays and the sentence handles missing data', () => {

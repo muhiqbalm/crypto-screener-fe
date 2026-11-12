@@ -22,6 +22,7 @@ import {
   TrendingUp,
   type LucideIcon,
 } from 'lucide-react'
+import { coinOf } from '@/lib/utils/format'
 
 /**
  * Single source of truth for app navigation (sidebar, mobile drawer, hub
@@ -119,7 +120,7 @@ export const NAV_CLUSTERS: NavCluster[] = [
       },
       {
         id: 'strategi',
-        label: 'Strategi · simulasi & riset',
+        label: 'Strategi · simulasi',
         mode: 'paper',
         items: [
           {
@@ -192,6 +193,11 @@ export function activeNavItem(pathname: string, isAdmin = true): NavItem | null 
   return navItemsForRole(isAdmin).find((i) => isNavItemActive(i, pathname)) ?? null
 }
 
+/** Link to a coin's page (Peluang koin): "ETHUSDT" / "ETH/USDT:USDT" / "ETH" → "/koin/ETH". */
+export function coinHref(symbol: string): string {
+  return `/koin/${encodeURIComponent(coinOf(symbol))}`
+}
+
 /**
  * Lab paths every logged-in user may READ (CEO decision K1). The Lab gate lets
  * these through; actions on them stay admin-only in the backend.
@@ -249,9 +255,3 @@ export function hubForPath(pathname: string): HubId | null {
   }
   return null
 }
-
-/**
- * @deprecated Kept for old imports. The Lab tab strip is gone; use
- * `navForRole` for the menu and `HUB_TABS` + `<HubTabs>` for sub-tabs.
- */
-export const LAB_NAV: NavItem[] = NAV_CLUSTERS[1].sections[1].items
