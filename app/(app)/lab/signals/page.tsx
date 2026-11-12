@@ -14,7 +14,7 @@ export default function SignalsPage() {
     <PageContainer>
       <LabHeader
         title="Rekam jejak sinyal"
-        subtitle="Sinyal mana yang benar-benar bekerja dan mana yang cuma noise, dari setiap sinyal yang tercatat."
+        subtitle="Sinyal mana yang bekerja, mana yang cuma noise."
         help={{
           apaIni:
             'Setiap sinyal dari screener, pantauan Lab dan webhook TradingView dicatat otomatis, lalu dicek apakah arahnya benar 4 jam, 1 hari, 3 hari dan 7 hari kemudian.',

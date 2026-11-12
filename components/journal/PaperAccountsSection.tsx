@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Loader2, Plus, Wallet } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { DeckCard } from '@/components/lab/arena/deck'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -71,18 +71,21 @@ export function PaperAccountsSection() {
   const accounts = q.data ?? []
 
   return (
-    <Card className="border-border">
-      <CardHeader className="flex-row items-center justify-between gap-2 pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-tight">
-          <Wallet className="h-4 w-4 text-lab" aria-hidden="true" />
-          Akun simulasi
-          <StatusPill kind="paper" size="xs" />
-        </CardTitle>
-        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setOpen((o) => !o)}>
-          <Plus className="h-3.5 w-3.5" /> Akun baru
+    <DeckCard
+      icon={Wallet}
+      iconTone="lab"
+      title={
+        <span className="inline-flex items-center gap-2">
+          Akun simulasi <StatusPill kind="paper" size="xs" />
+        </span>
+      }
+      action={
+        <Button variant="outline" className="gap-1.5 rounded-full" onClick={() => setOpen((o) => !o)}>
+          <Plus className="h-4 w-4" aria-hidden="true" /> Akun baru
         </Button>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      }
+    >
+      <div className="space-y-4">
         {open && (
           <div className="grid grid-cols-1 gap-3 rounded-lg border border-border p-3 sm:grid-cols-5">
             {(
@@ -123,20 +126,16 @@ export function PaperAccountsSection() {
         ) : accounts.length === 0 ? (
           <p className="py-4 text-center text-sm text-muted-foreground">Belum ada akun simulasi. Tombol &quot;Mulai paper&quot; di Preset membuatnya otomatis, atau klik &quot;Akun baru&quot;.</p>
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {accounts.map((a) => (
-              <div key={a.id} className="rounded-lg border border-border bg-card p-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold">{a.name}</span>
-                  <span className="text-3xs text-muted-foreground">dibuat {formatTime(a.created_at)}</span>
-                </div>
-                <dl className="mt-2 grid grid-cols-2 gap-1 font-mono text-xs">
-                  <dt className="text-muted-foreground">Saldo</dt>
-                  <dd className="text-right">{formatUsd(a.balance)}</dd>
-                  <dt className="text-muted-foreground">Ekuitas</dt>
-                  <dd className="text-right font-bold">{formatUsd(a.equity)}</dd>
+              <div key={a.id} className="rounded-2xl border bg-background/40 p-5">
+                <div className="truncate text-[17px] font-semibold">{a.name}</div>
+                <div className="text-[13px] text-muted-foreground">dibuat {formatTime(a.created_at)}</div>
+                <div className="font-display mt-3 text-2xl font-bold tabular-nums">{formatUsd(a.equity)}</div>
+                <div className="text-[13px] text-muted-foreground">ekuitas</div>
+                <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-[14px] tabular-nums">
                   <dt className="text-muted-foreground">Hasil tertutup</dt>
-                  <dd className={cn('text-right', signClass(a.realized_pnl))}>{formatUsdSigned(a.realized_pnl)}</dd>
+                  <dd className={cn('text-right font-semibold', signClass(a.realized_pnl))}>{formatUsdSigned(a.realized_pnl)}</dd>
                   <dt className="text-muted-foreground">Posisi terbuka</dt>
                   <dd className="text-right">{openPositionCount(a)}</dd>
                 </dl>
@@ -144,7 +143,7 @@ export function PaperAccountsSection() {
             ))}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </DeckCard>
   )
 }

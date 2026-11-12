@@ -17,7 +17,7 @@ export default function UniversalPage() {
     <PageContainer>
       <LabHeader
         title="Universal v0"
-        subtitle="Strategi portofolio multi-koin: pegang koin terkuat yang sedang naik, ukuran posisi menyesuaikan gejolak, rebalance berkala. Paper saja, tanpa order nyata."
+        subtitle="Strategi portofolio multi-koin yang sudah dihentikan. Paper saja."
         status={<StatusPill kind="arsip" />}
         hub={null}
       />

@@ -16,7 +16,7 @@ export default function JournalPage() {
     <PageContainer width="wide">
       <LabHeader
         title="Paper berjalan"
-        subtitle="Jurnal: setiap transaksi simulasi, terbaru di atas. Trade bot live (uang asli) disembunyikan kecuali kamu menyalakannya."
+        subtitle="Jurnal: setiap transaksi simulasi, terbaru di atas."
         status={<StatusPill kind="paper" />}
         help={PAPER_HELP}
       />
