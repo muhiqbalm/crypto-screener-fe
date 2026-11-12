@@ -94,13 +94,11 @@ export function BotStatusView() {
         }
       />
 
-      <div className="grid items-stretch gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3">
         <BotHero v={v} split={splitSignals(live7.data)} updatedAt={finished ?? undefined} stale={stale} className="lg:col-span-2" />
-        <div className="flex flex-col gap-5">
-          <WebhookStatusCard q={bot} />
-          <BalanceLinkCard />
-        </div>
+        <WebhookStatusCard q={bot} />
       </div>
+      <BalanceLinkCard />
 
       <LiveCheckView
         id="cek"

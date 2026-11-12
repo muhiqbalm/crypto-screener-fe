@@ -36,7 +36,7 @@ describe('BotStatusView', () => {
     setup()
     await waitFor(() => expect(screen.getByText(/^Perlu dicek: 5 dari 6 sinyal 7 hari terakhir sesuai/)).toBeInTheDocument(), { timeout: 5000 })
     expect(screen.getByRole('region', { name: 'Bot live aman?' })).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: /5 cocok, 0 bermasalah, 1 perlu dicek, 1 menunggu/ })).toBeInTheDocument() // the donut
+    expect(screen.getByRole('img', { name: /5 cocok, 1 harga beda, 0 gagal atau tidak terkirim, 1 menunggu/ })).toBeInTheDocument() // the donut
     expect(screen.getAllByText('LIVE').length).toBeGreaterThan(0)
     // The answer opens the evidence on the problem rows.
     expect(screen.getByRole('link', { name: /lihat yang bermasalah/i })).toHaveAttribute('href', '#cek')
