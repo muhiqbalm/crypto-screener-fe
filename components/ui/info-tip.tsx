@@ -43,7 +43,7 @@ export function InfoTip({ children, title, label, trigger, side = 'top', align =
         className={cn(
           trigger
             ? 'inline-flex cursor-help items-center gap-1 rounded-sm underline decoration-dotted decoration-muted-foreground/60 underline-offset-4 hover:decoration-foreground'
-            : '-m-1 inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full align-middle text-muted-foreground transition-colors hover:text-foreground data-[state=open]:text-foreground',
+            : '-m-1.5 inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full align-middle text-muted-foreground transition-colors hover:text-foreground data-[state=open]:text-foreground',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           className,
         )}

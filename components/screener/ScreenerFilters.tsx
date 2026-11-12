@@ -31,18 +31,18 @@ export function ScreenerFilters({ filters, onFiltersChange }: ScreenerFiltersPro
           htmlFor="symbol-filter"
           className="text-xs text-muted-foreground"
         >
-          Simbol
+          Koin
         </Label>
         <Input
           id="symbol-filter"
           type="search"
-          placeholder="Cari simbol…"
+          placeholder="Cari koin…"
           value={filters.symbol}
           onChange={(e) =>
             onFiltersChange({ ...filters, symbol: e.target.value })
           }
-          className="h-8 text-sm transition-colors duration-200 focus-visible:ring-ring"
-          aria-label="Filter simbol"
+          className="h-10 text-sm transition-colors duration-200 focus-visible:ring-ring"
+          aria-label="Cari koin"
         />
       </div>
 
@@ -52,7 +52,7 @@ export function ScreenerFilters({ filters, onFiltersChange }: ScreenerFiltersPro
           htmlFor="signal-filter"
           className="text-xs text-muted-foreground"
         >
-          Sinyal screener
+          Arah skor screener
         </Label>
         <Select
           value={filters.signal}
@@ -62,13 +62,13 @@ export function ScreenerFilters({ filters, onFiltersChange }: ScreenerFiltersPro
         >
           <SelectTrigger
             id="signal-filter"
-            className="h-8 text-sm cursor-pointer transition-colors duration-200"
-            aria-label="Filter sinyal"
+            className="h-10 text-sm cursor-pointer transition-colors duration-200"
+            aria-label="Filter arah skor screener"
           >
-            <SelectValue placeholder="Semua sinyal" />
+            <SelectValue placeholder="Semua arah" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">Semua sinyal</SelectItem>
+            <SelectItem value="ALL">Semua arah</SelectItem>
             <SelectItem value="BULLISH">Naik</SelectItem>
             <SelectItem value="BEARISH">Turun</SelectItem>
             <SelectItem value="NEUTRAL">Netral</SelectItem>
@@ -92,7 +92,7 @@ export function ScreenerFilters({ filters, onFiltersChange }: ScreenerFiltersPro
         >
           <SelectTrigger
             id="tier-filter"
-            className="h-8 text-sm cursor-pointer transition-colors duration-200"
+            className="h-10 text-sm cursor-pointer transition-colors duration-200"
             aria-label="Filter kelompok skor"
           >
             <SelectValue placeholder="Semua kelompok" />

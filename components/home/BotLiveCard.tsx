@@ -91,9 +91,9 @@ export function BotLiveCard({
               <Donut
                 size={112}
                 thickness={13}
-                label={`${donut.ok} dari ${donut.judged} sinyal 7 hari sesuai strategi`}
+                label={`${donut.ok} dari ${donut.judged} sinyal 7 hari cocok dengan strategi`}
                 segments={[
-                  { value: donut.ok, tone: 'bullish', label: 'sesuai' },
+                  { value: donut.ok, tone: 'bullish', label: 'cocok' },
                   { value: donut.warn, tone: 'warn', label: 'perlu dicek' },
                   { value: donut.bad, tone: 'bearish', label: 'gagal' },
                 ]}
@@ -102,13 +102,13 @@ export function BotLiveCard({
                     <p className="num display text-2xl font-extrabold leading-none">
                       {donut.ok}/{donut.judged}
                     </p>
-                    <p className="mt-1 text-2xs text-muted-foreground">sesuai</p>
+                    <p className="mt-1 text-2xs text-muted-foreground">cocok</p>
                   </div>
                 }
               />
             ) : null}
             <StatusPill kind={verdict.tone} size="md" />
-            <p className="line-clamp-3 w-full text-base font-semibold leading-snug">{verdict.sentence}</p>
+            <p className="w-full text-base font-semibold leading-snug">{verdict.sentence}</p>
           </div>
         ) : (
           <p className="text-base text-muted-foreground">Status bot live tidak tersedia.</p>
@@ -120,7 +120,7 @@ export function BotLiveCard({
           {verdict.facts.slice(0, 3).map((f) => (
             <div key={f.label} className="flex items-baseline justify-between gap-3 text-sm">
               <dt className="shrink-0 text-muted-foreground">{f.label}</dt>
-              <dd className="num min-w-0 truncate text-right font-semibold">
+              <dd className="num min-w-0 break-words text-right font-semibold">
                 {f.value}
                 {f.hint && <span className="font-normal text-muted-foreground"> · {f.hint}</span>}
               </dd>

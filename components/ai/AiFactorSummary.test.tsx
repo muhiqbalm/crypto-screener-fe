@@ -50,6 +50,21 @@ describe('Ringkasan AI', () => {
     expect(screen.getByText(/claude-opus-5-5 · biaya \$0\.0141/)).toBeInTheDocument()
   })
 
+  it('keeps the page explanation in one folded "Rincian", with or without an AI summary', () => {
+    state.data = on(SUMMARY)
+    const { container, rerender } = render(<AiFactorCard symbol="BTCUSDT" detail={['Kenapa: tren turun.', 'Risiko: funding negatif.']} />)
+    const fold = container.querySelector('details')
+    expect(fold).not.toHaveAttribute('open')
+    expect(fold).toHaveTextContent('Rincian: kenapa, bukti, risiko')
+    expect(fold).toHaveTextContent('Kenapa: tren turun.')
+    expect(container.querySelectorAll('details')).toHaveLength(1)
+    state.data = { symbol: 'BTCUSDT', enabled: false, label: AI_LABEL, summary: null, reason: null, note: null }
+    rerender(<AiFactorCard symbol="BTCUSDT" detail={['Kenapa: tren turun.']} />)
+    expect(container.querySelector('details')).not.toHaveAttribute('open')
+    expect(screen.getByText('Kenapa: tren turun.')).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Ringkasan AI' })).not.toBeInTheDocument()
+  })
+
   it('renders nothing for members while the feature is off, loading or failing', () => {
     state.data = { symbol: 'BTCUSDT', enabled: false, label: AI_LABEL, summary: null, reason: null, note: null }
     const { container, rerender } = render(<AiFactorCard symbol="BTCUSDT" />)

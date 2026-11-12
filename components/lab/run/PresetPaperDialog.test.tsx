@@ -77,7 +77,7 @@ describe('Simpan sebagai preset & mulai paper (shared paper flow)', () => {
     const run = { ...RUN, params: { dd_derisk_pct: 20 } } as LabRunDetail
     render(<PresetPaperDialog run={run} template={TEMPLATE} open onOpenChange={() => {}} />)
     expect(screen.getByLabelText('Akun simulasi baru')).toBeDisabled()
-    expect(screen.getByText(/mengecilkan posisi saat drawdown/)).toBeInTheDocument()
+    expect(screen.getByText(/mengecilkan posisi saat modal turun dalam/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /^Simpan & mulai paper/ })).toBeDisabled()
     fireEvent.click(screen.getByRole('button', { name: 'Simpan preset saja' }))
     await waitFor(() => expect(save).toHaveBeenCalledWith({ runId: 12, label: 'Val2' }))

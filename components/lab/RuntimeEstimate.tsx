@@ -1,6 +1,7 @@
 'use client'
 
 import { AlertTriangle, Clock, Loader2 } from 'lucide-react'
+import { Checkbox } from '@/components/lab/Section'
 import { cn } from '@/lib/utils/cn'
 import { estimateLevel, formatDuration, needsAck } from '@/lib/lab/planning'
 import type { LabEstimate } from '@/lib/api/types/lab-insights'
@@ -83,7 +84,7 @@ export function RuntimeEstimate({
           </p>
           {needsAck(level) && (
             <label className="flex cursor-pointer items-center gap-2.5 text-sm text-foreground">
-              <input type="checkbox" checked={ack} onChange={(ev) => onAck(ev.target.checked)} className="h-5 w-5 accent-current" />
+              <Checkbox checked={ack} onChange={(ev) => onAck(ev.target.checked)} />
               Saya paham, tetap jalankan
             </label>
           )}

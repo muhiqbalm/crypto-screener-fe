@@ -129,7 +129,7 @@ export function verdictSentence(run: Pick<LabRunDetail, 'status' | 'verdict' | '
     const net = num(ho, 'net_return_pct')
     const trades = num(ho, 'trades')
     const pf = num(ho, 'profit_factor')
-    const parts = [net !== null ? formatPercent(net, 1) : null, trades !== null ? `dari ${Math.round(trades)} trade` : null]
+    const parts = [net !== null ? formatPercent(net, 1) : null, trades !== null ? `dari ${Math.round(trades)} transaksi` : null]
       .filter(Boolean)
       .join(' ')
     return {
@@ -149,7 +149,7 @@ export function verdictSentence(run: Pick<LabRunDetail, 'status' | 'verdict' | '
     const trades = num(m, 'trades')
     return {
       tone: 'none',
-      text: `Uji cepat selesai${net !== null ? `: ${formatPercent(net, 1)} di seluruh periode` : ''}${trades !== null ? ` dari ${Math.round(trades)} trade` : ''}. Belum ada rapor, jadi belum bukti.`,
+      text: `Uji cepat selesai${net !== null ? `: ${formatPercent(net, 1)} di seluruh periode` : ''}${trades !== null ? ` dari ${Math.round(trades)} transaksi` : ''}. Belum ada rapor, jadi belum bukti.`,
     }
   }
   return { tone: 'none', text: 'Uji selesai, tapi server tidak mengirim rapor.' }

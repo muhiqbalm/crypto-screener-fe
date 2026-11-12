@@ -13,6 +13,7 @@ import { CountUp } from '@/components/ui/count-up'
 import { ErrorState } from '@/components/shell/states'
 import { cn } from '@/lib/utils/cn'
 import { formatPrice, formatRR, formatScore, formatUsd, formatUsdSigned } from '@/lib/utils/format'
+import { termLabel } from '@/lib/glossary'
 import type { ScreenerCoin, WatchCoin } from '@/components/home/logic'
 
 function AllLink() {
@@ -30,8 +31,8 @@ function AllLink() {
 function Money({ label, value, tone }: { label: React.ReactNode; value: number | null; tone: 'bullish' | 'bearish' }) {
   return (
     <div className="min-w-0">
-      <p className="eyebrow truncate">{label}</p>
-      <p className={cn('num display truncate text-2xl font-extrabold', value === null ? 'text-muted-foreground' : tone === 'bullish' ? 'text-bullish' : 'text-bearish')}>
+      <p className="eyebrow">{label}</p>
+      <p className={cn('num display whitespace-nowrap text-2xl font-extrabold', value === null ? 'text-muted-foreground' : tone === 'bullish' ? 'text-bullish' : 'text-bearish')}>
         {value === null ? '—' : formatUsdSigned(value)}
       </p>
     </div>
@@ -114,17 +115,18 @@ export function BestCoinCard({
               </div>
             </div>
           </Link>
-          <div className="grid grid-cols-3 gap-6 border-t pt-4">
-            <div className="min-w-0">
+          {/* Phones: R:R on its own row, the two dollar numbers side by side, so nothing is cut (audit P3). */}
+          <div className="grid grid-cols-2 items-end gap-x-6 gap-y-4 border-t pt-4 sm:grid-cols-3">
+            <div className="col-span-2 min-w-0 sm:col-span-1">
               <p className="eyebrow">
-                <Term k="rr" short />
+                <Term k="rr" />
               </p>
-              <p className="num display text-glow truncate text-2xl font-extrabold text-brand">
+              <p className="num display text-glow whitespace-nowrap text-2xl font-extrabold text-brand">
                 {c.rr === null ? '—' : <CountUp value={c.rr} format={(n) => formatRR(n)} />}
               </p>
             </div>
-            <Money label="Di target" value={c.tpUsd} tone="bullish" />
-            <Money label="Di SL" value={c.slUsd} tone="bearish" />
+            <Money label={termLabel('money_at_tp')} value={c.tpUsd} tone="bullish" />
+            <Money label={termLabel('money_at_sl')} value={c.slUsd} tone="bearish" />
           </div>
           <p className="num text-sm text-muted-foreground">
             {[c.sl !== null ? `Batal jika ${formatPrice(c.sl)}` : null, c.tp !== null ? `Target ${formatPrice(c.tp)}` : null, c.capital ? `modal ${formatUsd(c.capital)}` : null]

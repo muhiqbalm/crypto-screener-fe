@@ -25,7 +25,7 @@ describe('VerdictBanner', () => {
     expect(screen.getByText('Gagal')).toBeInTheDocument()
     const reasons = screen.getByTestId('verdict-reasons')
     expect(reasons).toHaveTextContent('Gagal karena turun terdalam wajar bisa −62.3% (batas −50%)')
-    expect(reasons).toHaveTextContent('18 trade di data baru (minimal 30')
+    expect(reasons).toHaveTextContent('18 transaksi di data baru (minimal 30')
     expect(reasons).not.toHaveTextContent('PF di data baru')
   })
 

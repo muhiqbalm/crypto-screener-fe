@@ -12,7 +12,7 @@ import { ErrorPanel } from '@/components/shell/ErrorPanel'
 import { Chip, Eyebrow, Section } from '@/components/lab/Section'
 import { ApiError, apiErrorDetail } from '@/lib/api/errors'
 import { notify } from '@/lib/utils/toast'
-import { formatTimestamp } from '@/lib/utils/format'
+import { formatDate } from '@/lib/utils/time'
 import { useCreateUniversalRun, useUniversalSchema } from '@/lib/queries/universal'
 import type { LabRunMode, LabParamValue } from '@/lib/api/types/lab'
 import type { UniversalParamSpec, UniversalParams } from '@/lib/api/types/universal'
@@ -61,7 +61,7 @@ export function parseUniversalForm(params: UniversalParamSpec[], f: FormValues):
 }
 
 const MODES: { id: LabRunMode; label: string; help: string }[] = [
-  { id: 'validate', label: 'Validasi (rapor jujur)', help: 'Holdout terkunci + walk-forward + Monte Carlo + biaya 2×. ±30 detik.' },
+  { id: 'validate', label: 'Validasi (rapor jujur)', help: 'Data baru terkunci + walk-forward + Monte Carlo + biaya 2×. ±30 detik.' },
   { id: 'backtest', label: 'Backtest cepat', help: 'Seluruh periode, tanpa rapor. Bukan bukti.' },
   { id: 'optimize', label: 'Cari setting terbaik', help: 'Cari parameter di data pengembangan saja, lalu uji sekali di holdout. Risiko overfitting.' },
 ]
@@ -119,7 +119,7 @@ export function UniversalBuilder() {
       title="Uji Universal v0"
       description={`Satu aturan untuk ${schema.data.universe.length} koin perp yang datanya tersedia. Semua biaya (fee, slippage, funding) ikut dihitung.`}
       action={
-        <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" onClick={() => setValues(null)}>
+        <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-2xs" onClick={() => setValues(null)}>
           <RotateCcw className="h-3.5 w-3.5" />
           Default
         </Button>
@@ -133,17 +133,17 @@ export function UniversalBuilder() {
               <Chip key={m.id} active={mode === m.id} onClick={() => setMode(m.id)} title={m.help}>{m.label}</Chip>
             ))}
           </div>
-          <p className="text-xs text-muted-foreground">{MODES.find((m) => m.id === mode)?.help}</p>
+          <p className="text-2xs text-muted-foreground">{MODES.find((m) => m.id === mode)?.help}</p>
           {mode === 'optimize' && (
-            <div className="flex items-center gap-2 text-xs">
+            <div className="flex items-center gap-2 text-2xs">
               <span className="text-muted-foreground">Percobaan:</span>
               {[10, 30, 60].map((n) => <Chip key={n} active={trials === n} onClick={() => setTrials(n)} className="h-7 px-2.5">{n}</Chip>)}
             </div>
           )}
           {lock && mode !== 'backtest' && (
-            <p className="flex items-center gap-1.5 text-xs text-lab">
+            <p className="flex items-center gap-1.5 text-2xs text-lab">
               <Lock className="h-3.5 w-3.5" />
-              Holdout terkunci mulai {formatTimestamp(lock.holdout_start).slice(0, 10)} · sudah dilihat {lock.touches}×
+              Data baru terkunci mulai {formatDate(lock.holdout_start)} · sudah dilihat {lock.touches}×
             </p>
           )}
         </div>
@@ -151,10 +151,10 @@ export function UniversalBuilder() {
         <div className="grid gap-5 lg:grid-cols-2">
           {groups.map((g) => (
             <fieldset key={g.name} className="space-y-3 rounded-lg border border-border/60 p-3">
-              <legend className="px-1 text-xs font-semibold">{g.name}</legend>
+              <legend className="px-1 text-2xs font-semibold">{g.name}</legend>
               {g.items.map((p) => (
                 <div key={p.key} className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-0.5">
-                  <Label htmlFor={`u-${p.key}`} className="text-xs font-normal" title={p.help}>{p.label}</Label>
+                  <Label htmlFor={`u-${p.key}`} className="text-2xs font-normal" title={p.help}>{p.label}</Label>
                   {p.type === 'bool' ? (
                     <Switch id={`u-${p.key}`} checked={Boolean(form[p.key])} onCheckedChange={(v) => set(p.key, v)} />
                   ) : p.type === 'choice' ? (
@@ -165,28 +165,28 @@ export function UniversalBuilder() {
                     </div>
                   ) : (
                     <Input id={`u-${p.key}`} inputMode="decimal" value={String(form[p.key])} onChange={(e) => set(p.key, e.target.value)}
-                      aria-invalid={Boolean(errors[p.key])} className="h-8 w-24 text-right font-mono text-xs" />
+                      aria-invalid={Boolean(errors[p.key])} className="h-8 w-24 text-right font-mono text-2xs" />
                   )}
                   {(errors[p.key] || p.help) && (
-                    <p className={errors[p.key] ? 'col-span-2 text-[11px] text-bearish' : 'col-span-2 text-[11px] text-muted-foreground'}>{errors[p.key] ?? p.help}</p>
+                    <p className={errors[p.key] ? 'col-span-2 text-2xs text-bearish' : 'col-span-2 text-2xs text-muted-foreground'}>{errors[p.key] ?? p.help}</p>
                   )}
                 </div>
               ))}
             </fieldset>
           ))}
           <fieldset className="space-y-3 rounded-lg border border-border/60 p-3">
-            <legend className="px-1 text-xs font-semibold">Biaya</legend>
+            <legend className="px-1 text-2xs font-semibold">Biaya</legend>
             {(['commission_pct', 'slippage_pct'] as const).map((k) => (
               <div key={k} className="grid grid-cols-[1fr_auto] items-center gap-3">
-                <Label htmlFor={`u-${k}`} className="text-xs font-normal">{k === 'commission_pct' ? 'Fee per sisi (%)' : 'Slippage per sisi (%)'}</Label>
-                <Input id={`u-${k}`} inputMode="decimal" value={costs[k]} onChange={(e) => setCosts({ ...costs, [k]: e.target.value })} className="h-8 w-24 text-right font-mono text-xs" />
+                <Label htmlFor={`u-${k}`} className="text-2xs font-normal">{k === 'commission_pct' ? 'Fee per sisi (%)' : 'Slippage per sisi (%)'}</Label>
+                <Input id={`u-${k}`} inputMode="decimal" value={costs[k]} onChange={(e) => setCosts({ ...costs, [k]: e.target.value })} className="h-8 w-24 text-right font-mono text-2xs" />
               </div>
             ))}
             <div className="grid grid-cols-[1fr_auto] items-center gap-3">
-              <Label htmlFor="u-funding" className="text-xs font-normal">Hitung funding</Label>
+              <Label htmlFor="u-funding" className="text-2xs font-normal">Hitung funding</Label>
               <Switch id="u-funding" checked={costs.funding} onCheckedChange={(v) => setCosts({ ...costs, funding: v })} />
             </div>
-            {costErr && <p className="text-[11px] text-bearish">Fee 0–1%, slippage 0–2%.</p>}
+            {costErr && <p className="text-2xs text-bearish">Fee 0–1%, slippage 0–2%.</p>}
           </fieldset>
         </div>
 
@@ -195,7 +195,7 @@ export function UniversalBuilder() {
             <Play />
             {create.isPending ? 'Mengirim…' : mode === 'validate' ? 'Jalankan validasi' : mode === 'optimize' ? 'Jalankan optimize' : 'Jalankan backtest'}
           </Button>
-          <p className="text-xs text-muted-foreground">Paper/riset saja — tidak ada order nyata.</p>
+          <p className="text-2xs text-muted-foreground">Paper/riset saja — tidak ada order nyata.</p>
         </div>
       </div>
     </Section>

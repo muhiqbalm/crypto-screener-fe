@@ -19,6 +19,7 @@ import {
 } from '@/lib/screener/factors'
 import { formatFunding, formatScore, formatVolume } from '@/lib/utils/format'
 import { cn } from '@/lib/utils/cn'
+import { termLabel } from '@/lib/glossary'
 import type { AssetDetail, SignalDirection } from '@/lib/api/types/screener'
 
 function isNum(v: number | null | undefined): v is number {
@@ -77,7 +78,7 @@ export function FactorBreakdown({ asset, all }: { asset: AssetDetail; all: Asset
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
         <div className="rounded-lg border bg-card p-2.5">
-          <span className="block text-2xs text-muted-foreground">Sinyal screener</span>
+          <span className="block text-2xs text-muted-foreground">{termLabel('screener_signal')}</span>
           <span className="mt-0.5 flex items-center gap-1">
             <SignalBadge signal={asset.signal} />
             <TrackRecordHint k={compositeKey(asset)} symbol={asset.symbol} />

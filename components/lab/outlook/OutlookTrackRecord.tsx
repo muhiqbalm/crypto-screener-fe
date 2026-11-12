@@ -13,21 +13,23 @@ import { notify } from '@/lib/utils/toast'
 import { cn } from '@/lib/utils/cn'
 import type { CalibStats, OutlookResponse, TrackGroup } from '@/lib/api/types/outlook'
 
-const td = 'px-2 py-1.5 text-right font-mono tabular-nums'
-const thc = 'px-2 py-1.5 text-right text-3xs font-medium uppercase tracking-wide text-muted-foreground'
+// Rows are 52px high (design spec), text 13px.
+const td = 'h-[52px] px-3 py-3 text-right font-mono tabular-nums'
+const tdl = 'h-[52px] px-3 py-3 text-left'
+const thc = 'px-3 py-2.5 text-right text-3xs font-medium uppercase tracking-wide text-muted-foreground'
 
 function StatsRow({ label, s }: { label: React.ReactNode; s: CalibStats | undefined }) {
   if (!s || !s.n_cases) {
     return (
       <tr>
-        <td className="px-2 py-1.5 text-left">{label}</td>
-        <td colSpan={6} className="px-2 py-1.5 text-muted-foreground">belum ada data</td>
+        <td className={tdl}>{label}</td>
+        <td colSpan={6} className="h-[52px] px-3 py-3 text-muted-foreground">belum ada data</td>
       </tr>
     )
   }
   return (
     <tr>
-      <td className="px-2 py-1.5 text-left">{label}</td>
+      <td className={tdl}>{label}</td>
       <td className={td}>{s.n_pos.toLocaleString('en-US')}</td>
       <td className={td}>{formatProb(s.p_tp)}</td>
       <td className={td}>{formatProb(s.p_sl)}</td>
@@ -42,7 +44,7 @@ function LiveRow({ label, g }: { label: string; g: TrackGroup | undefined }) {
   if (!g || !g.n_calls) return null
   return (
     <tr>
-      <td className="px-2 py-1.5 text-left">{label}</td>
+      <td className={tdl}>{label}</td>
       <td className={td}>{g.n_calls}</td>
       <td className={td}>{g.n_open}</td>
       <td className={td}>{g.n_done ? formatProb(g.tp) : '—'}</td>
@@ -89,7 +91,7 @@ export function OutlookTrackRecord({ data }: { data: OutlookResponse }) {
           </p>
           {Object.keys(groups).length > 0 && (
             <div className="overflow-x-auto">
-              <table className="w-full text-xs">
+              <table className="w-full text-2xs">
                 <thead>
                   <tr>
                     <th className={cn(thc, 'text-left')}>Kelompok</th>
@@ -140,7 +142,7 @@ export function OutlookTrackRecord({ data }: { data: OutlookResponse }) {
                 ({formatWib(cal.counts.first)} – {formatWib(cal.counts.last)}), dihitung {relativeTime(cal.computed_at)}.
               </p>
               <div className="overflow-x-auto">
-                <table className="w-full text-xs">
+                <table className="w-full text-2xs">
                   <thead>
                     <tr>
                       <th className={cn(thc, 'text-left')}>Uji label (data sesudah {oos?.split?.slice(0, 10)})</th>
@@ -160,7 +162,7 @@ export function OutlookTrackRecord({ data }: { data: OutlookResponse }) {
                 </table>
               </div>
               <div className="mt-3 overflow-x-auto">
-                <table className="w-full text-xs">
+                <table className="w-full text-2xs">
                   <thead>
                     <tr>
                       <th className={cn(thc, 'text-left')}>Fase (sebelum → sesudah {oos?.split?.slice(0, 10)})</th>
@@ -171,7 +173,7 @@ export function OutlookTrackRecord({ data }: { data: OutlookResponse }) {
                   <tbody className="divide-y divide-border/50">
                     {(['long|baru', 'long|berjalan', 'short|baru', 'short|berjalan'] as const).map((k) => (
                       <tr key={k}>
-                        <td className="px-2 py-1.5 text-left">{k.replace('|baru', ' · sinyal baru').replace('|berjalan', ' · menyusul')}</td>
+                        <td className={tdl}>{k.replace('|baru', ' · posisi baru').replace('|berjalan', ' · menyusul')}</td>
                         {(['sebelum', 'sesudah'] as const).map((per) => {
                           const v = fase?.[per]?.[k]
                           return (
@@ -187,7 +189,7 @@ export function OutlookTrackRecord({ data }: { data: OutlookResponse }) {
               </div>
               <p className="mt-2 text-2xs text-muted-foreground">
                 Label dibuat dari data sebelum {oos?.split?.slice(0, 10)} lalu dicek di data sesudahnya. Temuan utama: masuk saat
-                <span className="text-foreground"> sinyal baru </span>
+                <span className="text-foreground"> posisi baru </span>
                 konsisten lebih baik daripada menyusul posisi yang sudah berjalan, di kedua periode.
               </p>
               <div className="mt-3 flex flex-wrap gap-1.5">

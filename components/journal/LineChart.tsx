@@ -13,19 +13,21 @@ export function SimpleLineChart({ points, label, className = 'h-[260px]' }: { po
 
   useEffect(() => {
     if (!ref.current) return
+    const theme = getChartTheme(isDark)
     const chart = createChart(ref.current, {
       autoSize: true,
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: getChartTheme(isDark).text,
-        fontFamily: getChartTheme(isDark).fontFamily,
-        fontSize: 11,
+        textColor: theme.text,
+        fontFamily: theme.fontFamily,
+        fontSize: theme.fontSize,
       },
-      grid: { vertLines: { visible: false }, horzLines: { color: getChartTheme(isDark).grid } },
-      rightPriceScale: { borderVisible: false },
+      grid: { vertLines: { visible: false }, horzLines: { color: theme.grid } },
+      localization: { priceFormatter: theme.priceFormatter },
+      rightPriceScale: { borderVisible: false, scaleMargins: theme.scaleMargins },
       timeScale: { borderVisible: false, timeVisible: true },
     })
-    const series = chart.addLineSeries({ color: getChartTheme(isDark).line, lineWidth: 2, priceLineVisible: false })
+    const series = chart.addLineSeries({ color: theme.line, lineWidth: 2, priceLineVisible: false })
     const seen = new Map<number, number>()
     for (const p of points) {
       const ts = Math.floor(Date.parse(p.t) / 1000)

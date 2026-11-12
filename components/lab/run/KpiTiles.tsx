@@ -17,9 +17,9 @@ interface Kpi {
 const KPIS: Kpi[] = [
   { label: 'Hasil bersih', key: 'net_return_pct', fmt: (v) => formatPct(v, { signed: true }), cls: signClass },
   { label: 'PF', key: 'profit_factor', fmt: fmtPf },
-  { label: 'Turun maks', key: 'max_dd_pct', fmt: fmtDd, cls: (v) => (v === null ? '' : 'text-bearish') },
+  { label: 'Turun terdalam', key: 'max_dd_pct', fmt: fmtDd, cls: (v) => (v === null ? '' : 'text-bearish') },
   { label: 'Win rate', key: 'win_rate_pct', fmt: (v) => formatPct(v) },
-  { label: 'Trade', key: 'trades', fmt: (v) => formatNumber(v, { digits: 0 }) },
+  { label: 'Transaksi', key: 'trades', fmt: (v) => formatNumber(v, { digits: 0 }) },
   { label: 'Sharpe', key: 'sharpe', fmt: (v) => formatNumber(v) },
 ]
 

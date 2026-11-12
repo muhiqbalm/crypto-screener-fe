@@ -1,9 +1,9 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { AlertTriangle, ArrowRight, Bookmark, Info, RefreshCw, Search, Trophy } from 'lucide-react'
+import { AlertTriangle, ArrowRight, Bookmark, ChevronsRight, Info, RefreshCw, Search, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Segmented } from '@/components/ui/segmented'
@@ -27,7 +27,7 @@ import type { LabBoardRow, LabBoardSort, LabSnoopLevel } from '@/lib/api/types/l
 
 type VerdictFilter = 'all' | 'PASS' | 'FAIL'
 
-const SORT_LABEL: Record<LabBoardSort, string> = { oos_pf: 'PF', oos_sharpe: 'Sharpe', oos_net: 'Hasil' }
+const SORT_LABEL: Record<LabBoardSort, string> = { oos_pf: 'PF', oos_sharpe: 'Sharpe', oos_net: 'Hasil bersih' }
 type ModeFilter = 'all' | 'validate' | 'optimize'
 
 const SNOOP_STYLE: Record<LabSnoopLevel, string> = {
@@ -41,6 +41,9 @@ function pf(r: LabBoardRow): string {
   if (v !== null) return formatNumber(v)
   return (r.holdout.trades ?? 0) > 0 && (r.holdout.net_return_pct ?? 0) > 0 ? '∞' : '—'
 }
+
+const NUM_CELL = 'px-2.5'
+const NUM_HEAD = 'px-2.5 whitespace-normal leading-tight'
 
 /** Check-name copy for the "why it failed" hint. */
 const FAILED_COPY = (names: string[]) => names.map((n) => checkLabel({ name: n, label: n, value: null, threshold: null, passed: false })).join(', ')
@@ -82,6 +85,25 @@ export function LeaderboardView() {
   const warning = boardSnoopingWarning(summary)
   const top = rows.find((r) => r.rank === 1)
 
+  // Scroll cue: fade on the right edge while the desktop table still has
+  // columns hidden to the right (presentation only).
+  const tableRef = useRef<HTMLDivElement>(null)
+  const [moreRight, setMoreRight] = useState(false)
+  const rowCount = rows.length
+  useEffect(() => {
+    const box = tableRef.current?.querySelector<HTMLElement>('[data-rt-scroll]')
+    if (!box) return
+    const check = () => setMoreRight(box.scrollWidth - box.clientWidth - box.scrollLeft > 4)
+    box.addEventListener('scroll', check, { passive: true })
+    // The observer also fires once on observe(), which is the first measurement.
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(check)
+    ro?.observe(box)
+    return () => {
+      box.removeEventListener('scroll', check)
+      ro?.disconnect()
+    }
+  }, [rowCount, boardQ.isPending])
+
   const columns: ResponsiveColumn<LabBoardRow>[] = [
     {
       key: 'pick',
@@ -92,14 +114,16 @@ export function LeaderboardView() {
         <CompareCheckbox id={String(r.run_id)} checked={picked.includes(String(r.run_id))} disabled={picked.length >= MAX_COMPARE} onToggle={(x) => setPicked(toggleId(picked, x))} label={`Bandingkan ${r.symbol} ${r.timeframe}`} />
       ),
     },
-    { key: 'rank', header: '#', mobile: 'hidden', cell: (r) => <span className={cn('num display text-lg font-extrabold', r.rank === 1 && 'text-bullish')}>{r.rank ?? <span className="text-sm font-normal text-muted-foreground">—</span>}</span> },
+    { key: 'rank', header: '#', mobile: 'hidden', className: 'px-3', headerClassName: 'px-3', cell: (r) => <span className={cn('num display text-lg font-extrabold', r.rank === 1 && 'text-bullish')}>{r.rank ?? <span className="text-sm font-normal text-muted-foreground">—</span>}</span> },
     {
       key: 'what',
       header: 'Koin · strategi',
       mobile: 'title',
       cell: (r) => (
-        <span className="block min-w-[210px] space-y-1">
+        <span className="block space-y-1 sm:min-w-[190px]">
           <span className="flex items-center gap-2.5 whitespace-nowrap">
+            {/* phone card: the rank lives in the title (desktop has its own # column) */}
+            {r.rank !== null && <span className={cn('num display text-lg font-extrabold sm:hidden', r.rank === 1 ? 'text-bullish' : 'text-muted-foreground')}>#{r.rank}</span>}
             <CoinAvatar symbol={r.symbol} size="sm" />
             <span className="num text-base font-semibold">{r.symbol.replace(/USDT$/, '')} <span className="font-normal text-muted-foreground">{r.timeframe}</span></span>
             <StrategyChip templateId={r.template_id} name={fullName(r.template_id)} />
@@ -126,40 +150,50 @@ export function LeaderboardView() {
       cell: (r) => (
         <span className="block space-y-1">
           <VerdictPill verdict={r.verdict} />
-          {r.verdict !== 'PASS' && r.failed_checks.length > 0 && <span className="block max-w-[180px] truncate text-2xs text-muted-foreground">{FAILED_COPY(r.failed_checks)}</span>}
+          {r.verdict !== 'PASS' && r.failed_checks.length > 0 && <span className="block max-w-[160px] truncate text-2xs text-muted-foreground">{FAILED_COPY(r.failed_checks)}</span>}
         </span>
       ),
     },
+    // Number columns: tighter padding and headers that may wrap to two lines,
+    // so the table fits the 1,110 px content box at 1440 (audit 2026-11-13 P9).
+    { key: 'pf', header: 'PF', mobile: 'field', align: 'right', className: NUM_CELL, headerClassName: NUM_HEAD, cell: (r) => <span className={cn('num', sort === 'oos_pf' && 'font-bold')}>{pf(r)}</span> },
     {
       key: 'net',
-      header: 'Hasil',
+      header: 'Hasil bersih',
       mobile: 'field',
       align: 'right',
+      className: NUM_CELL,
+      headerClassName: NUM_HEAD,
       cell: (r) => <span className={cn('num', signClass(r.holdout.net_return_pct), sort === 'oos_net' && 'font-bold')}>{formatPct(r.holdout.net_return_pct, { signed: true })}</span>,
     },
     {
       key: 'dd',
-      header: 'Turun maks',
+      header: 'Turun terdalam',
       mobile: 'field',
       align: 'right',
+      className: NUM_CELL,
+      headerClassName: NUM_HEAD,
       cell: (r) => <span className="num text-bearish">{r.holdout.max_dd_pct === null ? '—' : formatPct(-Math.abs(r.holdout.max_dd_pct))}</span>,
     },
-    { key: 'trades', header: 'Trade', mobile: 'field', align: 'right', cell: (r) => <span className="num">{formatNumber(r.holdout.trades, { digits: 0 })}</span> },
-    { key: 'pf', header: 'PF', mobile: 'hidden', align: 'right', cell: (r) => <span className={cn('num', sort === 'oos_pf' && 'font-bold')}>{pf(r)}</span> },
-    { key: 'sharpe', header: 'Sharpe', mobile: 'hidden', align: 'right', cell: (r) => <span className={cn('num', sort === 'oos_sharpe' && 'font-bold')}>{formatNumber(r.holdout.sharpe)}</span> },
+    { key: 'trades', header: 'Transaksi', mobile: 'field', align: 'right', className: NUM_CELL, headerClassName: NUM_HEAD, cell: (r) => <span className="num">{formatNumber(r.holdout.trades, { digits: 0 })}</span> },
+    { key: 'sharpe', header: 'Sharpe', mobile: 'hidden', align: 'right', className: NUM_CELL, headerClassName: NUM_HEAD, cell: (r) => <span className={cn('num', sort === 'oos_sharpe' && 'font-bold')}>{formatNumber(r.holdout.sharpe)}</span> },
     {
+      // "Beban biaya" no longer has its own column; it is in the hover title
+      // here and in full on the run page.
       key: 'stress',
       header: 'Biaya dobel',
       mobile: 'hidden',
       align: 'right',
-      cell: (r) => <span className={cn('num', signClass(r.holdout.stress_net_return_pct))}>{formatPct(r.holdout.stress_net_return_pct, { signed: true })}</span>,
-    },
-    {
-      key: 'drag',
-      header: 'Beban biaya',
-      mobile: 'hidden',
-      align: 'right',
-      cell: (r) => <span className="num">{r.holdout.cost_drag_pct === null ? '—' : `${formatNumber(r.holdout.cost_drag_pct, { digits: 1 })} poin %`}</span>,
+      className: NUM_CELL,
+      headerClassName: NUM_HEAD,
+      cell: (r) => (
+        <span
+          className={cn('num', signClass(r.holdout.stress_net_return_pct))}
+          title={r.holdout.cost_drag_pct === null ? undefined : `Beban biaya ${formatNumber(r.holdout.cost_drag_pct, { digits: 1 })} poin %`}
+        >
+          {formatPct(r.holdout.stress_net_return_pct, { signed: true })}
+        </span>
+      ),
     },
     {
       key: 'tries',
@@ -191,7 +225,7 @@ export function LeaderboardView() {
               </div>
               <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
                 <HeroKpi label="PF data baru" value={top.holdout.profit_factor} format={(v) => formatNumber(v)} />
-                <HeroKpi label="Hasil data baru" value={top.holdout.net_return_pct} format={(v) => formatPct(v, { signed: true })} tone={signTone(top.holdout.net_return_pct)} />
+                <HeroKpi label="Hasil bersih" value={top.holdout.net_return_pct} format={(v) => formatPct(v, { signed: true })} tone={signTone(top.holdout.net_return_pct)} />
                 <HeroKpi
                   label="Turun terdalam"
                   value={top.holdout.max_dd_pct === null ? null : -Math.abs(top.holdout.max_dd_pct)}
@@ -271,7 +305,7 @@ export function LeaderboardView() {
           options={[
             { value: 'oos_pf', label: 'PF' },
             { value: 'oos_sharpe', label: 'Sharpe' },
-            { value: 'oos_net', label: 'Hasil' },
+            { value: 'oos_net', label: 'Hasil bersih' },
           ]}
         />
         <Button variant="ghost" onClick={() => boardQ.refetch()} disabled={boardQ.isFetching} className="h-10 w-10 rounded-full p-0" aria-label="Muat ulang peringkat">
@@ -284,7 +318,9 @@ export function LeaderboardView() {
       ) : boardQ.error ? (
         <ErrorState error={boardQ.error} title="Peringkat gagal dimuat" onRetry={() => boardQ.refetch()} />
       ) : (
+        <div ref={tableRef} className="relative">
         <ResponsiveTable
+          mobileFields={4}
           rows={rows}
           columns={columns}
           rowKey={(r) => String(r.run_id)}
@@ -305,6 +341,12 @@ export function LeaderboardView() {
             />
           }
         />
+        {moreRight && (
+          <div aria-hidden="true" className="pointer-events-none absolute inset-y-px right-px hidden w-16 items-center justify-end rounded-r-3xl bg-gradient-to-l from-card via-card/80 to-transparent pr-2 sm:flex">
+            <ChevronsRight className="h-5 w-5 text-muted-foreground" />
+          </div>
+        )}
+        </div>
       )}
       <CompareTray ids={picked} onClear={() => setPicked([])} />
     </div>

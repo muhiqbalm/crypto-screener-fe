@@ -80,18 +80,18 @@ function ProfileForm({ user }: { user: NonNullable<ReturnType<typeof useMe>['dat
   function savePassword() {
     setPasswordError('')
     if (password.length < 8) {
-      setPasswordError('Password minimal 8 karakter')
+      setPasswordError('Kata sandi minimal 8 karakter')
       return
     }
     if (password !== confirmPassword) {
-      setPasswordError('Kedua password tidak sama')
+      setPasswordError('Kedua kata sandi tidak sama')
       return
     }
     update.mutate(
       { password },
       {
         onSuccess: () => {
-          notify.success('Password diganti')
+          notify.success('Kata sandi diganti')
           setPassword('')
           setConfirmPassword('')
         },
@@ -202,13 +202,13 @@ function ProfileForm({ user }: { user: NonNullable<ReturnType<typeof useMe>['dat
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <KeyRound className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-            <CardTitle className="text-[17px]">Ganti password login</CardTitle>
+            <CardTitle className="text-[17px]">Ganti kata sandi login</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="space-y-1.5">
             <Label htmlFor="profile-password" className="text-[14px]">
-              Password baru
+              Kata sandi baru
             </Label>
             <div className="relative">
               <Input
@@ -229,7 +229,7 @@ function ProfileForm({ user }: { user: NonNullable<ReturnType<typeof useMe>['dat
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground transition-colors hover:text-foreground"
-                aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
                 tabIndex={-1}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -238,7 +238,7 @@ function ProfileForm({ user }: { user: NonNullable<ReturnType<typeof useMe>['dat
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="profile-confirm-password" className="text-[14px]">
-              Ulangi password baru
+              Ulangi kata sandi baru
             </Label>
             <Input
               id="profile-confirm-password"
@@ -248,7 +248,7 @@ function ProfileForm({ user }: { user: NonNullable<ReturnType<typeof useMe>['dat
                 setConfirmPassword(e.target.value)
                 setPasswordError('')
               }}
-              placeholder="Ketik ulang password baru"
+              placeholder="Ketik ulang kata sandi baru"
               disabled={update.isPending}
               autoComplete="new-password"
               aria-invalid={!!passwordError}
@@ -262,7 +262,7 @@ function ProfileForm({ user }: { user: NonNullable<ReturnType<typeof useMe>['dat
           </div>
           <Button onClick={savePassword} disabled={update.isPending || password.length === 0} size="sm" className="gap-1.5">
             {update.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />}
-            Ganti password
+            Ganti kata sandi
           </Button>
         </CardContent>
       </Card>

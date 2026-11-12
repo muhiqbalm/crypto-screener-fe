@@ -75,7 +75,7 @@ export function TradeSheet({ entry, onClose }: { entry: JournalEntry | null; onC
               <SheetDescription className="text-xs">
                 {JOURNAL_SOURCE_LABEL[entry.source] ?? entry.source} · ditutup {formatTime(entry.exit_time)}
               </SheetDescription>
-              {live && <p className="text-xs text-muted-foreground">Trade bot live memakai uang asli dan tidak dihitung di statistik paper.</p>}
+              {live && <p className="text-xs text-muted-foreground">Transaksi bot live memakai uang asli dan tidak dihitung di statistik paper.</p>}
             </header>
             <dl>
               <Row label="Hasil bersih">

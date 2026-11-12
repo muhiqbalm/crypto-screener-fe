@@ -22,13 +22,13 @@ export function UniversalRunsList() {
           {rows.map((r) => (
             <li key={String(r.id)}>
               <Link href={`/lab/universal/runs/${encodeURIComponent(String(r.id))}`} className="flex flex-wrap items-center gap-3 px-3 py-2.5 text-sm hover:bg-accent/50">
-                <span className="font-mono text-xs font-semibold">#{String(r.id)}</span>
-                <span className="text-xs text-muted-foreground">{MODE_LABEL[r.mode]}</span>
+                <span className="font-mono text-2xs font-semibold">#{String(r.id)}</span>
+                <span className="text-2xs text-muted-foreground">{MODE_LABEL[r.mode]}</span>
                 <RunStateChip status={r.status} verdict={r.verdict} mode={r.mode} />
-                <span className={cn('ml-auto font-mono text-xs tabular-nums', signClass(r.net_return_pct))}>{formatPercent(r.net_return_pct, 1)}</span>
-                <span className="hidden font-mono text-xs sm:inline">PF {formatScore(r.profit_factor)}</span>
-                <span className="hidden font-mono text-xs sm:inline">{valueOrDash(r.trades)} trade</span>
-                <span className="text-xs text-muted-foreground">{relativeTime(r.created_at)}</span>
+                <span className={cn('ml-auto font-mono text-2xs tabular-nums', signClass(r.net_return_pct))}>{formatPercent(r.net_return_pct, 1)}</span>
+                <span className="hidden font-mono text-2xs sm:inline">PF {formatScore(r.profit_factor)}</span>
+                <span className="hidden font-mono text-2xs sm:inline">{valueOrDash(r.trades)} transaksi</span>
+                <span className="text-2xs text-muted-foreground">{relativeTime(r.created_at)}</span>
               </Link>
             </li>
           ))}

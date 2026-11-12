@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { Columns3, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/lab/Section'
 import { MAX_COMPARE, compareHref } from '@/lib/lab/planning'
 
 /** Floating bar shown while runs are ticked for comparison. */
@@ -12,7 +13,7 @@ export function CompareTray({ ids, onClear }: { ids: string[]; onClear: () => vo
     <div className="sticky bottom-3 z-30 flex justify-center">
       <div className="flex items-center gap-2 rounded-full border border-border bg-background/95 py-2 pl-5 pr-2 text-sm shadow-lg backdrop-blur-md">
         <span>
-          <span className="num font-semibold">{ids.length}</span>/{MAX_COMPARE} run dipilih
+          <span className="num font-semibold">{ids.length}</span>/{MAX_COMPARE} uji dipilih
           {ids.length < 2 && <span className="text-muted-foreground"> · pilih 1 lagi</span>}
         </span>
         <Button size="sm" variant="ghost" className="h-9 w-9 rounded-full p-0" onClick={onClear} aria-label="Hapus pilihan">
@@ -32,16 +33,14 @@ export function CompareTray({ ids, onClear }: { ids: string[]; onClear: () => vo
 /** Checkbox cell used by run tables; stops the row's click-to-open. */
 export function CompareCheckbox({ id, checked, disabled, onToggle, label }: { id: string; checked: boolean; disabled?: boolean; onToggle: (id: string) => void; label: string }) {
   return (
-    <input
-      type="checkbox"
+    <Checkbox
       checked={checked}
       disabled={disabled && !checked}
       onChange={() => onToggle(id)}
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => e.stopPropagation()}
       aria-label={label}
-      title={disabled && !checked ? `Maksimal ${MAX_COMPARE} run` : 'Pilih untuk dibandingkan'}
-      className="h-5 w-5 cursor-pointer accent-lab"
+      title={disabled && !checked ? `Maksimal ${MAX_COMPARE} uji` : 'Pilih untuk dibandingkan'}
     />
   )
 }

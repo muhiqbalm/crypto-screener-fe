@@ -128,7 +128,7 @@ const METRICS: { key: string; label: string; higher: boolean | null }[] = [
   { key: 'profit_factor', label: 'PF', higher: true },
   { key: 'max_dd_pct', label: 'Turun terdalam', higher: false },
   { key: 'sharpe', label: 'Sharpe', higher: true },
-  { key: 'trades', label: 'Trade', higher: null },
+  { key: 'trades', label: 'Transaksi', higher: null },
   { key: 'cost_drag_pct', label: 'Beban biaya', higher: false },
 ]
 

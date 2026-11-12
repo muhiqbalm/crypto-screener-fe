@@ -102,7 +102,7 @@ export function PaperReportCard({
         <Skeleton className="h-24 w-full" />
       ) : paperError || !paper ? (
         <p className="text-base text-muted-foreground">Data paper tidak tersedia saat ini.</p>
-      ) : paper.presets === 0 ? (
+      ) : paper.accounts === 0 ? (
         <p className="text-base text-muted-foreground">Belum ada preset yang berjalan di paper.</p>
       ) : (
         <>
@@ -111,10 +111,13 @@ export function PaperReportCard({
               <p className="flex items-baseline gap-2">
                 <span className="num display text-4xl font-extrabold leading-none">{paper.leader.closed}</span>
                 <span className="num text-xl font-bold text-muted-foreground">/ {paper.target}</span>
-                <span className="ml-1 text-sm text-muted-foreground">trade</span>
+                <span className="ml-1 text-sm text-muted-foreground">transaksi</span>
               </p>
-              <ProgressBar value={paper.leader.closed} max={paper.target} tone="lab" size="lg" label={`${paper.leader.name}: progres menuju ${paper.target} trade simulasi`} />
-              <p className="truncate text-sm text-muted-foreground">Terbanyak: {paper.leader.name}</p>
+              <ProgressBar value={Math.min(paper.leader.closed, paper.target)} max={paper.target} tone="lab" size="lg" label={`${paper.leader.name}: progres menuju ${paper.target} transaksi simulasi`} />
+              <p className="break-words text-sm text-muted-foreground">
+                <span className="font-semibold text-foreground">{paper.leader.name}</span>
+                {paper.leader.closed >= paper.target ? ` · target ${paper.target} tercapai` : ` · kurang ${paper.target - paper.leader.closed} lagi`}
+              </p>
             </div>
           )}
           <dl className="space-y-1.5 border-t pt-4">

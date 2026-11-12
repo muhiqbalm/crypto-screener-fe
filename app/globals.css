@@ -50,11 +50,11 @@
 
   /* --- Semantic accents --- */
   --color-brand:              #5b8cff;   /* moonlight blue: identity, active, focus */
-  --color-brand-foreground:   #ffffff;
+  --color-brand-foreground:   #06122b;   /* dark text on the blue fill: 5.9:1 (white was 3.2:1) */
   --color-info:               #78a6ff;   /* links, information */
   --color-warn:               #f4ad42;   /* look at this */
   --color-lab:                #a78bfa;   /* simulation / paper */
-  --color-faint:              #5e6b86;   /* faintest text (meta) */
+  --color-faint:              #7d8aa6;   /* faintest text (meta, sidebar group labels): 5.5:1 on the sidebar */
 
   /* --- Surfaces (night navy) --- */
   --color-background:          #0a1120;
@@ -65,7 +65,7 @@
   --color-popover-foreground:  #e9eef8;
   --color-sidebar:             #080f1d;
   --color-primary:             #5b8cff;
-  --color-primary-foreground:  #ffffff;
+  --color-primary-foreground:  #06122b;
   --color-secondary:           #142039;
   --color-secondary-foreground: #e9eef8;
   --color-muted:               #142039;
@@ -73,7 +73,7 @@
   --color-accent:              #17233f;
   --color-accent-foreground:   #e9eef8;
   --color-destructive:         #ff6464;
-  --color-destructive-foreground: #ffffff;
+  --color-destructive-foreground: #2a0505;
   --color-border:              #22304d;
   --color-input:               #2c3b5c;
   --color-ring:                rgb(91 140 255 / 65%);
@@ -112,7 +112,8 @@
 
 /* ============================================================
    Light theme (menu: Tema terang). Every accent darkened for
-   >= 4.5:1 on white.
+   >= 4.5:1 as text on its own 15% chip tint over the page background
+   (audit 2026-11-13 P10), which is stricter than on plain white.
    ============================================================ */
 :root.light {
   --color-background:          #f4f6fb;
@@ -122,7 +123,7 @@
   --color-popover:             #ffffff;
   --color-popover-foreground:  #0e1628;
   --color-sidebar:             #eef2f9;
-  --color-primary:             #3d6df2;
+  --color-primary:             #2a55d6;
   --color-primary-foreground:  #ffffff;
   --color-secondary:           #edf1f8;
   --color-secondary-foreground: #0e1628;
@@ -130,22 +131,22 @@
   --color-muted-foreground:    #55607a;
   --color-accent:              #e5ebf6;
   --color-accent-foreground:   #0e1628;
-  --color-destructive:         #d33a3a;
+  --color-destructive:         #b02525;
   --color-destructive-foreground: #ffffff;
   --color-border:              #dbe2ee;
   --color-input:               #cdd6e6;
-  --color-ring:                rgb(61 109 242 / 55%);
-  --color-faint:               #7a849b;
+  --color-ring:                rgb(42 85 214 / 55%);
+  --color-faint:               #5d6881;
 
-  --color-bullish:            #12854a;
+  --color-bullish:            #0d6b3b;
   --color-bullish-foreground: #ffffff;
-  --color-bearish:            #d33a3a;
+  --color-bearish:            #b02525;
   --color-bearish-foreground: #ffffff;
-  --color-brand:              #3d6df2;
+  --color-brand:              #2a55d6;
   --color-brand-foreground:   #ffffff;
-  --color-info:               #2a62d8;
-  --color-warn:               #a35f00;
-  --color-lab:                #6c4ad6;
+  --color-info:               #2456c4;
+  --color-warn:               #874e00;
+  --color-lab:                #5f3ecb;
 }
 
 /* ============================================================

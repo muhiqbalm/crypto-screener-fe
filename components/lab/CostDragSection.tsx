@@ -46,7 +46,7 @@ export function CostDragSection({ run }: { run: LabRunDetail }) {
             label="Biaya vs gerak candle"
             value={c.cost_to_bar_range === null ? '—' : `${formatNumber(c.cost_to_bar_range * 100, { digits: 0 })}%`}
             valueClassName={level ? BURDEN[level].cls : undefined}
-            hint={level ? `${BURDEN[level].label} · ${formatNumber(c.round_trip_cost_pct)}% per trade` : undefined}
+            hint={level ? `${BURDEN[level].label} · ${formatNumber(c.round_trip_cost_pct)}% per transaksi` : undefined}
           />
           <Tile label="Hasil tanpa biaya" value={formatPct(c.zero_cost_net_return_pct, { signed: true })} valueClassName={signClass(c.zero_cost_net_return_pct)} />
           <Tile
@@ -55,7 +55,7 @@ export function CostDragSection({ run }: { run: LabRunDetail }) {
             valueClassName={signClass(pct(net))}
             hint={pct(stress) !== null ? `biaya dobel: ${formatPct(pct(stress), { signed: true })}` : undefined}
           />
-          <Tile label="Trade per bulan" value={formatNumber(c.trades_per_month, { digits: 1 })} />
+          <Tile label="Transaksi per bulan" value={formatNumber(c.trades_per_month, { digits: 1 })} />
         </div>
       )}
       {warn && (

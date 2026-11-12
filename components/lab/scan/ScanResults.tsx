@@ -244,9 +244,9 @@ function ScanTable({ rows }: { rows: LabScanRow[] }) {
               </button>
             </th>
             {head('pf', 'PF data baru')}
-            {head('net', 'Hasil data baru')}
+            {head('net', 'Hasil bersih data baru')}
             {head('dd', 'Turun terdalam')}
-            {head('trades', 'Trade')}
+            {head('trades', 'Transaksi')}
           </tr>
         </thead>
         <tbody className="divide-y divide-border/50">

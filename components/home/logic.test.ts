@@ -121,13 +121,13 @@ describe('attentionItems', () => {
         tone: 'bad',
         sentence: 'Belum aman: 1 sinyal gagal dieksekusi.',
         facts: [
-          { label: 'Sinyal 7 hari', value: '3 dari 4 sesuai', tone: 'bad' },
+          { label: 'Sinyal 7 hari', value: '3 dari 4 cocok', tone: 'bad' },
           { label: 'Webhook', value: 'aktif (Rosyade)', tone: 'ok' },
           { label: 'Alert terakhir', value: '12 Nov 11:00 WIB', hint: 'gagal', tone: 'bad' },
         ],
       },
     })
-    expect(it0.detail).toBe('Sinyal 7 hari: 3 dari 4 sesuai · Alert terakhir: 12 Nov 11:00 WIB (gagal)')
+    expect(it0.detail).toBe('Sinyal 7 hari: 3 dari 4 cocok · Alert terakhir: 12 Nov 11:00 WIB (gagal)')
   })
 
   it('uses the same bot answer as /bot: warn → penting, ok/wait → nothing', () => {
@@ -146,11 +146,12 @@ describe('paper & report', () => {
     const a = {
       review_min_trades: 30,
       rows: [
-        { preset: { label: 'A', name: 'a' }, stats: { n_closed: 31 }, drift: { status: 'sesuai' } },
-        { preset: { label: 'B', name: 'b' }, stats: { n_closed: 7 }, drift: { status: 'menyimpang' } },
+        { preset: { label: 'A', name: '4H-ETH-a' }, watch: { active: true, autopaper_enabled: true }, stats: { n_closed: 31 }, drift: { status: 'sesuai' } },
+        { preset: { label: 'B', name: 'b' }, watch: { active: false, autopaper_enabled: true }, stats: { n_closed: 7 }, drift: { status: 'menyimpang' } },
       ],
     } as unknown as ArenaReport
-    expect(paperSummary(a)).toEqual({ presets: 2, ready: 1, drifting: 1, target: 30, leader: { name: 'A', closed: 31 } })
+    // "Preset berjalan" counts running presets only, like Paper berjalan (audit 2026-11-13 P6).
+    expect(paperSummary(a)).toEqual({ presets: 1, accounts: 2, ready: 1, drifting: 1, target: 30, leader: { name: '4H-ETH-a', closed: 31 } })
     expect(paperSummary(undefined)).toBeNull()
   })
 
@@ -184,13 +185,13 @@ describe('assistantSummary', () => {
     const items = assistantSummary({
       market: 'Pasar: BTC datar.',
       watch,
-      bot: { sentence: 'Ya, aman: 3 dari 3 sinyal strategi 7 hari terakhir dieksekusi bot sesuai rencana.' },
-      paper: { presets: 3, ready: 0, drifting: 1, target: 30, leader: null },
+      bot: { sentence: 'Ya, aman: 3 dari 3 sinyal strategi 7 hari terakhir dieksekusi bot cocok dengan eksekusi bot.' },
+      paper: { presets: 3, accounts: 3, ready: 0, drifting: 1, target: 30, leader: null },
     })
     expect(items.map((i) => i.text)).toEqual([
       'Pasar: BTC datar.',
       'Koin teratas: AAA SHORT, keyakinan sedang, posisi baru.',
-      'Ya, aman: 3 dari 3 sinyal strategi 7 hari terakhir dieksekusi bot sesuai rencana.',
+      'Ya, aman: 3 dari 3 sinyal strategi 7 hari terakhir dieksekusi bot cocok dengan eksekusi bot.',
       'Paper: 3 preset berjalan, 0 siap dinilai, 1 menyimpang.',
     ])
     expect(assistantSummary({})).toEqual([])

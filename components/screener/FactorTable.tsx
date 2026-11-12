@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useQueryClient } from '@tanstack/react-query'
 import { useScreenerSummary, screenerKeys } from '@/lib/queries/screener'
 import { ScreenerFilters, type ScreenerFilterState } from '@/components/screener/ScreenerFilters'
@@ -8,6 +9,7 @@ import { ScreenerTable } from '@/components/screener/ScreenerTable'
 import { MarketOverviewCards } from '@/components/screener/MarketOverviewCards'
 import { TrackRecordFootnote, TrackRecordProvider } from '@/components/screener/TrackRecordHint'
 import { InfoTip } from '@/components/ui/info-tip'
+import { Term } from '@/components/ui/term'
 import { ErrorPanel } from '@/components/shell/ErrorPanel'
 import { EmptyPanel } from '@/components/shell/EmptyPanel'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -22,10 +24,10 @@ const DEFAULT_FILTERS: ScreenerFilterState = { symbol: '', signal: 'ALL', tier: 
  * Peluang koin → "Tabel faktor": the screener's 5-factor table (all filters, sorting and the
  * track-record icon kept). Rows open the coin page; the drawer's content lives there now.
  */
-export function FactorTable() {
+export function FactorTable({ initialSymbol = '' }: { initialSymbol?: string }) {
   const queryClient = useQueryClient()
   const { data, isPending, error } = useScreenerSummary()
-  const [filters, setFilters] = useState<ScreenerFilterState>(DEFAULT_FILTERS)
+  const [filters, setFilters] = useState<ScreenerFilterState>(() => ({ ...DEFAULT_FILTERS, symbol: initialSymbol }))
 
   const retry = () => queryClient.invalidateQueries({ queryKey: screenerKeys.summary() })
 
@@ -72,11 +74,16 @@ export function FactorTable() {
               </span>
             </div>
           </div>
+          <p className="border-b px-5 py-3 text-sm text-muted-foreground sm:px-6">
+            <Term k="screener_signal" short noTip className="font-semibold text-foreground" /> = condong 5 faktor pasar, bukan perintah beli atau jual.
+            Posisi strategi (LONG/SHORT) ada di tab{' '}
+            <Link href="/koin" className="font-semibold text-info hover:underline">Outlook</Link>.
+          </p>
           <ScreenerTable data={assets} filters={filters} />
           <TrackRecordFootnote />
         </div>
         <p className="text-2xs text-muted-foreground">
-          Sinyal screener = arah skor saat ini, bukan perintah beli/jual. Klik koin untuk keputusan dan rencananya.
+          Klik koin untuk keputusan dan rencananya.
         </p>
       </div>
     </TrackRecordProvider>

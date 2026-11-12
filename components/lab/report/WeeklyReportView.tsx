@@ -213,7 +213,7 @@ function LiveBotBlock({ r, isAdmin }: { r: WeeklyReport; isAdmin: boolean }) {
                 <span className="font-display block text-xl font-bold tabular-nums">
                   {executed}/{orders}
                 </span>
-                <span className="text-[11px] text-muted-foreground">order</span>
+                <span className="text-2xs text-muted-foreground">order</span>
               </span>
             </Ring>
             <dl className="min-w-[160px] flex-1 space-y-2">

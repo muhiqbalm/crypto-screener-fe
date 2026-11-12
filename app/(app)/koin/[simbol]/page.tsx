@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: { params: Promise<{ simbol: s
   const { slug } = canonical((await params).simbol)
   return {
     title: `${slug} · Peluang koin`,
-    description: `Keputusan, rencana trade, faktor dan bukti untuk ${slug}.`,
+    description: `Keputusan, rencana, faktor dan bukti untuk ${slug}.`,
   }
 }
 

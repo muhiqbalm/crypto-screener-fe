@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createChart, ColorType, CrosshairMode, type IChartApi, type ISeriesApi, type UTCTimestamp } from 'lightweight-charts'
 import { useTheme } from 'next-themes'
-import { getChartTheme } from '@/lib/chart-theme'
+import { chartPercentFormatter, getChartTheme } from '@/lib/chart-theme'
 import { formatPercent } from '@/lib/utils/format'
 import { COMPARE_COLORS } from '@/components/lab/compare/CompareEquityChart'
 import { FAMILY_DASH, FAMILY_LINE_STYLE, normaliseCurve } from '@/lib/lab/arena'
@@ -42,12 +42,12 @@ export function ArenaEquityChart({
     const theme = getChartTheme(isDark)
     const chart: IChartApi = createChart(ref.current, {
       autoSize: true,
-      layout: { background: { type: ColorType.Solid, color: 'transparent' }, textColor: theme.text, fontFamily: theme.fontFamily, fontSize: 11 },
+      layout: { background: { type: ColorType.Solid, color: 'transparent' }, textColor: theme.text, fontFamily: theme.fontFamily, fontSize: theme.fontSize },
       grid: { vertLines: { visible: false }, horzLines: { color: theme.grid } },
-      rightPriceScale: { borderVisible: false },
+      rightPriceScale: { borderVisible: false, scaleMargins: theme.scaleMargins },
       timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
       crosshair: { mode: CrosshairMode.Magnet },
-      localization: { priceFormatter: (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%` },
+      localization: { priceFormatter: chartPercentFormatter(1) },
       handleScroll: false,
       handleScale: false,
     })

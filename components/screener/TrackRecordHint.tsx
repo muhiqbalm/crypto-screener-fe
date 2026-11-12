@@ -136,7 +136,7 @@ export function TrackRecordHint({ k, symbol, className }: { k: TrackKey | null; 
         aria-label={`Rekam jejak: ${line}`}
         title={line}
         className={cn(
-          'inline-flex h-5 w-5 shrink-0 items-center justify-center rounded transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          '-m-1.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           TONE_TEXT[TRACK_VERDICT[verdict].tone],
           className,
         )}
@@ -176,7 +176,7 @@ export function TrackRecordFootnote() {
     <p className="flex items-start gap-1.5 border-t px-4 py-2 text-2xs text-muted-foreground">
       <History className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
       <span>
-        Ikon rekam jejak di samping sinyal: seberapa sering sinyal jenis itu benar arahnya 1 hari kemudian
+        Ikon rekam jejak di samping arah skor: seberapa sering arah jenis itu benar arahnya 1 hari kemudian
         (hijau terbukti, merah negatif, kuning belum terbukti, abu-abu belum cukup data). Sebelum biaya, dan baru
         satu rezim pasar{period ? ` (${period})` : ''}, sebagian besar dari rekonstruksi. Klik ikonnya untuk rincian.
       </span>

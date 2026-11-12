@@ -50,7 +50,7 @@ export function PaperDetailSheet({ row, reviewN, onClose }: { row: ArenaRow | nu
             </header>
 
             <div className="grid grid-cols-2 gap-2">
-              <Stat label="Hasil" value={formatPct(s.return_pct, { digits: 2, signed: true })} className={signClass(s.return_pct)} hint={`Ekuitas ${formatUsd(s.equity)}`} />
+              <Stat label="Hasil bersih" value={formatPct(s.return_pct, { digits: 2, signed: true })} className={signClass(s.return_pct)} hint={`Ekuitas ${formatUsd(s.equity)}`} />
               <Stat label={<Term k="max_drawdown" short noTip />} value={s.max_dd_pct === null ? 'tidak tersedia' : formatPct(-Math.abs(s.max_dd_pct), { digits: 1 })} />
               <div className="col-span-2 rounded-lg border bg-card p-2.5">
                 <div className="mb-1 text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">

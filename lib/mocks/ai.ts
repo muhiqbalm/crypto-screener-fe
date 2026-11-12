@@ -7,6 +7,7 @@
  *   NEXT_PUBLIC_MOCK_AI=off          feature off (admins see "AI belum aktif — perlu API key")
  *   NEXT_PUBLIC_MOCK_NON_ADMIN=true  member view: no reason, no note, no cost meta
  */
+import { mockRoleIsMember } from './role'
 import type { AiFactorsResponse, AiStatusResponse, AiSummary } from '@/lib/api/types/ai'
 
 const LABEL = 'AI · bisa salah · bukan saran investasi'
@@ -72,7 +73,7 @@ const SUMMARIES: Record<string, AiSummary> = {
     [NO_NEWS], 0.0119),
 }
 
-const nonAdmin = () => process.env.NEXT_PUBLIC_MOCK_NON_ADMIN === 'true'
+const nonAdmin = () => process.env.NEXT_PUBLIC_MOCK_NON_ADMIN === 'true' || mockRoleIsMember()
 const off = () => process.env.NEXT_PUBLIC_MOCK_AI === 'off'
 
 function factors(symbol: string): AiFactorsResponse {

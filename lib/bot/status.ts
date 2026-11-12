@@ -169,7 +169,7 @@ export function botVerdict(input: VerdictInput): BotVerdict {
   const signalFact: BotFact = !live
     ? { label: 'Sinyal 7 hari', value: i.liveError ? 'tidak bisa dimuat' : 'memuat…', tone: i.liveError ? 'warn' : 'wait' }
     : judged.length
-      ? { label: 'Sinyal 7 hari', value: `${ok} dari ${judged.length} sesuai`, tone: ok === judged.length ? 'ok' : hard.length ? 'bad' : 'warn' }
+      ? { label: 'Sinyal 7 hari', value: `${ok} dari ${judged.length} cocok`, tone: ok === judged.length ? 'ok' : hard.length ? 'bad' : 'warn' }
       : { label: 'Sinyal 7 hari', value: expected.length ? `${expected.length} belum bisa dinilai` : 'belum ada sinyal', tone: 'wait' }
   const facts = [signalFact, wh.fact, ...(alertFact ? [alertFact] : [])]
   const focus: BotVerdict['focus'] = problems.length || priceDiff.length || unexpected.length ? 'masalah' : 'semua'
@@ -209,14 +209,14 @@ export function botVerdict(input: VerdictInput): BotVerdict {
     wh.unknown ? 'status webhook tidak bisa dimuat' : null,
   ].filter((p): p is string => Boolean(p))
   if (notes.length) {
-    const head = judged.length ? `${ok} dari ${judged.length} sinyal 7 hari terakhir sesuai, tapi ` : ''
+    const head = judged.length ? `${ok} dari ${judged.length} sinyal 7 hari terakhir cocok, tapi ` : ''
     return verdict('warn', `Perlu dicek: ${head}${joinId(notes)}.`)
   }
 
   // 5. All clear.
   if (judged.length) {
     const tail = waiting ? ` ${waiting} sinyal terbaru masih menunggu hasil.` : ''
-    return verdict('ok', `Ya, aman: ${ok} dari ${judged.length} sinyal strategi 7 hari terakhir dieksekusi bot sesuai rencana.${tail}`)
+    return verdict('ok', `Ya, aman: ${ok} dari ${judged.length} sinyal strategi 7 hari terakhir cocok dengan eksekusi bot.${tail}`)
   }
   if (expected.length) {
     return verdict('wait', `Menunggu data: ${expected.length} sinyal 7 hari terakhir belum bisa dinilai (terlalu baru atau tanpa log).`)

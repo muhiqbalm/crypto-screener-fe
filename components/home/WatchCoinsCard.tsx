@@ -11,6 +11,7 @@ import { Freshness } from '@/components/ui/freshness'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/shell/states'
 import { formatPrice, formatRR, formatScore } from '@/lib/utils/format'
+import { termLabel } from '@/lib/glossary'
 import type { ScreenerCoin, WatchCoin, WatchList } from '@/components/home/logic'
 
 function CoinRow({ c }: { c: WatchCoin }) {
@@ -40,7 +41,9 @@ function CoinRow({ c }: { c: WatchCoin }) {
         {c.rr !== null && (
           <div className="text-right">
             <p className="num display text-lg font-extrabold leading-none">{formatRR(c.rr)}</p>
-            <p className="eyebrow mt-1">R:R</p>
+            <p className="eyebrow mt-1" title={termLabel('rr')}>
+              {termLabel('rr', { short: true })}
+            </p>
           </div>
         )}
         <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden="true" />

@@ -343,14 +343,14 @@ export function holdoutWarning(touches: number | null | undefined): string | nul
 }
 
 /** Threshold like ">= 1.2" / "> -50.0" / "<= 3" -> "minimal 1.2" / "di atas −50" / "maksimal 3". */
-export function thresholdText(t: LabCheck['threshold']): string {
+export function thresholdText(t: LabCheck['threshold'], unit = ''): string {
   const trim = (x: number) => String(Math.round(x * 1000) / 1000)
-  if (typeof t === 'number') return `batas ${trim(t)}`
+  if (typeof t === 'number') return `batas ${trim(t)}${unit}`
   if (typeof t !== 'string') return '—'
   const m = t.trim().match(/^(>=|>|<=|<|=)?\s*(-?\d+(?:\.\d+)?)$/)
   if (!m) return t
   const v = Number(m[2])
-  const n = `${v < 0 ? '−' : ''}${trim(Math.abs(v))}`
+  const n = `${v < 0 ? '−' : ''}${trim(Math.abs(v))}${unit}`
   switch (m[1]) {
     case '>=': return `minimal ${n}`
     case '>': return `di atas ${n}`
@@ -483,7 +483,7 @@ export const PARAM_COPY: Record<string, { label: string; help: string }> = {
   entry_vol_mult: { label: 'Filter volume masuk', help: 'Volume candle masuk minimal sekian kali rata-rata volume.' },
   ema_htf_len: { label: 'EMA timeframe besar', help: 'Panjang EMA penyaring arah tren di timeframe yang lebih besar.' },
   chop_limit: { label: 'Batas pasar sideways', help: 'Di atas angka choppiness ini pasar dianggap sideways, jadi entry diblokir.' },
-  cooldown_bars: { label: 'Jeda antar trade (bar)', help: 'Berapa bar menunggu setelah trade rugi sebelum boleh masuk lagi.' },
+  cooldown_bars: { label: 'Jeda antar transaksi (bar)', help: 'Berapa bar menunggu setelah transaksi rugi sebelum boleh masuk lagi.' },
   // Rosyade: research-important (riset 12 Nov)
   atr_mult_weak_long: { label: 'Stop ikut gerak long (tren lemah)', help: 'Jarak stop ikut gerak untuk long saat tren lemah, dalam kelipatan ATR. Makin besar makin longgar.' },
   long_tp1_pct: { label: 'Target TP1 long (%)', help: 'Jarak target pertama long dari harga masuk.' },
@@ -494,7 +494,7 @@ export const PARAM_COPY: Record<string, { label: string; help: string }> = {
   short_drop_lookback: { label: 'Filter short: lookback (bar)', help: 'Jumlah bar untuk mengukur seberapa jauh harga sudah turun.' },
   short_rsi_min: { label: 'Filter short: RSI minimum', help: 'Short hanya bila RSI di atas angka ini (tidak short di pasar yang sudah jenuh jual).' },
   vol_lookback: { label: 'Lookback gejolak (bar)', help: 'Panjang data untuk mengukur gejolak pada mode ukuran posisi ikut gejolak.' },
-  risk_per_trade_pct: { label: 'Risiko per trade (%)', help: 'Persen modal yang dipertaruhkan per trade (mode ukuran posisi "risk").' },
+  risk_per_trade_pct: { label: 'Risiko per transaksi (%)', help: 'Persen modal yang dipertaruhkan per transaksi (mode ukuran posisi "risk").' },
   entry_atr_len: { label: 'Panjang ATR entry', help: 'Panjang ATR untuk jarak pullback/limit saat timing entry di timeframe kecil.' },
   entry_atr_mult: { label: 'Jarak pullback (× ATR)', help: 'Seberapa jauh menunggu pullback sebelum masuk, dalam kelipatan ATR (mode timing entry).' },
   entry_rsi_len: { label: 'Panjang RSI entry', help: 'Panjang RSI untuk filter masuk.' },
@@ -526,7 +526,7 @@ const CHOICE_COPY: Record<string, Record<string, string>> = {
   mr_regime: { adx: 'ADX rendah', chop: 'Choppiness tinggi', adx_chop: 'Keduanya', off: 'Tanpa filter' },
   mr_band: { bb: 'Bollinger', kc: 'Keltner' },
   mr_trigger: { reenter: 'Kembali ke dalam pita', outside: 'Keluar pita' },
-  sizing_mode: { margin: 'Margin (seperti live)', risk: 'Risiko per trade', vol_target: 'Ikut gejolak' },
+  sizing_mode: { margin: 'Margin (seperti live)', risk: 'Risiko per transaksi', vol_target: 'Ikut gejolak' },
   entry_mode: { bar_close: 'Saat candle tutup (live)', ltf_close: 'Close TF kecil', ltf_pullback: 'Pullback TF kecil', ltf_limit: 'Limit TF kecil' },
   entry_timeout: { skip: 'Lewati', market: 'Masuk harga pasar' },
   entry_band: { atr: 'ATR', ema: 'EMA' },
@@ -744,7 +744,7 @@ const CHECK_LABEL: Record<string, string> = {
   oos_profit_factor: 'PF di data baru',
   oos_net_return: 'Hasil bersih di data baru',
   mc_dd_p95: 'Turun terdalam wajar (uji acak)',
-  min_oos_trades: 'Jumlah trade di data baru',
+  min_oos_trades: 'Jumlah transaksi di data baru',
   cost_stress: 'Tahan biaya dobel',
   sensitivity: 'Setting rapuh',
   no_liquidation: 'Likuidasi',
@@ -752,6 +752,37 @@ const CHECK_LABEL: Record<string, string> = {
 
 export function checkLabel(c: LabCheck): string {
   return CHECK_LABEL[c.name] ?? c.label
+}
+
+/**
+ * Unit of a check's value and threshold (audit 2026-11-13 P11). Only checks
+ * whose unit is known from the backend (src/lab/honesty.py) are listed:
+ * percent for returns and drawdown. PF is a ratio and the rest are counts, so
+ * they have no unit. An unknown check gets no unit (never guessed).
+ */
+const CHECK_UNIT: Record<string, string> = {
+  oos_net_return: '%',
+  mc_dd_p95: '%',
+  cost_stress: '%',
+}
+
+export function checkUnit(name: string): string {
+  return CHECK_UNIT[name] ?? ''
+}
+
+/** A check's value for display: "30.13%", "−29.75%", "1.41", "18", "∞", "ya". */
+export function checkValueText(c: Pick<LabCheck, 'name' | 'value'>): string {
+  const v = c.value
+  if (v === null || v === undefined) return '—'
+  if (typeof v === 'boolean') return v ? 'ya' : 'tidak'
+  if (typeof v !== 'number') return v
+  if (!Number.isFinite(v)) return '—'
+  // 999 is the backend's "no losing trade" PF; a count of 1,234 transactions is a real number.
+  if (c.name === 'oos_profit_factor' && v >= 999) return '∞'
+  const unit = checkUnit(c.name)
+  const digits = Number.isInteger(v) ? 0 : 2
+  const body = Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })
+  return `${v < 0 ? '−' : ''}${body}${unit}`
 }
 
 /** One plain-language Indonesian sentence describing a check result. */
@@ -767,7 +798,7 @@ export function checkReason(c: LabCheck): string {
     case 'mc_dd_p95':
       return `Turun terdalam wajar bisa ${fmtSignedPct(v)} (batas ${fmtSignedPct(t ?? -50)})`
     case 'min_oos_trades':
-      return `${fmtNum(v, 0)} trade di data baru (minimal ${t ?? 30} supaya hasilnya bermakna)`
+      return `${fmtNum(v, 0)} transaksi di data baru (minimal ${t ?? 30} supaya hasilnya bermakna)`
     case 'cost_stress':
       return `Kalau biaya dobel, hasil di data baru jadi ${fmtSignedPct(v)} (harus di atas 0%)`
     case 'sensitivity':

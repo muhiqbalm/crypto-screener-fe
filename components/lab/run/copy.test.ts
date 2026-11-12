@@ -49,18 +49,18 @@ describe('verdictSentence', () => {
   it('Lolos: one sentence with the data-baru numbers', () => {
     const s = verdictSentence(run({ verdict: 'PASS', oos_metrics: { net_return_pct: 8.4, trades: 51, profit_factor: 1.45 } }))
     expect(s.tone).toBe('pass')
-    expect(s.text).toBe('Lolos: untung di data baru (holdout) setelah biaya, +8.4% dari 51 trade (PF 1.45).')
+    expect(s.text).toBe('Lolos: untung di data baru (holdout) setelah biaya, +8.4% dari 51 transaksi (PF 1.45).')
   })
 
   it('Gagal: names the first failed check and counts the rest', () => {
     const s = verdictSentence(run({ verdict: 'FAIL', checks: [check('oos_profit_factor', 1.5, true), check('min_oos_trades', 18, false, '>= 30'), check('cost_stress', -2, false, '> 0')] }))
     expect(s.tone).toBe('fail')
-    expect(s.text).toBe('Gagal: 18 trade di data baru (minimal 30 supaya hasilnya bermakna) (+1 syarat lain).')
+    expect(s.text).toBe('Gagal: 18 transaksi di data baru (minimal 30 supaya hasilnya bermakna) (+1 syarat lain).')
   })
 
   it('backtest, running and error', () => {
     expect(verdictSentence(run({ mode: 'backtest', metrics: { net_return_pct: -3.26, trades: 40 } })).text).toBe(
-      'Uji cepat selesai: −3.3% di seluruh periode dari 40 trade. Belum ada rapor, jadi belum bukti.',
+      'Uji cepat selesai: −3.3% di seluruh periode dari 40 transaksi. Belum ada rapor, jadi belum bukti.',
     )
     expect(verdictSentence(run({ status: 'running' })).tone).toBe('running')
     const err = verdictSentence(run({ status: 'error', error: 'timeout after 3600s' }))
@@ -75,7 +75,7 @@ describe('verdictHeadline (hero)', () => {
     expect(verdictHeadline(run({ verdict: 'PASS' }))).toEqual({ tone: 'pass', word: 'Lolos', line: 'Untung di data baru setelah biaya, dan semua syarat rapor terpenuhi.' })
     const fail = verdictHeadline(run({ verdict: 'FAIL', checks: [check('min_oos_trades', 18, false, '>= 30'), check('cost_stress', -2, false, '> 0')] }))
     expect(fail.word).toBe('Gagal')
-    expect(fail.line).toBe('18 trade di data baru (minimal 30 supaya hasilnya bermakna) (+1 syarat lain).')
+    expect(fail.line).toBe('18 transaksi di data baru (minimal 30 supaya hasilnya bermakna) (+1 syarat lain).')
     expect(verdictHeadline(run({ mode: 'backtest' })).word).toBe('Uji cepat')
     expect(verdictHeadline(run({ status: 'error', error: 'timeout after 3600s' })).line).toMatch(/batas waktu/)
   })

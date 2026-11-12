@@ -15,14 +15,14 @@ interface Task {
 
 function tasks(isAdmin: boolean): Task[] {
   return [
-    { href: '/news', title: 'Cek pasar', text: 'Takut–serakah dan berita hari ini.', Icon: Newspaper },
+    { href: '/news', title: 'Cek pasar', text: 'Sentimen dan berita', Icon: Newspaper },
     isAdmin
-      ? { href: '/bot', title: 'Cek bot live', text: 'Apakah sinyal tereksekusi sesuai strategi.', Icon: Activity }
-      : { href: '/balance', title: 'Cek saldo & posisi', text: 'Saldo dan posisi kamu di exchange.', Icon: Wallet },
+      ? { href: '/bot', title: 'Cek bot live', text: 'Sinyal vs eksekusi', Icon: Activity }
+      : { href: '/balance', title: 'Cek saldo & posisi', text: 'Uang asli di exchange', Icon: Wallet },
     isAdmin
-      ? { href: '/lab', title: 'Uji strategi', text: 'Uji ide di data lama, lalu di data baru.', Icon: FlaskConical }
-      : { href: '/koin', title: 'Lihat peluang koin', text: 'Koin mana yang layak dilihat, ke arah mana.', Icon: Compass },
-    { href: '/lab/report', title: 'Baca laporan', text: 'Ringkasan minggu lalu: paper, sinyal, bot.', Icon: FileText },
+      ? { href: '/lab', title: 'Uji strategi', text: 'Coba ide di data lama', Icon: FlaskConical }
+      : { href: '/koin', title: 'Lihat peluang koin', text: 'Koin dan arahnya', Icon: Compass },
+    { href: '/lab/report', title: 'Baca laporan', text: 'Ringkasan minggu lalu', Icon: FileText },
   ]
 }
 
@@ -84,7 +84,7 @@ export function StartHereCard({ isAdmin }: { isAdmin: boolean }) {
                   <span className="num mr-1.5 text-brand">{i + 1}.</span>
                   {t.title}
                 </span>
-                <span className="mt-0.5 block truncate text-sm text-muted-foreground">{t.text}</span>
+                <span className="mt-0.5 block text-sm leading-snug text-muted-foreground">{t.text}</span>
               </span>
               <ArrowRight className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
             </Link>

@@ -16,7 +16,7 @@ import { useTheme } from 'next-themes'
 import { formatNumber, formatPct, signClass } from '@/lib/utils/format'
 import { formatDate } from '@/lib/utils/time'
 import { cn } from '@/lib/utils/cn'
-import { checkLabel, checkReason, templateShort } from '@/lib/lab/form'
+import { checkLabel, checkReason, checkValueText, templateShort } from '@/lib/lab/form'
 import { snoopingWarning } from '@/lib/lab/timeframes'
 import { MAX_COMPARE, bestIndex, compareHref, compareRows, normaliseEquity, parseCompareIds, type CompareMetricRow } from '@/lib/lab/planning'
 import { useLabRuns } from '@/lib/queries/lab'
@@ -131,7 +131,7 @@ export function CompareView() {
                   {r.status === 'done' ? <VerdictPill verdict={r.verdict} /> : <span className="text-sm text-muted-foreground">{STATUS_COPY[r.status]}</span>}
                 </div>
                 <div>
-                  <p className="eyebrow">{r.oos_metrics ? 'Hasil data baru' : 'Hasil seluruh periode'}</p>
+                  <p className="eyebrow">{r.oos_metrics ? 'Hasil bersih data baru' : 'Hasil bersih seluruh periode'}</p>
                   <p className={cn('num display mt-1 text-3xl font-extrabold', signClass(net))}>{net === null ? '—' : formatPct(net, { signed: true })}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -173,7 +173,7 @@ export function CompareView() {
                 <tbody className="divide-y divide-border/50">
                   {(['full', 'holdout'] as const).map((g) => [
                     <tr key={g} className="bg-muted/20">
-                      <td colSpan={runs.length + 1} className={cn('px-4 py-2.5 text-2xs font-bold uppercase tracking-wide', g === 'holdout' ? 'text-lab' : 'text-muted-foreground')}>
+                      <td colSpan={runs.length + 1} className={cn('h-[52px] px-4 text-2xs font-bold uppercase tracking-wide', g === 'holdout' ? 'text-lab' : 'text-muted-foreground')}>
                         {g === 'full' ? 'Seluruh periode' : 'Data baru (holdout)'}
                       </td>
                     </tr>,
@@ -222,7 +222,7 @@ export function CompareView() {
                                   {c.passed ? <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> : <XCircle className="h-4 w-4" aria-hidden="true" />}
                                   {c.passed ? 'Lolos' : 'Gagal'}
                                 </span>
-                                <span className="num ml-2 text-2xs text-muted-foreground">{typeof c.value === 'number' ? formatNumber(c.value, { digits: Number.isInteger(c.value) ? 0 : 2 }) : String(c.value ?? '—')}</span>
+                                <span className="num ml-2 text-2xs text-muted-foreground">{checkValueText(c)}</span>
                               </td>
                             )
                           })}

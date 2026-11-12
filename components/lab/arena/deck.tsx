@@ -211,9 +211,10 @@ export function BigNumber({
 }) {
   return (
     <div className={cn('min-w-0', className)}>
-      <div className="truncate text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</div>
+      {/* Label and hint wrap, they are never cut with "…" (audit 2026-11-13 P2). */}
+      <div className="break-words text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</div>
       <div className={cn('font-display mt-1.5 truncate font-bold tabular-nums tracking-tight', VALUE_SIZE[size], tone && TEXT[tone])}>{value}</div>
-      {hint && <div className="mt-1 truncate text-[13px] text-muted-foreground">{hint}</div>}
+      {hint && <div className="mt-1 break-words text-[13px] text-muted-foreground">{hint}</div>}
     </div>
   )
 }

@@ -72,29 +72,30 @@ function LoadError({ error, onRetry }: { error: unknown; onRetry: () => void }) 
 const OPEN_COLUMNS: ResponsiveColumn<OpenPositionResponse>[] = [
   { key: 'koin', header: 'Koin', mobile: 'title', cell: (p) => <CoinCell symbol={p.symbol} exchange={p.exchange} /> },
   { key: 'arah', header: 'Arah', mobile: 'badge', cell: (p) => <SideBadge side={p.side} /> },
+  // Phone card order = column order: result and liquidation first (audit P1).
   {
     key: 'upnl',
     header: <Term k="upnl" short />,
     mobileLabel: 'Untung/rugi',
-    align: 'right',
+    align: 'right', className: 'px-3', headerClassName: 'px-3',
     mobile: 'field',
+    mobileSpan: 'full',
     cell: (p) => <PnlCell value={p.unrealized_pnl} pct={p.unrealized_pnl_pct} />,
   },
-  { key: 'entry', header: 'Entry', align: 'right', mobile: 'field', cell: (p) => <span className="num text-[14px]">{formatPrice(p.entry_price)}</span> },
   {
-    key: 'mark',
-    header: <Term k="mark_price" short noTip />,
-    mobileLabel: 'Harga acuan',
-    align: 'right',
+    key: 'likuidasi',
+    header: <Term k="liq_price" short />,
+    mobileLabel: 'Likuidasi',
+    align: 'right', className: 'px-3', headerClassName: 'px-3',
     mobile: 'field',
-    cell: (p) => <span className="num text-[14px]">{num(p.mark_price, formatPrice)}</span>,
+    cell: (p) => <span className="num text-[14px]">{num(p.liquidation_price, formatPrice)}</span>,
   },
-  { key: 'jumlah', header: 'Jumlah', align: 'right', mobile: 'hidden', cell: (p) => <span className="num text-[14px]">{formatQty(p.quantity)}</span> },
   {
     key: 'lev',
-    header: 'Leverage',
-    align: 'center',
-    mobile: 'hidden',
+    header: <Term k="leverage" short noTip />,
+    mobileLabel: 'Leverage',
+    align: 'center', className: 'px-3', headerClassName: 'px-3',
+    mobile: 'field',
     cell: (p) =>
       p.leverage == null ? (
         <span className="text-muted-foreground">{DASH}</span>
@@ -104,13 +105,26 @@ const OPEN_COLUMNS: ResponsiveColumn<OpenPositionResponse>[] = [
         </Badge>
       ),
   },
+  { key: 'jumlah', header: 'Jumlah', align: 'right', className: 'px-3', headerClassName: 'px-3', mobile: 'field', cell: (p) => <span className="num text-[14px]">{formatQty(p.quantity)}</span> },
   {
-    key: 'likuidasi',
-    header: <Term k="liq_price" short noTip />,
-    mobileLabel: 'Harga likuidasi',
-    align: 'right',
-    mobile: 'hidden',
-    cell: (p) => <span className="num text-[14px]">{num(p.liquidation_price, formatPrice)}</span>,
+    key: 'entry',
+    header: (
+      <Term k="entry" noTip>
+        Harga masuk
+      </Term>
+    ),
+    mobileLabel: 'Harga masuk',
+    align: 'right', className: 'px-3', headerClassName: 'px-3',
+    mobile: 'field',
+    cell: (p) => <span className="num text-[14px]">{formatPrice(p.entry_price)}</span>,
+  },
+  {
+    key: 'mark',
+    header: <Term k="mark_price">Harga acuan</Term>,
+    mobileLabel: 'Harga acuan',
+    align: 'right', className: 'px-3', headerClassName: 'px-3',
+    mobile: 'field',
+    cell: (p) => <span className="num text-[14px]">{num(p.mark_price, formatPrice)}</span>,
   },
 ]
 
@@ -127,13 +141,14 @@ const HISTORY_COLUMNS: ResponsiveColumn<ClosedPositionResponse>[] = [
     mobileLabel: 'Untung/rugi',
     align: 'right',
     mobile: 'field',
+    mobileSpan: 'full',
     cell: (p) => <PnlCell value={pnlOf(p)} />,
   },
-  { key: 'entry', header: 'Entry', align: 'right', mobile: 'field', cell: (p) => <span className="num text-[14px]">{formatPrice(p.entry_price)}</span> },
-  { key: 'exit', header: 'Exit', align: 'right', mobile: 'field', cell: (p) => <span className="num text-[14px]">{formatPrice(p.exit_price)}</span> },
-  { key: 'jumlah', header: 'Jumlah', align: 'right', mobile: 'hidden', cell: (p) => <span className="num text-[14px]">{formatQty(p.quantity)}</span> },
+  { key: 'entry', header: 'Harga masuk', align: 'right', mobile: 'field', cell: (p) => <span className="num text-[14px]">{formatPrice(p.entry_price)}</span> },
+  { key: 'exit', header: 'Harga keluar', align: 'right', mobile: 'field', cell: (p) => <span className="num text-[14px]">{formatPrice(p.exit_price)}</span> },
+  { key: 'jumlah', header: 'Jumlah', align: 'right', mobile: 'field', cell: (p) => <span className="num text-[14px]">{formatQty(p.quantity)}</span> },
   { key: 'buka', header: 'Dibuka (WIB)', mobile: 'hidden', cell: (p) => <span className="num whitespace-nowrap text-[14px] text-muted-foreground">{formatTime(p.opened_at, { zone: false })}</span> },
-  { key: 'tutup', header: 'Ditutup (WIB)', mobile: 'hidden', cell: (p) => <span className="num whitespace-nowrap text-[14px] text-muted-foreground">{formatTime(p.closed_at, { zone: false })}</span> },
+  { key: 'tutup', header: 'Ditutup (WIB)', mobile: 'field', mobileSpan: 'full', cell: (p) => <span className="num whitespace-nowrap text-[14px] text-muted-foreground">{formatTime(p.closed_at, { zone: false })}</span> },
 ]
 
 function SectionTitle({
@@ -204,15 +219,16 @@ function OpenPositions() {
           <ResponsiveTable
             rows={rows}
             columns={OPEN_COLUMNS}
+            mobileFields={6}
             rowKey={(p, i) => `${p.exchange}-${p.symbol}-${i}`}
             caption="Posisi terbuka di exchange"
             empty={<EmptyState icon={<Activity className="h-8 w-8" aria-hidden="true" />} title="Tidak ada posisi terbuka" />}
           />
           {rows.length > 0 && (
             <p className="flex items-center gap-1 text-[13px] text-muted-foreground">
-              Persen untung/rugi berjalan dibanding nilai posisi saat masuk (entry × jumlah), tanpa leverage.
+              Persen untung/rugi berjalan dibanding nilai posisi saat masuk (harga masuk × jumlah), tanpa leverage.
               <InfoTip title="Untung/rugi berjalan">
-                Angka dolar dari exchange di harga acuan (mark). Persennya dihitung server: untung/rugi ÷ (harga entry × jumlah).
+                Angka dolar dari exchange di harga acuan (mark). Persennya dihitung server: untung/rugi ÷ (harga masuk × jumlah).
               </InfoTip>
             </p>
           )}
@@ -245,6 +261,7 @@ function PositionHistory() {
           <ResponsiveTable
             rows={rows}
             columns={HISTORY_COLUMNS}
+            mobileFields={5}
             rowKey={(p) => p.id}
             caption="Posisi yang sudah ditutup"
             empty={<EmptyState icon={<History className="h-8 w-8" aria-hidden="true" />} title="Belum ada posisi yang ditutup" />}

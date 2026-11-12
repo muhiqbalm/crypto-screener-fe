@@ -9,7 +9,7 @@ export const STATUS_COPY: Record<LiveCheckStatus, { label: string; short: string
     label: 'Harga beda',
     short: 'Harga beda',
     tone: 'warn',
-    hint: 'Tereksekusi, tapi harga fill jauh dari harga sinyal Lab (di atas ambang).',
+    hint: 'Tereksekusi, tapi harga eksekusi jauh dari harga sinyal Lab (di atas ambang).',
   },
   gagal: {
     label: 'Terkirim tapi gagal / ditolak',

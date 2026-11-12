@@ -24,11 +24,11 @@ describe('ledger labels', () => {
 describe('ledger formatting', () => {
   it('formats signed percents and hit rates', () => {
     expect(pct(1.234)).toBe('+1.23%')
-    expect(pct(-0.5, 1)).toBe('-0.5%')
+    expect(pct(-0.5, 1)).toBe('−0.5%')
     expect(pct(null)).toBe('—')
     expect(hitPct(0.546)).toBe('55%')
     expect(hitCi([0.41, 0.6])).toBe('41–60%')
-    expect(retCi([-0.2, 0.9])).toBe('-0.20% … +0.90%')
+    expect(retCi([-0.2, 0.9])).toBe('−0.20% … +0.90%')
     expect(retCi(null)).toBe('')
   })
   it('flags thin samples', () => {

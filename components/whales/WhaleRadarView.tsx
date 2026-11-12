@@ -89,6 +89,19 @@ function RatioCard({ r }: { r: TopTraderRatio }) {
   )
 }
 
+/**
+ * "1095.2381 SOL" → "1,095.24 SOL": thousands separators, at most 2 decimals from 100 up
+ * and 4 below. Text that does not start with a number is shown as it came.
+ */
+function trimAmount(amount: string): string {
+  const m = /^(-?[\d,]+(?:\.\d+)?)\s*(.*)$/.exec(amount.trim())
+  if (!m) return amount
+  const n = Number(m[1].replace(/,/g, ''))
+  if (!Number.isFinite(n)) return amount
+  const text = formatNumber(n, { maxDigits: Math.abs(n) >= 100 ? 2 : 4 })
+  return m[2] ? `${text} ${m[2]}` : text
+}
+
 const TRADE_COLUMNS: ResponsiveColumn<WhaleTrade>[] = [
   {
     key: 'waktu',
@@ -115,7 +128,7 @@ const TRADE_COLUMNS: ResponsiveColumn<WhaleTrade>[] = [
       </Link>
     ),
   },
-  { key: 'jumlah', header: 'Jumlah', mobile: 'field', cell: (t) => <span className="num whitespace-nowrap text-sm text-muted-foreground">{t.amount}</span> },
+  { key: 'jumlah', header: 'Jumlah', mobile: 'field', cell: (t) => <span className="num whitespace-nowrap text-sm text-muted-foreground">{trimAmount(t.amount)}</span> },
   {
     key: 'nilai',
     header: 'Nilai',

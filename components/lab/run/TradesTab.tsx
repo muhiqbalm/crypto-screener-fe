@@ -25,11 +25,11 @@ function exitReason(r: string | null | undefined): string {
 
 export function TradesTab({ id, enabled }: { id: LabId; enabled: boolean }) {
   const q = useLabRunTrades(id, enabled)
-  if (!enabled) return <p className="py-6 text-center text-sm text-muted-foreground">Daftar trade muncul setelah uji selesai.</p>
+  if (!enabled) return <p className="py-6 text-center text-sm text-muted-foreground">Daftar transaksi muncul setelah uji selesai.</p>
   if (q.isPending) return <Skeleton className="h-64 w-full rounded-2xl" />
-  if (q.error) return <ErrorPanel kind={q.error instanceof ApiError ? q.error.kind : 'server'} onRetry={() => q.refetch()} messageOverride="Daftar trade gagal dimuat." />
+  if (q.error) return <ErrorPanel kind={q.error instanceof ApiError ? q.error.kind : 'server'} onRetry={() => q.refetch()} messageOverride="Daftar transaksi gagal dimuat." />
   const trades = q.data ?? []
-  if (trades.length === 0) return <EmptyState title="Tidak ada trade di periode ini" description="Coba periode lebih panjang atau longgarkan filter entry." />
+  if (trades.length === 0) return <EmptyState title="Tidak ada transaksi di periode ini" description="Coba periode lebih panjang atau longgarkan filter entry." />
   return (
     <div className="-mx-5 max-h-[640px] overflow-auto sm:mx-0 sm:rounded-2xl sm:border sm:border-border">
       <table className="w-full min-w-[760px] text-sm">

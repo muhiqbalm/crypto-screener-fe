@@ -15,7 +15,11 @@ const CHART_HEIGHT = 'h-[300px] sm:h-[440px]'
 export function EquitySection({ run, enabled }: { run: LabRunDetail; enabled: boolean }) {
   const q = useLabRunEquity(run.id, enabled)
   let body: React.ReactNode
-  if (!enabled) body = <p className="py-16 text-center text-base text-muted-foreground">Kurva modal muncul setelah uji selesai.</p>
+  if (!enabled) {
+    // A failed or cancelled run never gets a curve (audit 2026-11-13 K5).
+    const text = run.status === 'error' ? 'Tidak ada kurva: uji gagal.' : run.status === 'cancelled' ? 'Tidak ada kurva: uji dibatalkan.' : 'Kurva modal muncul setelah uji selesai.'
+    body = <p className={`text-center text-base text-muted-foreground ${run.status === 'error' || run.status === 'cancelled' ? 'py-6' : 'py-16'}`}>{text}</p>
+  }
   else if (q.isPending) body = <Skeleton className={`${CHART_HEIGHT} w-full rounded-2xl`} />
   else if (q.error) body = <ErrorState error={q.error} title="Kurva modal gagal dimuat" onRetry={() => q.refetch()} compact />
   else if (!q.data || q.data.length === 0) body = <EmptyState title="Kurva modal tidak tersedia" description="Server tidak mengirim kurva untuk uji ini." />

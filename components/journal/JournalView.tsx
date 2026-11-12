@@ -70,7 +70,7 @@ function Numbers({ s, live, perAccount }: { s: JournalStats; live: boolean; perA
           <CountUp value={s.net_pnl ?? 0} format={(v) => formatUsdSigned(v)} />
         </div>
         <p className="mt-4 text-lg font-medium leading-snug">{answerOf(s, live)}</p>
-        <p className="mt-1 text-[13px] text-muted-foreground">Setelah fee dan funding.{live ? '' : ' Trade bot live tidak pernah ikut dihitung.'}</p>
+        <p className="mt-1 text-[13px] text-muted-foreground">Setelah fee dan funding.{live ? '' : ' Transaksi bot live tidak pernah ikut dihitung.'}</p>
         <CardLink href="#transaksi" className="mt-5">Lihat transaksi</CardLink>
       </DeckCard>
       <DeckCard icon={Target} iconTone="info" title="Persentase menang">
@@ -200,6 +200,7 @@ const TRADE_COLUMNS: ResponsiveColumn<JournalEntry>[] = [
     key: 'closed',
     header: 'Ditutup',
     mobile: 'field',
+    mobileSpan: 'full',
     cell: (r) => <span className="whitespace-nowrap text-[15px] tabular-nums">{r.exit_time ? formatTime(r.exit_time) : 'masih terbuka'}</span>,
   },
   {
@@ -407,7 +408,7 @@ export function JournalView() {
             <div className="flex flex-wrap items-center gap-3 rounded-2xl border bg-card px-5 py-3.5">
               <Switch id="incl-live" checked={includeLive} onCheckedChange={setIncludeLive} disabled={Boolean(filters.source)} />
               <Label htmlFor="incl-live" className="cursor-pointer text-[15px]">
-                Tampilkan juga <Term k="live_bot_trades" variant="underline">trade bot live</Term> (uang asli)
+                Tampilkan juga <Term k="live_bot_trades" variant="underline">transaksi bot live</Term> (uang asli)
               </Label>
               <span className="text-[13px] text-muted-foreground">
                 {filters.source ? 'Hanya untuk sumber "Semua paper".' : includeLive ? 'Ditandai LIVE; tetap tidak dihitung di statistik paper.' : 'Mati: hanya paper.'}

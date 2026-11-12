@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createChart, ColorType, CrosshairMode, type IChartApi, type ISeriesApi, type UTCTimestamp } from 'lightweight-charts'
 import { useTheme } from 'next-themes'
-import { getChartTheme } from '@/lib/chart-theme'
+import { chartPercentFormatter, getChartTheme } from '@/lib/chart-theme'
 import { formatPercent } from '@/lib/utils/format'
 import type { NormalisedPoint } from '@/lib/lab/planning'
 
@@ -34,12 +34,12 @@ export function CompareEquityChart({ series }: { series: CompareSeries[] }) {
     const palette = isDark ? COMPARE_COLORS.dark : COMPARE_COLORS.light
     const chart: IChartApi = createChart(ref.current, {
       autoSize: true,
-      layout: { background: { type: ColorType.Solid, color: 'transparent' }, textColor: theme.text, fontFamily: theme.fontFamily, fontSize: 11 },
+      layout: { background: { type: ColorType.Solid, color: 'transparent' }, textColor: theme.text, fontFamily: theme.fontFamily, fontSize: theme.fontSize },
       grid: { vertLines: { visible: false }, horzLines: { color: theme.grid } },
-      rightPriceScale: { borderVisible: false },
+      rightPriceScale: { borderVisible: false, scaleMargins: theme.scaleMargins },
       timeScale: { borderVisible: false },
       crosshair: { mode: CrosshairMode.Magnet },
-      localization: { priceFormatter: (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(0)}%` },
+      localization: { priceFormatter: chartPercentFormatter(0) },
       handleScroll: false,
       handleScale: false,
     })

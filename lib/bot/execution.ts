@@ -20,9 +20,9 @@ export function executionAnswer(r: ShadowReport): string {
   const basis = `Dari ${a.n_counted} sinyal live${note ? ` (${note})` : ''}`
   const latency = a.median_latency_s !== null ? `jeda alert median ${duration(a.median_latency_s)}${a.latency_upper_bound ? ' (batas atas)' : ''}` : null
   if (a.n_with_fill) {
-    const slip = `harga eksekusi rata-rata ${formatBps(a.mean_slippage_bps)} dari harga close candle (+ = lebih mahal bagi bot)`
+    const slip = `harga eksekusi rata-rata ${formatBps(a.mean_slippage_bps)} dari harga close candle (1 bps = 0.01%, + = lebih mahal bagi bot)`
     return `${basis}: ${[slip, latency].filter(Boolean).join(', ')}.`
   }
-  const drift = `belum ada harga fill; perkiraan dari harga pasar sesudah alert ${formatBps(a.mean_drift_bps)}`
+  const drift = `belum ada harga eksekusi; perkiraan dari harga pasar sesudah alert ${formatBps(a.mean_drift_bps)}`
   return `${basis}: ${[drift, latency].filter(Boolean).join(', ')}.`
 }

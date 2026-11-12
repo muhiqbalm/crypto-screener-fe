@@ -29,6 +29,7 @@ import { SignalBadge } from '@/components/screener/SignalBadge'
 import { TierBadge } from '@/components/screener/TierBadge'
 import { TrackRecordHint } from '@/components/screener/TrackRecordHint'
 import { CoinAvatar } from '@/components/market/ui'
+import { Term } from '@/components/ui/term'
 import { compositeKey, tierKey } from '@/lib/screener/track-record'
 import { scoreFraction, scorePosition } from '@/lib/screener/factors'
 import { koinHref } from '@/lib/lab/outlook'
@@ -68,7 +69,7 @@ function buildColumns(positions: Map<string, Pos>): ColumnDef<AssetDetail>[] {
       enableSorting: false,
       cell: ({ row }) => (
         <span className="flex items-center gap-3">
-          <CoinAvatar symbol={row.original.symbol} size="sm" />
+          <CoinAvatar symbol={row.original.symbol} />
           <span className="flex flex-col">
             <Link href={koinHref(row.original.symbol)} onClick={(e) => e.stopPropagation()} className="text-sm font-semibold hover:underline">
               {coinOf(row.original.symbol)}
@@ -113,7 +114,7 @@ function buildColumns(positions: Map<string, Pos>): ColumnDef<AssetDetail>[] {
     {
       id: 'signal',
       accessorKey: 'signal',
-      header: 'Sinyal',
+      header: () => <Term k="screener_signal" short />,
       enableSorting: false,
       cell: ({ getValue, row }) => (
         <span className="inline-flex items-center gap-1">
@@ -289,7 +290,7 @@ export function ScreenerTable({ data, filters, onSelectAsset }: ScreenerTablePro
                     <button
                       type="button"
                       onClick={() => handleSortToggle(header.column.id)}
-                      className="-mx-1 inline-flex items-center gap-1 rounded px-1 uppercase tracking-wide transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+                      className="-mx-1 inline-flex min-h-8 items-center gap-1 rounded px-1 uppercase tracking-wide transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
                     >
                       {flexRender(header.column.columnDef.header, header.getContext())}
                       <SortIcon direction={sortDir} />

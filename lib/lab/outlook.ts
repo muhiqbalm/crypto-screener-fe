@@ -4,6 +4,7 @@
  * gracefully on rows computed before v2 (no plan / peluang fields).
  */
 import { formatTime } from '@/lib/utils/time'
+import { termLabel, termValue } from '@/lib/glossary'
 import type {
   CallStatus,
   EvidenceCode,
@@ -63,7 +64,7 @@ export const CLASS_TEXT: Record<StrategyClass | 'pool', string> = {
   lolos_uji: 'strategi lolos uji',
   belum_diuji: 'strategi default (belum diuji per koin)',
   gagal_uji: 'strategi gagal uji',
-  pool: 'semua strategi out-of-sample',
+  pool: 'semua strategi di luar data latih',
 }
 export const PELUANG_TEXT: Record<PeluangLabel, string> = {
   positif: 'Terbukti positif',
@@ -235,6 +236,29 @@ export const KOIN_VIEWS: { value: KoinView; label: string }[] = [
 export function parseView(v: string | string[] | undefined | null): KoinView {
   const s = Array.isArray(v) ? v[0] : v
   return s === 'terkuat' || s === 'faktor' ? s : 'outlook'
+}
+
+/** ?symbol= of the old /screener link -> text for the Tabel faktor search box ("ethusdt" -> "ETH"). */
+export function parseSymbolQuery(v: string | string[] | undefined | null): string {
+  const s = (Array.isArray(v) ? v[0] : v) ?? ''
+  const clean = s.toUpperCase().replace('/USDT:USDT', 'USDT').replace(/[^A-Z0-9]/g, '').slice(0, 20)
+  return coinLabel(clean)
+}
+
+/**
+ * Screener words inside an Outlook factor ("BULLISH, tier B") in the glossary wording
+ * ("naik, kelompok tengah"), so the coin page never shows a second BULLISH/BEARISH verdict.
+ */
+export function factorValueText(text: string | null | undefined): string {
+  if (!text) return ''
+  return text
+    .replace(/\b(BULLISH|BEARISH|NEUTRAL)\b/g, (m) => termValue('screener_signal', m))
+    .replace(/\btier ([ABC])\b/gi, (_, t: string) => `${termLabel('tier', { short: true }).toLowerCase()} ${termValue('tier', t.toUpperCase())}`)
+}
+
+/** Screener-derived factors get the glossary name, so they read as a score, not as a position. */
+export function factorLabel(f: Pick<OutlookFactor, 'key' | 'label'>): string {
+  return f.key === 'screener' ? termLabel('screener_signal') : f.label
 }
 
 export function koinHref(symbol: string): string {

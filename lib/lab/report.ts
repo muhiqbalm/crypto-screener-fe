@@ -107,7 +107,7 @@ export const RUN_MODE_LABEL: Record<string, string> = {
 export const HOOK_COPY: Record<string, { title: string; href: string; note: string; adminOnly: boolean }> = {
   arena: { title: 'Paper berjalan', href: '/lab/arena', note: 'Semua preset simulasi berdampingan.', adminOnly: true },
   live_check: { title: 'Status bot', href: '/bot', note: 'Apakah bot live mengikuti strategi acuannya.', adminOnly: true },
-  outlook: { title: 'Peluang koin', href: '/koin', note: 'Arah dan rencana trade per koin.', adminOnly: false },
+  outlook: { title: 'Peluang koin', href: '/koin', note: 'Arah dan rencana transaksi per koin.', adminOnly: false },
 }
 
 export function reportHooks(hooks: readonly ReportHook[] | null | undefined, isAdmin: boolean): ReportHook[] {

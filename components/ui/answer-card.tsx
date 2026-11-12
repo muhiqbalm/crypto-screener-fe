@@ -10,7 +10,7 @@ import { TONE_SOFT, TONE_TEXT, TONE_VAR, type Tone } from '@/components/ui/tone'
  *
  *   <AnswerCard
  *     tone="baik"
- *     answer="Bot live aman: 8 dari 8 sinyal 7 hari terakhir sesuai strategi."
+ *     answer="Bot live aman: 8 dari 8 sinyal 7 hari terakhir cocok dengan strategi."
  *     metrics={[{ label: 'Sinyal cocok', value: '8 / 8' }, { label: 'Slippage', value: '+3.2 bps' }]}
  *     evidenceHref="#bukti"
  *     status={<StatusPill kind="live" />}

@@ -243,7 +243,7 @@ export function mirrorSizing(
   const p = { ...defaults, ...(params ?? {}) }
   const mode = String(p.sizing_mode ?? 'margin')
   if ((numParam(p.dd_derisk_pct) ?? 0) > 0) {
-    return { ok: false, reason: 'Preset ini mengecilkan posisi saat drawdown. Cara itu belum bisa ditiru di paper.' }
+    return { ok: false, reason: 'Preset ini mengecilkan posisi saat modal turun dalam. Cara itu belum bisa ditiru di paper.' }
   }
   let risk: number | null = null
   let cap: number | null = null
@@ -271,7 +271,7 @@ export function mirrorSizing(
   }
   const summary =
     mode === 'risk'
-      ? `risiko ${formatMult(risk, '%')} per trade, posisi maks. ${formatMult(cap)} modal`
+      ? `risiko ${formatMult(risk, '%')} per transaksi, posisi maks. ${formatMult(cap)} modal`
       : mode === 'vol_target'
         ? `ikut gejolak (seperti uji), posisi maks. ${formatMult(cap)} modal`
         : `posisi ${formatMult(cap)} modal (seperti uji)`

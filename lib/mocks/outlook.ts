@@ -4,6 +4,7 @@
  * read-only lab.db copy + cached Binance candles); positions are synthetic.
  * Set NEXT_PUBLIC_MOCK_NON_ADMIN=true to preview the page as a non-admin account.
  */
+import { mockRoleIsMember } from './role'
 import { ApiError } from '@/lib/api/errors'
 
 type Json = Record<string, unknown>
@@ -15,7 +16,7 @@ async function data(): Promise<Json> {
   return cache
 }
 
-const nonAdmin = () => process.env.NEXT_PUBLIC_MOCK_NON_ADMIN === 'true'
+const nonAdmin = () => process.env.NEXT_PUBLIC_MOCK_NON_ADMIN === 'true' || mockRoleIsMember()
 
 function asViewer<T extends Json>(body: T): T {
   if (!nonAdmin()) return body

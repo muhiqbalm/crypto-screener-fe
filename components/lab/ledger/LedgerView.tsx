@@ -64,7 +64,7 @@ function StatusPanel({ meta }: { meta: LedgerMeta }) {
         />
         <StatTile label="Siklus terakhir" value={formatAge(meta.last_cycle?.finished ?? null)} hint="Pencatatan dan penilaian tiap jam" />
       </div>
-      <div className="flex flex-wrap gap-2 text-xs">
+      <div className="flex flex-wrap gap-2 text-2xs">
         {bf?.status === 'done' && (
           <Badge variant="info" size="sm">
             <History /> Rekonstruksi screener: {formatTime(bf.from, { time: false })} – {formatTime(bf.to, { time: false })} · {formatCount(bf.signals)} sinyal
@@ -89,7 +89,7 @@ function StatusPanel({ meta }: { meta: LedgerMeta }) {
 
 function HonestyNote() {
   return (
-    <ul className="list-disc space-y-1.5 pl-5 text-xs leading-relaxed text-muted-foreground">
+    <ul className="list-disc space-y-1.5 pl-5 text-2xs leading-relaxed text-muted-foreground">
       <li>
         Gerak diukur dari harga 15 menit pertama setelah sinyal, <b className="text-foreground">sebelum biaya</b> (fee, slippage, funding). Ini bukan hasil
         strategi, hanya apakah arah sinyal benar.
@@ -132,7 +132,7 @@ function Filters({
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
       <div className="space-y-1">
-        <label htmlFor="lg-source" className="text-xs font-medium">Sumber</label>
+        <label htmlFor="lg-source" className="text-2xs font-medium">Sumber</label>
         <select id="lg-source" value={value.source ?? ''} className={selectCls}
           onChange={(e) => set({ source: e.target.value as LedgerSource | '', signal_type: '' })}>
           <option value="" className="bg-popover">Semua sumber</option>
@@ -142,7 +142,7 @@ function Filters({
         </select>
       </div>
       <div className="space-y-1">
-        <label htmlFor="lg-type" className="text-xs font-medium">Jenis sinyal</label>
+        <label htmlFor="lg-type" className="text-2xs font-medium">Jenis sinyal</label>
         <select id="lg-type" value={value.signal_type ?? ''} className={selectCls} onChange={(e) => set({ signal_type: e.target.value })}>
           <option value="" className="bg-popover">Semua jenis</option>
           {types.map((t) => (
@@ -151,7 +151,7 @@ function Filters({
         </select>
       </div>
       <div className="space-y-1">
-        <label htmlFor="lg-symbol" className="text-xs font-medium">Koin</label>
+        <label htmlFor="lg-symbol" className="text-2xs font-medium">Koin</label>
         <select id="lg-symbol" value={value.symbol ?? ''} className={selectCls} onChange={(e) => set({ symbol: e.target.value })}>
           <option value="" className="bg-popover">Semua koin</option>
           {(meta?.symbols ?? []).map((s) => (
@@ -160,18 +160,18 @@ function Filters({
         </select>
       </div>
       <div className="space-y-1">
-        <label htmlFor="lg-since" className="text-xs font-medium">Dari</label>
-        <Input id="lg-since" type="date" value={value.since ?? ''} onChange={(e) => set({ since: e.target.value })} className="h-8 px-2 text-xs" />
+        <label htmlFor="lg-since" className="text-2xs font-medium">Dari</label>
+        <Input id="lg-since" type="date" value={value.since ?? ''} onChange={(e) => set({ since: e.target.value })} className="h-8 px-2 text-2xs" />
       </div>
       <div className="space-y-1">
-        <label htmlFor="lg-until" className="text-xs font-medium">Sampai</label>
-        <Input id="lg-until" type="date" value={value.until ?? ''} onChange={(e) => set({ until: e.target.value })} className="h-8 px-2 text-xs" />
+        <label htmlFor="lg-until" className="text-2xs font-medium">Sampai</label>
+        <Input id="lg-until" type="date" value={value.until ?? ''} onChange={(e) => set({ until: e.target.value })} className="h-8 px-2 text-2xs" />
       </div>
       <div className="flex items-end gap-2">
         <Chip active={value.split} onClick={() => set({ split: !value.split })} title="Pisahkan statistik sinyal long dan short">
           Pisah Long/Short
         </Chip>
-        <Button size="sm" variant="ghost" className="h-8 text-xs"
+        <Button size="sm" variant="ghost" className="h-8 text-2xs"
           onClick={() => onChange({ source: '', signal_type: '', symbol: '', since: '', until: '', split: false })}>
           Reset
         </Button>
@@ -192,7 +192,7 @@ function summaryColumns(h: LedgerHorizon): ResponsiveColumn<LedgerGroup>[] {
       cell: (g) => (
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="truncate text-xs font-semibold">{typeLabel(g.signal_type)}</span>
+            <span className="truncate text-2xs font-semibold">{typeLabel(g.signal_type)}</span>
             {g.direction !== null && <SideBadge side={g.direction === 1 ? 'long' : 'short'} />}
           </div>
           <div className="truncate text-2xs font-normal text-muted-foreground">
@@ -225,7 +225,7 @@ function summaryColumns(h: LedgerHorizon): ResponsiveColumn<LedgerGroup>[] {
       mobile: 'field',
       align: 'right',
       cell: (g) => (
-        <div className="num text-xs">
+        <div className="num text-2xs">
           <span className="font-semibold">{formatCount(at(g)?.n ?? 0)}</span>
           <span className="text-muted-foreground"> / {formatCount(g.n_signals)}</span>
           <div className="mt-0.5 hidden sm:block">
@@ -243,7 +243,7 @@ function summaryColumns(h: LedgerHorizon): ResponsiveColumn<LedgerGroup>[] {
       mobile: 'field',
       align: 'right',
       cell: (g) => (
-        <div className="num text-xs">
+        <div className="num text-2xs">
           <div className="font-semibold">{hitPct(at(g)?.hit_rate)}</div>
           <div className="hidden text-3xs text-muted-foreground sm:block">{isThin(at(g)) ? '' : hitCi(at(g)?.hit_ci)}</div>
         </div>
@@ -256,7 +256,7 @@ function summaryColumns(h: LedgerHorizon): ResponsiveColumn<LedgerGroup>[] {
       mobile: 'field',
       align: 'right',
       cell: (g) => (
-        <div className={cn('num text-xs', signClass(at(g)?.mean_pct))}>
+        <div className={cn('num text-2xs', signClass(at(g)?.mean_pct))}>
           <div className="font-semibold">{pct(at(g)?.mean_pct)}</div>
           <div className="hidden text-3xs text-muted-foreground sm:block">{isThin(at(g)) ? '' : retCi(at(g)?.mean_ci)}</div>
         </div>
@@ -268,7 +268,7 @@ function summaryColumns(h: LedgerHorizon): ResponsiveColumn<LedgerGroup>[] {
       mobile: 'hidden',
       align: 'right',
       cell: (g) => (
-        <div className={cn('num text-xs', signClass(at(g)?.mean_rel_btc_pct))}>
+        <div className={cn('num text-2xs', signClass(at(g)?.mean_rel_btc_pct))}>
           <div className="font-semibold">{pct(at(g)?.mean_rel_btc_pct)}</div>
           <div className="text-3xs text-muted-foreground">{isThin(at(g)) ? '' : retCi(at(g)?.rel_btc_ci)}</div>
         </div>
@@ -282,7 +282,7 @@ function summaryColumns(h: LedgerHorizon): ResponsiveColumn<LedgerGroup>[] {
       className: 'hidden 2xl:table-cell',
       headerClassName: 'hidden 2xl:table-cell',
       cell: (g) => (
-        <span className="num text-xs">
+        <span className="num text-2xs">
           <span className="text-bullish">{pct(at(g)?.mean_mfe_pct, 1)}</span>
           {' / '}
           <span className="text-bearish">{pct(at(g)?.mean_mae_pct, 1)}</span>
@@ -302,7 +302,7 @@ function OutcomeCell({ s, h }: { s: LedgerSignal; h: LedgerHorizon }) {
   if (o.dir_ret_pct === null) return <span className="text-3xs text-muted-foreground">tanpa data</span>
   return (
     <span
-      className={cn('num inline-flex items-center gap-0.5 text-xs', signClass(o.dir_ret_pct))}
+      className={cn('num inline-flex items-center gap-0.5 text-2xs', signClass(o.dir_ret_pct))}
       title={`Gerak koin ${pct(o.ret_pct)} · BTC ${pct(o.btc_ret_pct)} · terbaik ${pct(o.mfe_pct)} · terburuk ${pct(o.mae_pct)}`}
     >
       {o.hit ? <Check className="h-3 w-3" aria-label="arah benar" /> : <X className="h-3 w-3" aria-label="arah salah" />}
@@ -318,7 +318,7 @@ const SIGNAL_COLUMNS: ResponsiveColumn<LedgerSignal>[] = [
     mobile: 'title',
     cell: (s) => (
       <span className="inline-flex items-center gap-1.5">
-        <span className="font-mono text-xs font-semibold">{s.symbol.replace(/USDT$/, '')}</span>
+        <span className="font-mono text-2xs font-semibold">{s.symbol.replace(/USDT$/, '')}</span>
         <SideBadge side={s.direction === 1 ? 'long' : 'short'} />
       </span>
     ),
@@ -329,13 +329,13 @@ const SIGNAL_COLUMNS: ResponsiveColumn<LedgerSignal>[] = [
     mobile: 'hidden',
     cell: (s) => (
       <div>
-        <div className="text-xs font-medium">{typeLabel(s.signal_type)}</div>
+        <div className="text-2xs font-medium">{typeLabel(s.signal_type)}</div>
         <div className="text-2xs text-muted-foreground">{SOURCE_LABEL[s.source] ?? s.source}</div>
       </div>
     ),
   },
-  { key: 'time', header: 'Waktu', mobile: 'badge', cell: (s) => <span className="num whitespace-nowrap text-xs">{formatTime(s.ts)}</span> },
-  { key: 'entry', header: 'Harga', mobile: 'hidden', align: 'right', cell: (s) => <span className="num text-xs">{formatPrice(s.entry_price ?? s.price)}</span> },
+  { key: 'time', header: 'Waktu', mobile: 'badge', cell: (s) => <span className="num whitespace-nowrap text-2xs">{formatTime(s.ts)}</span> },
+  { key: 'entry', header: 'Harga', mobile: 'hidden', align: 'right', cell: (s) => <span className="num text-2xs">{formatPrice(s.entry_price ?? s.price)}</span> },
   ...HORIZONS.map(
     (h): ResponsiveColumn<LedgerSignal> => ({
       key: `h-${h}`,

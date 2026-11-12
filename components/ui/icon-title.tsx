@@ -45,8 +45,8 @@ export function IconTitle({
       <div className="flex min-w-0 items-center gap-3">
         <IconChip icon={icon} tone={tone} />
         <div className="min-w-0">
-          <Tag className="truncate text-lg font-bold leading-tight tracking-tight">{title}</Tag>
-          {subtitle && <p className="truncate text-sm text-muted-foreground">{subtitle}</p>}
+          <Tag className="break-words text-lg font-bold leading-tight tracking-tight">{title}</Tag>
+          {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
         </div>
       </div>
       {action && <div className="flex shrink-0 items-center gap-2">{action}</div>}

@@ -2,16 +2,8 @@
 
 import { CheckCircle2, Eye, HelpCircle, Loader2, ShieldCheck, ShieldX, XCircle } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
-import { formatNumber } from '@/lib/utils/format'
-import { checkLabel, checkReason, holdoutWarning, thresholdText, verdictCopy, verdictReasons } from '@/lib/lab/form'
+import { checkLabel, checkReason, checkUnit, checkValueText, holdoutWarning, thresholdText, verdictCopy, verdictReasons } from '@/lib/lab/form'
 import type { LabCheck, LabRunMode, LabStatus, LabVerdict } from '@/lib/api/types/lab'
-
-function fmtCheckValue(v: LabCheck['value']): string {
-  if (v === null || v === undefined) return '—'
-  if (typeof v === 'boolean') return v ? 'ya' : 'tidak'
-  if (typeof v === 'number') return v >= 999 ? '∞' : Number.isInteger(v) ? formatNumber(v, { digits: 0 }) : formatNumber(v)
-  return v
-}
 
 /**
  * Hero verdict card. Intentionally has no close/dismiss control.
@@ -134,13 +126,13 @@ export function ChecksList({ checks }: { checks: LabCheck[] }) {
               </td>
               <td className="px-3 py-2.5 align-top">
                 <div className="font-medium">{checkLabel(c)}</div>
-                <div className="text-xs text-muted-foreground">{checkReason(c)}</div>
+                <div className="text-2xs text-muted-foreground">{checkReason(c)}</div>
               </td>
               <td className={cn('px-3 py-2.5 text-right align-top font-mono tabular-nums', c.passed ? 'text-foreground' : 'font-semibold text-bearish')}>
-                {fmtCheckValue(c.value)}
+                {checkValueText(c)}
               </td>
-              <td className="hidden whitespace-nowrap px-3 py-2.5 text-right align-top font-mono text-xs text-muted-foreground sm:table-cell">
-                {thresholdText(c.threshold)}
+              <td className="hidden whitespace-nowrap px-3 py-2.5 text-right align-top font-mono text-2xs text-muted-foreground sm:table-cell">
+                {thresholdText(c.threshold, checkUnit(c.name))}
               </td>
             </tr>
           ))}

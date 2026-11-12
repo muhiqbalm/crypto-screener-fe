@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { signClass } from '@/components/lab/LabBadges'
-import { formatPrice, formatQty, formatScore, formatUsd, formatUsdSigned } from '@/lib/utils/format'
+import { formatNumber, formatPrice, formatQty, formatScore, formatUsd, formatUsdSigned } from '@/lib/utils/format'
 import { notify } from '@/lib/utils/toast'
 import { cn } from '@/lib/utils/cn'
 import {
@@ -95,7 +95,7 @@ export function PaperTradePanel(p: Props) {
   const review = () => {
     const errs = validatePaperOrder({ side: draft.side, price: p.lastPrice, sl: draft.sl, tp: draft.tp })
     if (!account) errs.account = 'Pilih akun paper'
-    if (qtyOverride !== null && (!Number.isFinite(qtyOverride) || qtyOverride <= 0)) errs.qty = 'Qty harus angka > 0'
+    if (qtyOverride !== null && (!Number.isFinite(qtyOverride) || qtyOverride <= 0)) errs.qty = 'Jumlah harus angka > 0'
     setErrors(errs)
     if (Object.keys(errs).length === 0) setConfirming(true)
   }
@@ -233,7 +233,7 @@ export function PaperTradePanel(p: Props) {
               {size ? (
                 <div className="space-y-0.5 font-mono">
                   <div className="flex justify-between"><span className="text-muted-foreground">Risiko</span><span>{formatUsd(size.riskAmount)}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Jumlah (perkiraan)</span><span>{formatScore(size.qty, 4)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Jumlah (perkiraan)</span><span>{formatNumber(size.qty, { maxDigits: 4 })}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Nilai posisi</span><span>{formatUsd(size.notional)}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Leverage efektif</span><span>{formatScore(size.leverage, 2)}x</span></div>
                   {size.capped && <p className="pt-1 font-sans text-warn">Ukuran dipotong oleh leverage maks akun.</p>}
@@ -241,11 +241,11 @@ export function PaperTradePanel(p: Props) {
               ) : (
                 <p className="text-muted-foreground">
                   {account.risk_pct === undefined || account.risk_pct === null
-                    ? 'Ukuran dihitung backend dari risk % akun.'
-                    : 'Isi SL untuk lihat ukuran posisi dari risk %.'}
+                    ? 'Ukuran dihitung server dari risiko % akun.'
+                    : 'Isi SL untuk lihat ukuran posisi dari risiko %.'}
                 </p>
               )}
-              <p className="pt-1 text-[13px] text-muted-foreground">Fill pakai harga market saat server menerima order; backend menghitung ulang ukuran.</p>
+              <p className="pt-1 text-[13px] text-muted-foreground">Order simulasi diisi di harga pasar saat dikirim.</p>
             </div>
 
             <details className="text-[13px]">
@@ -272,9 +272,9 @@ export function PaperTradePanel(p: Props) {
                   <AlertTriangle className="h-3.5 w-3.5" /> Konfirmasi — {PAPER_LABEL}
                 </p>
                 <p className="font-mono">
-                  {draft.side?.toUpperCase()} {p.symbol} @ market (~{formatPrice(p.lastPrice)}) · SL {draft.sl}
-                  {draft.tp ? ` · TP ${draft.tp}` : ''}
-                  {qtyOverride !== null ? ` · qty ${draft.qty}` : size ? ` · qty ~${formatScore(size.qty, 4)}` : ''}
+                  {draft.side?.toUpperCase()} {p.symbol} di harga pasar (~{formatPrice(p.lastPrice)}) · SL {formatPrice(Number(draft.sl))}
+                  {draft.tp ? ` · TP ${formatPrice(Number(draft.tp))}` : ''}
+                  {qtyOverride !== null ? ` · jumlah ${formatQty(qtyOverride)}` : size ? ` · jumlah ~${formatNumber(size.qty, { maxDigits: 4 })}` : ''}
                 </p>
                 <div className="flex gap-2">
                   <Button type="button" size="sm" className="flex-1" onClick={submit} disabled={order.isPending}>
