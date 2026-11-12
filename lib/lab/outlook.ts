@@ -5,6 +5,8 @@
  */
 import { formatTime } from '@/lib/utils/time'
 import { termLabel, termValue } from '@/lib/glossary'
+import { gradeOf, qualitySortValue } from '@/lib/lab/quality'
+import type { QualityGrade } from '@/lib/api/types/quality'
 import type {
   CallStatus,
   EvidenceCode,
@@ -25,14 +27,16 @@ export interface OutlookFilters {
   keyakinan: Set<Keyakinan>
   posisi: PosisiFilter
   baru: boolean
+  /** skor kualitas A–D (empty = all) */
+  kualitas?: Set<QualityGrade>
 }
-export type OutlookSortKey = 'peluang' | 'symbol' | 'keyakinan' | 'rr' | 'profit_tp' | 'loss_sl' | 'ev'
+export type OutlookSortKey = 'peluang' | 'symbol' | 'keyakinan' | 'rr' | 'profit_tp' | 'loss_sl' | 'ev' | 'kualitas'
 
 /** v1 filter names, kept for callers that still use them. */
 export type OutlookFilter = 'long' | 'short' | 'fresh' | 'pass'
 
 export const DEFAULT_INPUTS: OutlookInputs = { capital: 1000, leverage: 1, sizing: 'notional', risk_pct: 1 }
-export const EMPTY_FILTERS: OutlookFilters = { arah: new Set(), keyakinan: new Set(), posisi: null, baru: false }
+export const EMPTY_FILTERS: OutlookFilters = { arah: new Set(), keyakinan: new Set(), posisi: null, baru: false, kualitas: new Set() }
 
 export const KEYAKINAN_RANK: Record<Keyakinan, number> = { rendah: 1, sedang: 2, tinggi: 3 }
 
@@ -139,9 +143,14 @@ export function faseOf(r: OutlookRow): Fase | null {
 
 /** Filters are AND-ed across groups and OR-ed inside a group. */
 export function filterRows(rows: OutlookRow[], f: OutlookFilters): OutlookRow[] {
-  const any = f.arah.size || f.keyakinan.size || f.posisi || f.baru
+  const grades = f.kualitas ?? new Set<QualityGrade>()
+  const any = f.arah.size || f.keyakinan.size || f.posisi || f.baru || grades.size
   return rows.filter((r) => {
     if (r.unavailable) return !any
+    if (grades.size) {
+      const g = gradeOf(r)
+      if (!g || !grades.has(g)) return false
+    }
     if (f.arah.size && !f.arah.has(sideOf(r))) return false
     if (f.keyakinan.size && !(r.bias?.keyakinan && f.keyakinan.has(r.bias.keyakinan))) return false
     if (f.posisi === 'ada' && !(r.positions && r.positions.length)) return false
@@ -175,6 +184,8 @@ function sortValue(r: OutlookRow, key: OutlookSortKey): number | string | null {
       return p?.at_sl?.net ?? null
     case 'ev':
       return r.peluang?.score ?? null
+    case 'kualitas':
+      return qualitySortValue(r)
   }
 }
 

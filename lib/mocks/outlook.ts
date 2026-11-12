@@ -43,6 +43,7 @@ export async function getOutlookMock(method: string, fullPath: string): Promise<
   }
   if (p === '/outlook') return asViewer(d.list as Json)
   if (p === '/outlook/track-record') return d.track_record
+  if (p === '/outlook/rekam-skor') return d.rekam_skor
   if (p === '/outlook/calibration') return d.calibration
   if (p === '/regime') return d.regime
   if (p === '/strength') return d.strength

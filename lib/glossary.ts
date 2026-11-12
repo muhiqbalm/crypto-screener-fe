@@ -15,6 +15,7 @@ import { GLOSSARY_EXTRA_W2B } from './glossary-extra/w2b'
 import { GLOSSARY_EXTRA_W3A } from './glossary-extra/w3a'
 import { GLOSSARY_EXTRA_W3B } from './glossary-extra/w3b'
 import { GLOSSARY_EXTRA_BASKET } from './glossary-extra/basket'
+import { GLOSSARY_EXTRA_QUALITY } from './glossary-extra/quality'
 
 export type GlossaryGroup = 'pasar' | 'outlook' | 'lab' | 'rekam_jejak' | 'bot' | 'laporan' | 'status'
 
@@ -967,6 +968,7 @@ export type GlossaryKey =
   | keyof typeof GLOSSARY_EXTRA_W3A
   | keyof typeof GLOSSARY_EXTRA_W3B
   | keyof typeof GLOSSARY_EXTRA_BASKET
+  | keyof typeof GLOSSARY_EXTRA_QUALITY
 
 /** Base glossary + every package's extra terms. */
 export const GLOSSARY_ALL: Readonly<Record<GlossaryKey, GlossaryEntry>> = {
@@ -975,6 +977,7 @@ export const GLOSSARY_ALL: Readonly<Record<GlossaryKey, GlossaryEntry>> = {
   ...GLOSSARY_EXTRA_W3A,
   ...GLOSSARY_EXTRA_W3B,
   ...GLOSSARY_EXTRA_BASKET,
+  ...GLOSSARY_EXTRA_QUALITY,
   // Base last so an accidental duplicate can never change a base term.
   ...GLOSSARY,
 }
@@ -986,6 +989,7 @@ export const GLOSSARY_EXTRAS: Readonly<Record<string, GlossaryDict>> = {
   w3a: GLOSSARY_EXTRA_W3A,
   w3b: GLOSSARY_EXTRA_W3B,
   basket: GLOSSARY_EXTRA_BASKET,
+  quality: GLOSSARY_EXTRA_QUALITY,
 }
 
 /** Entry for a key, or undefined (never throws: unknown keys render as plain text). */

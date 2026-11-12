@@ -14,6 +14,11 @@ import { BentoGrid, BigStat, bigUsd, CoinAvatar, ConfidenceDots, CountUp, Direct
 import { IconChip, IconTitle } from '@/components/ui/icon-title'
 import { AnswerCard } from '@/components/ui/answer-card'
 import { Freshness } from '@/components/ui/freshness'
+import { Segmented } from '@/components/ui/segmented'
+import { GradeLetter } from '@/components/market/quality/GradeLetter'
+import { QualityPopover } from '@/components/market/quality/QualityPopover'
+import { RekamSkorPanel } from '@/components/market/quality/RekamSkorPanel'
+import { evidenceShort, GRADE_HINT, GRADES, gradeOf, isBestCall } from '@/lib/lab/quality'
 import { termLabel } from '@/lib/glossary'
 import { useSavedInputs } from '@/components/market/useSavedInputs'
 import { useOutlook, useRefreshOutlook } from '@/lib/queries/outlook'
@@ -30,6 +35,7 @@ import {
   PELUANG_TEXT,
   PELUANG_TONE,
   peluangRows,
+  sortRows,
   type Arah,
   type OutlookFilters,
 } from '@/lib/lab/outlook'
@@ -38,11 +44,16 @@ import { formatCount, formatPrice, formatRR, formatUsd, signClass } from '@/lib/
 import { notify } from '@/lib/utils/toast'
 import { cn } from '@/lib/utils/cn'
 import type { Keyakinan, OutlookRow } from '@/lib/api/types/outlook'
+import type { QualityGrade } from '@/lib/api/types/quality'
 
 export const DISCLAIMER =
   'Informasi, bukan saran investasi. Arah mengikuti strategi yang bisa salah; angka dolar adalah hitungan, bukan janji hasil.'
 
-/** "Peluang terbaik" card: coin, big direction, R:R and dollars as big numbers, levels, evidence bar. */
+/**
+ * "Peluang terbaik" card: coin, big direction, skor, R:R and dollars as big numbers, levels, evidence bar.
+ * The whole card is one link (stretched over the card) with the skor button on top of it, so the
+ * breakdown opens without leaving the page and no button sits inside a link.
+ */
 function PeluangCard({ r, hero = false }: { r: OutlookRow; hero?: boolean }) {
   const pl = r.plan
   const pj = r.projection
@@ -53,8 +64,10 @@ function PeluangCard({ r, hero = false }: { r: OutlookRow; hero?: boolean }) {
   const side = r.strategy.side
   const note = liveNote(r)
   const size = hero ? 'xl' : 'lg'
+  const ev = r.kualitas?.evidence
+  const short = evidenceShort(ev)
   return (
-    <Link href={koinHref(r.symbol)} className={cn('group block rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info', hero && 'md:col-span-2')}>
+    <div className={cn('group rounded-3xl has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-info', hero && 'md:col-span-2')}>
       <HeroCard interactive glow={side === 'long' ? 'bullish' : side === 'short' ? 'bearish' : 'brand'} className="h-full">
         <div className="flex flex-wrap items-center gap-3">
           <CoinAvatar symbol={r.symbol} size={hero ? 'lg' : 'md'} />
@@ -70,6 +83,12 @@ function PeluangCard({ r, hero = false }: { r: OutlookRow; hero?: boolean }) {
           </div>
           <span className="ml-auto"><DirectionChip direction={r.bias.bias} size="lg" /></span>
         </div>
+        {r.kualitas && (
+          <div className="relative z-10 mt-4 -ml-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <QualityPopover q={r.kualitas} size={hero ? 'lg' : 'md'} symbol={coinLabel(r.symbol)} />
+            {hero && r.kualitas.base_reason && <span className="min-w-0 max-w-md text-2xs text-muted-foreground">{r.kualitas.why_none ?? r.kualitas.base_reason}</span>}
+          </div>
+        )}
 
         <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
           <BigStat label={termLabel('rr')} size={size} className="col-span-2 sm:col-span-1"
@@ -91,19 +110,23 @@ function PeluangCard({ r, hero = false }: { r: OutlookRow; hero?: boolean }) {
         {cal && cal.n_cases > 0 && (
           <div className="mt-5">
             <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 text-2xs text-muted-foreground">
-              <span>Kasus serupa · {formatCount(cal.n_pos)} posisi</span>
-              <span className={cn('num text-sm font-semibold', signClass(cal.mean_r))}>rata-rata {formatR(cal.mean_r)}</span>
+              <span>{short ? short.split(' · ')[0] : `Kasus serupa · ${formatCount(cal.n_pos)} posisi`}</span>
+              <span className={cn('num text-sm font-semibold', signClass(cal.mean_r))}>
+                rata-rata {formatR(cal.mean_r)}
+                {ev?.half_r !== null && ev?.half_r !== undefined && <span className="font-normal text-muted-foreground"> ±{Math.abs(ev.half_r).toFixed(2)}R</span>}
+              </span>
             </div>
             <EvidenceBar pTp={cal.p_tp} pSl={cal.p_sl} pBatal={cal.p_batal} showLegend={hero} />
           </div>
         )}
         {note && <p className="mt-3 text-2xs text-warn">{note}</p>}
         {hero && <AiFactorLine symbol={r.symbol} />}
-        <span className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-info">
-          Lihat rencana <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
-        </span>
+        <Link href={koinHref(r.symbol)}
+          className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-info after:absolute after:inset-0 after:rounded-3xl after:content-[''] focus-visible:outline-none">
+          Lihat rencana {coinLabel(r.symbol)} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
+        </Link>
       </HeroCard>
-    </Link>
+    </div>
   )
 }
 
@@ -145,6 +168,21 @@ function ArahCard({ rows, positive }: { rows: OutlookRow[]; positive: number }) 
           <dt className="text-sm text-muted-foreground">Bukti positif</dt>
           <dd className={cn('display tabular-nums text-2xl font-bold', positive > 0 && 'text-bullish')}>{formatCount(positive)}</dd>
         </div>
+        {ok.some((r) => r.kualitas !== undefined) && (
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+            <dt className="text-sm text-muted-foreground">Skor</dt>
+            <dd className="flex items-center gap-2.5">
+              {GRADES.map((g) => (
+                <span key={g} className="inline-flex items-center gap-1" title={GRADE_HINT[g]}>
+                  <GradeLetter grade={g} size="xs" decorative />
+                  <span className="num text-base font-bold" aria-label={`skor ${g}: ${ok.filter((r) => gradeOf(r) === g).length} koin`}>
+                    {ok.filter((r) => gradeOf(r) === g).length}
+                  </span>
+                </span>
+              ))}
+            </dd>
+          </div>
+        )}
         <div className="flex items-center justify-between px-4 py-3">
           <dt className="text-sm text-muted-foreground">Posisi baru di close 4H terakhir</dt>
           <dd className="display tabular-nums text-2xl font-bold">{formatCount(baru)}</dd>
@@ -154,19 +192,21 @@ function ArahCard({ rows, positive }: { rows: OutlookRow[]; positive: number }) 
   )
 }
 
-/** Compact row for calls without positive evidence. */
+/** Compact row for calls without positive evidence. The coin name is the (stretched) link. */
 function CallRow({ r }: { r: OutlookRow }) {
   const cal = r.bias.calib?.stats
   const fase = faseOf(r)
   const p = r.peluang
   return (
-    <li>
-      <Link href={koinHref(r.symbol)} className="group flex min-h-16 flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3 transition-colors hover:bg-muted/40 sm:px-6">
+    <li className="group relative flex min-h-16 flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3 transition-colors hover:bg-muted/40 has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-inset has-[a:focus-visible]:ring-info sm:px-6">
         <span className="flex w-32 shrink-0 items-center gap-3">
           <CoinAvatar symbol={r.symbol} />
-          <span className="display text-base font-bold">{coinLabel(r.symbol)}</span>
+          <Link href={koinHref(r.symbol)} className="display text-base font-bold after:absolute after:inset-0 after:content-[''] focus-visible:outline-none">
+            {coinLabel(r.symbol)}
+          </Link>
         </span>
         <DirectionChip direction={r.bias.bias} />
+        {r.kualitas !== undefined && <QualityPopover q={r.kualitas} size="sm" className="relative z-10" symbol={coinLabel(r.symbol)} />}
         <span className="flex items-center gap-2">
           <ConfidenceDots level={r.bias.keyakinan} />
           {fase && <span className="hidden text-2xs text-muted-foreground sm:inline">· {FASE_TEXT[fase].toLowerCase()}</span>}
@@ -174,15 +214,16 @@ function CallRow({ r }: { r: OutlookRow }) {
         <span className="ml-auto flex items-center gap-4 text-sm">
           {r.plan?.rr ? <span className="num hidden text-muted-foreground sm:inline" title={termLabel('rr')}>{termLabel('rr', { short: true })} <span className="font-semibold text-foreground">{formatRR(r.plan.rr)}</span></span> : null}
           {cal && cal.n_cases > 0 && <span className={cn('num font-semibold', signClass(cal.mean_r))}>{formatR(cal.mean_r)}</span>}
-          {p && <Pill tone={PELUANG_TONE[p.label]} title={p.reason}>{PELUANG_TEXT[p.label]}</Pill>}
+          {p && r.kualitas === undefined && <Pill tone={PELUANG_TONE[p.label]} title={p.reason}>{PELUANG_TEXT[p.label]}</Pill>}
           <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
         </span>
-      </Link>
     </li>
   )
 }
 
 const ARAH: [Arah, string][] = [['long', 'Long'], ['short', 'Short']]
+type Urut = 'peluang' | 'kualitas'
+const URUT: { value: Urut; label: string }[] = [{ value: 'peluang', label: 'Peluang' }, { value: 'kualitas', label: 'Skor' }]
 const KEYAKINAN: [Keyakinan, string][] = [['tinggi', 'Tinggi'], ['sedang', 'Sedang'], ['rendah', 'Rendah']]
 const CHIP = 'h-9 px-4 text-sm'
 
@@ -198,10 +239,15 @@ export function OutlookView() {
   const q = useOutlook(inputs)
   const refresh = useRefreshOutlook()
   const [filters, setFilters] = useState<OutlookFilters>(EMPTY_FILTERS)
+  const [urut, setUrut] = useState<Urut>('peluang')
   const all = useMemo(() => q.data?.rows ?? [], [q.data])
-  const calls = useMemo(() => peluangRows(filterRows(all, filters)), [all, filters])
-  const best = calls.filter((r) => r.peluang?.label === 'positif')
-  const rest = calls.filter((r) => r.peluang?.label !== 'positif')
+  const calls = useMemo(() => {
+    const ranked = peluangRows(filterRows(all, filters))
+    return urut === 'kualitas' ? sortRows(ranked, 'kualitas', true) : ranked
+  }, [all, filters, urut])
+  const best = calls.filter(isBestCall)
+  const rest = calls.filter((r) => !isBestCall(r))
+  const hasGrades = all.some((r) => r.kualitas !== undefined)
   const netral = useMemo(() => all.filter((r) => !r.unavailable && !r.strategy?.side), [all])
   const unavailable = all.filter((r) => r.unavailable)
   const busy = q.data?.refresh?.status === 'queued' || q.data?.refresh?.status === 'running'
@@ -231,8 +277,8 @@ export function OutlookView() {
     )
   }
 
-  const topNames = best.slice(0, 3).map((r) => `${coinLabel(r.symbol)} ${r.bias.bias}`).join(', ')
-  const filtered = filters.arah.size || filters.keyakinan.size || filters.baru || filters.posisi
+  const topNames = best.slice(0, 3).map((r) => `${coinLabel(r.symbol)} ${r.bias.bias}${gradeOf(r) ? ` (${gradeOf(r)})` : ''}`).join(', ')
+  const filtered = filters.arah.size || filters.keyakinan.size || filters.baru || filters.posisi || filters.kualitas?.size
   return (
     <div className="space-y-8">
       <AnswerCard
@@ -253,6 +299,19 @@ export function OutlookView() {
         {KEYAKINAN.map(([v, label]) => (
           <Chip key={v} active={filters.keyakinan.has(v)} onClick={() => setFilters((f) => ({ ...f, keyakinan: toggle(f.keyakinan, v) }))} className={CHIP}>{label}</Chip>
         ))}
+        {hasGrades && (
+          <>
+            <span className="mx-1 h-5 w-px bg-border" aria-hidden="true" />
+            <span className="text-2xs font-semibold uppercase tracking-wide text-muted-foreground">Skor</span>
+            {GRADES.map((g) => (
+              <Chip key={g} active={filters.kualitas?.has(g)} title={`Skor ${g}: ${GRADE_HINT[g]}`}
+                onClick={() => setFilters((f) => ({ ...f, kualitas: toggle(f.kualitas ?? new Set<QualityGrade>(), g) }))}
+                className={cn(CHIP, 'min-w-9 px-3 font-bold')}>
+                {g}
+              </Chip>
+            ))}
+          </>
+        )}
         <span className="mx-1 h-5 w-px bg-border" aria-hidden="true" />
         <Chip active={filters.baru} onClick={() => setFilters((f) => ({ ...f, baru: !f.baru }))} className={CHIP}>Posisi baru</Chip>
         {q.data?.positions_available && (
@@ -260,8 +319,14 @@ export function OutlookView() {
             Sudah ada posisi
           </Chip>
         )}
+        {hasGrades && (
+          <span className="ml-auto inline-flex items-center gap-2">
+            <span className="text-2xs font-semibold uppercase tracking-wide text-muted-foreground">Urut</span>
+            <Segmented aria-label="Urutkan peluang" options={URUT} value={urut} onChange={setUrut} />
+          </span>
+        )}
         {admin && (
-          <Button variant="outline" onClick={onRefresh} disabled={busy || refresh.isPending} className="ml-auto h-9 gap-2 rounded-full px-4 text-sm">
+          <Button variant="outline" onClick={onRefresh} disabled={busy || refresh.isPending} className={cn('h-9 gap-2 rounded-full px-4 text-sm', !hasGrades && 'ml-auto')}>
             <RefreshCw className={cn('h-4 w-4', busy && 'animate-spin')} />
             {busy ? `Menghitung… ${q.data?.refresh?.progress?.done ?? 0}/${q.data?.refresh?.progress?.total || '—'}` : 'Hitung ulang'}
           </Button>
@@ -273,7 +338,9 @@ export function OutlookView() {
           <h2 id="peluang-terbaik" className="display flex items-center gap-3 text-2xl font-bold">
             <IconChip icon={Target} /> Peluang terbaik
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">Kasus serupa di masa lalu terbukti untung.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {hasGrades ? 'Skor A atau B: kasus serupa di masa lalu terbukti untung.' : 'Kasus serupa di masa lalu terbukti untung.'}
+          </p>
         </div>
         <BentoGrid>
           {best.length === 0 ? (
@@ -292,13 +359,15 @@ export function OutlookView() {
 
       <Panel className="overflow-hidden p-0 sm:p-0" aria-label="Arah lain">
         <IconTitle icon={Shuffle} title={<>Arah lain <span className="font-normal text-muted-foreground">({rest.length})</span></>}
-          subtitle="Ada posisi, tapi bukti historisnya belum positif." className="px-5 pb-4 pt-5 sm:px-6 sm:pt-6" />
+          subtitle={hasGrades ? 'Ada posisi, tapi skornya C/D atau tidak dinilai: bukti belum positif.' : 'Ada posisi, tapi bukti historisnya belum positif.'} className="px-5 pb-4 pt-5 sm:px-6 sm:pt-6" />
         {rest.length === 0 ? (
           <p className="px-5 pb-5 text-sm text-muted-foreground sm:px-6">Tidak ada.</p>
         ) : (
           <ul className="divide-y divide-border/60 border-t">{rest.map((r) => <CallRow key={r.symbol} r={r} />)}</ul>
         )}
       </Panel>
+
+      {hasGrades && <RekamSkorPanel />}
 
       <Fold title={`${netral.length} koin NETRAL (tanpa posisi)`}>
         {netral.length === 0 ? (

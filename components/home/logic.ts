@@ -5,6 +5,8 @@
  * explicit "tidak tersedia".
  */
 import type { OutlookResponse, OutlookRow, Keyakinan } from '@/lib/api/types/outlook'
+import type { QualityGrade } from '@/lib/api/types/quality'
+import { gradeOf } from '@/lib/lab/quality'
 import type { ArenaReport } from '@/lib/api/types/arena'
 import type { LiveCheckReport } from '@/lib/api/types/livecheck'
 import type { LabNotification, ReportWeek, WeeklyReport } from '@/lib/api/types/report'
@@ -66,6 +68,8 @@ export interface WatchCoin {
   /** v2 "peluang" label in words, e.g. "Terbukti positif". */
   peluang: string | null
   peluangPositive: boolean
+  /** Skor kualitas A–D (null: no letter; undefined: older backend without the grade). */
+  grade?: QualityGrade | null
   /** Net dollars at the target / stop for the projection's capital (fees in, funding out). */
   tpUsd: number | null
   slUsd: number | null
@@ -125,6 +129,7 @@ function toWatchCoin(r: RowV2, now?: number): WatchCoin | null {
     reason: r.explanation?.summary?.trim() || null,
     peluang: label ? (PELUANG_LABEL[label] ?? null) : null,
     peluangPositive: label === 'positif',
+    grade: r.kualitas === undefined ? undefined : gradeOf(r),
     tpUsd: num(r.projection?.at_tp?.net),
     slUsd: num(r.projection?.at_sl?.net),
     capital: num(r.projection?.capital),
@@ -139,7 +144,8 @@ function toWatchCoin(r: RowV2, now?: number): WatchCoin | null {
  */
 export function bestCoin(w: WatchList | null): { coin: WatchCoin; basis: 'positif' | 'teratas' } | null {
   if (!w) return null
-  const positive = w.coins.find((c) => c.peluangPositive)
+  // With skor kualitas (letters present) "terbaik" = skor A or B, the same rule as Peluang koin.
+  const positive = w.coins.find((c) => (c.grade !== undefined ? c.grade === 'A' || c.grade === 'B' : c.peluangPositive))
   if (positive) return { coin: positive, basis: 'positif' }
   if (!w.ranked && w.coins[0]) return { coin: w.coins[0], basis: 'teratas' }
   return null

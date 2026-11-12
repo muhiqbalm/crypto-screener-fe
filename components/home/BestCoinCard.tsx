@@ -14,6 +14,8 @@ import { ErrorState } from '@/components/shell/states'
 import { cn } from '@/lib/utils/cn'
 import { formatPrice, formatRR, formatScore, formatUsd, formatUsdSigned } from '@/lib/utils/format'
 import { termLabel } from '@/lib/glossary'
+import { GradeLetter } from '@/components/market/quality/GradeLetter'
+import { GRADE_LABEL } from '@/lib/lab/quality'
 import type { ScreenerCoin, WatchCoin } from '@/components/home/logic'
 
 function AllLink() {
@@ -111,7 +113,11 @@ export function BestCoinCard({
               </div>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                 {c.keyakinan && <ConfidenceDots level={c.keyakinan} />}
-                {c.peluang && <span className={cn('font-semibold', c.peluangPositive && 'text-bullish')}>{c.peluang}</span>}
+                {c.grade ? (
+                  <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
+                    <GradeLetter grade={c.grade} size="xs" decorative />Skor {c.grade} · {GRADE_LABEL[c.grade].toLowerCase()}
+                  </span>
+                ) : c.peluang && <span className={cn('font-semibold', c.peluangPositive && 'text-bullish')}>{c.peluang}</span>}
               </div>
             </div>
           </Link>

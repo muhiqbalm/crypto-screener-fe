@@ -207,6 +207,10 @@ describe('v2 helpers', () => {
     expect(bestCoin(pick(v2('belum_jelas')))).toBeNull()
     expect(bestCoin(pick(v1([row('BBB', 'SHORT')])))).toMatchObject({ basis: 'teratas', coin: { coin: 'BBB' } })
     expect(bestCoin(null)).toBeNull()
+    // with skor kualitas, "terbaik" follows the letter (A/B), like Peluang koin
+    const graded = pick(v2('positif'))!
+    expect(bestCoin({ ...graded, coins: graded.coins.map((c) => ({ ...c, grade: 'C' as const })) })).toBeNull()
+    expect(bestCoin({ ...graded, coins: graded.coins.map((c) => ({ ...c, peluangPositive: false, grade: 'B' as const })) })?.basis).toBe('positif')
   })
 
   it('liveDonut judges like botVerdict: expected rows, not waiting / without log', async () => {

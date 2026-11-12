@@ -32,6 +32,10 @@ import { BigStat, bigUsd, CoinAvatar, ConfidenceDots, CountUp, DirectionChip, Ev
 import { CapitalInputs } from '@/components/market/coin/CapitalInputs'
 import { LevelChart } from '@/components/market/coin/LevelChart'
 import { useSavedInputs } from '@/components/market/useSavedInputs'
+import { GradeLetter } from '@/components/market/quality/GradeLetter'
+import { QualityBreakdown } from '@/components/market/quality/QualityBreakdown'
+import { QualityPopover } from '@/components/market/quality/QualityPopover'
+import { GRADE_LABEL, isGrade } from '@/lib/lab/quality'
 import { useOutlookDetail } from '@/lib/queries/outlook'
 import { useScreenerSummary } from '@/lib/queries/screener'
 import { findAsset } from '@/lib/screener/factors'
@@ -58,6 +62,7 @@ import { safeExternalUrl } from '@/lib/utils/safe-url'
 import { cn } from '@/lib/utils/cn'
 import { termLabel } from '@/lib/glossary'
 import type { CalibStats, OutlookDetail, OutlookFactor, OutlookInputs, StrategyClass } from '@/lib/api/types/outlook'
+import type { OutlookKualitas } from '@/lib/api/types/quality'
 
 const GROUP_SHORT = { utama: 'Strategi (penentu arah)', mtf: 'Konteks 1D · 1H · BTC', konteks: 'Konteks lain & skor screener' } as const
 
@@ -83,6 +88,7 @@ function Header({ symbol, d, price, change }: { symbol: string; d?: OutlookDetai
             <DirectionChip direction={d.bias.bias} size="lg" />
             <ConfidenceDots level={d.bias.keyakinan} className="ml-1" />
             {fase && <Pill tone={fase === 'baru' ? 'info' : 'muted'} title={FASE_HINT[fase]}>{FASE_TEXT[fase]}</Pill>}
+            {d.kualitas && <QualityPopover q={d.kualitas} size="sm" symbol={coinLabel(symbol)} align="end" />}
             {d.positions && d.positions.length > 0 && (
               <Pill tone="lab" title={d.positions.map((p) => `${p.source} ${p.side} @ ${formatPrice(p.entry_price)}`).join(', ')}>Sudah ada posisi</Pill>
             )}
@@ -101,7 +107,7 @@ function Header({ symbol, d, price, change }: { symbol: string; d?: OutlookDetai
             'Isi modalmu di samping chart untuk melihat untung/rugi dalam dolar.',
             'Cek "Batal kalau" sebelum masuk; posisi baru lebih kuat daripada menyusul.',
           ],
-          istilah: ['keyakinan', 'fase', 'sl', 'tp', 'target_realistis', 'rr', 'kasus_serupa', 'zona_entry'],
+          istilah: ['skor_kualitas', 'keyakinan', 'fase', 'sl', 'tp', 'target_realistis', 'rr', 'kasus_serupa', 'zona_entry', 'rentang_95'],
         }}
       >
         {d && <Freshness dataLabel="Data close 4H" dataAt={d.last_bar_close} updatedAt={d.computed_at} timeframe="4h" nextDelayMin={4} stale={d.stale} />}
@@ -110,20 +116,46 @@ function Header({ symbol, d, price, change }: { symbol: string; d?: OutlookDetai
   )
 }
 
-/** Big decision card: one sentence, three numbers, the evidence bar. */
+/** Skor kualitas inside the decision card: letter, one reason, the parts behind "Rincian skor". */
+function QualityRow({ q }: { q: OutlookKualitas }) {
+  const g = isGrade(q.grade) ? q.grade : null
+  return (
+    <div className="mt-6 rounded-2xl border bg-muted/20 p-4 sm:p-5" data-testid="skor-kualitas">
+      <div className="flex items-start gap-4">
+        <GradeLetter grade={g} size="xl" decorative />
+        <div className="min-w-0">
+          <div className="eyebrow"><Term k="skor_kualitas" /></div>
+          <div className="display mt-0.5 text-2xl font-bold tracking-tight">{g ? `${g} · ${GRADE_LABEL[g]}` : 'Tidak dinilai'}</div>
+          <p className="mt-1 text-sm text-muted-foreground">{q.why_none ?? q.base_reason}</p>
+        </div>
+      </div>
+      <details className="group mt-3">
+        <summary className="inline-flex min-h-10 cursor-pointer list-none items-center gap-1.5 rounded-full text-sm font-semibold text-info [&::-webkit-details-marker]:hidden">
+          Rincian skor
+          <span aria-hidden="true" className="transition-transform group-open:rotate-90 motion-reduce:transition-none">›</span>
+        </summary>
+        <QualityBreakdown q={q} showHeader={false} className="mt-3 max-w-3xl" />
+      </details>
+    </div>
+  )
+}
+
+/** Big decision card: one sentence, three numbers, the evidence bar, the skor. */
 function Decision({ d }: { d: OutlookDetail }) {
   const side = d.strategy.side
   const paras = d.explanation.paragraphs ?? []
   const answer = side && d.plan?.saran ? d.plan.saran : (paras[0] ?? d.explanation.summary).replace(/^Keputusan: /, '')
   const cal = d.bias.calib?.stats
   const k = kDariN(d)
+  // the replay's verdict per factor is data, not a fixed sentence: name the ones it marks 'teruji'
+  const provenMtf = d.factors.filter((f) => f.group === 'mtf' && f.available && f.evidence === 'teruji_replay').map((f) => f.label)
   const p = d.peluang
   const note = liveNote(d)
   return (
     <HeroCard glow={side === 'long' ? 'bullish' : side === 'short' ? 'bearish' : 'brand'}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="eyebrow">Keputusan</span>
-        {p && <Pill tone={PELUANG_TONE[p.label]} title={p.reason}>{PELUANG_TEXT[p.label]}</Pill>}
+        {p && d.kualitas === undefined && <Pill tone={PELUANG_TONE[p.label]} title={p.reason}>{PELUANG_TEXT[p.label]}</Pill>}
       </div>
       <p className="mt-3 max-w-4xl display text-xl font-semibold leading-snug tracking-tight sm:text-2xl">{answer}</p>
       {side && (
@@ -137,9 +169,10 @@ function Decision({ d }: { d: OutlookDetail }) {
               sub={cal && cal.n_cases > 0 ? `rata-rata · ${formatCount(cal.n_pos)} posisi` : 'belum dikalibrasi'} />
             <BigStat label={<Term k="konteks_searah" />} size="xl"
               value={k ? <>{k.k}<span className="text-2xl font-semibold text-muted-foreground"> / {k.n}</span></> : '—'}
-              sub="belum terbukti menambah keunggulan" />
+              sub={provenMtf.length ? `${provenMtf.join(', ')} teruji di simulasi; lainnya belum` : 'belum terbukti menambah keunggulan'} />
           </div>
           {cal && cal.n_cases > 0 && <EvidenceBar className="mt-6" pTp={cal.p_tp} pSl={cal.p_sl} pBatal={cal.p_batal} showLegend />}
+          {d.kualitas && <QualityRow q={d.kualitas} />}
         </>
       )}
       <p className="mt-5 text-2xs text-muted-foreground">{driverText(d)}</p>
@@ -394,6 +427,7 @@ function TrackSection({ d }: { d: OutlookDetail }) {
           <ul className="divide-y divide-border/60 text-sm">
             {d.calls.slice(0, 15).map((c) => (
               <li key={c.id} className="flex flex-wrap items-center gap-2 py-2.5">
+                {c.kualitas !== undefined && <GradeLetter grade={c.kualitas} size="xs" />}
                 <StatusBadge status={c.status} />
                 <span className={cn('font-semibold', c.side === 'long' ? 'text-bullish' : 'text-bearish')}>{c.side?.toUpperCase()}</span>
                 <span className="text-muted-foreground">{formatWib(c.bar_close)} · masuk {formatPrice(c.price)} · SL {formatPrice(c.sl)}</span>
