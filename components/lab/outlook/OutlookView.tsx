@@ -2,14 +2,15 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, ChevronRight, Compass, RefreshCw, Target } from 'lucide-react'
+import { ArrowRight, ChevronRight, Compass, RefreshCw, Shuffle, Target } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState, ErrorState } from '@/components/shell/states'
 import { Chip } from '@/components/lab/Section'
 import { OutlookTrackRecord } from '@/components/lab/outlook/OutlookTrackRecord'
 import { Fold } from '@/components/market/shared'
-import { BigStat, bigUsd, CoinAvatar, ConfidenceDots, CountUp, DirectionChip, EvidenceBar, HeroCard, Panel, Pill } from '@/components/market/ui'
+import { BentoGrid, BigStat, bigUsd, CoinAvatar, ConfidenceDots, CountUp, DirectionChip, EvidenceBar, HeroCard, Panel, Pill, TitledPanel } from '@/components/market/ui'
+import { IconChip, IconTitle } from '@/components/ui/icon-title'
 import { AnswerCard } from '@/components/ui/answer-card'
 import { Freshness } from '@/components/ui/freshness'
 import { useSavedInputs } from '@/components/market/useSavedInputs'
@@ -51,13 +52,13 @@ function PeluangCard({ r, hero = false }: { r: OutlookRow; hero?: boolean }) {
   const note = liveNote(r)
   const size = hero ? 'xl' : 'lg'
   return (
-    <Link href={koinHref(r.symbol)} className={cn('group block rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info', hero && 'lg:col-span-2')}>
-      <HeroCard interactive glow={side === 'long' ? 'long' : side === 'short' ? 'short' : 'info'} className="h-full">
+    <Link href={koinHref(r.symbol)} className={cn('group block rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info', hero && 'md:col-span-2')}>
+      <HeroCard interactive glow={side === 'long' ? 'bullish' : side === 'short' ? 'bearish' : 'brand'} className="h-full">
         <div className="flex flex-wrap items-center gap-3">
-          <CoinAvatar coin={coinLabel(r.symbol)} size={hero ? 'lg' : 'md'} />
+          <CoinAvatar symbol={r.symbol} size={hero ? 'lg' : 'md'} />
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className={cn('font-display font-bold tracking-tight', hero ? 'text-3xl' : 'text-2xl')}>{coinLabel(r.symbol)}</span>
+              <span className={cn('display font-bold tracking-tight', hero ? 'text-3xl' : 'text-2xl')}>{coinLabel(r.symbol)}</span>
               {r.peluang?.rank && <span className="num text-sm font-semibold text-muted-foreground">#{r.peluang.rank}</span>}
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -79,22 +80,22 @@ function PeluangCard({ r, hero = false }: { r: OutlookRow; hero?: boolean }) {
             sub={pj?.available ? 'simulasi, termasuk biaya' : undefined} />
         </div>
 
-        <dl className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <LevelTile label="Entry" value={zone ? `${formatPrice(zone[0])}–${formatPrice(zone[1])}` : formatPrice(r.price)} dot="bg-info" />
+        <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <LevelTile className="col-span-2 sm:col-span-1" label="Entry" value={zone ? `${formatPrice(zone[0])}–${formatPrice(zone[1])}` : formatPrice(r.price)} dot="bg-info" />
           <LevelTile label="Stop loss" value={formatPrice(r.strategy.sl)} dot="bg-bearish" />
           <LevelTile label="Take profit" value={tp !== null && tp !== undefined ? formatPrice(tp) : 'tidak ada'} dot="bg-bullish" />
         </dl>
 
         {cal && cal.n_cases > 0 && (
           <div className="mt-5">
-            <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 text-[13px] text-muted-foreground">
+            <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 text-2xs text-muted-foreground">
               <span>Kasus serupa · {formatCount(cal.n_pos)} posisi</span>
               <span className={cn('num text-sm font-semibold', signClass(cal.mean_r))}>rata-rata {formatR(cal.mean_r)}</span>
             </div>
             <EvidenceBar pTp={cal.p_tp} pSl={cal.p_sl} pBatal={cal.p_batal} showLegend={hero} />
           </div>
         )}
-        {note && <p className="mt-3 text-[13px] text-warn">{note}</p>}
+        {note && <p className="mt-3 text-2xs text-warn">{note}</p>}
         <span className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-info">
           Lihat rencana <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
         </span>
@@ -103,10 +104,10 @@ function PeluangCard({ r, hero = false }: { r: OutlookRow; hero?: boolean }) {
   )
 }
 
-function LevelTile({ label, value, dot }: { label: string; value: React.ReactNode; dot: string }) {
+function LevelTile({ label, value, dot, className }: { label: string; value: React.ReactNode; dot: string; className?: string }) {
   return (
-    <div className="min-w-0 rounded-2xl border bg-muted/30 px-4 py-3">
-      <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+    <div className={cn('min-w-0 rounded-2xl border bg-muted/30 px-4 py-3', className)}>
+      <dt className="eyebrow flex items-center gap-2">
         <span className={cn('h-2 w-2 rounded-full', dot)} aria-hidden="true" />{label}
       </dt>
       <dd className="num mt-1 break-words text-base font-semibold">{value}</dd>
@@ -123,7 +124,7 @@ function ArahCard({ rows, positive }: { rows: OutlookRow[]; positive: number }) 
   const baru = ok.filter((r) => r.strategy?.fresh).length
   const pct = (n: number) => `${ok.length ? (n / ok.length) * 100 : 0}%`
   return (
-    <Panel title="Arah strategi" icon={<Compass aria-hidden="true" />} className="h-full">
+    <TitledPanel title="Arah strategi" icon={Compass} className="h-full">
       <BigStat label="Punya arah" size="xl" value={<>{formatCount(short + long)}<span className="text-xl font-semibold text-muted-foreground"> / {formatCount(ok.length)} koin</span></>} />
       <div className="mt-5 flex h-10 w-full overflow-hidden rounded-xl text-sm font-bold" role="img"
         aria-label={`SHORT ${short}, NETRAL ${netral}, LONG ${long}`}>
@@ -131,7 +132,7 @@ function ArahCard({ rows, positive }: { rows: OutlookRow[]; positive: number }) 
         {netral > 0 && <span className="flex items-center justify-center bg-muted text-muted-foreground" style={{ width: pct(netral) }}>{netral}</span>}
         {long > 0 && <span className="flex items-center justify-center bg-bullish text-background" style={{ width: pct(long) }}>{long}</span>}
       </div>
-      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-muted-foreground">
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-2xs text-muted-foreground">
         <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-bearish" />SHORT {short}</span>
         <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-muted-foreground/40" />NETRAL {netral}</span>
         <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-bullish" />LONG {long}</span>
@@ -139,14 +140,14 @@ function ArahCard({ rows, positive }: { rows: OutlookRow[]; positive: number }) 
       <dl className="mt-5 divide-y divide-border/60 rounded-2xl border bg-muted/30">
         <div className="flex items-center justify-between px-4 py-3">
           <dt className="text-sm text-muted-foreground">Bukti positif</dt>
-          <dd className={cn('num font-display text-2xl font-bold', positive > 0 && 'text-bullish')}>{formatCount(positive)}</dd>
+          <dd className={cn('display tabular-nums text-2xl font-bold', positive > 0 && 'text-bullish')}>{formatCount(positive)}</dd>
         </div>
         <div className="flex items-center justify-between px-4 py-3">
           <dt className="text-sm text-muted-foreground">Posisi baru di close 4H terakhir</dt>
-          <dd className="num font-display text-2xl font-bold">{formatCount(baru)}</dd>
+          <dd className="display tabular-nums text-2xl font-bold">{formatCount(baru)}</dd>
         </div>
       </dl>
-    </Panel>
+    </TitledPanel>
   )
 }
 
@@ -159,13 +160,13 @@ function CallRow({ r }: { r: OutlookRow }) {
     <li>
       <Link href={koinHref(r.symbol)} className="group flex min-h-16 flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3 transition-colors hover:bg-muted/40 sm:px-6">
         <span className="flex w-32 shrink-0 items-center gap-3">
-          <CoinAvatar coin={coinLabel(r.symbol)} />
-          <span className="font-display text-base font-bold">{coinLabel(r.symbol)}</span>
+          <CoinAvatar symbol={r.symbol} />
+          <span className="display text-base font-bold">{coinLabel(r.symbol)}</span>
         </span>
         <DirectionChip direction={r.bias.bias} />
         <span className="flex items-center gap-2">
           <ConfidenceDots level={r.bias.keyakinan} />
-          {fase && <span className="text-[13px] text-muted-foreground">· {FASE_TEXT[fase].toLowerCase()}</span>}
+          {fase && <span className="hidden text-2xs text-muted-foreground sm:inline">· {FASE_TEXT[fase].toLowerCase()}</span>}
         </span>
         <span className="ml-auto flex items-center gap-4 text-sm">
           {r.plan?.rr ? <span className="num hidden text-muted-foreground sm:inline">R:R <span className="font-semibold text-foreground">{formatRR(r.plan.rr)}</span></span> : null}
@@ -266,14 +267,14 @@ export function OutlookView() {
 
       <section aria-labelledby="peluang-terbaik" className="space-y-5">
         <div>
-          <h2 id="peluang-terbaik" className="flex items-center gap-2.5 text-xl font-semibold tracking-tight sm:text-2xl">
-            <Target className="h-5 w-5 text-info" aria-hidden="true" /> Peluang terbaik
+          <h2 id="peluang-terbaik" className="display flex items-center gap-3 text-2xl font-bold">
+            <IconChip icon={Target} /> Peluang terbaik
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">Kasus serupa di masa lalu terbukti untung.</p>
         </div>
-        <div className="grid gap-5 lg:grid-cols-3">
+        <BentoGrid>
           {best.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-dashed p-8 text-center lg:col-span-2">
+            <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-dashed p-8 text-center md:col-span-2">
               <Target className="h-10 w-10 text-muted-foreground/60" aria-hidden="true" />
               <p className="text-base font-semibold">Belum ada peluang dengan bukti positif{filtered ? ' (dengan filter ini)' : ''}.</p>
               <p className="text-sm text-muted-foreground">Koin lain tetap ada di daftar di bawah.</p>
@@ -283,11 +284,12 @@ export function OutlookView() {
           )}
           <ArahCard rows={all} positive={best.length} />
           {best.slice(1).map((r) => <PeluangCard key={r.symbol} r={r} />)}
-        </div>
+        </BentoGrid>
       </section>
 
-      <Panel title={<>Arah lain <span className="font-normal text-muted-foreground">({rest.length})</span></>} className="overflow-hidden p-0 sm:p-0 [&>header]:px-5 [&>header]:pt-5 sm:[&>header]:px-6 sm:[&>header]:pt-6">
-        <p className="-mt-3 mb-2 px-5 text-sm text-muted-foreground sm:px-6">Ada posisi, tapi bukti historisnya belum positif.</p>
+      <Panel className="overflow-hidden p-0 sm:p-0" aria-label="Arah lain">
+        <IconTitle icon={Shuffle} title={<>Arah lain <span className="font-normal text-muted-foreground">({rest.length})</span></>}
+          subtitle="Ada posisi, tapi bukti historisnya belum positif." className="px-5 pb-4 pt-5 sm:px-6 sm:pt-6" />
         {rest.length === 0 ? (
           <p className="px-5 pb-5 text-sm text-muted-foreground sm:px-6">Tidak ada.</p>
         ) : (
@@ -303,17 +305,17 @@ export function OutlookView() {
             {netral.map((r) => (
               <li key={r.symbol}>
                 <Link href={koinHref(r.symbol)} className="inline-flex items-center gap-2 rounded-full border py-1 pl-1 pr-3.5 text-sm hover:bg-muted/50">
-                  <CoinAvatar coin={coinLabel(r.symbol)} size="sm" />
+                  <CoinAvatar symbol={r.symbol} size="sm" />
                   <span className="font-semibold">{coinLabel(r.symbol)}</span>
-                  {r.bias?.condong && <span className="text-[13px] text-muted-foreground">condong {r.bias.condong}</span>}
+                  {r.bias?.condong && <span className="text-2xs text-muted-foreground">condong {r.bias.condong}</span>}
                 </Link>
               </li>
             ))}
           </ul>
         )}
-        <p className="mt-3 text-[13px] text-muted-foreground">&ldquo;Condong&rdquo; hanya dari faktor konteks, belum terbukti sebagai sinyal.</p>
+        <p className="mt-3 text-2xs text-muted-foreground">&ldquo;Condong&rdquo; hanya dari faktor konteks, belum terbukti sebagai sinyal.</p>
         {unavailable.length > 0 && (
-          <p className="mt-1 text-[13px] text-muted-foreground">Tidak tersedia: {unavailable.map((r) => coinLabel(r.symbol)).join(', ')}.</p>
+          <p className="mt-1 text-2xs text-muted-foreground">Tidak tersedia: {unavailable.map((r) => coinLabel(r.symbol)).join(', ')}.</p>
         )}
       </Fold>
 
@@ -329,7 +331,7 @@ export function OutlookView() {
           <li>Dolar: masuk di close 4H terakhir dengan SL/TP strategi, termasuk komisi 0.05% + slippage 0.05% per sisi, tanpa funding. Modal diubah di halaman koin.</li>
         </ul>
       </Fold>
-      <p className="text-[13px] text-muted-foreground">{DISCLAIMER}</p>
+      <p className="text-2xs text-muted-foreground">{DISCLAIMER}</p>
     </div>
   )
 }

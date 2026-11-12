@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorPanel } from '@/components/shell/ErrorPanel'
 import { Chip, EmptyState } from '@/components/lab/Section'
-import { CoinAvatar, Panel } from '@/components/market/ui'
+import { CoinAvatar, TitledPanel } from '@/components/market/ui'
 import { signClass } from '@/components/lab/LabBadges'
 import { Sparkline } from '@/components/market/Sparkline'
 import { InfoTip } from '@/components/ui/info-tip'
@@ -60,7 +60,7 @@ const COLS: { key: StrengthSortKey; label: string; hide?: string; right?: boolea
   { key: 'funding_7d_apr_pct', label: 'Funding 7 hari', hide: 'hidden xl:table-cell', right: true },
 ]
 
-const th = 'px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground'
+const th = 'eyebrow px-4 py-3'
 const td = 'px-4 py-3.5'
 
 export function StrengthTable() {
@@ -89,9 +89,9 @@ export function StrengthTable() {
   const top = sortStrength(all.filter((r) => r.eligible), 'rank', false).slice(0, 3)
 
   return (
-    <Panel
+    <TitledPanel
       title="Terkuat"
-      icon={<Trophy aria-hidden="true" />}
+      icon={Trophy}
       action={admin ? (
         <Button variant="outline" onClick={onRefresh} disabled={busy || refresh.isPending} className="h-9 gap-2 rounded-full px-4 text-sm">
           <RefreshCw className={cn('h-4 w-4', busy && 'animate-spin')} />
@@ -104,11 +104,11 @@ export function StrengthTable() {
           <span className="text-sm text-muted-foreground">Paling kuat sekarang</span>
           {top.map((r, i) => (
             <Link key={r.symbol} href={koinHref(r.symbol)} className="inline-flex items-center gap-2 rounded-full border py-1 pl-1 pr-4 text-base font-semibold hover:bg-muted/50">
-              <CoinAvatar coin={coinLabel(r.symbol)} size="sm" />
-              <span className="num text-[13px] text-muted-foreground">#{r.rank ?? i + 1}</span>{coinLabel(r.symbol)}
+              <CoinAvatar symbol={r.symbol} size="sm" />
+              <span className="num text-2xs text-muted-foreground">#{r.rank ?? i + 1}</span>{coinLabel(r.symbol)}
             </Link>
           ))}
-          <span className="text-[13px] text-muted-foreground">dari {eligible} koin · bukan sinyal beli</span>
+          <span className="text-2xs text-muted-foreground">dari {eligible} koin · bukan sinyal beli</span>
         </div>
       )}
       <Freshness className="mb-3" dataLabel="Data close 4H" dataAt={q.data?.last_bar_close ?? null} updatedAt={q.data?.computed_at} timeframe="4h" nextDelayMin={4} />
@@ -128,7 +128,7 @@ export function StrengthTable() {
         />
       ) : (
         <div className="-mx-6 overflow-x-auto sm:mx-0 sm:rounded-2xl sm:border sm:border-border/60">
-          <table className="w-full text-[15px]">
+          <table className="w-full text-sm">
             <thead className="border-b border-border/60 bg-muted/30">
               <tr>
                 {COLS.map((c) => (
@@ -149,10 +149,10 @@ export function StrengthTable() {
                   <td className={cn(td, 'num text-sm font-bold text-muted-foreground')}>{r.rank ?? '—'}</td>
                   <td className={td}>
                     <Link href={koinHref(r.symbol)} className="flex items-center gap-3 hover:underline">
-                      <CoinAvatar coin={coinLabel(r.symbol)} size="sm" />
+                      <CoinAvatar symbol={r.symbol} size="sm" />
                       <span className="min-w-0">
-                        <span className="block text-[15px] font-semibold">{coinLabel(r.symbol)}</span>
-                        <span className="num block text-[13px] text-muted-foreground">
+                        <span className="block text-sm font-semibold">{coinLabel(r.symbol)}</span>
+                        <span className="num block text-2xs text-muted-foreground">
                           {formatPrice(r.price)}
                           {!r.eligible && ' · data < 120 hari'}
                         </span>
@@ -179,7 +179,7 @@ export function StrengthTable() {
           </table>
         </div>
       )}
-      <div className="mt-4 flex items-start gap-1.5 text-[13px] leading-relaxed text-muted-foreground">
+      <div className="mt-4 flex items-start gap-1.5 text-2xs leading-relaxed text-muted-foreground">
         <InfoTip label="Cara membaca Terkuat">
           Skor = rata-rata momentum 7, 30 dan 90 hari yang disesuaikan gejolak harga. Tren = harga dibanding rata-rata
           harga 50 hari. Funding 7 hari ditulis per tahun (positif = long membayar). Koin dengan data kurang dari 120 hari
@@ -187,6 +187,6 @@ export function StrengthTable() {
         </InfoTip>
         <span>Momentum 7/30/90 hari, disesuaikan gejolak. Klik koin untuk rencananya.</span>
       </div>
-    </Panel>
+    </TitledPanel>
   )
 }

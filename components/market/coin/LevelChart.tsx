@@ -12,7 +12,7 @@ import type { OutlookDetail } from '@/lib/api/types/outlook'
  */
 
 type Tone = 'sl' | 'entry' | 'close' | 'tp' | 'typical'
-interface Level { key: string; tone: Tone; label: string; price: number; dashed?: boolean; fromX?: number }
+interface Level { key: string; tone: Tone; label: string; price: number; dashed?: boolean; fromX?: number; noTag?: boolean }
 
 const TONE: Record<Tone, { line: string; tag: string; text: string }> = {
   sl: { line: 'stroke-bearish', tag: 'fill-bearish', text: 'fill-white' },
@@ -57,7 +57,11 @@ export function LevelChart({ d, height = 420 }: { d: OutlookDetail; height?: num
   const st = d.strategy
   const narrow = w > 0 && w < 560
   const H = narrow ? Math.min(height, 340) : height
-  const tagW = narrow ? 104 : 132
+  // tag width from the longest "Label price" text (13px semibold ≈ 7.6px per character)
+  const tagPrices = [st.side ? st.sl : null, st.side ? st.entry_price : null, d.price, st.side ? st.tp : null,
+    st.side && !narrow ? d.plan?.target_typical : null].filter((v): v is number => v !== null && v !== undefined)
+  const longest = Math.max(8, ...tagPrices.map((v) => bare(v).length))
+  const tagW = Math.ceil((longest + (narrow ? 6 : 10)) * 7.6) + 14
   const m = { l: narrow ? 6 : 64, r: tagW + 10, t: 30, b: 28 }
   const plotW = Math.max(60, w - m.l - m.r)
   const plotH = H - m.t - m.b
@@ -83,7 +87,7 @@ export function LevelChart({ d, height = 420 }: { d: OutlookDetail; height?: num
     if (st.side && st.tp != null) levels.push({ key: 'tp', tone: 'tp', label: 'TP', price: st.tp })
     const typ = d.plan?.target_typical
     if (st.side && typ != null && Math.abs(typ - (d.price ?? typ)) > 0) {
-      levels.push({ key: 'typical', tone: 'typical', label: 'Realistis', price: typ, dashed: true })
+      levels.push({ key: 'typical', tone: 'typical', label: 'Realistis', price: typ, dashed: true, noTag: narrow })
     }
 
     let lo = Infinity
@@ -109,11 +113,14 @@ export function LevelChart({ d, height = 420 }: { d: OutlookDetail; height?: num
       if (i && day !== prev) days.push({ i, t })
     })
     const every = Math.max(1, Math.ceil(70 / (step * 6)))
-    const xLabels = days.filter((_, k) => k % every === 0)
+    const xLabels = days.filter((_, k) => k % every === 0).filter(({ i }) => xAt(i) > m.l + 22 && xAt(i) < m.l + plotW - 22)
 
-    const tagYs = spread(levels.map((lv) => y(lv.price)), 26, m.t + 11, m.t + plotH - 11)
-    return { step, xAt, y, ticks, xLabels, levels, tagYs, entryIdx, zone }
+    const tagged = levels.filter((lv) => !lv.noTag)
+    const ys = spread(tagged.map((lv) => y(lv.price)), 26, m.t + 11, m.t + plotH - 11)
+    const tagYs = levels.map((lv) => (lv.noTag ? null : ys[tagged.indexOf(lv)]))
+    return { step, xAt, y, ticks, tStep, xLabels, levels, tagYs, entryIdx, zone }
   }, [candles, w, plotW, plotH, m.l, m.t, narrow, st, d.price, d.plan])
+  const entryText = `Masuk ${st.side?.toUpperCase() ?? ''} · ${formatTime(st.entry_at ?? st.entry_time, { year: false, zone: !narrow })}`
 
   if (!raw?.length) return <p className="text-sm text-muted-foreground">Candle tidak tersedia.</p>
   const side = st.side?.toUpperCase()
@@ -126,7 +133,7 @@ export function LevelChart({ d, height = 420 }: { d: OutlookDetail; height?: num
             <g key={v}>
               <line x1={m.l} x2={m.l + plotW} y1={view.y(v)} y2={view.y(v)} className="stroke-border" strokeWidth={1} />
               {!narrow && (
-                <text x={m.l - 10} y={view.y(v) + 4} textAnchor="end" className="fill-muted-foreground text-[12px] tabular-nums">{bare(v)}</text>
+                <text x={m.l - 10} y={view.y(v) + 4} textAnchor="end" className="fill-muted-foreground text-3xs tabular-nums">{view.tStep >= 1 ? Math.round(v).toLocaleString('en-US') : bare(v)}</text>
               )}
             </g>
           ))}
@@ -156,15 +163,19 @@ export function LevelChart({ d, height = 420 }: { d: OutlookDetail; height?: num
               <g key={lv.key}>
                 <line x1={x0} x2={m.l + plotW} y1={yy} y2={yy} className={tone.line}
                   strokeWidth={lv.tone === 'close' ? 1.25 : 1.75} strokeDasharray={lv.dashed ? '6 5' : undefined} />
-                {Math.abs(ty - yy) > 1 && (
+                {ty !== null && Math.abs(ty - yy) > 1 && (
                   <path d={`M${m.l + plotW} ${yy} L${m.l + plotW + 6} ${ty}`} className={tone.line} strokeWidth={1} fill="none" />
                 )}
-                <rect x={m.l + plotW + 8} y={ty - 11} width={tagW} height={22} rx={6} className={tone.tag}
-                  stroke={lv.tone === 'typical' || lv.tone === 'close' ? 'currentColor' : undefined}
-                  strokeOpacity={0.25} strokeDasharray={lv.dashed ? '4 3' : undefined} />
-                <text x={m.l + plotW + 16} y={ty + 4.5} className={`${tone.text} text-[12.5px] font-semibold tabular-nums`}>
-                  {lv.label} {bare(lv.price)}
-                </text>
+                {ty !== null && (
+                  <>
+                    <rect x={m.l + plotW + 8} y={ty - 11} width={tagW} height={22} rx={6} className={tone.tag}
+                      stroke={lv.tone === 'typical' || lv.tone === 'close' ? 'currentColor' : undefined}
+                      strokeOpacity={0.25} strokeDasharray={lv.dashed ? '4 3' : undefined} />
+                    <text x={m.l + plotW + 16} y={ty + 4.5} className={`${tone.text} text-2xs font-semibold tabular-nums`}>
+                      {lv.label} {bare(lv.price)}
+                    </text>
+                  </>
+                )}
               </g>
             )
           })}
@@ -173,14 +184,14 @@ export function LevelChart({ d, height = 420 }: { d: OutlookDetail; height?: num
               <line x1={view.xAt(view.entryIdx)} x2={view.xAt(view.entryIdx)} y1={m.t - 6} y2={m.t + plotH}
                 className="stroke-info" strokeDasharray="3 4" strokeWidth={1.25} />
               <circle cx={view.xAt(view.entryIdx)} cy={view.y(st.entry_price)} r={6} className="fill-background stroke-info" strokeWidth={2.5} />
-              <text x={Math.min(Math.max(view.xAt(view.entryIdx), m.l + 90), m.l + plotW - 90)} y={m.t - 12} textAnchor="middle"
-                className="fill-info text-[12.5px] font-semibold">
-                Masuk {side} · {formatTime(st.entry_at ?? st.entry_time, { year: false })}
+              <text x={Math.min(Math.max(view.xAt(view.entryIdx), m.l + entryText.length * 3.9), w - entryText.length * 3.9)} y={m.t - 12}
+                textAnchor="middle" className="fill-info text-2xs font-semibold">
+                {entryText}
               </text>
             </g>
           )}
           {view.xLabels.map(({ i, t }) => (
-            <text key={t} x={view.xAt(i)} y={H - 8} textAnchor="middle" className="fill-muted-foreground text-[12px]">
+            <text key={t} x={view.xAt(i)} y={H - 8} textAnchor="middle" className="fill-muted-foreground text-3xs">
               {formatDate(t * 1000, { year: false })}
             </text>
           ))}

@@ -75,7 +75,7 @@ export function FactorTable() {
           <ScreenerTable data={assets} filters={filters} />
           <TrackRecordFootnote />
         </div>
-        <p className="text-[13px] text-muted-foreground">
+        <p className="text-2xs text-muted-foreground">
           Sinyal screener = arah skor saat ini, bukan perintah beli/jual. Klik koin untuk keputusan dan rencananya.
         </p>
       </div>

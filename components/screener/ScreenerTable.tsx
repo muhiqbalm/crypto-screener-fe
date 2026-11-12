@@ -68,12 +68,12 @@ function buildColumns(positions: Map<string, Pos>): ColumnDef<AssetDetail>[] {
       enableSorting: false,
       cell: ({ row }) => (
         <span className="flex items-center gap-3">
-          <CoinAvatar coin={coinOf(row.original.symbol)} size="sm" />
+          <CoinAvatar symbol={row.original.symbol} size="sm" />
           <span className="flex flex-col">
-            <Link href={koinHref(row.original.symbol)} onClick={(e) => e.stopPropagation()} className="text-[15px] font-semibold hover:underline">
+            <Link href={koinHref(row.original.symbol)} onClick={(e) => e.stopPropagation()} className="text-sm font-semibold hover:underline">
               {coinOf(row.original.symbol)}
             </Link>
-            <span className="num text-[13px] text-muted-foreground sm:hidden">{formatPrice(row.original.price)}</span>
+            <span className="num text-2xs text-muted-foreground sm:hidden">{formatPrice(row.original.price)}</span>
           </span>
         </span>
       ),
@@ -261,7 +261,7 @@ export function ScreenerTable({ data, filters, onSelectAsset }: ScreenerTablePro
   }
 
   return (
-    <Table className="text-[15px]">
+    <Table className="text-sm">
       <TableHeader>
         {table.getHeaderGroups().map((headerGroup) => (
           <TableRow key={headerGroup.id} className="hover:bg-transparent">
@@ -283,7 +283,7 @@ export function ScreenerTable({ data, filters, onSelectAsset }: ScreenerTablePro
                   // Req 15.6 — scope="col" on every <th>
                   scope="col"
                   aria-sort={isSortable ? ariaSort : undefined}
-                  className="h-12 select-none px-4 text-xs font-semibold tracking-[0.08em]"
+                  className="select-none"
                 >
                   {header.isPlaceholder ? null : isSortable ? (
                     <button
@@ -333,7 +333,7 @@ export function ScreenerTable({ data, filters, onSelectAsset }: ScreenerTablePro
               className="cursor-pointer"
             >
               {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id} className="h-14 px-4 py-3">
+                <TableCell key={cell.id}>
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </TableCell>
               ))}

@@ -39,17 +39,17 @@ export function CapitalInputs({ initial, onChange }: { initial: OutlookInputs; o
   return (
     <div className="flex flex-wrap items-end gap-3">
       <div className="space-y-1">
-        <Label htmlFor="koin-capital" className="text-[13px]">Modal (USDT)</Label>
+        <Label htmlFor="koin-capital" className="text-2xs">Modal (USDT)</Label>
         <Input id="koin-capital" inputMode="decimal" value={capital} onChange={(e) => setCapital(e.target.value)}
-          aria-invalid={cap === null} className={cn('h-10 w-32 rounded-xl font-mono text-[15px]', cap === null && 'border-bearish')} />
+          aria-invalid={cap === null} className={cn('h-10 w-32 rounded-xl font-mono text-sm', cap === null && 'border-bearish')} />
       </div>
       <div className="space-y-1">
-        <Label htmlFor="koin-lev" className="text-[13px]">Leverage</Label>
+        <Label htmlFor="koin-lev" className="text-2xs">Leverage</Label>
         <Input id="koin-lev" inputMode="decimal" value={leverage} onChange={(e) => setLeverage(e.target.value)}
-          aria-invalid={lev === null} className={cn('h-10 w-20 rounded-xl font-mono text-[15px]', lev === null && 'border-bearish')} />
+          aria-invalid={lev === null} className={cn('h-10 w-20 rounded-xl font-mono text-sm', lev === null && 'border-bearish')} />
       </div>
       <div className="space-y-1">
-        <span className="block text-[13px] font-medium">Ukuran posisi</span>
+        <span className="block text-2xs font-medium">Ukuran posisi</span>
         <Segmented<Sizing>
           aria-label="Ukuran posisi"
           value={sizing}
@@ -62,12 +62,12 @@ export function CapitalInputs({ initial, onChange }: { initial: OutlookInputs; o
       </div>
       {sizing === 'risk' && (
         <div className="space-y-1">
-          <Label htmlFor="koin-risk" className="text-[13px]">Siap hilang di SL (% modal)</Label>
+          <Label htmlFor="koin-risk" className="text-2xs">Siap hilang di SL (% modal)</Label>
           <Input id="koin-risk" inputMode="decimal" value={riskPct} onChange={(e) => setRiskPct(e.target.value)}
-            aria-invalid={risk === null} className={cn('h-10 w-20 rounded-xl font-mono text-[15px]', risk === null && 'border-bearish')} />
+            aria-invalid={risk === null} className={cn('h-10 w-20 rounded-xl font-mono text-sm', risk === null && 'border-bearish')} />
         </div>
       )}
-      <p className="basis-full text-[13px] text-muted-foreground">
+      <p className="basis-full text-2xs text-muted-foreground">
         Disimpan di perangkat ini, tidak ada order yang dikirim.
         <InfoTip label="Ukuran posisi">
           Dari modal = posisi sebesar modal × leverage. Dari risiko = posisi diatur supaya rugi di SL sebesar persen modal itu.

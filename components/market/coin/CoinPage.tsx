@@ -28,7 +28,7 @@ import { DISCLAIMER } from '@/components/lab/outlook/OutlookView'
 import { FactorBreakdown } from '@/components/screener/FactorBreakdown'
 import { TrackRecordProvider } from '@/components/screener/TrackRecordHint'
 import { Fold } from '@/components/market/shared'
-import { BigStat, bigUsd, CoinAvatar, ConfidenceDots, CountUp, DirectionChip, EvidenceBar, HeroCard, Panel, Pill } from '@/components/market/ui'
+import { BigStat, bigUsd, CoinAvatar, ConfidenceDots, CountUp, DirectionChip, EvidenceBar, EvidenceLegend, HeroCard, Pill, TitledPanel } from '@/components/market/ui'
 import { CapitalInputs } from '@/components/market/coin/CapitalInputs'
 import { LevelChart } from '@/components/market/coin/LevelChart'
 import { useSavedInputs } from '@/components/market/useSavedInputs'
@@ -70,8 +70,8 @@ function Header({ symbol, d, price, change }: { symbol: string; d?: OutlookDetai
         eyebrowIcon={Compass}
         title={
           <span className="flex items-center gap-3">
-            <CoinAvatar coin={coinLabel(symbol)} size="lg" />
-            <span className="font-display text-3xl sm:text-4xl">{coinLabel(symbol)}</span>
+            <CoinAvatar symbol={symbol} size="lg" />
+            <span className="display text-3xl sm:text-4xl">{coinLabel(symbol)}</span>
             <span className="text-base font-normal text-muted-foreground">/USDT perp</span>
           </span>
         }
@@ -87,7 +87,7 @@ function Header({ symbol, d, price, change }: { symbol: string; d?: OutlookDetai
         ) : undefined}
         description={
           <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span className="num font-display text-2xl font-bold text-foreground">{formatPrice(price)}</span>
+            <span className="display tabular-nums text-2xl font-bold text-foreground">{formatPrice(price)}</span>
             {change !== null && <span className={cn('num text-base font-semibold', signClass(change))}>{formatPercent(change, 2)} 24 jam</span>}
           </span>
         }
@@ -117,12 +117,12 @@ function Decision({ d }: { d: OutlookDetail }) {
   const p = d.peluang
   const note = liveNote(d)
   return (
-    <HeroCard glow={side === 'long' ? 'long' : side === 'short' ? 'short' : 'info'}>
+    <HeroCard glow={side === 'long' ? 'bullish' : side === 'short' ? 'bearish' : 'brand'}>
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Keputusan</span>
+        <span className="eyebrow">Keputusan</span>
         {p && <Pill tone={PELUANG_TONE[p.label]} title={p.reason}>{PELUANG_TEXT[p.label]}</Pill>}
       </div>
-      <p className="mt-3 max-w-4xl font-display text-xl font-semibold leading-snug tracking-tight sm:text-2xl">{answer}</p>
+      <p className="mt-3 max-w-4xl display text-xl font-semibold leading-snug tracking-tight sm:text-2xl">{answer}</p>
       {side && (
         <>
           <div className="mt-6 grid grid-cols-2 gap-5 sm:grid-cols-3">
@@ -139,8 +139,8 @@ function Decision({ d }: { d: OutlookDetail }) {
           {cal && cal.n_cases > 0 && <EvidenceBar className="mt-6" pTp={cal.p_tp} pSl={cal.p_sl} pBatal={cal.p_batal} showLegend />}
         </>
       )}
-      <p className="mt-5 text-[13px] text-muted-foreground">{driverText(d)}</p>
-      {note && <p className="mt-1 text-[13px] text-warn">{note}</p>}
+      <p className="mt-5 text-2xs text-muted-foreground">{driverText(d)}</p>
+      {note && <p className="mt-1 text-2xs text-warn">{note}</p>}
     </HeroCard>
   )
 }
@@ -149,10 +149,10 @@ function MoneyRow({ label, value, sub, big = false }: { label: string; value: nu
   return (
     <div className="flex items-baseline justify-between gap-3 border-t border-border/60 py-3 first:border-t-0">
       <div className="min-w-0">
-        <div className={cn(big ? 'text-[15px]' : 'text-sm', 'text-muted-foreground')}>{label}</div>
-        {sub && <div className="text-[13px] text-muted-foreground/80">{sub}</div>}
+        <div className={cn(big ? 'text-sm' : 'text-sm', 'text-muted-foreground')}>{label}</div>
+        {sub && <div className="text-2xs text-muted-foreground/80">{sub}</div>}
       </div>
-      <div className={cn('num shrink-0 font-display font-bold tracking-tight', big ? 'text-3xl' : 'text-xl', signClass(value))}>
+      <div className={cn('num shrink-0 display font-bold tracking-tight', big ? 'text-3xl' : 'text-xl', signClass(value))}>
         {value === null || value === undefined ? '—' : big ? <CountUp value={value} format={bigUsd} /> : bigUsd(value)}
       </div>
     </div>
@@ -164,7 +164,7 @@ function Projection({ d, inputs, setInputs }: { d: OutlookDetail; inputs: Outloo
   const pj = d.projection
   return (
     <div className="flex h-full flex-col rounded-2xl bg-muted/30 p-5">
-      <div className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Kalau masuk di harga close</div>
+      <div className="eyebrow">Kalau masuk di harga close</div>
       {pj.available ? (
         <>
           <div className="mt-2 flex items-baseline justify-between gap-3">
@@ -178,11 +178,11 @@ function Projection({ d, inputs, setInputs }: { d: OutlookDetail; inputs: Outloo
             {pj.calibrated && <MoneyRow label="Rata-rata kasus serupa" value={pj.calibrated.ev_usd} sub={`${formatR(pj.calibrated.mean_r)} · ${formatCount(pj.calibrated.n_pos)} posisi`} />}
           </div>
           {(pj.warnings ?? []).map((w) => (
-            <p key={w} className="mt-1 flex items-start gap-1.5 text-[13px] text-warn">
+            <p key={w} className="mt-1 flex items-start gap-1.5 text-2xs text-warn">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />{w}
             </p>
           ))}
-          <p className="mt-1 text-[13px] text-muted-foreground">
+          <p className="mt-1 text-2xs text-muted-foreground">
             Simulasi, termasuk biaya, belum termasuk funding.
             <InfoTip label="Catatan proyeksi">{pj.note} {pj.calibrated?.caveat}</InfoTip>
           </p>
@@ -191,21 +191,21 @@ function Projection({ d, inputs, setInputs }: { d: OutlookDetail; inputs: Outloo
         <p className="mt-3 text-sm text-muted-foreground">{pj.reason}</p>
       )}
       <div className="mt-auto border-t border-border/60 pt-4">
-        <div className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Modalmu</div>
+        <div className="eyebrow mb-2">Modalmu</div>
         <CapitalInputs initial={inputs} onChange={setInputs} />
       </div>
     </div>
   )
 }
 
-function LevelTile({ label, value, sub, dot }: { label: React.ReactNode; value: React.ReactNode; sub?: React.ReactNode; dot: string }) {
+function LevelTile({ label, value, sub, dot, className }: { label: React.ReactNode; value: React.ReactNode; sub?: React.ReactNode; dot: string; className?: string }) {
   return (
-    <div className="min-w-0 rounded-2xl border bg-muted/20 p-5">
-      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+    <div className={cn('min-w-0 rounded-2xl border bg-muted/20 p-4 sm:p-5', className)}>
+      <div className="eyebrow flex items-center gap-2">
         <span className={cn('h-2.5 w-2.5 shrink-0 rounded-full', dot)} aria-hidden="true" />{label}
       </div>
-      <div className="num mt-2 break-words font-display text-2xl font-bold tracking-tight">{value}</div>
-      {sub && <div className="mt-1 text-[13px] text-muted-foreground">{sub}</div>}
+      <div className="num mt-2 break-words display text-2xl font-bold tracking-tight">{value}</div>
+      {sub && <div className="mt-1 text-2xs text-muted-foreground">{sub}</div>}
     </div>
   )
 }
@@ -216,20 +216,20 @@ function Plan({ d }: { d: OutlookDetail }) {
   const pj = d.projection
   if (!st.side || !pl) {
     return (
-      <Panel title="Rencana" icon={<ClipboardList aria-hidden="true" />}>
+      <TitledPanel title="Rencana" icon={ClipboardList}>
         <p className="text-base text-muted-foreground">
           {pl?.text ?? 'Tidak ada sinyal: strategi utama sedang tidak berposisi. Tunggu sinyal baru setelah close 4H berikutnya.'}
         </p>
-      </Panel>
+      </TitledPanel>
     )
   }
   return (
-    <Panel title="Rencana" icon={<ClipboardList aria-hidden="true" />}
+    <TitledPanel title="Rencana" icon={ClipboardList}
       action={pl.valid_until ? <Pill>berlaku s/d {formatWib(pl.valid_until)}</Pill> : undefined}>
       {pl.geometry_ok ? (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <LevelTile dot="bg-info" label={<Term k="zona_entry" />}
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+            <LevelTile className="col-span-2 xl:col-span-1" dot="bg-info" label={<Term k="zona_entry" />}
               value={pl.entry_zone ? `${formatPrice(pl.entry_zone[0])}–${formatPrice(pl.entry_zone[1])}` : formatPrice(d.price)}
               sub={pl.dont_chase ? `jangan kejar lewat ${formatPrice(pl.dont_chase)}` : undefined} />
             <LevelTile dot="bg-bearish" label={<Term k="sl" />} value={<span className="text-bearish">{formatPrice(st.sl)}</span>}
@@ -237,7 +237,7 @@ function Plan({ d }: { d: OutlookDetail }) {
             <LevelTile dot="bg-bullish" label={<Term k="tp" />}
               value={<span className="text-bullish">{st.tp !== null && st.tp !== undefined ? formatPrice(st.tp) : 'tidak ada'}</span>}
               sub="exit resmi strategi" />
-            <LevelTile dot="bg-bullish/50" label={<Term k="target_realistis" />}
+            <LevelTile className="col-span-2 xl:col-span-1" dot="bg-bullish/50" label={<Term k="target_realistis" />}
               value={pl.target_typical ? formatPrice(pl.target_typical) : '—'}
               sub={pl.target_typical ? `${formatR(pl.target_typical_r)} · gerak tipikal kasus serupa` : 'belum tersedia'} />
           </div>
@@ -250,7 +250,7 @@ function Plan({ d }: { d: OutlookDetail }) {
           )}
           {pl.invalidation && (
             <div className="mt-5">
-              <div className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground"><Term k="batal_kalau" /></div>
+              <div className="eyebrow mb-2"><Term k="batal_kalau" /></div>
               <ul className="grid gap-2 md:grid-cols-3">
                 {pl.invalidation.map((x) => (
                   <li key={x} className="flex items-start gap-2 rounded-2xl bg-muted/30 px-4 py-3 text-sm">
@@ -269,7 +269,7 @@ function Plan({ d }: { d: OutlookDetail }) {
       ) : (
         <p className="flex items-start gap-2 text-base text-warn"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />{pl.text}</p>
       )}
-    </Panel>
+    </TitledPanel>
   )
 }
 
@@ -278,11 +278,11 @@ function FactorChip({ f }: { f: OutlookFactor }) {
   const tone = f.direction > 0 ? 'text-bullish' : f.direction < 0 ? 'text-bearish' : 'text-muted-foreground'
   return (
     <li title={f.detail} className={cn('flex min-w-0 flex-col gap-1.5 rounded-2xl border bg-muted/20 px-4 py-3', !f.available && 'opacity-60')}>
-      <span className="text-[13px] text-muted-foreground">{f.label}</span>
+      <span className="text-2xs text-muted-foreground">{f.label}</span>
       <span className={cn('flex items-center gap-1.5 text-base font-semibold', tone)}>
         <span aria-hidden="true">{arrow}</span><span className="min-w-0 break-words">{f.value}</span>
       </span>
-      <span><EvidenceBadge code={f.evidence} text={f.evidence_text} /></span>
+      <span className="min-w-0 [&>span]:whitespace-normal"><EvidenceBadge code={f.evidence} text={f.evidence_text} /></span>
     </li>
   )
 }
@@ -294,9 +294,9 @@ function CalibRow({ label, s }: { label: string; s: CalibStats | null | undefine
       <span className="text-sm">{label}</span>
       <span className={cn('num text-lg font-bold', has ? signClass(s?.mean_r) : 'text-muted-foreground')}>
         {has ? formatR(s?.mean_r) : '—'}
-        {has && <span className="ml-1.5 text-[13px] font-normal text-muted-foreground">{formatCount(s?.n_pos)} pos.</span>}
+        {has && <span className="ml-1.5 text-2xs font-normal text-muted-foreground">{formatCount(s?.n_pos)} pos.</span>}
       </span>
-      {has ? <EvidenceBar pTp={s?.p_tp} pSl={s?.p_sl} pBatal={s?.p_batal} /> : <span className="text-[13px] text-muted-foreground">belum ada data</span>}
+      {has ? <EvidenceBar pTp={s?.p_tp} pSl={s?.p_sl} pBatal={s?.p_batal} /> : <span className="text-2xs text-muted-foreground">belum ada data</span>}
     </li>
   )
 }
@@ -311,12 +311,12 @@ function Factors({ d, asset, allAssets, loadingAsset }: {
   const cal = d.bias.calib
   const cls = (d.bias.cls ?? 'belum_diuji') as StrategyClass
   return (
-    <Panel title="Faktor & bukti" icon={<Layers aria-hidden="true" />}>
+    <TitledPanel title="Faktor & bukti" icon={Layers}>
       <div className="space-y-5">
         {(['utama', 'mtf', 'konteks'] as const).map((g) => groups[g].length > 0 && (
           <div key={g}>
-            <div className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">{GROUP_SHORT[g]}</div>
-            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="eyebrow mb-2">{GROUP_SHORT[g]}</div>
+            <ul className="grid grid-cols-2 gap-3 xl:grid-cols-4">
               {groups[g].map((f) => <FactorChip key={f.key} f={f} />)}
             </ul>
           </div>
@@ -337,11 +337,7 @@ function Factors({ d, asset, allAssets, loadingAsset }: {
             <CalibRow label="Semua strategi (out-of-sample)" s={cal.pooled} />
             {d.coin_calibration?.fase && <CalibRow label={`${coinLabel(d.symbol)} saja`} s={d.coin_calibration.fase} />}
           </ul>
-          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-bullish" />TP dulu</span>
-            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-bearish" />SL dulu</span>
-            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-muted-foreground/50" />ditutup strategi</span>
-          </div>
+          <EvidenceLegend className="mt-2" />
         </div>
       )}
 
@@ -352,7 +348,7 @@ function Factors({ d, asset, allAssets, loadingAsset }: {
           <p className="text-sm text-muted-foreground">{loadingAsset ? 'Memuat…' : 'Skor screener tidak tersedia untuk koin ini.'}</p>
         )}
       </Fold>
-    </Panel>
+    </TitledPanel>
   )
 }
 
@@ -367,11 +363,11 @@ function TrackSection({ d }: { d: OutlookDetail }) {
           <StatTile label="Rata-rata per trade" value={formatPercent(bt.mean_pct, 2)} valueClassName={signClass(bt.mean_pct)} hint="% dari nilai posisi" />
           <StatTile label="Lama tahan" value={bt.median_hold_hours === null ? '—' : `${formatScore(bt.median_hold_hours / 24, 1)} hari`} hint="median" />
         </div>
-        <p className="mt-2 text-[13px] text-muted-foreground">Backtest strategi utama · {bt.basis_text}.</p>
+        <p className="mt-2 text-2xs text-muted-foreground">Backtest strategi utama · {bt.basis_text}.</p>
       </div>
 
       <div>
-        <div className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Panggilan tersimpan</div>
+        <div className="eyebrow mb-2">Panggilan tersimpan</div>
         {d.calls && d.calls.length > 0 ? (
           <ul className="divide-y divide-border/60 text-sm">
             {d.calls.slice(0, 15).map((c) => (
@@ -390,11 +386,11 @@ function TrackSection({ d }: { d: OutlookDetail }) {
 
       {d.strategies && d.strategies.length > 0 && (
         <div>
-          <div className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Strategi untuk koin ini (hanya UTAMA yang menentukan arah)</div>
+          <div className="eyebrow mb-2">Strategi untuk koin ini (hanya UTAMA yang menentukan arah)</div>
           <ul className="divide-y divide-border/60 text-sm">
             {d.strategies.map((s) => (
               <li key={s.name} className="flex flex-wrap items-center gap-2 py-2.5">
-                <span className="font-mono text-[13px]">{s.name}</span>
+                <span className="font-mono text-2xs">{s.name}</span>
                 {s.primary && <Badge variant="brand" size="xs">UTAMA</Badge>}
                 {s.live_reference && <Badge variant="info" size="xs">BOT LIVE</Badge>}
                 {s.verdict ? <VerdictBadge verdict={s.verdict} /> : <Badge variant="warn" size="xs">BELUM DIUJI</Badge>}
@@ -439,9 +435,9 @@ export function CoinPage({ symbol }: { symbol: string }) {
         <>
           <Decision d={d} />
 
-          <Panel
+          <TitledPanel
             title={`Chart ${d.strategy.timeframe?.toUpperCase() ?? '4H'}`}
-            icon={<CandlestickChart aria-hidden="true" />}
+            icon={CandlestickChart}
             action={
               <Link href={`/chart?symbol=${encodeURIComponent(d.symbol)}`} className="inline-flex items-center gap-1 rounded-full border px-3.5 py-1.5 text-sm text-info hover:bg-info/10">
                 Buka di Chart <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
@@ -450,12 +446,12 @@ export function CoinPage({ symbol }: { symbol: string }) {
           >
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] 2xl:grid-cols-[minmax(0,1fr)_22rem]">
               <div className="min-w-0">
-                <LevelChart d={d} />
-                <p className="mt-2 text-[13px] text-muted-foreground">Merah = batas rugi (SL), hijau = target (TP), pita biru = zona entry.</p>
+                <LevelChart d={d} height={500} />
+                <p className="mt-2 text-2xs text-muted-foreground">Merah = batas rugi (SL), hijau = target (TP), pita biru = zona entry.</p>
               </div>
               <Projection d={d} inputs={inputs} setInputs={setInputs} />
             </div>
-          </Panel>
+          </TitledPanel>
 
           <Plan d={d} />
 
@@ -484,7 +480,7 @@ export function CoinPage({ symbol }: { symbol: string }) {
             ) : (
               <p className="text-sm text-muted-foreground">Tidak ada judul berita terbaru yang menyebut koin ini.</p>
             )}
-            <p className="mt-3 text-[13px] text-muted-foreground">Berita hanya konteks, tidak dihitung sebagai sinyal.</p>
+            <p className="mt-3 text-2xs text-muted-foreground">Berita hanya konteks, tidak dihitung sebagai sinyal.</p>
           </Fold>
 
           <AssistantSlot
@@ -501,16 +497,16 @@ export function CoinPage({ symbol }: { symbol: string }) {
       ) : (
         <>
           <AnswerCard tone="menunggu" answer="Outlook belum tersedia untuk koin ini. Skor screener di bawah tetap bisa kamu baca." />
-          <Panel title="Skor screener (Tabel faktor)" icon={<Layers aria-hidden="true" />}>
+          <TitledPanel title="Skor screener (Tabel faktor)" icon={Layers}>
             {asset ? (
               <TrackRecordProvider><FactorBreakdown asset={asset} all={scr.data?.assets ?? []} /></TrackRecordProvider>
             ) : (
               <p className="text-sm text-muted-foreground">{scr.isPending ? 'Memuat…' : 'Koin ini tidak ada di data screener.'}</p>
             )}
-          </Panel>
+          </TitledPanel>
         </>
       )}
-      <p className="text-[13px] text-muted-foreground">{DISCLAIMER}</p>
+      <p className="text-2xs text-muted-foreground">{DISCLAIMER}</p>
     </div>
   )
 }

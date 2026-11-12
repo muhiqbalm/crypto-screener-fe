@@ -20,7 +20,7 @@ export function Fold({ title, children, defaultOpen = false, className }: {
         <span className="min-w-0">{title}</span>
         <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
       </summary>
-      <div className="border-t px-5 pb-5 pt-4 text-[15px] sm:px-6">{children}</div>
+      <div className="border-t px-5 pb-5 pt-4 text-sm sm:px-6">{children}</div>
     </details>
   )
 }
