@@ -1,176 +1,187 @@
 'use client'
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Activity } from 'lucide-react'
 import { useTradeLog } from '@/lib/queries/webhook'
-import { formatTimestamp, formatPrice } from '@/lib/utils/format'
+import { formatPrice, formatQty } from '@/lib/utils/format'
+import { formatAge, formatTime } from '@/lib/utils/time'
 import { notify } from '@/lib/utils/toast'
-import { TradeStatusIcon } from './TradeStatusIcon'
+import { TradeStatusIcon, TRADE_STATUS_LABEL } from './TradeStatusIcon'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { cn } from '@/lib/utils/cn'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { DirectionBadge } from '@/components/ui/direction-badge'
+import { ResponsiveTable, type ResponsiveColumn } from '@/components/ui/responsive-table'
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
+import { Term } from '@/components/ui/term'
+import { EmptyState, ErrorState } from '@/components/shell/states'
 import type { TradeLogResponse } from '@/lib/api/types/trades'
 
-function SkeletonRows() {
+const PAGE = 50
+
+/** Rows whose reason is worth opening: anything the bot did not execute. */
+function hasReason(row: TradeLogResponse): boolean {
+  return row.status === 'failed' || row.status === 'rejected'
+}
+
+/** "5 mnt lalu" under recent rows only; older rows already show their date. */
+function RecentAge({ iso }: { iso: string }) {
+  const age = formatAge(iso)
+  return /lalu$|baru saja/.test(age) ? <div className="text-3xs text-muted-foreground">{age}</div> : null
+}
+
+function StatusCell({ row }: { row: TradeLogResponse }) {
   return (
-    <>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <TableRow key={i}>
-          <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-14" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-        </TableRow>
-      ))}
-    </>
+    <span className="inline-flex items-center gap-1.5">
+      <TradeStatusIcon status={row.status} />
+      <span className="text-xs">{TRADE_STATUS_LABEL[row.status] ?? row.status}</span>
+    </span>
   )
 }
 
-function SideBadge({ side }: { side: TradeLogResponse['side'] }) {
+const COLUMNS: ResponsiveColumn<TradeLogResponse>[] = [
+  {
+    key: 'waktu',
+    header: 'Waktu (WIB)',
+    mobile: 'field',
+    cell: (r) => (
+      <div className="num whitespace-nowrap text-xs">
+        {formatTime(r.created_at, { zone: false, seconds: true })}
+        <RecentAge iso={r.created_at} />
+      </div>
+    ),
+  },
+  { key: 'koin', header: 'Koin', mobile: 'title', cell: (r) => <span className="font-mono text-sm font-semibold">{r.symbol}</span> },
+  {
+    key: 'aksi',
+    header: 'Aksi',
+    mobile: 'field',
+    cell: (r) => (
+      <span className="inline-flex flex-wrap items-center gap-1.5">
+        <span className="text-xs text-muted-foreground">{r.action === 'open' ? 'Buka' : 'Tutup'}</span>
+        <DirectionBadge direction={r.side} size="xs" />
+      </span>
+    ),
+  },
+  { key: 'status', header: 'Status', mobile: 'badge', cell: (r) => <StatusCell row={r} /> },
+  {
+    key: 'harga',
+    header: 'Harga eksekusi',
+    align: 'right',
+    mobile: 'field',
+    cell: (r) => <span className="num text-xs">{formatPrice(r.fill_price)}</span>,
+  },
+  {
+    key: 'jumlah',
+    header: 'Jumlah',
+    align: 'right',
+    mobile: 'hidden',
+    cell: (r) => <span className="num text-xs">{r.filled_quantity != null ? formatQty(r.filled_quantity) : '—'}</span>,
+  },
+]
+
+function Detail({ row, onClose }: { row: TradeLogResponse | null; onClose: () => void }) {
   return (
-    <Badge
-      variant="outline"
-      className={cn(
-        'text-2xs font-semibold uppercase tracking-wide px-2 py-0',
-        side === 'long'
-          ? 'bg-bullish/15 text-bullish border-bullish/25'
-          : 'bg-bearish/15 text-bearish border-bearish/25'
-      )}
-    >
-      {side}
-    </Badge>
+    <Sheet open={!!row} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent className="w-full max-w-md overflow-y-auto p-5">
+        {row && (
+          <div className="space-y-3 pr-6">
+            <SheetTitle className="text-sm font-semibold">
+              {row.symbol} · {row.action === 'open' ? 'Buka' : 'Tutup'} {row.side.toUpperCase()}
+            </SheetTitle>
+            <SheetDescription className="text-xs text-muted-foreground">{formatTime(row.created_at, { seconds: true })}</SheetDescription>
+            <StatusCell row={row} />
+            {hasReason(row) && (
+              <div className="rounded-md border border-border/60 bg-muted/30 p-3 text-xs">
+                <p className="mb-1 font-semibold">Alasan dari bot</p>
+                <p className="break-words text-muted-foreground">{row.error_details ?? 'Bot tidak mencatat alasannya.'}</p>
+              </div>
+            )}
+            <dl className="num grid grid-cols-[110px_1fr] gap-y-1 text-xs">
+              <dt className="text-muted-foreground">Exchange</dt>
+              <dd className="capitalize">{row.exchange}</dd>
+              <dt className="text-muted-foreground">Ukuran</dt>
+              <dd>{row.size_value}</dd>
+              <dt className="text-muted-foreground">Harga eksekusi</dt>
+              <dd>{formatPrice(row.fill_price)}</dd>
+            </dl>
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
   )
 }
 
+/** "Log alert": every alert the bot processed for this account. Same query and 15 s polling as before. */
 export function SignalLogsTable() {
-  const { data, isPending } = useTradeLog()
+  const { data, isPending, error, refetch, dataUpdatedAt } = useTradeLog()
 
   const prevLengthRef = useRef<number | null>(null)
-  const [expandedRowId, setExpandedRowId] = useState<string | null>(null)
+  const [openId, setOpenId] = useState<string | null>(null)
+  const [limit, setLimit] = useState(PAGE)
 
   useEffect(() => {
     if (!data) return
     const currentLength = data.length
     if (prevLengthRef.current !== null && currentLength > prevLengthRef.current && data[0]) {
-      notify.info(`New signal received: ${data[0].symbol}`)
+      notify.info(`Alert baru masuk: ${data[0].symbol}`)
     }
     prevLengthRef.current = currentLength
   }, [data])
 
-  const handleRowClick = (row: TradeLogResponse) => {
-    if (row.status !== 'failed') return
-    setExpandedRowId(prev => (prev === row.id ? null : row.id))
-  }
-
-  const count = data?.length ?? 0
+  const rows = data ?? []
+  const shown = rows.slice(0, limit)
+  const open = rows.find((r) => r.id === openId) ?? null
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="flex flex-row items-center justify-between gap-4 pb-3 pt-4">
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 pb-3 pt-4">
         <div className="flex items-center gap-2">
           <Activity className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-          <CardTitle className="text-base">Signal Logs</CardTitle>
-          {!isPending && (
-            <Badge variant="outline" className="text-3xs px-1.5 py-0 text-muted-foreground">
-              {count}
+          <CardTitle className="text-base">
+            <Term k="signal_logs" />
+          </CardTitle>
+          {!isPending && !error && (
+            <Badge variant="muted" size="xs">
+              {rows.length}
             </Badge>
           )}
         </div>
-        <p className="text-xs text-muted-foreground hidden sm:block">
-          Auto-refreshes every 15 s
+        <p className="text-xs text-muted-foreground">
+          Diperbarui otomatis tiap 15 detik{dataUpdatedAt ? ` · terakhir ${formatAge(dataUpdatedAt, { seconds: true })}` : ''}
         </p>
       </CardHeader>
 
-      <CardContent className="p-0">
-        <div className="overflow-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent border-b border-border">
-                <TableHead scope="col" className="text-xs font-medium text-muted-foreground pl-6">Timestamp</TableHead>
-                <TableHead scope="col" className="text-xs font-medium text-muted-foreground">Symbol</TableHead>
-                <TableHead scope="col" className="text-xs font-medium text-muted-foreground">Action</TableHead>
-                <TableHead scope="col" className="text-xs font-medium text-muted-foreground">Side</TableHead>
-                <TableHead scope="col" className="text-xs font-medium text-muted-foreground">Status</TableHead>
-                <TableHead scope="col" className="text-xs font-medium text-muted-foreground text-right">Fill Price</TableHead>
-                <TableHead scope="col" className="text-xs font-medium text-muted-foreground text-right pr-6">Qty</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isPending && <SkeletonRows />}
-
-              {!isPending && data && data.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={7} className="py-12 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <Activity className="h-8 w-8 text-muted-foreground/30" aria-hidden="true" />
-                      <p className="text-sm text-muted-foreground">No signals recorded yet</p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-
-              {!isPending && data && data.length > 0 && data.map(row => (
-                <Fragment key={row.id}>
-                  <TableRow
-                    onClick={() => handleRowClick(row)}
-                    className={cn(
-                      'transition-colors duration-150 border-b border-border last:border-0',
-                      row.status === 'failed' && 'cursor-pointer hover:bg-bearish/8',
-                      row.status !== 'failed' && 'hover:bg-muted/30',
-                    )}
-                    aria-expanded={row.status === 'failed' ? expandedRowId === row.id : undefined}
-                  >
-                    <TableCell className="whitespace-nowrap font-mono text-xs text-muted-foreground py-3 pl-6">
-                      {formatTimestamp(row.created_at)}
-                    </TableCell>
-                    <TableCell className="font-mono text-sm font-semibold py-3">
-                      {row.symbol}
-                    </TableCell>
-                    <TableCell className="capitalize text-xs text-muted-foreground py-3">
-                      {row.action}
-                    </TableCell>
-                    <TableCell className="py-3">
-                      <SideBadge side={row.side} />
-                    </TableCell>
-                    <TableCell className="py-3">
-                      <span className="inline-flex items-center gap-1.5">
-                        <TradeStatusIcon status={row.status} />
-                        <span className="capitalize text-xs">{row.status}</span>
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-xs py-3">
-                      {formatPrice(row.fill_price)}
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-xs py-3 pr-6">
-                      {row.filled_quantity != null ? row.filled_quantity.toString() : '—'}
-                    </TableCell>
-                  </TableRow>
-
-                  {row.status === 'failed' && expandedRowId === row.id && (
-                    <TableRow key={`${row.id}-error`} className="bg-bearish/5 border-b border-bearish/15">
-                      <TableCell colSpan={7} className="px-6 py-3 text-xs text-bearish">
-                        <span className="font-semibold">Error: </span>
-                        {row.error_details ?? 'No error details available.'}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </Fragment>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+      <CardContent className="space-y-3">
+        {isPending ? (
+          <div className="space-y-2" aria-busy="true">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-9 w-full" />
+            ))}
+          </div>
+        ) : error ? (
+          <ErrorState compact error={error} onRetry={() => refetch()} message="Log alert belum bisa dimuat." />
+        ) : (
+          <>
+            <ResponsiveTable
+              rows={shown}
+              columns={COLUMNS}
+              rowKey={(r) => r.id}
+              onRowClick={(r) => setOpenId(r.id)}
+              rowLabel={(r) => `Detail alert ${r.symbol}`}
+              caption="Alert TradingView yang diproses bot, terbaru di atas"
+              empty={<EmptyState title="Belum ada alert yang tercatat" description="Alert TradingView yang sampai ke bot akan muncul di sini." />}
+            />
+            <p className="text-2xs text-muted-foreground">Ketuk baris untuk detail; baris gagal atau ditolak menampilkan alasan dari bot.</p>
+            {rows.length > limit && (
+              <Button variant="outline" size="sm" onClick={() => setLimit((n) => n + PAGE)}>
+                Tampilkan {Math.min(PAGE, rows.length - limit)} lagi ({rows.length - limit} tersisa)
+              </Button>
+            )}
+          </>
+        )}
       </CardContent>
+      <Detail row={open} onClose={() => setOpenId(null)} />
     </Card>
   )
 }

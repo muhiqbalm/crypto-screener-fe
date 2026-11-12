@@ -1,31 +1,25 @@
 'use client'
 
 import { useState } from 'react'
-import { RefreshCw, Activity, History } from 'lucide-react'
+import Link from 'next/link'
+import { Activity, History, RefreshCw } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { InfoTip } from '@/components/ui/info-tip'
+import { ResponsiveTable, type ResponsiveColumn } from '@/components/ui/responsive-table'
+import { Segmented } from '@/components/ui/segmented'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { StatusPill } from '@/components/ui/status-pill'
+import { Term } from '@/components/ui/term'
 import { ExchangeLabel } from '@/components/trading/ExchangeLabel'
 import { SideBadge } from '@/components/trading/SideBadge'
-import { Segmented } from '@/components/ui/segmented'
 import { EmptyState, ErrorState } from '@/components/shell/states'
 import { useOpenPositions, usePositionsHistory } from '@/lib/queries/positions'
-import { formatPrice, formatPercent, formatQty, formatTimestamp, formatUsdSigned } from '@/lib/utils/format'
+import { formatPercent, formatPrice, formatQty, formatUsdSigned } from '@/lib/utils/format'
+import { formatAge, formatTime } from '@/lib/utils/time'
 import { ApiError } from '@/lib/api/errors'
-import type { OpenPositionResponse, ClosedPositionResponse } from '@/lib/api/types/credentials'
-
-// ---------------------------------------------------------------------------
-// Shared helpers
-// ---------------------------------------------------------------------------
+import type { ClosedPositionResponse, OpenPositionResponse } from '@/lib/api/types/credentials'
 
 const DASH = '—'
 
@@ -33,291 +27,238 @@ function num(v: number | null | undefined, formatter: (n: number) => string): st
   return v == null ? DASH : formatter(v)
 }
 
-function LeverageBadge({ leverage }: { leverage: number | null }) {
-  if (leverage == null) return <span className="text-muted-foreground">{DASH}</span>
-  return (
-    <Badge variant="muted" size="xs">
-      {leverage}×
-    </Badge>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Skeleton rows
-// ---------------------------------------------------------------------------
-
-function SkeletonRows({ cols }: { cols: number }) {
-  return (
-    <>
-      {Array.from({ length: 4 }).map((_, i) => (
-        <TableRow key={i}>
-          {Array.from({ length: cols }).map((__, j) => (
-            <TableCell key={j}>
-              <Skeleton className={`h-4 ${j === 0 ? 'w-32' : 'w-16'}`} />
-            </TableCell>
-          ))}
-        </TableRow>
-      ))}
-    </>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// PnL cell — prominent display
-// ---------------------------------------------------------------------------
-
-function PnlCell({
-  value,
-  pct,
-}: {
-  value: number | null
-  pct?: number | null
-}) {
-  if (value == null) return <span className="text-muted-foreground font-mono text-xs">{DASH}</span>
-
-  const isPos = value > 0
-  const isNeg = value < 0
-  const colorClass = isPos ? 'text-bullish' : isNeg ? 'text-bearish' : 'text-foreground'
-
+function PnlCell({ value, pct }: { value: number | null; pct?: number | null }) {
+  if (value == null) return <span className="font-mono text-xs text-muted-foreground">{DASH}</span>
+  const colorClass = value > 0 ? 'text-bullish' : value < 0 ? 'text-bearish' : 'text-foreground'
   return (
     <div className={`text-right ${colorClass}`}>
       <p className="font-mono text-xs font-semibold tabular-nums">{formatUsdSigned(value)}</p>
-      {pct != null && (
-        <p className="font-mono text-2xs tabular-nums opacity-75">{formatPercent(pct)}</p>
+      {pct != null && <p className="font-mono text-2xs tabular-nums opacity-75">{formatPercent(pct)}</p>}
+    </div>
+  )
+}
+
+function LoadError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
+  const missingKey = error instanceof ApiError && error.kind === 'not_found'
+  return missingKey ? (
+    <EmptyState
+      title="Belum ada API key exchange"
+      description="Posisi dibaca dari exchange memakai API key akunmu."
+      action={
+        <Button asChild size="sm" variant="outline">
+          <Link href="/settings">Buka Akun & koneksi</Link>
+        </Button>
+      }
+    />
+  ) : (
+    <ErrorState compact error={error} onRetry={onRetry} message="Posisi belum bisa dimuat." />
+  )
+}
+
+const OPEN_COLUMNS: ResponsiveColumn<OpenPositionResponse>[] = [
+  { key: 'koin', header: 'Koin', mobile: 'title', cell: (p) => <span className="font-mono text-sm font-semibold">{p.symbol}</span> },
+  { key: 'exchange', header: 'Exchange', mobile: 'hidden', cell: (p) => <ExchangeLabel exchange={p.exchange} /> },
+  { key: 'arah', header: 'Arah', mobile: 'badge', cell: (p) => <SideBadge side={p.side} /> },
+  {
+    key: 'upnl',
+    header: <Term k="upnl" short />,
+    mobileLabel: 'Untung/rugi',
+    align: 'right',
+    mobile: 'field',
+    cell: (p) => <PnlCell value={p.unrealized_pnl} pct={p.unrealized_pnl_pct} />,
+  },
+  { key: 'entry', header: 'Entry', align: 'right', mobile: 'field', cell: (p) => <span className="num text-xs">{formatPrice(p.entry_price)}</span> },
+  {
+    key: 'mark',
+    header: <Term k="mark_price" short noTip />,
+    mobileLabel: 'Harga acuan',
+    align: 'right',
+    mobile: 'field',
+    cell: (p) => <span className="num text-xs">{num(p.mark_price, formatPrice)}</span>,
+  },
+  { key: 'jumlah', header: 'Jumlah', align: 'right', mobile: 'hidden', cell: (p) => <span className="num text-xs">{formatQty(p.quantity)}</span> },
+  {
+    key: 'lev',
+    header: 'Leverage',
+    align: 'center',
+    mobile: 'hidden',
+    cell: (p) =>
+      p.leverage == null ? (
+        <span className="text-muted-foreground">{DASH}</span>
+      ) : (
+        <Badge variant="muted" size="xs">
+          {p.leverage}×
+        </Badge>
+      ),
+  },
+  {
+    key: 'likuidasi',
+    header: <Term k="liq_price" short noTip />,
+    mobileLabel: 'Harga likuidasi',
+    align: 'right',
+    mobile: 'hidden',
+    cell: (p) => <span className="num text-xs">{num(p.liquidation_price, formatPrice)}</span>,
+  },
+]
+
+function pnlOf(p: ClosedPositionResponse): number {
+  return (p.exit_price - p.entry_price) * p.quantity * (p.side === 'long' ? 1 : -1)
+}
+
+const HISTORY_COLUMNS: ResponsiveColumn<ClosedPositionResponse>[] = [
+  { key: 'koin', header: 'Koin', mobile: 'title', cell: (p) => <span className="font-mono text-sm font-semibold">{p.symbol}</span> },
+  { key: 'exchange', header: 'Exchange', mobile: 'hidden', cell: (p) => <ExchangeLabel exchange={p.exchange} /> },
+  { key: 'arah', header: 'Arah', mobile: 'badge', cell: (p) => <SideBadge side={p.side} /> },
+  {
+    key: 'pnl',
+    header: <Term k="realized_pnl" short />,
+    mobileLabel: 'Untung/rugi',
+    align: 'right',
+    mobile: 'field',
+    cell: (p) => <PnlCell value={pnlOf(p)} />,
+  },
+  { key: 'entry', header: 'Entry', align: 'right', mobile: 'field', cell: (p) => <span className="num text-xs">{formatPrice(p.entry_price)}</span> },
+  { key: 'exit', header: 'Exit', align: 'right', mobile: 'field', cell: (p) => <span className="num text-xs">{formatPrice(p.exit_price)}</span> },
+  { key: 'jumlah', header: 'Jumlah', align: 'right', mobile: 'hidden', cell: (p) => <span className="num text-xs">{formatQty(p.quantity)}</span> },
+  { key: 'buka', header: 'Dibuka (WIB)', mobile: 'hidden', cell: (p) => <span className="num whitespace-nowrap text-xs text-muted-foreground">{formatTime(p.opened_at, { zone: false })}</span> },
+  { key: 'tutup', header: 'Ditutup (WIB)', mobile: 'hidden', cell: (p) => <span className="num whitespace-nowrap text-xs text-muted-foreground">{formatTime(p.closed_at, { zone: false })}</span> },
+]
+
+function SectionTitle({
+  icon,
+  title,
+  count,
+  sub,
+  onRefresh,
+  busy,
+  label,
+}: {
+  icon: React.ReactNode
+  title: string
+  count: number | null
+  sub: React.ReactNode
+  onRefresh: () => void
+  busy: boolean
+  label: string
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex items-center gap-2">
+        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted">{icon}</div>
+        <div>
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold">{title}</h3>
+            {count !== null && (
+              <Badge variant="muted" size="xs">
+                {count}
+              </Badge>
+            )}
+          </div>
+          <p className="text-2xs text-muted-foreground">{sub}</p>
+        </div>
+      </div>
+      <Button variant="ghost" size="sm" onClick={onRefresh} disabled={busy} className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground" aria-label={label}>
+        <RefreshCw className={`h-3 w-3 ${busy ? 'animate-spin' : ''}`} aria-hidden="true" />
+        {busy ? 'Memuat…' : 'Muat ulang'}
+      </Button>
+    </div>
+  )
+}
+
+function OpenPositions() {
+  const { data, isPending, error, refetch, isFetching, dataUpdatedAt } = useOpenPositions()
+  const rows = data ?? []
+  return (
+    <div className="space-y-3">
+      <SectionTitle
+        icon={<Activity className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />}
+        title="Posisi terbuka"
+        count={!isPending && !error ? rows.length : null}
+        sub={
+          <>
+            Dari exchange, diperbarui otomatis tiap 15 detik{dataUpdatedAt ? ` · terakhir ${formatAge(dataUpdatedAt, { seconds: true })}` : ''}
+          </>
+        }
+        onRefresh={() => refetch()}
+        busy={isFetching || isPending}
+        label="Muat ulang posisi terbuka"
+      />
+      {isPending ? (
+        <Skeleton className="h-24 w-full rounded-lg" />
+      ) : error ? (
+        <LoadError error={error} onRetry={() => refetch()} />
+      ) : (
+        <>
+          <ResponsiveTable
+            rows={rows}
+            columns={OPEN_COLUMNS}
+            rowKey={(p, i) => `${p.exchange}-${p.symbol}-${i}`}
+            caption="Posisi terbuka di exchange"
+            empty={<EmptyState icon={<Activity className="h-8 w-8" aria-hidden="true" />} title="Tidak ada posisi terbuka" />}
+          />
+          {rows.length > 0 && (
+            <p className="flex items-center gap-1 text-2xs text-muted-foreground">
+              Persen untung/rugi berjalan dibanding nilai posisi saat masuk (entry × jumlah), tanpa leverage.
+              <InfoTip title="Untung/rugi berjalan">
+                Angka dolar dari exchange di harga acuan (mark). Persennya dihitung server: untung/rugi ÷ (harga entry × jumlah).
+              </InfoTip>
+            </p>
+          )}
+        </>
       )}
     </div>
   )
 }
 
-// ---------------------------------------------------------------------------
-// Open Positions table
-// ---------------------------------------------------------------------------
-
-function OpenPositionsTable() {
-  const { data, isPending, error, refetch, isFetching } = useOpenPositions()
-  const apiError = error instanceof ApiError ? error : null
-  const count = data?.length ?? 0
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-bullish/10">
-            <Activity className="h-3.5 w-3.5 text-bullish" aria-hidden="true" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold">Posisi terbuka</h3>
-              {!isPending && !error && (
-                <Badge variant="muted" size="xs">
-                  {count}
-                </Badge>
-              )}
-            </div>
-            <p className="text-2xs text-muted-foreground">Live — diperbarui otomatis tiap 15 detik</p>
-          </div>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isFetching || isPending}
-          className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors duration-200"
-          aria-label="Refresh open positions"
-        >
-          <RefreshCw className={`h-3 w-3 ${isFetching ? 'animate-spin' : ''}`} aria-hidden="true" />
-          {isFetching ? 'Memuat…' : 'Muat ulang'}
-        </Button>
-      </div>
-
-      <div className="w-full overflow-auto rounded-lg border border-border">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent border-b border-border">
-              <TableHead scope="col" className="text-xs font-medium text-muted-foreground">Symbol</TableHead>
-              <TableHead scope="col" className="text-xs font-medium text-muted-foreground">Exchange</TableHead>
-              <TableHead scope="col" className="text-xs font-medium text-muted-foreground">Side</TableHead>
-              <TableHead scope="col" className="text-xs font-medium text-muted-foreground text-right">Entry</TableHead>
-              <TableHead scope="col" className="text-xs font-medium text-muted-foreground text-right">Mark</TableHead>
-              <TableHead scope="col" className="text-xs font-medium text-muted-foreground text-right">Qty</TableHead>
-              <TableHead scope="col" className="text-xs font-medium text-muted-foreground text-center">Lev.</TableHead>
-              <TableHead scope="col" className="text-xs font-medium text-muted-foreground text-right">Unrealized PnL</TableHead>
-              <TableHead scope="col" className="text-xs font-medium text-muted-foreground text-right">Harga likuidasi</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isPending && <SkeletonRows cols={9} />}
-
-            {!isPending && error && (
-              <TableRow>
-                <TableCell colSpan={9} className="p-0">
-                  <ErrorState
-                    compact
-                    kind={apiError?.kind ?? 'server'}
-                    message={apiError?.kind === 'not_found' ? 'Belum ada API key exchange. Tambahkan di Pengaturan.' : undefined}
-                    onRetry={() => refetch()}
-                  />
-                </TableCell>
-              </TableRow>
-            )}
-
-            {!isPending && !error && count === 0 && (
-              <TableRow>
-                <TableCell colSpan={9} className="p-3">
-                  <EmptyState icon={<Activity className="h-8 w-8" aria-hidden="true" />} title="Tidak ada posisi terbuka" className="border-0" />
-                </TableCell>
-              </TableRow>
-            )}
-
-            {!isPending && !error && data && data.length > 0 && data.map((pos: OpenPositionResponse, i: number) => (
-              <TableRow
-                key={`${pos.exchange}-${pos.symbol}-${i}`}
-                className="hover:bg-muted/30 transition-colors duration-150 border-b border-border last:border-0"
-              >
-                <TableCell className="font-mono text-sm font-semibold py-3">{pos.symbol}</TableCell>
-                <TableCell className="py-3"><ExchangeLabel exchange={pos.exchange} /></TableCell>
-                <TableCell className="py-3"><SideBadge side={pos.side} /></TableCell>
-                <TableCell className="text-right font-mono text-xs tabular-nums py-3">{formatPrice(pos.entry_price)}</TableCell>
-                <TableCell className="text-right font-mono text-xs tabular-nums py-3">{num(pos.mark_price, formatPrice)}</TableCell>
-                <TableCell className="text-right font-mono text-xs tabular-nums py-3">{formatQty(pos.quantity)}</TableCell>
-                <TableCell className="text-center py-3"><LeverageBadge leverage={pos.leverage} /></TableCell>
-                <TableCell className="py-3">
-                  <PnlCell value={pos.unrealized_pnl} pct={pos.unrealized_pnl_pct} />
-                </TableCell>
-                <TableCell className="text-right font-mono text-xs tabular-nums py-3 text-bearish/70">
-                  {num(pos.liquidation_price, formatPrice)}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Position History table
-// ---------------------------------------------------------------------------
-
-function PositionHistoryTable() {
+function PositionHistory() {
   const { data, isPending, error, refetch, isFetching } = usePositionsHistory()
-  const apiError = error instanceof ApiError ? error : null
-  const count = data?.length ?? 0
-
+  const rows = data ?? []
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted">
-            <History className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold">Riwayat posisi</h3>
-              {!isPending && !error && (
-                <Badge variant="muted" size="xs">
-                  {count}
-                </Badge>
-              )}
-            </div>
-            <p className="text-2xs text-muted-foreground">Posisi yang sudah ditutup, terbaru di atas</p>
-          </div>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isFetching || isPending}
-          className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors duration-200"
-          aria-label="Refresh position history"
-        >
-          <RefreshCw className={`h-3 w-3 ${isFetching ? 'animate-spin' : ''}`} aria-hidden="true" />
-          {isFetching ? 'Memuat…' : 'Muat ulang'}
-        </Button>
-      </div>
-
-      <div className="w-full overflow-auto rounded-lg border border-border">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent border-b border-border">
-              <TableHead scope="col" className="text-xs font-medium text-muted-foreground">Symbol</TableHead>
-              <TableHead scope="col" className="text-xs font-medium text-muted-foreground">Exchange</TableHead>
-              <TableHead scope="col" className="text-xs font-medium text-muted-foreground">Side</TableHead>
-              <TableHead scope="col" className="text-xs font-medium text-muted-foreground text-right">Entry</TableHead>
-              <TableHead scope="col" className="text-xs font-medium text-muted-foreground text-right">Exit</TableHead>
-              <TableHead scope="col" className="text-xs font-medium text-muted-foreground text-right">Realized PnL</TableHead>
-              <TableHead scope="col" className="text-xs font-medium text-muted-foreground text-right">Qty</TableHead>
-              <TableHead scope="col" className="text-xs font-medium text-muted-foreground">Dibuka</TableHead>
-              <TableHead scope="col" className="text-xs font-medium text-muted-foreground">Ditutup</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isPending && <SkeletonRows cols={9} />}
-
-            {!isPending && error && (
-              <TableRow>
-                <TableCell colSpan={9} className="p-0">
-                  <ErrorState
-                    compact
-                    kind={apiError?.kind ?? 'server'}
-                    message={apiError?.kind === 'not_found' ? 'Belum ada API key exchange. Tambahkan di Pengaturan.' : undefined}
-                    onRetry={() => refetch()}
-                  />
-                </TableCell>
-              </TableRow>
-            )}
-
-            {!isPending && !error && count === 0 && (
-              <TableRow>
-                <TableCell colSpan={9} className="p-3">
-                  <EmptyState icon={<History className="h-8 w-8" aria-hidden="true" />} title="Belum ada posisi yang ditutup" className="border-0" />
-                </TableCell>
-              </TableRow>
-            )}
-
-            {!isPending && !error && data && data.length > 0 && data.map((pos: ClosedPositionResponse) => {
-              const pnl = (pos.exit_price - pos.entry_price) * pos.quantity * (pos.side === 'long' ? 1 : -1)
-              return (
-                <TableRow
-                  key={pos.id}
-                  className="hover:bg-muted/30 transition-colors duration-150 border-b border-border last:border-0"
-                >
-                  <TableCell className="font-mono text-sm font-semibold py-3">{pos.symbol}</TableCell>
-                  <TableCell className="py-3"><ExchangeLabel exchange={pos.exchange} /></TableCell>
-                  <TableCell className="py-3"><SideBadge side={pos.side} /></TableCell>
-                  <TableCell className="text-right font-mono text-xs tabular-nums py-3">{formatPrice(pos.entry_price)}</TableCell>
-                  <TableCell className="text-right font-mono text-xs tabular-nums py-3">{formatPrice(pos.exit_price)}</TableCell>
-                  <TableCell className="py-3"><PnlCell value={pnl} /></TableCell>
-                  <TableCell className="text-right font-mono text-xs tabular-nums py-3">{formatQty(pos.quantity)}</TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground whitespace-nowrap py-3">
-                    {formatTimestamp(pos.opened_at)}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground whitespace-nowrap py-3">
-                    {formatTimestamp(pos.closed_at)}
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
-      </div>
+      <SectionTitle
+        icon={<History className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />}
+        title="Riwayat posisi"
+        count={!isPending && !error ? rows.length : null}
+        sub="Dari catatan bot (posisi yang dibuka bot), terbaru di atas"
+        onRefresh={() => refetch()}
+        busy={isFetching || isPending}
+        label="Muat ulang riwayat posisi"
+      />
+      {isPending ? (
+        <Skeleton className="h-24 w-full rounded-lg" />
+      ) : error ? (
+        <LoadError error={error} onRetry={() => refetch()} />
+      ) : (
+        <>
+          <ResponsiveTable
+            rows={rows}
+            columns={HISTORY_COLUMNS}
+            rowKey={(p) => p.id}
+            caption="Posisi yang sudah ditutup"
+            empty={<EmptyState icon={<History className="h-8 w-8" aria-hidden="true" />} title="Belum ada posisi yang ditutup" />}
+          />
+          {rows.length > 0 && (
+            <p className="text-2xs text-muted-foreground">
+              Untung/rugi tertutup adalah perkiraan dari harga masuk dan keluar, belum termasuk fee dan funding, jadi bisa beda dengan angka di
+              exchange.
+            </p>
+          )}
+        </>
+      )}
     </div>
   )
 }
 
-// ---------------------------------------------------------------------------
-// Exported composite component
-// ---------------------------------------------------------------------------
-
+/** Open positions (exchange, polled 15 s) and closed positions (bot records). Same queries as before. */
 export function PositionsTable() {
   const [tab, setTab] = useState<'open' | 'history'>('open')
-
   return (
     <Card>
       <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base">Posisi</CardTitle>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            Posisi <StatusPill kind="live" size="xs" />
+          </CardTitle>
           <Segmented
             aria-label="Tampilan posisi"
             value={tab}
@@ -329,9 +270,7 @@ export function PositionsTable() {
           />
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
-        {tab === 'open' ? <OpenPositionsTable /> : <PositionHistoryTable />}
-      </CardContent>
+      <CardContent className="pt-0">{tab === 'open' ? <OpenPositions /> : <PositionHistory />}</CardContent>
     </Card>
   )
 }

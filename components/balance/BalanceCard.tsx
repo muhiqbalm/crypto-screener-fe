@@ -1,114 +1,95 @@
 'use client'
 
-import { RefreshCw, TrendingUp, Wallet } from 'lucide-react'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import Link from 'next/link'
+import { RefreshCw, Wallet } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ErrorPanel } from '@/components/shell/ErrorPanel'
-import { EmptyPanel } from '@/components/shell/EmptyPanel'
+import { StatusPill } from '@/components/ui/status-pill'
+import { Term } from '@/components/ui/term'
+import { EmptyState, ErrorState } from '@/components/shell/states'
 import { ExchangeLabel } from '@/components/trading/ExchangeLabel'
 import { useBalance } from '@/lib/queries/credentials'
 import { formatAmount, formatUsd, isUsdStable } from '@/lib/utils/format'
+import { formatAge } from '@/lib/utils/time'
+import { ApiError } from '@/lib/api/errors'
 import type { ExchangeBalanceResponse } from '@/lib/api/types/credentials'
 
-// ---------------------------------------------------------------------------
-// Single asset row
-// ---------------------------------------------------------------------------
-
-function AssetRow({ item }: { item: ExchangeBalanceResponse }) {
-  const usedPct = item.total > 0 ? (item.used / item.total) * 100 : 0
-
+function SettingsLink() {
   return (
-    <div className="group flex items-center gap-4 rounded-lg px-3 py-2.5 transition-colors duration-150 hover:bg-muted/40">
-      {/* Currency + account type */}
-      <div className="w-28 shrink-0">
-        <p className="font-mono text-sm font-semibold leading-none">{item.currency}</p>
-        <p className="mt-0.5 text-2xs text-muted-foreground capitalize">{item.account_type}</p>
-      </div>
-
-      {/* Usage bar */}
-      <div className="flex-1 hidden sm:block">
-        <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-          <div
-            className="h-full rounded-full bg-primary/40 transition-all duration-500"
-            style={{ width: `${Math.min(usedPct, 100)}%` }}
-            aria-hidden="true"
-          />
-        </div>
-      </div>
-
-      {/* Values */}
-      <div className="flex items-center gap-6 text-right shrink-0">
-        <div className="w-24">
-          <p className="truncate font-mono text-sm font-semibold tabular-nums text-bullish">{formatAmount(item.free, item.currency)}</p>
-        </div>
-        <div className="w-24 hidden md:block">
-          <p className="truncate font-mono text-sm font-semibold tabular-nums text-bearish">{formatAmount(item.used, item.currency)}</p>
-        </div>
-        <div className="w-28">
-          <p className="truncate font-mono text-sm font-semibold tabular-nums">{formatAmount(item.total, item.currency)}</p>
-        </div>
-      </div>
-    </div>
+    <Button asChild size="sm" variant="outline">
+      <Link href="/settings">Buka Akun & koneksi</Link>
+    </Button>
   )
 }
 
 // ---------------------------------------------------------------------------
-// Per-exchange card
+// One asset: a row on wide screens, two lines on phones (nothing cut off)
 // ---------------------------------------------------------------------------
 
-function ExchangeBalanceCard({
-  exchange,
-  items,
-}: {
-  exchange: string
-  items: ExchangeBalanceResponse[]
-}) {
-  // Wallet amounts are in each currency's own unit (backend returns raw
-  // balances, not USD values), so only USD stablecoins can be summed.
-  const total = items.filter((i) => isUsdStable(i.currency)).reduce((sum, i) => sum + i.total, 0)
-  const assetCount = items.length
+function AssetRow({ item }: { item: ExchangeBalanceResponse }) {
+  const usedPct = item.total > 0 ? (item.used / item.total) * 100 : 0
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 rounded-lg px-3 py-2.5 hover:bg-muted/40 sm:grid-cols-[7rem_minmax(0,1fr)_6.5rem_6.5rem_7.5rem]">
+      <div className="min-w-0">
+        <p className="font-mono text-sm font-semibold leading-none">{item.currency}</p>
+        <p className="mt-0.5 text-2xs capitalize text-muted-foreground">{item.account_type}</p>
+      </div>
+      <div className="hidden sm:block" aria-hidden="true">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div className="h-full rounded-full bg-muted-foreground/40" style={{ width: `${Math.min(usedPct, 100)}%` }} />
+        </div>
+      </div>
+      {/* Free and margin-in-use are neutral: neither is a gain or a loss. */}
+      <p className="hidden truncate text-right font-mono text-sm tabular-nums sm:block">{formatAmount(item.free, item.currency)}</p>
+      <p className="hidden truncate text-right font-mono text-sm tabular-nums text-muted-foreground sm:block">{formatAmount(item.used, item.currency)}</p>
+      <p className="truncate text-right font-mono text-sm font-semibold tabular-nums">{formatAmount(item.total, item.currency)}</p>
+      <p className="col-span-2 font-mono text-2xs tabular-nums text-muted-foreground sm:hidden">
+        Bebas {formatAmount(item.free, item.currency)} · dipakai margin {formatAmount(item.used, item.currency)}
+      </p>
+    </div>
+  )
+}
 
+function ExchangeBalanceCard({ exchange, items }: { exchange: string; items: ExchangeBalanceResponse[] }) {
+  // Wallet amounts are in each currency's own unit (backend returns raw balances, not USD
+  // values), so only USD stablecoins can be summed.
+  const total = items.filter((i) => isUsdStable(i.currency)).reduce((sum, i) => sum + i.total, 0)
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-2 pt-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base">
               <ExchangeLabel exchange={exchange} className="text-base font-semibold" />
             </CardTitle>
             <Badge variant="muted" size="xs">
-              {assetCount} aset
+              {items.length} aset
             </Badge>
           </div>
           <div className="text-right">
             <p className="font-mono text-lg font-bold tabular-nums">{formatUsd(total)}</p>
-            <p className="text-2xs text-muted-foreground">total stablecoin (USD)</p>
+            <p className="text-2xs text-muted-foreground">
+              <Term k="stablecoin_total" noTip />
+            </p>
           </div>
         </div>
       </CardHeader>
-
       <CardContent className="px-3 pb-3 pt-1">
         {items.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">Tidak ada aset</p>
         ) : (
           <div>
-            {/* Column header */}
-            <div className="flex items-center gap-4 px-3 pb-1">
-              <span className="w-28 text-2xs font-medium text-muted-foreground uppercase tracking-wider">Aset</span>
-              <span className="flex-1 hidden sm:block" />
-              <div className="flex items-center gap-6 text-right shrink-0">
-                <span className="w-24 text-2xs font-medium text-muted-foreground uppercase tracking-wider">Free</span>
-                <span className="w-24 hidden md:block text-2xs font-medium text-muted-foreground uppercase tracking-wider">Terpakai</span>
-                <span className="w-28 text-2xs font-medium text-muted-foreground uppercase tracking-wider">Total</span>
-              </div>
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 px-3 pb-1 text-2xs font-medium uppercase tracking-wider text-muted-foreground sm:grid-cols-[7rem_minmax(0,1fr)_6.5rem_6.5rem_7.5rem]">
+              <span>Aset</span>
+              <span className="hidden sm:block" />
+              <span className="hidden text-right sm:block">Bebas</span>
+              <span className="hidden text-right sm:block">Dipakai margin</span>
+              <span className="text-right">Total</span>
             </div>
             {items.map((item, i) => (
-              <AssetRow
-                key={`${item.exchange}-${item.currency}-${item.account_type}-${i}`}
-                item={item}
-              />
+              <AssetRow key={`${item.exchange}-${item.currency}-${item.account_type}-${i}`} item={item} />
             ))}
           </div>
         )}
@@ -117,49 +98,41 @@ function ExchangeBalanceCard({
   )
 }
 
-// ---------------------------------------------------------------------------
-// Portfolio summary strip
-// ---------------------------------------------------------------------------
-
 function PortfolioSummary({
   total,
   exchangeCount,
+  updatedAt,
   onRefresh,
   isFetching,
 }: {
   total: number
   exchangeCount: number
+  updatedAt: number
   onRefresh: () => void
   isFetching: boolean
 }) {
   return (
-    <div className="flex items-center justify-between rounded-xl border bg-card px-5 py-4 shadow-xs">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-5 py-4 shadow-xs">
       <div className="flex items-center gap-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-          <Wallet className="h-5 w-5 text-primary" aria-hidden="true" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+          <Wallet className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
         </div>
         <div>
-          <p className="eyebrow">Total stablecoin (USD)</p>
+          <p className="eyebrow flex items-center gap-1.5">
+            <Term k="stablecoin_total" /> <StatusPill kind="live" size="xs" />
+          </p>
           <p className="font-mono text-2xl font-bold tabular-nums tracking-tight">{formatUsd(total)}</p>
+          <p className="text-2xs text-muted-foreground">
+            Hanya USDT, USDC dan sejenisnya; bukan ekuitas akun dan belum termasuk untung/rugi berjalan.
+          </p>
         </div>
       </div>
-      <div className="flex items-center gap-4">
-        <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
-          <TrendingUp className="h-3.5 w-3.5" aria-hidden="true" />
-          <span>{exchangeCount} exchange terhubung</span>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onRefresh}
-          disabled={isFetching}
-          className="gap-1.5 transition-colors duration-200"
-          aria-label="Refresh balance"
-        >
-          <RefreshCw
-            className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`}
-            aria-hidden="true"
-          />
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="text-xs text-muted-foreground">
+          {exchangeCount} exchange terhubung{updatedAt ? ` · diperbarui ${formatAge(updatedAt, { seconds: true })}` : ''}
+        </span>
+        <Button variant="outline" size="sm" onClick={onRefresh} disabled={isFetching} className="gap-1.5" aria-label="Muat ulang saldo">
+          <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} aria-hidden="true" />
           {isFetching ? 'Memuat…' : 'Muat ulang'}
         </Button>
       </div>
@@ -167,77 +140,37 @@ function PortfolioSummary({
   )
 }
 
-// ---------------------------------------------------------------------------
-// Skeleton loader
-// ---------------------------------------------------------------------------
-
 function BalanceSkeleton() {
   return (
-    <div className="space-y-4">
-      {/* Summary strip skeleton */}
-      <div className="flex items-center justify-between rounded-xl border bg-card px-5 py-4 shadow-xs">
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-10 w-10 rounded-lg" />
-          <div className="space-y-1.5">
-            <Skeleton className="h-3 w-28" />
-            <Skeleton className="h-7 w-36" />
-          </div>
-        </div>
-        <Skeleton className="h-8 w-24" />
-      </div>
-      {/* Exchange cards skeleton */}
+    <div className="space-y-4" aria-busy="true">
+      <Skeleton className="h-20 w-full rounded-xl" />
       {[0, 1].map((i) => (
-        <Card key={i} className="overflow-hidden">
-          <CardHeader className="pb-2 pt-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-2 w-2 rounded-full" />
-                <Skeleton className="h-5 w-20" />
-              </div>
-              <Skeleton className="h-7 w-28" />
-            </div>
-          </CardHeader>
-          <CardContent className="px-3 pb-3 pt-1 space-y-1">
-            {[0, 1, 2].map((j) => (
-              <div key={j} className="flex items-center gap-4 px-3 py-2.5">
-                <Skeleton className="h-8 w-28" />
-                <Skeleton className="h-1.5 flex-1 hidden sm:block" />
-                <div className="flex gap-6">
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-4 w-20 hidden md:block" />
-                  <Skeleton className="h-4 w-24" />
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+        <Skeleton key={i} className="h-40 w-full rounded-xl" />
       ))}
     </div>
   )
 }
 
-// ---------------------------------------------------------------------------
-// Main BalanceCard component
-// ---------------------------------------------------------------------------
-
+/** Balances per exchange, read live from the exchange. Same query (useBalance) as before. */
 export function BalanceCard() {
-  const { data, isPending, error, refetch, isFetching } = useBalance()
+  const { data, isPending, error, refetch, isFetching, dataUpdatedAt } = useBalance()
 
   if (isPending) return <BalanceSkeleton />
 
   if (error) {
+    const missingKey = error instanceof ApiError && error.kind === 'not_found'
     return (
       <Card>
         <CardContent className="pt-6">
-          <ErrorPanel
-            kind={(error as { kind?: string }).kind === 'not_found' ? 'not_found' : 'server'}
-            onRetry={() => refetch()}
-            messageOverride={
-              (error as { kind?: string }).kind === 'not_found'
-                ? 'Belum ada API key exchange. Tambahkan di Pengaturan.'
-                : undefined
-            }
-          />
+          {missingKey ? (
+            <EmptyState
+              title="Belum ada API key exchange"
+              description="Saldo dibaca langsung dari exchange memakai API key akunmu. Tambahkan key dulu."
+              action={<SettingsLink />}
+            />
+          ) : (
+            <ErrorState error={error} onRetry={() => refetch()} message="Saldo belum bisa dibaca dari exchange." action={<SettingsLink />} />
+          )}
         </CardContent>
       </Card>
     )
@@ -249,13 +182,16 @@ export function BalanceCard() {
     return (
       <Card>
         <CardContent className="pt-6">
-          <EmptyPanel message="Belum ada data saldo. Pastikan API key exchange sudah diisi dan punya izin baca." />
+          <EmptyState
+            title="Belum ada data saldo"
+            description="Pastikan API key exchange sudah diisi dan punya izin membaca saldo."
+            action={<SettingsLink />}
+          />
         </CardContent>
       </Card>
     )
   }
 
-  // Group by exchange
   const byExchange = balances.reduce<Record<string, ExchangeBalanceResponse[]>>((acc, item) => {
     const key = item.exchange.toLowerCase()
     if (!acc[key]) acc[key] = []
@@ -264,13 +200,13 @@ export function BalanceCard() {
   }, {})
 
   const grandTotal = balances.filter((i) => isUsdStable(i.currency)).reduce((sum, i) => sum + i.total, 0)
-  const exchangeCount = Object.keys(byExchange).length
 
   return (
     <div className="space-y-4">
       <PortfolioSummary
         total={grandTotal}
-        exchangeCount={exchangeCount}
+        exchangeCount={Object.keys(byExchange).length}
+        updatedAt={dataUpdatedAt}
         onRefresh={refetch}
         isFetching={isFetching}
       />
