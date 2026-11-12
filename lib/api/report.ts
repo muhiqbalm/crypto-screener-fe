@@ -28,4 +28,8 @@ export const notificationsApi = {
   markAllRead(): Promise<NotificationReadResponse> {
     return request<NotificationReadResponse>('POST', '/api/v1/lab/notifications/read-all')
   },
+  /** "Sudah dicek": unpins a sticky notification for every admin. */
+  ack(id: number): Promise<NotificationReadResponse> {
+    return request<NotificationReadResponse>('POST', `/api/v1/lab/notifications/${encodeURIComponent(String(id))}/ack`)
+  },
 }

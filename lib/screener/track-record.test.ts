@@ -8,6 +8,7 @@ import {
   periodLabel,
   tierKey,
   trackLine,
+  trackVerdict,
 } from './track-record'
 import { filtersFromParams, filtersToParams } from '@/lib/lab/ledger'
 import type { SignalTrackRecord, TrackHorizonStats, TrackRecordItem } from '@/lib/api/types/ledger'
@@ -53,6 +54,12 @@ describe('screener label -> ledger type', () => {
 describe('tooltip line', () => {
   const k = { type: 'tier_a', direction: 1 } as const
   it('states hit rate, sample and both verdicts', () => {
+    expect(trackLine(k, item({ stats: { '1d': st({ verdict: 'terbukti', verdict_rel_btc: 'belum_terbukti' }), '3d': st({}) } }))).toBe(
+      'Tier A long: 1d hit 42% (n=349, 27 hari) — searah pasar, vs BTC belum terbukti · 3d: belum terbukti, vs BTC belum terbukti',
+    )
+    expect(trackVerdict(st({ verdict: 'terbukti', verdict_rel_btc: 'terbukti' }))).toBe('terbukti')
+    expect(trackVerdict(st({ verdict: 'terbukti', verdict_rel_btc: 'belum_terbukti' }))).toBe('searah_pasar')
+    expect(trackVerdict(undefined)).toBe('belum_cukup_data')
     expect(trackLine(k, item({}))).toBe('Tier A long: 1d hit 42% (n=349, 27 hari) — belum terbukti, vs BTC belum terbukti · 3d: negatif, vs BTC belum terbukti')
   })
   it('says belum cukup data when the sample is too small', () => {

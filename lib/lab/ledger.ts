@@ -1,10 +1,13 @@
 /** Pure helpers for the Signal Ledger page (labels, honesty copy, formatting). */
 import { formatPct } from '@/lib/utils/format'
+import { formatTime } from '@/lib/utils/time'
+import { honestVerdict, samplePeriod, type HonestVerdict } from '@/lib/lab/verdict'
 import type {
   LedgerFilters,
   LedgerGroup,
   LedgerHorizon,
   LedgerHorizonStats,
+  LedgerMeta,
   LedgerSample,
   LedgerSource,
   LedgerVerdict,
@@ -173,11 +176,38 @@ export function filtersToParams(f: LedgerFilterState, horizon: LedgerHorizon): s
 
 // ── answer first: which signals work, which are noise ───────────────────────
 
+/**
+ * The verdict a group may show at horizon `h` (audit 2026-11-13 P3): "terbukti" only when the
+ * BTC-relative interval is above zero too; a raw edge alone is "searah pasar".
+ */
+export function groupVerdict(g: LedgerGroup, h: LedgerHorizon): HonestVerdict {
+  const st = g.horizons[h]
+  return honestVerdict(st?.verdict ?? 'insufficient', st?.verdict_rel_btc)
+}
+
+/**
+ * Where a group's sample comes from, e.g. "100% rekonstruksi · 15 Okt – 11 Nov" or
+ * "dicatat live sejak 12 Nov". The summary keeps the live screener and its reconstruction
+ * apart, so the source decides the share. null when unknown.
+ */
+export function groupSample(g: Pick<LedgerGroup, 'source'>, meta: Pick<LedgerMeta, 'live_since' | 'backfill'> | undefined): string | null {
+  if (g.source === 'screener_rekon') {
+    const period = samplePeriod(meta?.backfill?.from, meta?.backfill?.to)
+    return `100% rekonstruksi${period ? ` · ${period}` : ''}`
+  }
+  if (g.source === 'screener') {
+    return meta?.live_since ? `dicatat live sejak ${formatTime(meta.live_since, { time: false })}` : 'dicatat live'
+  }
+  return null
+}
+
 export interface LedgerAnswer {
   tone: 'baik' | 'perlu_dicek' | 'menunggu' | 'info'
   text: string
-  /** "Terbukti" at the horizon, best average move first. */
+  /** "Terbukti" at the horizon (raw AND vs BTC above zero), best average move first. */
   proven: LedgerGroup[]
+  /** "Searah pasar": raw edge, but not against BTC (most likely the market's own move). */
+  market: LedgerGroup[]
   /** "Negatif": tends to point the wrong way. */
   negative: LedgerGroup[]
   /** "Belum terbukti": cannot be told apart from chance yet. */
@@ -202,20 +232,25 @@ const listNames = (gs: LedgerGroup[], max = 3) => {
 /** Split groups by their verdict at `h` and write the one-sentence answer for the page. */
 export function ledgerAnswer(groups: LedgerGroup[], h: LedgerHorizon): LedgerAnswer {
   const at = (g: LedgerGroup) => g.horizons[h]
-  const by = (v: LedgerVerdict) => groups.filter((g) => (at(g)?.verdict ?? 'insufficient') === v)
-  const proven = by('positive').sort((a, b) => (at(b)?.mean_pct ?? -Infinity) - (at(a)?.mean_pct ?? -Infinity))
-  const negative = by('negative').sort((a, b) => (at(a)?.mean_pct ?? Infinity) - (at(b)?.mean_pct ?? Infinity))
-  const inconclusive = by('inconclusive')
-  const insufficient = by('insufficient')
-  const base = { proven, negative, inconclusive, insufficient }
+  const by = (v: HonestVerdict) => groups.filter((g) => groupVerdict(g, h) === v)
+  const best = (a: LedgerGroup, b: LedgerGroup) => (at(b)?.mean_pct ?? -Infinity) - (at(a)?.mean_pct ?? -Infinity)
+  const proven = by('terbukti').sort(best)
+  const market = by('searah_pasar').sort(best)
+  const negative = by('negatif').sort((a, b) => (at(a)?.mean_pct ?? Infinity) - (at(b)?.mean_pct ?? Infinity))
+  const inconclusive = by('belum_terbukti')
+  const insufficient = by('belum_cukup_data')
+  const base = { proven, market, negative, inconclusive, insufficient }
   const when = `setelah ${HORIZON_LABEL[h]}`
   if (groups.length === 0) return { ...base, tone: 'info', text: 'Belum ada sinyal yang tercatat untuk filter ini.' }
   const parts: string[] = []
   parts.push(
     proven.length
-      ? `${proven.length} jenis sinyal terbukti benar arahnya ${when}: ${listNames(proven)}.`
+      ? `${proven.length} jenis sinyal terbukti benar arahnya ${when}, juga dibanding BTC: ${listNames(proven)}.`
       : `Belum ada jenis sinyal yang terbukti ${when}.`,
   )
+  if (market.length) {
+    parts.push(`${market.length} searah pasar (untung searah sinyal, tapi dibanding BTC belum terbukti): ${listNames(market)}.`)
+  }
   if (negative.length) parts.push(`${negative.length} cenderung salah arah: ${listNames(negative)}.`)
   const rest = inconclusive.length + insufficient.length
   if (rest) {
@@ -223,6 +258,6 @@ export function ledgerAnswer(groups: LedgerGroup[], h: LedgerHorizon): LedgerAns
       `${rest} lainnya belum bisa dibedakan dari kebetulan${insufficient.length ? ` (${insufficient.length} masih menunggu cukup data)` : ''}.`,
     )
   }
-  const tone = proven.length ? 'baik' : negative.length ? 'perlu_dicek' : 'menunggu'
+  const tone = proven.length ? 'baik' : negative.length || market.length ? 'perlu_dicek' : 'menunggu'
   return { ...base, tone, text: parts.join(' ') }
 }

@@ -10,6 +10,7 @@ import { ResponsiveTable, type ResponsiveColumn } from '@/components/ui/responsi
 import { StatusPill } from '@/components/ui/status-pill'
 import { Switch } from '@/components/ui/switch'
 import { Term } from '@/components/ui/term'
+import { LiveHistoryNote } from '@/components/bot/LiveHistoryNote'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shell/states'
 import { BigNumber, CardLink, CountUp, DeckCard, Ring, SectionHead, signTone } from '@/components/lab/arena/deck'
 import { PaperAccountsSection } from '@/components/journal/PaperAccountsSection'
@@ -415,6 +416,7 @@ export function JournalView() {
               </span>
             </div>
           )}
+          {(liveOnly || (includeLive && !filters.source)) && <LiveHistoryNote />}
           {listQ.isPending ? (
             <LoadingState rows={6} />
           ) : listQ.isError ? (

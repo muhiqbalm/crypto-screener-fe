@@ -24,7 +24,7 @@ export const TIER_HINT =
   'jadi di pasar yang sedang turun kelompok atas pun bisa tetap lemah.'
 
 export const SCORE_HINT =
-  'Skor screener: gabungan 5 faktor (momentum 30 hari 30%, funding 25%, OI 20%, rasio long/short 15%, ' +
+  'Skor screener: gabungan 5 faktor (momentum 30 hari 30%, funding 25%, OI 20%, rasio L/S akun top-trader 15%, ' +
   'pembalikan 1 hari 10%) dibanding koin lain. Yang penting posisinya di antara koin lain, bukan angkanya.'
 
 export const CONFIDENCE_TEXT: Record<'HIGH' | 'MEDIUM' | 'LOW', string> = {
@@ -44,7 +44,8 @@ export const FACTORS: FactorInfo[] = [
   { key: 'momentum', label: 'Momentum 30 hari', weight: 30, hint: 'Arah dan kekuatan gerak harga 30 hari terakhir; diredam bila sudah jauh dari rata-rata 50 hari.' },
   { key: 'funding', label: 'Funding (dibaca terbalik)', weight: 25, hint: 'Funding sangat positif = long ramai (rawan turun); sangat negatif = short ramai (rawan naik).' },
   { key: 'oi', label: 'OI (posisi terbuka pasar)', weight: 20, hint: 'Perubahan total kontrak terbuka (dalam dolar) dibanding arah harga.' },
-  { key: 'lsr', label: 'Rasio long/short', weight: 15, hint: 'Perbandingan akun long dan short; di atas 1 berarti lebih banyak long.' },
+  // Audit 2026-11-13 S2: Binance top-trader ACCOUNT ratio (topLongShortAccountRatio), not the position ratio on Arus besar.
+  { key: 'lsr', label: 'Rasio L/S akun top-trader', weight: 15, hint: 'Jumlah akun top-trader Binance yang net long dibagi yang net short; di atas 1 berarti lebih banyak akun long. Beda dengan rasio posisi top-trader di halaman Arus besar dan rasio seluruh pasar.' },
   { key: 'reversal', label: 'Pembalikan 1 hari', weight: 10, hint: 'Tanda harga sudah naik/turun terlalu jauh dalam sehari dan bisa berbalik.' },
 ]
 

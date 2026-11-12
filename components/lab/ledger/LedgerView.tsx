@@ -32,11 +32,14 @@ import {
   retCi,
   filtersFromParams,
   filtersToParams,
+  groupSample,
+  groupVerdict,
   ledgerAnswer,
   sortGroups,
   typeLabel,
   type LedgerFilterState,
 } from '@/lib/lab/ledger'
+import { HONEST_VERDICT_COPY, searahPasarText, type HonestVerdict } from '@/lib/lab/verdict'
 import { useLedgerMeta, useLedgerSignals, useLedgerSummary } from '@/lib/queries/ledger'
 import type { LedgerFilters, LedgerGroup, LedgerHorizon, LedgerMeta, LedgerSignal, LedgerSource } from '@/lib/api/types/ledger'
 
@@ -207,7 +210,7 @@ function summaryColumns(h: LedgerHorizon): ResponsiveColumn<LedgerGroup>[] {
       header: 'Kesimpulan',
       mobile: 'badge',
       cell: (g) => {
-        const v = VERDICT_COPY[at(g)?.verdict ?? 'insufficient']
+        const v = HONEST_VERDICT_COPY[groupVerdict(g, h)]
         const vb = VERDICT_COPY[at(g)?.verdict_rel_btc ?? 'insufficient']
         return (
           <div className="flex flex-col items-start gap-0.5">
@@ -265,7 +268,8 @@ function summaryColumns(h: LedgerHorizon): ResponsiveColumn<LedgerGroup>[] {
     {
       key: 'btc',
       header: <Term k="vs_btc" short />,
-      mobile: 'hidden',
+      mobileLabel: 'vs BTC',
+      mobile: 'field',
       align: 'right',
       cell: (g) => (
         <div className={cn('num text-2xs', signClass(at(g)?.mean_rel_btc_pct))}>
@@ -388,18 +392,32 @@ function RecentSignals({ filters }: { filters: LedgerFilters }) {
 
 // ── verdict cards ──────────────────────────────────────────────────────────
 
-const VERDICT_TONE: Record<string, Tone> = { positive: 'bullish', negative: 'bearish', inconclusive: 'warn', insufficient: 'muted' }
-const VERDICT_ICON: Record<string, typeof CheckCircle2> = { positive: CheckCircle2, negative: XCircle, inconclusive: HelpCircle, insufficient: Clock }
-const VERDICT_RANK: Record<string, number> = { positive: 0, negative: 1, inconclusive: 2, insufficient: 3 }
+// Honest verdicts (audit 2026-11-13 P3): "terbukti" needs the BTC-relative interval above zero too.
+const VERDICT_TONE: Record<HonestVerdict, Tone> = {
+  terbukti: 'bullish',
+  searah_pasar: 'warn',
+  negatif: 'bearish',
+  belum_terbukti: 'warn',
+  belum_cukup_data: 'muted',
+}
+const VERDICT_ICON: Record<HonestVerdict, typeof CheckCircle2> = {
+  terbukti: CheckCircle2,
+  searah_pasar: AlertTriangle,
+  negatif: XCircle,
+  belum_terbukti: HelpCircle,
+  belum_cukup_data: Clock,
+}
+const VERDICT_RANK: Record<HonestVerdict, number> = { terbukti: 0, searah_pasar: 1, negatif: 2, belum_terbukti: 3, belum_cukup_data: 4 }
 
-function VerdictCard({ g, h, onPick }: { g: LedgerGroup; h: LedgerHorizon; onPick: () => void }) {
+function VerdictCard({ g, h, meta, onPick }: { g: LedgerGroup; h: LedgerHorizon; meta: LedgerMeta | undefined; onPick: () => void }) {
   const st = g.horizons[h]
-  const v = st?.verdict ?? 'insufficient'
-  const copy = VERDICT_COPY[v]
+  const v = groupVerdict(g, h)
+  const copy = HONEST_VERDICT_COPY[v]
   const tone = VERDICT_TONE[v]
   const thin = isThin(st)
-  // colour only what the verdict proves; "belum terbukti" stays neutral
-  const judged = v === 'positive' || v === 'negative'
+  const sample = groupSample(g, meta)
+  // colour only what the verdict proves; "belum terbukti" and "searah pasar" stay neutral
+  const judged = v === 'terbukti' || v === 'negatif'
   return (
     <DeckCard
       onClick={onPick}
@@ -418,18 +436,21 @@ function VerdictCard({ g, h, onPick }: { g: LedgerGroup; h: LedgerHorizon; onPic
           {copy.label}
         </Pill>
       }
-      outline={v === 'negative' ? 'bearish' : v === 'positive' ? 'bullish' : undefined}
+      outline={v === 'negatif' ? 'bearish' : v === 'terbukti' ? 'bullish' : undefined}
     >
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <BigNumber label="Arah benar" value={hitPct(st?.hit_rate)} tone={judged ? tone : undefined} size="md" />
         <BigNumber label="Rata-rata gerak" value={pct(st?.mean_pct)} tone={judged ? tone : undefined} size="md" />
+        <BigNumber label="Dibanding BTC" value={pct(st?.mean_rel_btc_pct)} tone={v === 'terbukti' ? tone : undefined} size="md" />
       </div>
       <RateBar rate={st?.hit_rate} tone={judged ? tone : 'muted'} className="mt-4" />
       <p className="mt-3 text-[13px] text-muted-foreground">
         {formatCount(st?.n ?? 0)} dari {formatCount(g.n_signals)} sinyal dinilai
         {st && st.n > 0 ? ` · ${st.coins} koin · ${st.days} hari` : ''}
         {!thin && st?.verdict_rel_btc ? ` · dibanding BTC: ${VERDICT_COPY[st.verdict_rel_btc].label.toLowerCase()}` : ''}
+        {sample ? ` · ${sample}` : ''}
       </p>
+      {v === 'searah_pasar' && <p className="mt-2 text-[13px] text-warn">{searahPasarText(g.direction)}</p>}
     </DeckCard>
   )
 }
@@ -464,14 +485,14 @@ export function LedgerView() {
   const summary = useLedgerSummary(filters, f.split ? 'direction' : 'none')
   const groups = useMemo(() => sortGroups(summary.data?.groups ?? [], horizon), [summary.data, horizon])
   const cards = useMemo(
-    () => [...groups].sort((a, b) => (VERDICT_RANK[a.horizons[horizon]?.verdict ?? 'insufficient'] ?? 3) - (VERDICT_RANK[b.horizons[horizon]?.verdict ?? 'insufficient'] ?? 3)),
+    () => [...groups].sort((a, b) => VERDICT_RANK[groupVerdict(a, horizon)] - VERDICT_RANK[groupVerdict(b, horizon)]),
     [groups, horizon],
   )
   const answer = useMemo(() => ledgerAnswer(groups, horizon), [groups, horizon])
   const cols = useMemo(() => summaryColumns(horizon), [horizon])
   const filtered = Boolean(f.source || f.signal_type || f.symbol || f.since || f.until)
   const rest = answer.inconclusive.length + answer.insufficient.length
-  const heroTone: Tone = answer.proven.length ? 'bullish' : answer.negative.length ? 'warn' : 'muted'
+  const heroTone: Tone = answer.proven.length ? 'bullish' : answer.negative.length || answer.market.length ? 'warn' : 'muted'
 
   return (
     <div className="space-y-8">
@@ -484,15 +505,21 @@ export function LedgerView() {
           <DeckCard hero fill icon={Radar} iconTone={heroTone} eyebrow={`Dicek setelah ${HORIZON_LABEL[horizon]}${filtered ? ' · filter aktif' : ''}`} className="col-span-2 lg:row-span-2">
             <p className="text-xl font-semibold leading-snug tracking-tight sm:text-2xl">
               {answer.proven.length
-                ? `${answer.proven.length} jenis sinyal terbukti benar arahnya.`
+                ? `${answer.proven.length} jenis sinyal terbukti benar arahnya, juga dibanding BTC.`
                 : 'Belum ada jenis sinyal yang terbukti.'}{' '}
+              {answer.market.length ? `${answer.market.length} hanya searah pasar.` : ''}{' '}
               {answer.negative.length ? `${answer.negative.length} cenderung salah arah.` : ''}
             </p>
-            {(answer.proven.length > 0 || answer.negative.length > 0) && (
+            {(answer.proven.length > 0 || answer.market.length > 0 || answer.negative.length > 0) && (
               <div className="mt-5 flex flex-wrap gap-2">
                 {answer.proven.slice(0, 4).map((g) => (
                   <Pill key={`p-${g.source}-${g.signal_type}-${g.direction}`} tone="bullish" icon={CheckCircle2}>
                     {typeLabel(g.signal_type)}
+                  </Pill>
+                ))}
+                {answer.market.slice(0, 4).map((g) => (
+                  <Pill key={`m-${g.source}-${g.signal_type}-${g.direction}`} tone="warn" icon={AlertTriangle}>
+                    {typeLabel(g.signal_type)} · searah pasar
                   </Pill>
                 ))}
                 {answer.negative.slice(0, 4).map((g) => (
@@ -503,12 +530,21 @@ export function LedgerView() {
               </div>
             )}
             <div className="mt-auto space-y-1.5 pt-6 text-[13px] text-muted-foreground">
-              <p>Sebelum biaya. Petunjuk, bukan jaminan.</p>
+              <p>
+                Sebelum biaya. Petunjuk, bukan jaminan. &ldquo;Searah pasar&rdquo; = untung searah sinyal tapi tidak lebih baik dari BTC: kemungkinan
+                hanya ikut arah pasar di satu rezim.
+              </p>
               <Freshness updatedAt={meta.data?.last_cycle?.finished ?? null} />
             </div>
           </DeckCard>
           <DeckCard icon={CheckCircle2} iconTone="bullish" title="Terbukti">
-            <BigNumber label="Jenis sinyal" value={<CountUp value={answer.proven.length} format={(v) => formatCount(Math.round(v))} />} tone="bullish" size="lg" />
+            <BigNumber
+              label="Jenis sinyal"
+              value={<CountUp value={answer.proven.length} format={(v) => formatCount(Math.round(v))} />}
+              tone="bullish"
+              size="lg"
+              hint={answer.market.length ? `+${answer.market.length} searah pasar (belum terbukti dibanding BTC)` : 'gerak mentah dan dibanding BTC'}
+            />
           </DeckCard>
           <DeckCard icon={XCircle} iconTone="bearish" title="Negatif">
             <BigNumber label="Salah arah" value={<CountUp value={answer.negative.length} format={(v) => formatCount(Math.round(v))} />} tone={answer.negative.length ? 'bearish' : undefined} size="lg" />
@@ -555,6 +591,7 @@ export function LedgerView() {
                 key={`${g.source}|${g.signal_type}|${g.direction ?? 0}`}
                 g={g}
                 h={horizon}
+                meta={meta.data}
                 onPick={() => setF({ ...f, source: g.source, signal_type: g.signal_type })}
               />
             ))}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { VERDICT_COPY, daysBetween, groupName, hitCi, hitPct, isThin, ledgerAnswer, pct, retCi, sortGroups, typeLabel } from './ledger'
+import { VERDICT_COPY, daysBetween, groupName, groupSample, groupVerdict, hitCi, hitPct, isThin, ledgerAnswer, pct, retCi, sortGroups, typeLabel } from './ledger'
 import { ledgerQuery } from '@/lib/api/ledger'
 import type { LedgerGroup, LedgerHorizonStats, LedgerVerdict } from '@/lib/api/types/ledger'
 
@@ -56,10 +56,17 @@ describe('ledgerQuery', () => {
   })
 })
 
-const judged = (source: LedgerGroup['source'], t: string, verdict: LedgerVerdict, mean: number | null, direction: LedgerGroup['direction'] = null): LedgerGroup => {
+const judged = (
+  source: LedgerGroup['source'],
+  t: string,
+  verdict: LedgerVerdict,
+  mean: number | null,
+  direction: LedgerGroup['direction'] = null,
+  relBtc: LedgerVerdict = verdict,
+): LedgerGroup => {
   const g = group(source, t, 40)
   g.direction = direction
-  g.horizons['1d'] = { ...stats(40), verdict, mean_pct: mean }
+  g.horizons['1d'] = { ...stats(40), verdict, verdict_rel_btc: relBtc, mean_pct: mean }
   return g
 }
 
@@ -81,6 +88,26 @@ describe('ledgerAnswer (answer first)', () => {
     expect(a.text).toContain('2 jenis sinyal terbukti benar arahnya setelah 1 hari')
     expect(a.text).toContain('1 cenderung salah arah')
     expect(a.text).toContain('2 lainnya belum bisa dibedakan dari kebetulan (1 masih menunggu cukup data)')
+  })
+  it('never calls a raw edge without a BTC-relative edge "terbukti" (audit 2026-11-13 P3)', () => {
+    // 12 Nov: Funding short +1.20% raw (CI above zero), +0.55% vs BTC (CI includes zero)
+    const funding = judged('screener_rekon', 'funding', 'positive', 1.2, -1, 'inconclusive')
+    const a = ledgerAnswer([funding, judged('screener', 'momentum', 'positive', 0.8, 1, 'positive')], '1d')
+    expect(groupVerdict(funding, '1d')).toBe('searah_pasar')
+    expect(a.proven.map((g) => g.signal_type)).toEqual(['momentum'])
+    expect(a.market.map((g) => g.signal_type)).toEqual(['funding'])
+    expect(a.text).toContain('1 searah pasar (untung searah sinyal, tapi dibanding BTC belum terbukti)')
+    const only = ledgerAnswer([funding], '1d')
+    expect(only.proven).toEqual([])
+    expect(only.tone).toBe('perlu_dicek')
+    expect(only.text).toContain('Belum ada jenis sinyal yang terbukti setelah 1 hari')
+  })
+  it('says where a group\'s sample comes from', () => {
+    const meta = { live_since: '2026-11-11T09:00:00Z', backfill: { status: 'done' as const, from: '2026-10-15T00:00:00Z', to: '2026-11-11T08:00:00Z' } }
+    expect(groupSample({ source: 'screener_rekon' }, meta)).toMatch(/^100% rekonstruksi · 15 Okt( 2026)? – 11 Nov( 2026)?$/)
+    expect(groupSample({ source: 'screener' }, meta)).toMatch(/^dicatat live sejak 11 Nov( 2026)?$/)
+    expect(groupSample({ source: 'lab_watch' }, meta)).toBeNull()
+    expect(groupSample({ source: 'screener_rekon' }, undefined)).toBe('100% rekonstruksi')
   })
   it('says nothing is proven yet without inventing a winner', () => {
     const a = ledgerAnswer([judged('screener', 'oi', 'inconclusive', 0.1)], '7d')

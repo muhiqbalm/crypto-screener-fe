@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { StatusPill } from '@/components/ui/status-pill'
 import { Term } from '@/components/ui/term'
 import { ExchangeLabel } from '@/components/trading/ExchangeLabel'
+import { LiveHistoryNote } from '@/components/bot/LiveHistoryNote'
 import { SideBadge } from '@/components/trading/SideBadge'
 import { EmptyState, ErrorState } from '@/components/shell/states'
 import { useOpenPositions, usePositionsHistory } from '@/lib/queries/positions'
@@ -252,6 +253,7 @@ function PositionHistory() {
         busy={isFetching || isPending}
         label="Muat ulang riwayat posisi"
       />
+      <LiveHistoryNote />
       {isPending ? (
         <Skeleton className="h-24 w-full rounded-lg" />
       ) : error ? (

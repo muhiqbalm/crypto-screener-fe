@@ -108,6 +108,15 @@ describe('botVerdict', () => {
     expect(v.sentence).toMatch(/^Perlu dicek: 0 dari 1 sinyal 7 hari terakhir cocok, tapi 1 sinyal menurut Lab/)
   })
 
+  it('keeps a rejected live order "belum aman" even though it is flagged perlu dicek (audit 2026-11-13 K1)', () => {
+    const v = botVerdict(base({
+      live: report([row('gagal', '2026-11-09T00:00:00Z', { perlu_dicek: true, side: 'short', reason: 'ditolak: posisi manual' })]),
+      bot: BOT_OK,
+    }))
+    expect(v.tone).toBe('bad')
+    expect(v.sentence).toContain('1 sinyal gagal dieksekusi')
+  })
+
   it('reports price differences and unexpected deliveries', () => {
     const v = botVerdict(base({
       live: report([row('cocok', '2026-11-10T04:00:00Z'), row('harga_beda', '2026-11-11T04:00:00Z'), row('tak_terduga', '2026-11-11T12:00:00Z')]),

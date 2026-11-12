@@ -157,8 +157,12 @@ export function botVerdict(input: VerdictInput): BotVerdict {
   const rows = live?.rows ?? []
   const by = (s: LiveCheckStatus) => rows.filter((r) => r.status === s)
   const problems = [...by('gagal'), ...by('tidak_terkirim')]
-  const hard = problems.filter((r) => !r.perlu_dicek)
-  const soft = problems.filter((r) => r.perlu_dicek)
+  // A delivered order that did not execute (gagal) is always a missed trade. Since 2026-11-13
+  // every gagal row is also perlu_dicek (so the Lab raises a sticky notification); only a
+  // tidak_terkirim row with a Lab-vs-Pine cause is the softer "maybe the Lab is wrong" case.
+  const isSoft = (r: LiveCheckRow) => r.status !== 'gagal' && r.perlu_dicek
+  const hard = problems.filter((r) => !isSoft(r))
+  const soft = problems.filter(isSoft)
   const priceDiff = by('harga_beda')
   const unexpected = by('tak_terduga')
   const expected = rows.filter((r) => r.expected)

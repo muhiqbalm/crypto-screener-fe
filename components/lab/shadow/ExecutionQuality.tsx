@@ -7,6 +7,7 @@ import { Segmented } from '@/components/ui/segmented'
 import { StatTile } from '@/components/ui/stat-tile'
 import { KpiTile } from '@/components/ui/kpi'
 import { SectionHeading } from '@/components/shell/page'
+import { LiveHistoryNote } from '@/components/bot/LiveHistoryNote'
 import { StatusPill } from '@/components/ui/status-pill'
 import { DirectionBadge } from '@/components/ui/direction-badge'
 import { ResponsiveTable, type ResponsiveColumn } from '@/components/ui/responsive-table'
@@ -369,6 +370,7 @@ export function ExecutionQuality({ id = 'eksekusi' }: { id?: string }) {
           </div>
           <p className="text-[15px] leading-relaxed text-muted-foreground">{executionAnswer(r)}</p>
           <SampleWarning r={r} />
+          <LiveHistoryNote />
           {r.signals.length === 0 ? (
             <EmptyState
               title="Belum ada sinyal live"
