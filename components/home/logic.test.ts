@@ -196,3 +196,23 @@ describe('assistantSummary', () => {
     expect(assistantSummary({})).toEqual([])
   })
 })
+
+describe('v2 helpers', () => {
+  it('bestCoin: only a positive-evidence call is "terbaik" (K8); v1 falls back to the top coin', async () => {
+    const { bestCoin, pickWatchCoins: pick } = await import('./logic')
+    const v2 = (label: string) =>
+      ({ ...v1([row('AAA', 'LONG', { peluang: { label } })]), ranking: ['AAAUSDT'] }) as unknown as OutlookResponse
+    expect(bestCoin(pick(v2('positif')))?.basis).toBe('positif')
+    expect(bestCoin(pick(v2('belum_jelas')))).toBeNull()
+    expect(bestCoin(pick(v1([row('BBB', 'SHORT')])))).toMatchObject({ basis: 'teratas', coin: { coin: 'BBB' } })
+    expect(bestCoin(null)).toBeNull()
+  })
+
+  it('liveDonut judges like botVerdict: expected rows, not waiting / without log', async () => {
+    const { liveDonut } = await import('./logic')
+    const r = (status: string, expected = true) => ({ status, expected: expected ? {} : null })
+    const live = { rows: [r('cocok'), r('cocok'), r('harga_beda'), r('tidak_terkirim'), r('menunggu'), r('tanpa_log'), r('tak_terduga', false)] }
+    expect(liveDonut(live as never)).toEqual({ ok: 2, warn: 1, bad: 1, judged: 4 })
+    expect(liveDonut(undefined)).toBeNull()
+  })
+})
