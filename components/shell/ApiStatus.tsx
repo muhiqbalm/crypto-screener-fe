@@ -3,38 +3,71 @@
 import { cn } from '@/lib/utils/cn'
 import { useApiHealth } from '@/lib/queries/health'
 
-/** Backend health pill (GET /api/v1/health, polled every 30 s). */
-export function ApiStatus({ className }: { className?: string }) {
+export type SystemState = 'mock' | 'pending' | 'healthy' | 'degraded' | 'offline'
+
+export interface SystemStatus {
+  state: SystemState
+  /** Glossary wording: "Sistem normal" / "Data screener terlambat" / "Server tidak terjangkau". */
+  label: string
+  /** Small extra line (latency). */
+  detail: string | null
+  /** true when the user should notice (degraded / offline / mock). */
+  attention: boolean
+  dotClass: string
+}
+
+const LABEL: Record<SystemState, string> = {
+  mock: 'Mode contoh (data palsu)',
+  pending: 'Mengecek sistem…',
+  healthy: 'Sistem normal',
+  degraded: 'Data screener terlambat',
+  offline: 'Server tidak terjangkau',
+}
+
+const DOT: Record<SystemState, string> = {
+  mock: 'bg-warn',
+  pending: 'bg-muted-foreground/50',
+  healthy: 'bg-bullish',
+  degraded: 'bg-warn',
+  offline: 'bg-bearish',
+}
+
+/** Backend health (GET /api/v1/health every 30 s) in glossary words. */
+export function useSystemStatus(): SystemStatus {
   const isMock = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true'
   const { data: health, isPending } = useApiHealth()
+  const state: SystemState = isMock ? 'mock' : isPending ? 'pending' : (health?.status ?? 'offline')
+  const latency = health?.latencyMs
+  return {
+    state,
+    label: LABEL[state],
+    detail:
+      state === 'healthy' || state === 'degraded'
+        ? `Respons server ${latency ?? '–'} ms`
+        : state === 'offline'
+          ? 'Coba muat ulang halaman sebentar lagi.'
+          : state === 'mock'
+            ? 'Hanya untuk pengembangan.'
+            : null,
+    attention: state === 'degraded' || state === 'offline' || state === 'mock',
+    dotClass: DOT[state],
+  }
+}
 
-  const state = isMock ? 'mock' : isPending ? 'pending' : (health?.status ?? 'offline')
-  const dot = {
-    mock: 'bg-warn',
-    pending: 'bg-muted-foreground/50',
-    healthy: 'bg-bullish',
-    degraded: 'bg-warn',
-    offline: 'bg-bearish',
-  }[state]
-  const label = {
-    mock: 'Mode mock',
-    pending: 'Cek API…',
-    healthy: `API online · ${health?.latencyMs ?? '–'} ms`,
-    degraded: `API lambat (data basi) · ${health?.latencyMs ?? '–'} ms`,
-    offline: 'API offline',
-  }[state]
-
+/** Status pill (dot + words). Kept for pages that want it inline; the shell shows it in the User Hub. */
+export function ApiStatus({ className }: { className?: string }) {
+  const s = useSystemStatus()
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border bg-muted/40 px-2.5 py-1 font-mono text-2xs text-foreground',
+        'inline-flex items-center gap-1.5 rounded-full border bg-muted/40 px-2.5 py-1 text-2xs text-foreground',
         className,
       )}
       role="status"
       aria-live="polite"
     >
-      <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', dot)} aria-hidden="true" />
-      <span className="truncate">{label}</span>
+      <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', s.dotClass)} aria-hidden="true" />
+      <span className="truncate">{s.label}</span>
     </div>
   )
 }

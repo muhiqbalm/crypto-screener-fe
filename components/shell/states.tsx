@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils/cn'
 import { ApiError, type ApiErrorKind } from '@/lib/api/errors'
+import { describeError } from '@/components/shell/error-copy'
 
 /**
  * Standard loading / empty / error states. Use these instead of ad-hoc
@@ -52,21 +53,43 @@ export function errorKind(error: unknown): ApiErrorKind {
   return error instanceof ApiError ? error.kind : 'server'
 }
 
+/**
+ * Error block, always in Indonesian with a suggested action.
+ *
+ *   <ErrorState error={query.error} onRetry={() => query.refetch()} />
+ *
+ * Pass the caught `error` (preferred): it is mapped by `describeError` (status,
+ * backend reason, network) and technical text like "ApiError(server:422)" is
+ * never shown. `kind` / `title` / `message` still work and override the mapping.
+ */
 export function ErrorState({
-  kind = 'server',
+  error,
+  kind,
   title,
   message,
+  hint,
   onRetry,
+  action,
   className,
   compact,
 }: {
+  /** The caught error (ApiError or anything else). */
+  error?: unknown
   kind?: ApiErrorKind
   title?: string
   message?: string
+  /** What the user can do; default from the error mapping. */
+  hint?: string
   onRetry?: () => void
+  /** Extra action next to "Coba lagi" (e.g. a link). */
+  action?: React.ReactNode
   className?: string
   compact?: boolean
 }) {
+  const copy = error !== undefined ? describeError(error) : null
+  const body = message ?? copy?.message ?? ERROR_MESSAGES[kind ?? 'server']
+  const heading = title ?? copy?.title
+  const tip = hint ?? copy?.hint
   return (
     <div
       role="alert"
@@ -78,13 +101,19 @@ export function ErrorState({
     >
       <AlertTriangle className={cn('text-bearish', compact ? 'h-6 w-6' : 'h-8 w-8')} aria-hidden="true" />
       <div className="space-y-1">
-        {title && <p className="text-sm font-medium">{title}</p>}
-        <p className="mx-auto max-w-sm text-sm text-muted-foreground">{message ?? ERROR_MESSAGES[kind]}</p>
+        {heading && <p className="text-sm font-medium">{heading}</p>}
+        <p className="mx-auto max-w-sm text-sm text-muted-foreground">{body}</p>
+        {tip && <p className="mx-auto max-w-sm text-xs text-muted-foreground">{tip}</p>}
       </div>
-      {onRetry && (
-        <Button variant="outline" size="sm" onClick={onRetry}>
-          Coba lagi
-        </Button>
+      {(onRetry || action) && (
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {onRetry && (
+            <Button variant="outline" size="sm" onClick={onRetry}>
+              Coba lagi
+            </Button>
+          )}
+          {action}
+        </div>
       )}
     </div>
   )
