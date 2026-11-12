@@ -1,6 +1,6 @@
 import { request } from './client'
 import type { LabId } from './types/lab'
-import type { OutlookDetail, OutlookInputs, OutlookResponse, RegimeResponse } from './types/outlook'
+import type { OutlookDetail, OutlookInputs, OutlookResponse, OutlookTrackRecord, RegimeResponse } from './types/outlook'
 
 const P = '/api/v1/lab'
 
@@ -24,6 +24,13 @@ export const outlookApi = {
   },
   refresh(): Promise<{ job_id: LabId; already: boolean }> {
     return request('POST', `${P}/outlook/refresh`)
+  },
+  /** Heavy historical replay (calibration); runs in the Lab worker. */
+  calibrate(): Promise<{ job_id: LabId; already: boolean }> {
+    return request('POST', `${P}/outlook/calibrate`)
+  },
+  getTrackRecord(limit = 100, signal?: AbortSignal): Promise<OutlookTrackRecord> {
+    return request<OutlookTrackRecord>('GET', `${P}/outlook/track-record?limit=${limit}`, undefined, signal)
   },
   getRegime(signal?: AbortSignal): Promise<RegimeResponse> {
     return request<RegimeResponse>('GET', `${P}/regime`, undefined, signal)

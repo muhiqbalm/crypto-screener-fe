@@ -20,6 +20,13 @@ export type EvidenceCode =
   | 'historis'
   | 'konteks'
   | 'tidak_tersedia'
+  | 'teruji_replay'
+  | 'belum_terbukti_replay'
+  | 'terbalik_replay'
+export type Fase = 'baru' | 'berjalan'
+export type StrategyClass = 'lolos_uji' | 'belum_diuji' | 'gagal_uji'
+export type CallStatus = 'none' | 'open' | 'tp' | 'sl' | 'batal' | 'expired' | 'invalid'
+export type PeluangLabel = 'positif' | 'negatif' | 'belum_jelas' | 'belum_terukur' | 'tidak_ada_sinyal' | 'tidak_valid' | 'basi'
 
 export interface OutlookPreset {
   id: LabId
@@ -39,6 +46,9 @@ export interface OutlookPreset {
 export interface OutlookStrategy {
   template_id: string
   timeframe: string
+  /** v2: preset name, or "Rosyade default 4H" when no preset passed validation */
+  name?: string
+  primary?: boolean
   preset: OutlookPreset | null
   param_source: 'preset' | 'template_default'
   evidence: 'lolos_uji' | 'gagal_uji' | 'belum_diuji'
@@ -68,9 +78,23 @@ export interface OutlookStrategy {
   error?: string | null
 }
 
+export interface FactorLift {
+  verdict: 'teruji' | 'belum_terbukti' | 'terbalik'
+  searah_mean_r: number | null
+  searah_n_pos: number | null
+  berlawanan_mean_r: number | null
+  berlawanan_n_pos: number | null
+  diff_r: number | null
+  se_diff_r: number | null
+}
+
 export interface OutlookFactor {
-  key: 'strategi' | 'screener' | 'tren' | 'momentum' | 'funding' | 'oi' | 'regime' | 'berita'
+  key: 'strategi' | 'screener' | 'tren_1d' | 'momentum_1h' | 'funding' | 'oi' | 'regime' | 'berita' | 'tren' | 'momentum'
   label: string
+  /** v2: utama = strategy position, mtf = 1D/1H/BTC context, konteks = live-only context */
+  group?: 'utama' | 'mtf' | 'konteks'
+  in_keyakinan?: boolean
+  lift?: FactorLift | null
   direction: -1 | 0 | 1
   weight: number
   used_weight: number
@@ -82,6 +106,22 @@ export interface OutlookFactor {
   available: boolean
 }
 
+export interface CalibStats {
+  n_cases: number
+  n_pos: number
+  p_tp: number | null
+  p_sl: number | null
+  p_batal: number | null
+  p_expired: number | null
+  mean_r: number | null
+  lo95_r: number | null
+  median_r: number | null
+  ev_shrunk_r: number | null
+  win_rate: number | null
+  median_mfe_r: number | null
+  median_bars: number | null
+}
+
 export interface OutlookBiasInfo {
   bias: OutlookBias
   keyakinan: Keyakinan | null
@@ -90,6 +130,92 @@ export interface OutlookBiasInfo {
   lean: number | null
   max_support: number | null
   reasons: string[]
+  /** v2 */
+  basis?: 'kalibrasi' | 'aturan' | null
+  cls?: StrategyClass
+  fase?: Fase
+  align?: 'searah' | 'campuran' | 'berlawanan'
+  conclusion?: string | null
+  calib?: {
+    key: string
+    enough: boolean
+    stats: CalibStats | null
+    own_key: string
+    own: CalibStats | null
+    pool_key: string
+    pooled: CalibStats | null
+    computed_at: string | null
+  } | null
+}
+
+export interface OutlookPlan {
+  action: 'masuk' | 'menyusul' | 'tunggu' | 'jangan_masuk'
+  side: OutlookSide | null
+  text: string
+  saran?: string
+  freshness: { bar_close: string | null; age_hours: number | null; stale: boolean; fresh_signal: boolean }
+  price?: number
+  sl?: number | null
+  tp?: number | null
+  timeframe?: string
+  horizon_bars?: number
+  horizon_hours?: number
+  valid_until?: string | null
+  fase?: Fase
+  geometry_ok?: boolean
+  r_unit?: number
+  r_unit_pct?: number
+  rr?: number | null
+  entry_zone?: [number, number]
+  dont_chase?: number
+  rr_at_dont_chase?: number | null
+  target_typical?: number | null
+  target_typical_r?: number | null
+  invalidation?: string[]
+  batal_kalau?: string
+  warnings?: string[]
+}
+
+export interface OutlookStrategyRow {
+  name: string
+  template_id: string
+  timeframe: string
+  verdict: LabVerdict | null
+  evidence?: 'lolos_uji' | 'gagal_uji' | 'belum_diuji'
+  primary: boolean
+  side?: OutlookSide | null
+  entry_at?: string | null
+  entry_price?: number | null
+  sl?: number | null
+  tp?: number | null
+  fresh?: boolean
+  last_bar?: string
+  contaminated?: boolean | null
+  error?: string
+}
+
+export interface AgreementCount {
+  long: number
+  short: number
+  flat: number
+  error: number
+  n: number
+}
+
+export interface OutlookPeluang {
+  eligible: boolean
+  score: number | null
+  label: PeluangLabel
+  reason: string
+  rank?: number
+}
+
+export interface OpenPosition {
+  source: 'paper' | 'live'
+  side: string
+  entry_price: number | null
+  entry_time: string | null
+  account?: string | null
 }
 
 export interface TradeStats {
@@ -166,6 +292,27 @@ export interface OutlookProjection {
   } | null
   warnings?: string[]
   note?: string
+  /** v2 */
+  at_typical?: ProjectionLeg | null
+  rr_text?: string | null
+  calibrated?: {
+    key: string
+    n_cases: number
+    n_pos: number
+    mean_r: number
+    ev_shrunk_r: number | null
+    lo95_r: number | null
+    p_tp: number | null
+    p_sl: number | null
+    p_batal: number | null
+    p_expired: number | null
+    win_rate: number | null
+    risk_usd: number
+    ev_usd: number
+    lo95_usd: number | null
+    enough: boolean
+    caveat: string
+  } | null
 }
 
 export interface OutlookHeadline {
@@ -194,6 +341,17 @@ export interface OutlookRow {
   stale: boolean
   error?: string | null
   unavailable?: boolean
+  /** v2 (absent on rows computed before the v2 job ran) */
+  schema_version?: number
+  plan?: OutlookPlan
+  strategies?: OutlookStrategyRow[]
+  agreement?: { all: AgreementCount; lolos_uji: AgreementCount }
+  mtf?: { states: Record<string, unknown>; dirs: Record<string, -1 | 0 | 1 | null> }
+  changes?: string[]
+  previous_call?: { bar: string; side: OutlookSide | null; keyakinan: Keyakinan | null; sl: number | null; tp: number | null; price: number | null; status: CallStatus } | null
+  peluang?: OutlookPeluang
+  positions?: OpenPosition[]
+  coin_calibration?: { key: string; fase: CalibStats | null; side: CalibStats | null } | null
 }
 
 export interface OutlookMethod {
@@ -242,6 +400,44 @@ export interface OutlookInputs {
   risk_pct: number
 }
 
+export interface TrackGroup {
+  n_calls: number
+  n_done: number
+  n_open: number
+  n_pos: number
+  tp?: number
+  sl?: number
+  batal?: number
+  expired?: number
+  mean_r?: number
+  win_rate?: number
+}
+
+export interface CalibrationBrief {
+  computed_at: string
+  version: number
+  counts: { cases: number; done: number; positions: number; coins: number; first: string | null; last: string | null }
+  split: string
+  method: string[]
+  excluded: { factor: string; reason: string }[]
+  by_keyakinan: Record<string, CalibStats>
+  oos_check: { split: string; train_cases: number; test_cases: number; v2: Record<string, CalibStats>; apriori: Record<string, CalibStats> }
+  fase_split: Record<'sebelum' | 'sesudah' | 'semua', Record<string, CalibStats>>
+  factor_lift: Record<string, { verdict: FactorLift['verdict']; diff_r: number | null; se_diff_r: number | null; searah: CalibStats; berlawanan: CalibStats }>
+  ambiguous_share: number | null
+  engine_commit: string | null
+  runtime_s: number | null
+}
+
+export interface OutlookCounts {
+  total: number
+  arah: Record<'long' | 'short' | 'netral', number>
+  keyakinan: Record<Keyakinan, number>
+  posisi: Record<'ada' | 'tidak', number>
+  peluang_positif: number
+  sinyal_baru: number
+}
+
 export interface OutlookResponse {
   meta: OutlookMeta | null
   refresh: OutlookJob | null
@@ -251,6 +447,46 @@ export interface OutlookResponse {
   method: OutlookMethod
   disclaimer: string
   rows: OutlookRow[]
+  /** v2 */
+  schema_version?: number
+  calibrate?: OutlookJob | null
+  counts?: OutlookCounts
+  positions_available?: { paper: boolean; live: boolean }
+  ranking?: string[]
+  calibration?: CalibrationBrief | null
+  track_record?: { since: string | null; first_call: string | null; groups: Record<string, TrackGroup> }
+}
+
+export interface OutlookCall {
+  id: LabId
+  symbol: string
+  bar: string
+  bar_close: string
+  side: OutlookSide | null
+  keyakinan: Keyakinan | null
+  cls: StrategyClass | null
+  fase: Fase | null
+  strategy: string | null
+  price: number | null
+  sl: number | null
+  tp: number | null
+  rr: number | null
+  ev_r: number | null
+  status: CallStatus
+  r_net: number | null
+  mfe_r: number | null
+  bars_to_resolve: number | null
+  resolved_at: string | null
+}
+
+export interface OutlookTrackRecord {
+  since: string | null
+  first_call: string | null
+  groups: Record<string, TrackGroup>
+  recent: OutlookCall[]
+  calibration: Pick<CalibrationBrief, 'computed_at' | 'counts' | 'by_keyakinan' | 'oos_check' | 'fase_split' | 'split'> | null
+  statuses: Record<string, string>
+  note: string
 }
 
 export interface OutlookDetail extends OutlookRow {
@@ -271,6 +507,9 @@ export interface OutlookDetail extends OutlookRow {
   method: OutlookMethod
   disclaimer: string
   inputs: OutlookInputs
+  /** v2 */
+  calls?: OutlookCall[]
+  coin_calibration_all?: Record<string, CalibStats> | null
 }
 
 export interface RegimeCurrent extends RegimeBrief {

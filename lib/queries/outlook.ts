@@ -8,6 +8,7 @@ const keys = {
   list: (i: OutlookInputs) => [...keys.all, 'list', i] as const,
   detail: (s: string, i: OutlookInputs) => [...keys.all, 'detail', s, i] as const,
   regime: () => ['lab', 'regime'] as const,
+  track: () => [...keys.all, 'track-record'] as const,
 }
 
 export function useOutlook(i: OutlookInputs) {
@@ -38,6 +39,26 @@ export function useRefreshOutlook() {
   return useMutation({
     mutationFn: () => outlookApi.refresh(),
     onSuccess: () => void qc.invalidateQueries({ queryKey: keys.all }),
+  })
+}
+
+export function useCalibrateOutlook() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => outlookApi.calibrate(),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: keys.all }),
+  })
+}
+
+/** Live track record of stored calls (evaluated after the fact). Changes once per 4H bar. */
+export function useOutlookTrackRecord(enabled = true) {
+  return useQuery({
+    queryKey: keys.track(),
+    queryFn: ({ signal }) => outlookApi.getTrackRecord(100, signal),
+    enabled,
+    staleTime: 5 * 60_000,
+    refetchInterval: 10 * 60_000,
+    refetchIntervalInBackground: false,
   })
 }
 

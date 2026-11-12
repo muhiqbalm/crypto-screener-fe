@@ -4,7 +4,7 @@ import { OutlookView } from '@/components/lab/outlook/OutlookView'
 
 export const metadata = {
   title: 'Outlook Koin',
-  description: 'Bias long/short per koin dari strategi Rosyade 4H, faktor pendukung beserta bukti, dan proyeksi dana.',
+  description: 'Per koin: arah long/short dari strategi teruji, rencana entry/SL/TP, bukti historis kasus serupa, rekam jejak, dan proyeksi dana.',
 }
 
 export default function OutlookPage() {
@@ -12,7 +12,7 @@ export default function OutlookPage() {
     <PageContainer width="wide">
       <LabHeader
         title="Outlook Koin"
-        subtitle="Arah tiap koin mengikuti posisi strategi Rosyade 4H; tren, momentum, funding/OI, screener dan kondisi pasar hanya menaikkan atau menurunkan keyakinan. Setiap faktor menunjukkan seberapa terbukti. Informasi, bukan jaminan."
+        subtitle="Per koin: arah dari strategi utama (preset teruji, kalau ada), rencana entry/SL/TP dengan batas batal, dan keyakinan dari hasil panggilan serupa di simulasi historis. Faktor lain hanya konteks. Informasi, bukan jaminan."
       />
       <OutlookView />
     </PageContainer>
