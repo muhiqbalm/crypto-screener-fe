@@ -22,6 +22,7 @@ import {
   TrendingUp,
   type LucideIcon,
 } from 'lucide-react'
+import { coinOf } from '@/lib/utils/format'
 
 /**
  * Single source of truth for app navigation (sidebar, mobile drawer, hub
@@ -190,6 +191,11 @@ export function isNavItemActive(item: Pick<NavItem, 'href' | 'exact' | 'activePr
 /** The menu item that owns a path (for titles / breadcrumbs), or null. */
 export function activeNavItem(pathname: string, isAdmin = true): NavItem | null {
   return navItemsForRole(isAdmin).find((i) => isNavItemActive(i, pathname)) ?? null
+}
+
+/** Link to a coin's page (Peluang koin): "ETHUSDT" / "ETH/USDT:USDT" / "ETH" → "/koin/ETH". */
+export function coinHref(symbol: string): string {
+  return `/koin/${encodeURIComponent(coinOf(symbol))}`
 }
 
 /**
