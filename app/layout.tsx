@@ -1,12 +1,20 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Geist_Mono, Inter, Plus_Jakarta_Sans } from 'next/font/google'
 import './globals.css'
 import { Providers, ThemeProvider } from './providers'
 import { Toaster } from '@/components/shell/Toaster'
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+// Text: Inter. Headings and big numbers: Plus Jakarta Sans. Code only: Geist Mono.
+const inter = Inter({
+  variable: '--font-inter',
   subsets: ['latin'],
+  display: 'swap',
+})
+
+const jakarta = Plus_Jakarta_Sans({
+  variable: '--font-jakarta',
+  subsets: ['latin'],
+  display: 'swap',
 })
 
 const geistMono = Geist_Mono({
@@ -32,7 +40,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${inter.variable} ${jakarta.variable} ${geistMono.variable} antialiased`}>
         {/* ThemeProvider must be in the server layout so next-themes can inject
             its anti-flash script at the server level (React 19 / Next.js 16
             warns when a <script> tag is rendered inside a client component). */}
