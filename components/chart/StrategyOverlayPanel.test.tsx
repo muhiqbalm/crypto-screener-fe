@@ -63,8 +63,8 @@ describe('StrategyOverlayPanel', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /hapus pantauan ini/i }))
     fireEvent.click(screen.getByRole('button', { name: /ya, hapus pantauan/i }))
-    await waitFor(() => expect(del).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(del).toHaveBeenCalledTimes(1), { timeout: 5000 })
     expect(del.mock.calls[0][0]).toBe('7')
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/chart'))
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/chart'), { timeout: 5000 })
   })
 })

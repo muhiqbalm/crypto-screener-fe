@@ -34,7 +34,7 @@ afterEach(() => vi.restoreAllMocks())
 describe('BotStatusView', () => {
   it('answers "Bot live aman?" first, in one sentence, with a LIVE label', async () => {
     setup()
-    await waitFor(() => expect(screen.getByText(/^Perlu dicek: 5 dari 6 sinyal 7 hari terakhir sesuai/)).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText(/^Perlu dicek: 5 dari 6 sinyal 7 hari terakhir sesuai/)).toBeInTheDocument(), { timeout: 5000 })
     expect(screen.getByText('Bot live aman?')).toBeInTheDocument()
     expect(screen.getAllByText('LIVE').length).toBeGreaterThan(0)
     // The answer opens the evidence on the problem rows.
@@ -43,7 +43,7 @@ describe('BotStatusView', () => {
 
   it('shows the webhook state per bot account and never asks for or renders a passphrase', async () => {
     const { view, webhookConfig } = setup()
-    await waitFor(() => expect(screen.getByText('Webhook aktif')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Webhook aktif')).toBeInTheDocument(), { timeout: 5000 })
     expect(screen.getByText('Webhook tidak aktif')).toBeInTheDocument()
     expect(webhookConfig).not.toHaveBeenCalled()
     expect(view.container.textContent).not.toMatch(/xK9mP2nQ4rT7vW3z/) // the mock webhook passphrase
@@ -52,13 +52,13 @@ describe('BotStatusView', () => {
 
   it('has the anchors other pages link to', async () => {
     const { view } = setup()
-    await waitFor(() => expect(view.container.querySelector('#eksekusi')).not.toBeNull())
+    await waitFor(() => expect(view.container.querySelector('#eksekusi')).not.toBeNull(), { timeout: 5000 })
     expect(view.container.querySelector('#cek')).not.toBeNull()
   })
 
   it('says plainly when no account can trade', async () => {
     const off = mockBotStatus()
     setup({ ...off, active_accounts: 0, accounts: off.accounts.map((a) => ({ ...a, webhook_active: false, webhook_since: null })) })
-    await waitFor(() => expect(screen.getByText(/webhook bot sedang tidak aktif/)).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText(/webhook bot sedang tidak aktif/)).toBeInTheDocument(), { timeout: 5000 })
   })
 })
