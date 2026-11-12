@@ -5,6 +5,7 @@
 import type {
   BreakdownRow,
   JournalEntry,
+  JournalFilters,
   PaperAccount,
   PaperPosition,
   PaperSide,
@@ -195,11 +196,177 @@ export function compareRows(c: Record<string, unknown> | null | undefined): Comp
 }
 
 export const COMPARE_LABEL: Record<string, string> = {
-  trades: 'Jumlah trade',
+  trades: 'Jumlah transaksi',
   open_positions: 'Posisi terbuka',
-  winrate: 'Winrate',
-  profit_factor: 'Profit factor',
-  net_pnl: 'Net P&L (USDT)',
-  net_return_pct: 'Net return (%)',
+  winrate: 'Persentase menang',
+  profit_factor: 'PF (rasio untung/rugi)',
+  net_pnl: 'Hasil bersih (USDT)',
+  net_return_pct: 'Hasil bersih (%)',
   avg_r: 'Rata-rata R',
+}
+
+// ── Mulai paper: account sizing that mirrors the preset's backtest ──────────
+
+/** Default simulated starting balance for a new paper account (USDT). */
+export const PAPER_START_BALANCE = 10_000
+
+/** Name of the account created by "Mulai paper" (same rule as ops/lab_seed_presets.py). */
+export function paperAccountName(presetName: string): string {
+  return `Paper ${presetName}`.slice(0, 80)
+}
+
+export type MirrorSizing =
+  | { ok: true; risk_pct: number; leverage_max: number; mode: string; summary: string }
+  | { ok: false; reason: string }
+
+const numParam = (v: unknown): number | null => {
+  const n = typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' ? Number(v) : NaN
+  return Number.isFinite(n) ? n : null
+}
+
+/**
+ * risk_pct / leverage_max for a paper account that sizes trades like the preset's
+ * backtest, so "Sesuai uji?" in Paper berjalan compares like with like. Same rule as
+ * `paper_sizing` in ops/lab_seed_presets.py (the seed of the existing paper presets):
+ *
+ *   margin (Rosyade live): notional = leverage × portfolio_risk% of equity → risk 100%, cap = that multiple
+ *   risk:                  risk_pct = risk_per_trade_pct, cap = max_notional_mult
+ *   vol_target:            risk 100%, cap = max_notional_mult (auto-paper copies the engine's multiple)
+ *
+ * `params` may be partial: missing keys fall back to `defaults` (the template defaults).
+ * The paper engine itself is untouched; this only picks the account settings.
+ */
+export function mirrorSizing(
+  params: Record<string, unknown> | null | undefined,
+  defaults: Record<string, unknown> = {},
+): MirrorSizing {
+  const p = { ...defaults, ...(params ?? {}) }
+  const mode = String(p.sizing_mode ?? 'margin')
+  if ((numParam(p.dd_derisk_pct) ?? 0) > 0) {
+    return { ok: false, reason: 'Preset ini mengecilkan posisi saat drawdown. Cara itu belum bisa ditiru di paper.' }
+  }
+  let risk: number | null = null
+  let cap: number | null = null
+  if (mode === 'margin') {
+    const lev = numParam(p.leverage)
+    const share = numParam(p.portfolio_risk)
+    if (lev !== null && share !== null) {
+      risk = 100
+      cap = Math.round(lev * share * 100) / 10_000
+    }
+  } else if (mode === 'risk') {
+    risk = numParam(p.risk_per_trade_pct)
+    cap = numParam(p.max_notional_mult)
+  } else if (mode === 'vol_target') {
+    risk = 100
+    cap = numParam(p.max_notional_mult)
+  } else {
+    return { ok: false, reason: `Cara menentukan ukuran posisi "${mode}" belum bisa ditiru di paper.` }
+  }
+  if (risk === null || cap === null || !(risk > 0) || risk > 100) {
+    return { ok: false, reason: 'Parameter ukuran posisi preset ini tidak lengkap, jadi paper tidak bisa meniru uji.' }
+  }
+  if (cap < 1 || cap > 125) {
+    return { ok: false, reason: `Ukuran posisi preset ini ${formatMult(cap)} modal. Akun paper hanya mendukung 1× sampai 125×.` }
+  }
+  const summary =
+    mode === 'risk'
+      ? `risiko ${formatMult(risk, '%')} per trade, posisi maks. ${formatMult(cap)} modal`
+      : mode === 'vol_target'
+        ? `ikut gejolak (seperti uji), posisi maks. ${formatMult(cap)} modal`
+        : `posisi ${formatMult(cap)} modal (seperti uji)`
+  return { ok: true, risk_pct: risk, leverage_max: cap, mode, summary }
+}
+
+function formatMult(v: number, unit = '×'): string {
+  const s = Number.isInteger(v) ? String(v) : v.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')
+  return `${s}${unit}`
+}
+
+/**
+ * Reuse an existing account named like the new one only when it was never used
+ * (no trades, no open positions, balance untouched): a retry after a failed start
+ * must not leave orphan accounts, but old history must never be mixed in.
+ */
+export function reusablePaperAccount(accounts: PaperAccount[] | null | undefined, name: string): PaperAccount | null {
+  for (const a of accounts ?? []) {
+    const start = a.starting_balance ?? null
+    const untouched =
+      a.name === name &&
+      openPositionCount(a) === 0 &&
+      Math.abs(a.realized_pnl ?? 0) < 1e-9 &&
+      start !== null &&
+      Math.abs(a.balance - start) < 1e-9
+    if (untouched) return a
+  }
+  return null
+}
+
+// ── Jurnal: paper by default, live-bot trades only on request ────────────────
+
+/** Journal source → one label per concept (glossary "trade_source"). */
+export const JOURNAL_SOURCE_LABEL: Record<string, string> = {
+  paper_manual: 'Simulasi manual',
+  paper_auto: 'Simulasi otomatis',
+  bot: 'Bot live (uang asli)',
+}
+
+export const isLiveSource = (source: string | null | undefined): boolean => source === 'bot'
+
+/** Exit reasons stored by the paper engine, the live-bot import and Universal. */
+const EXIT_LABEL: Record<string, string> = {
+  hard_tp: 'Kena target (TP)',
+  hard_sl: 'Kena batal jika (SL)',
+  tp: 'Kena target (TP)',
+  sl: 'Kena batal jika (SL)',
+  manual_close: 'Ditutup manual',
+  strategy_reverse: 'Strategi berbalik arah',
+  universal_rebalance: 'Rebalance Universal',
+  bot_close: 'Ditutup bot live',
+}
+
+export function exitReasonLabel(reason: string | null | undefined): string {
+  if (!reason) return 'tidak tersedia'
+  if (EXIT_LABEL[reason]) return EXIT_LABEL[reason]
+  if (reason.startsWith('strategy_exit')) {
+    const why = reason.split(':')[1]
+    return !why || why === 'flat' ? 'Strategi keluar' : `Strategi keluar (${why.replace(/_/g, ' ')})`
+  }
+  return reason.replace(/_/g, ' ')
+}
+
+/** Journal list page size and the backend's hard cap. */
+export const JOURNAL_PAGE = 200
+export const JOURNAL_MAX = 5000
+
+export interface JournalQuery extends JournalFilters {
+  limit?: number
+  order?: 'asc' | 'desc'
+  exclude_source?: string
+}
+
+const compact = <T extends object>(o: T): T =>
+  Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined && v !== null && v !== '')) as T
+
+/**
+ * GET /journal params: newest first. Live-bot trades are left out unless the user
+ * switched them on (or picked the live source explicitly).
+ */
+export function journalListQuery(f: JournalFilters, opts: { includeLive: boolean; limit: number }): JournalQuery {
+  const live = opts.includeLive || f.source === 'bot'
+  return compact({ ...f, limit: Math.min(Math.max(1, opts.limit), JOURNAL_MAX), order: 'desc' as const, exclude_source: live ? undefined : 'bot' })
+}
+
+/**
+ * GET /journal/stats params: the same filters as the list, but always one kind of
+ * money. Paper statistics never include live-bot trades; picking the live source
+ * gives live-only statistics (labelled LIVE in the UI).
+ */
+export function journalStatsQuery(f: JournalFilters): JournalQuery {
+  return compact({ ...f, exclude_source: f.source === 'bot' ? undefined : 'bot' })
+}
+
+/** Template defaults as a params object (for mirrorSizing when a preset stores only overrides). */
+export function templateDefaults(t: { params: { key: string; default: unknown }[] } | null | undefined): Record<string, unknown> {
+  return Object.fromEntries((t?.params ?? []).map((p) => [p.key, p.default]))
 }

@@ -1,21 +1,24 @@
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { AlertTriangle, Check, Clock, History, X } from 'lucide-react'
+import { AlertTriangle, ArrowRight, Check, Clock, Gauge, History, X } from 'lucide-react'
+import { AnswerCard } from '@/components/ui/answer-card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Freshness } from '@/components/ui/freshness'
 import { Input } from '@/components/ui/input'
+import { ResponsiveTable, type ResponsiveColumn } from '@/components/ui/responsive-table'
 import { Segmented } from '@/components/ui/segmented'
 import { StatTile } from '@/components/ui/stat-tile'
-import { ErrorPanel } from '@/components/shell/ErrorPanel'
-import { LoadingState } from '@/components/shell/states'
-import { Chip, EmptyState, Section } from '@/components/lab/Section'
+import { Term } from '@/components/ui/term'
+import { EmptyState, ErrorState, LoadingState } from '@/components/shell/states'
+import { Chip, Section } from '@/components/lab/Section'
 import { SideBadge } from '@/components/trading/SideBadge'
-import { ApiError } from '@/lib/api/errors'
-import { formatPrice, formatTimestamp, signClass } from '@/lib/utils/format'
+import { formatCount, formatPrice, signClass } from '@/lib/utils/format'
+import { formatAge, formatTime } from '@/lib/utils/time'
 import { cn } from '@/lib/utils/cn'
-import { relativeTime } from '@/lib/lab/form'
 import {
   HORIZON_LABEL,
   SAMPLE_COPY,
@@ -29,21 +32,17 @@ import {
   retCi,
   filtersFromParams,
   filtersToParams,
+  ledgerAnswer,
   sortGroups,
   typeLabel,
   type LedgerFilterState,
 } from '@/lib/lab/ledger'
 import { useLedgerMeta, useLedgerSignals, useLedgerSummary } from '@/lib/queries/ledger'
-import type { LedgerFilters, LedgerHorizon, LedgerMeta, LedgerSignal, LedgerSource } from '@/lib/api/types/ledger'
+import type { LedgerFilters, LedgerGroup, LedgerHorizon, LedgerMeta, LedgerSignal, LedgerSource } from '@/lib/api/types/ledger'
 
 const HORIZONS: LedgerHorizon[] = ['4h', '1d', '3d', '7d']
 const PAGE = 50
-const th = 'px-3 py-2 text-2xs font-medium uppercase tracking-wide text-muted-foreground'
-const selectCls = 'flex h-8 w-full rounded-md border border-input bg-transparent px-2 text-xs'
-
-function errKind(e: unknown) {
-  return e instanceof ApiError ? e.kind : 'server'
-}
+const selectCls = 'flex h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm'
 
 // ── status ─────────────────────────────────────────────────────────────────
 
@@ -56,23 +55,19 @@ function StatusPanel({ meta }: { meta: LedgerMeta }) {
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatTile label="Sinyal tercatat" value={total.toLocaleString('id-ID')} hint={`${meta.symbols.length} koin`} />
-        <StatTile label="Menunggu hasil" value={pending.toLocaleString('id-ID')} hint="Horizon belum lewat (maks. 7 hari)" />
+        <StatTile label="Sinyal tercatat" value={formatCount(total)} hint={`${meta.symbols.length} koin`} />
+        <StatTile label="Menunggu hasil" value={formatCount(pending)} hint="Belum lewat waktu cek (maks. 7 hari)" />
         <StatTile
-          label="Screener live sejak"
-          value={meta.live_since ? formatTimestamp(meta.live_since).slice(0, 10) : 'Belum mulai'}
-          hint={meta.live_since ? `${liveDays} hari pencatatan` : 'Snapshot pertama di close jam berikutnya'}
+          label="Screener dicatat sejak"
+          value={meta.live_since ? formatTime(meta.live_since, { time: false }) : 'Belum mulai'}
+          hint={meta.live_since ? `${liveDays} hari pencatatan` : 'Catatan pertama di tutup jam berikutnya'}
         />
-        <StatTile
-          label="Siklus terakhir"
-          value={relativeTime(meta.last_cycle?.finished ?? null)}
-          hint="Snapshot + penilaian tiap jam"
-        />
+        <StatTile label="Siklus terakhir" value={formatAge(meta.last_cycle?.finished ?? null)} hint="Pencatatan dan penilaian tiap jam" />
       </div>
       <div className="flex flex-wrap gap-2 text-xs">
         {bf?.status === 'done' && (
           <Badge variant="info" size="sm">
-            <History /> Rekonstruksi screener: {bf.from?.slice(0, 10)} – {bf.to?.slice(0, 10)} · {bf.signals?.toLocaleString('id-ID')} sinyal
+            <History /> Rekonstruksi screener: {formatTime(bf.from, { time: false })} – {formatTime(bf.to, { time: false })} · {formatCount(bf.signals)} sinyal
           </Badge>
         )}
         {(bf?.status === 'queued' || bf?.status === 'running') && (
@@ -86,7 +81,7 @@ function StatusPanel({ meta }: { meta: LedgerMeta }) {
             <AlertTriangle /> Rekonstruksi gagal: {bf.error}
           </Badge>
         )}
-        {!bf && <Badge variant="muted" size="sm">Rekonstruksi historis tidak dijalankan</Badge>}
+        {!bf && <Badge variant="muted" size="sm">Rekonstruksi data masa lalu tidak dijalankan</Badge>}
       </div>
     </div>
   )
@@ -94,31 +89,24 @@ function StatusPanel({ meta }: { meta: LedgerMeta }) {
 
 function HonestyNote() {
   return (
-    <div className="rounded-xl border border-warn/30 bg-warn/[0.06] p-4 text-xs leading-relaxed text-muted-foreground">
-      <p className="mb-1.5 flex items-center gap-1.5 font-semibold text-warn">
-        <AlertTriangle className="h-3.5 w-3.5" /> Cara membaca angka ini dengan jujur
-      </p>
-      <ul className="list-disc space-y-1 pl-4">
-        <li>
-          Return diukur dari open candle 15 menit pertama setelah sinyal, <b>sebelum biaya</b> (fee, slippage, funding).
-          Bukan hasil strategi, hanya apakah arah sinyal benar.
-        </li>
-        <li>
-          Sinyal tidak independen: banyak koin bergerak bareng di hari yang sama, dan jendela 3/7 hari saling tumpang tindih.
-          Karena itu interval 95% dihitung per hari (clustered). Lihat juga kolom <b>vs BTC</b>: return positif di pasar turun
-          untuk sinyal short sebagian besar hanya arah pasar.
-        </li>
-        <li>
-          <b>Screener (live)</b> baru dicatat sejak fitur ini aktif. <b>Screener (rekonstruksi)</b> menjalankan ulang generator
-          yang sama secara kausal (tiap jam hanya memakai data sampai jam itu) untuk ±27 hari ke belakang. Beberapa input
-          didekati (funding = rate terakhir yang settle, rasio L/S per jam, OI dari histori 1 jam), jadi angkanya dipisah.
-        </li>
-        <li>
-          Periode pendek = satu rezim pasar. Kesimpulan &quot;Positif&quot; dengan data kurang dari beberapa bulan adalah petunjuk, bukan bukti.
-          Lab watch hanya mencatat entry setelah watch dibuat; trade sebelumnya adalah backtest.
-        </li>
-      </ul>
-    </div>
+    <ul className="list-disc space-y-1.5 pl-5 text-xs leading-relaxed text-muted-foreground">
+      <li>
+        Gerak diukur dari harga 15 menit pertama setelah sinyal, <b className="text-foreground">sebelum biaya</b> (fee, slippage, funding). Ini bukan hasil
+        strategi, hanya apakah arah sinyal benar.
+      </li>
+      <li>
+        Banyak koin bergerak bareng di hari yang sama, jadi sinyal tidak saling lepas. Karena itu rentang ketidakpastian dihitung per hari. Lihat juga{' '}
+        <b className="text-foreground">dibanding BTC</b>: sinyal short yang benar saat pasar turun sebagian besar hanya ikut arah pasar.
+      </li>
+      <li>
+        <b className="text-foreground">Screener (live)</b> baru dicatat sejak fitur ini aktif. <b className="text-foreground">Screener (rekonstruksi)</b> menghitung
+        ulang sinyal ±27 hari ke belakang dengan data yang tersedia saat itu; beberapa input didekati, jadi angkanya dipisah.
+      </li>
+      <li>
+        Periode pendek = satu kondisi pasar. &quot;Terbukti&quot; dengan data kurang dari beberapa bulan adalah petunjuk, bukan jaminan. Pantau Lab hanya mencatat
+        sinyal setelah pantauan dibuat.
+      </li>
+    </ul>
   )
 }
 
@@ -192,104 +180,116 @@ function Filters({
   )
 }
 
-// ── summary ────────────────────────────────────────────────────────────────
+// ── summary (per signal type) ──────────────────────────────────────────────
 
-function SummaryTable({
-  filters,
-  split,
-  horizon,
-  onPick,
-}: {
-  filters: LedgerFilters
-  split: boolean
-  horizon: LedgerHorizon
-  onPick: (source: LedgerSource, type: string) => void
-}) {
-  const q = useLedgerSummary(filters, split ? 'direction' : 'none')
-  const groups = useMemo(() => sortGroups(q.data?.groups ?? [], horizon), [q.data, horizon])
-  if (q.isPending) return <LoadingState rows={6} />
-  if (q.error) return <ErrorPanel kind={errKind(q.error)} onRetry={() => q.refetch()} messageOverride="Gagal memuat ringkasan sinyal." />
-  if (groups.length === 0)
-    return (
-      <EmptyState
-        title="Belum ada sinyal untuk filter ini"
-        description="Sinyal dicatat otomatis oleh worker Lab setiap close jam. Coba hapus filter, atau tunggu siklus berikutnya."
-      />
-    )
-  return (
-    <div className="-mx-4 overflow-x-auto sm:mx-0 sm:rounded-lg sm:border sm:border-border/60">
-      <table className="w-full text-sm sm:min-w-[860px]">
-        <thead className="border-b border-border/60 bg-muted/30">
-          <tr>
-            <th className={cn(th, 'text-left')}>Sinyal</th>
-            <th className={cn(th, 'text-right')} title="Jumlah sinyal tercatat / yang sudah dinilai di horizon ini">Sinyal · dinilai</th>
-            <th className={cn(th, 'text-right')} title="Persentase sinyal yang arahnya benar, dengan interval 95%">Hit rate</th>
-            <th className={cn(th, 'text-right')} title="Rata-rata return searah sinyal, dengan interval 95% (clustered per hari)">Rata-rata</th>
-            <th className={cn(th, 'hidden text-right md:table-cell')}>Median</th>
-            <th className={cn(th, 'text-right')} title="Rata-rata return searah sinyal dikurangi return BTC di jendela yang sama">vs BTC</th>
-            <th className={cn(th, 'hidden text-right lg:table-cell')} title="Rata-rata pergerakan terbaik / terburuk selama jendela">MFE / MAE</th>
-            <th className={cn(th, 'text-left')}>Kesimpulan</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border/50">
-          {groups.map((g) => {
-            const s = g.horizons[horizon]
-            const thin = isThin(s)
-            const v = VERDICT_COPY[s?.verdict ?? 'insufficient']
-            const vb = VERDICT_COPY[s?.verdict_rel_btc ?? 'insufficient']
-            const sample = SAMPLE_COPY[s?.sample ?? 'none']
-            return (
-              <tr key={`${g.source}|${g.signal_type}|${g.direction ?? 0}`}
-                className={cn('cursor-pointer hover:bg-accent/40', thin && 'opacity-70')}
-                onClick={() => onPick(g.source, g.signal_type)}
-                title="Klik untuk melihat sinyal-sinyalnya di bawah">
-                <td className="px-3 py-2">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-xs font-semibold">{typeLabel(g.signal_type)}</span>
-                    {g.direction !== null && <SideBadge side={g.direction === 1 ? 'long' : 'short'} />}
-                  </div>
-                  <div className="text-2xs text-muted-foreground">
-                    {SOURCE_LABEL[g.source] ?? g.source}
-                    {s && s.n > 0 && ` · ${s.coins} koin · ${s.days} hari`}
-                  </div>
-                </td>
-                <td className="num px-3 py-2 text-right text-xs">
-                  {g.n_signals.toLocaleString('id-ID')} · <span className="font-semibold">{(s?.n ?? 0).toLocaleString('id-ID')}</span>
-                  <div className="mt-0.5"><Badge variant={sample.tone} size="xs">{sample.label}</Badge></div>
-                </td>
-                <td className="num px-3 py-2 text-right text-xs">
-                  <div className="font-semibold">{hitPct(s?.hit_rate)}</div>
-                  <div className="text-3xs text-muted-foreground">{thin ? '' : hitCi(s?.hit_ci)}</div>
-                </td>
-                <td className={cn('num px-3 py-2 text-right text-xs', signClass(s?.mean_pct))}>
-                  <div className="font-semibold">{pct(s?.mean_pct)}</div>
-                  <div className="text-3xs text-muted-foreground">{thin ? '' : retCi(s?.mean_ci)}</div>
-                </td>
-                <td className={cn('num hidden px-3 py-2 text-right text-xs md:table-cell', signClass(s?.median_pct))}>{pct(s?.median_pct)}</td>
-                <td className={cn('num px-3 py-2 text-right text-xs', signClass(s?.mean_rel_btc_pct))}>
-                  <div className="font-semibold">{pct(s?.mean_rel_btc_pct)}</div>
-                  <div className="text-3xs text-muted-foreground">{thin ? '' : retCi(s?.rel_btc_ci)}</div>
-                </td>
-                <td className="num hidden px-3 py-2 text-right text-xs lg:table-cell">
-                  <span className="text-bullish">{pct(s?.mean_mfe_pct, 1)}</span>
-                  {' / '}
-                  <span className="text-bearish">{pct(s?.mean_mae_pct, 1)}</span>
-                </td>
-                <td className="px-3 py-2">
-                  <div className="flex flex-col items-start gap-1">
-                    <Badge variant={v.tone} size="sm" title={v.hint}>{v.label}</Badge>
-                    {s?.verdict !== 'insufficient' && (
-                      <span className="text-3xs text-muted-foreground" title={vb.hint}>vs BTC: {vb.label.toLowerCase()}</span>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
-  )
+function summaryColumns(h: LedgerHorizon): ResponsiveColumn<LedgerGroup>[] {
+  const at = (g: LedgerGroup) => g.horizons[h]
+  return [
+    {
+      key: 'signal',
+      header: 'Sinyal',
+      mobile: 'title',
+      cell: (g) => (
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="truncate text-xs font-semibold">{typeLabel(g.signal_type)}</span>
+            {g.direction !== null && <SideBadge side={g.direction === 1 ? 'long' : 'short'} />}
+          </div>
+          <div className="truncate text-2xs font-normal text-muted-foreground">
+            {SOURCE_LABEL[g.source] ?? g.source}
+            {at(g) && at(g).n > 0 && ` · ${at(g).coins} koin · ${at(g).days} hari`}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'verdict',
+      header: 'Kesimpulan',
+      mobile: 'badge',
+      cell: (g) => {
+        const v = VERDICT_COPY[at(g)?.verdict ?? 'insufficient']
+        const vb = VERDICT_COPY[at(g)?.verdict_rel_btc ?? 'insufficient']
+        return (
+          <div className="flex flex-col items-start gap-0.5">
+            <Badge variant={v.tone} size="sm" title={v.hint}>
+              {v.label}
+            </Badge>
+            {at(g)?.verdict !== 'insufficient' && <span className="hidden text-3xs text-muted-foreground 2xl:inline">dibanding BTC: {vb.label.toLowerCase()}</span>}
+          </div>
+        )
+      },
+    },
+    {
+      key: 'n',
+      header: 'Dinilai',
+      mobile: 'field',
+      align: 'right',
+      cell: (g) => (
+        <div className="num text-xs">
+          <span className="font-semibold">{formatCount(at(g)?.n ?? 0)}</span>
+          <span className="text-muted-foreground"> / {formatCount(g.n_signals)}</span>
+          <div className="mt-0.5 hidden sm:block">
+            <Badge variant={SAMPLE_COPY[at(g)?.sample ?? 'none'].tone} size="xs">
+              {SAMPLE_COPY[at(g)?.sample ?? 'none'].label}
+            </Badge>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'hit',
+      header: <Term k="hit_rate" short />,
+      mobileLabel: 'Benar',
+      mobile: 'field',
+      align: 'right',
+      cell: (g) => (
+        <div className="num text-xs">
+          <div className="font-semibold">{hitPct(at(g)?.hit_rate)}</div>
+          <div className="hidden text-3xs text-muted-foreground sm:block">{isThin(at(g)) ? '' : hitCi(at(g)?.hit_ci)}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'mean',
+      header: <Term k="mean_move">Rata-rata gerak</Term>,
+      mobileLabel: 'Rata-rata',
+      mobile: 'field',
+      align: 'right',
+      cell: (g) => (
+        <div className={cn('num text-xs', signClass(at(g)?.mean_pct))}>
+          <div className="font-semibold">{pct(at(g)?.mean_pct)}</div>
+          <div className="hidden text-3xs text-muted-foreground sm:block">{isThin(at(g)) ? '' : retCi(at(g)?.mean_ci)}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'btc',
+      header: <Term k="vs_btc" short />,
+      mobile: 'hidden',
+      align: 'right',
+      cell: (g) => (
+        <div className={cn('num text-xs', signClass(at(g)?.mean_rel_btc_pct))}>
+          <div className="font-semibold">{pct(at(g)?.mean_rel_btc_pct)}</div>
+          <div className="text-3xs text-muted-foreground">{isThin(at(g)) ? '' : retCi(at(g)?.rel_btc_ci)}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'mfe',
+      header: <Term k="mfe_mae" short />,
+      mobile: 'hidden',
+      align: 'right',
+      className: 'hidden 2xl:table-cell',
+      headerClassName: 'hidden 2xl:table-cell',
+      cell: (g) => (
+        <span className="num text-xs">
+          <span className="text-bullish">{pct(at(g)?.mean_mfe_pct, 1)}</span>
+          {' / '}
+          <span className="text-bearish">{pct(at(g)?.mean_mae_pct, 1)}</span>
+        </span>
+      ),
+    },
+  ]
 }
 
 // ── recent signals ─────────────────────────────────────────────────────────
@@ -301,13 +301,51 @@ function OutcomeCell({ s, h }: { s: LedgerSignal; h: LedgerHorizon }) {
   }
   if (o.dir_ret_pct === null) return <span className="text-3xs text-muted-foreground">tanpa data</span>
   return (
-    <span className={cn('num inline-flex items-center gap-0.5 text-xs', signClass(o.dir_ret_pct))}
-      title={`Return koin ${pct(o.ret_pct)} · BTC ${pct(o.btc_ret_pct)} · MFE ${pct(o.mfe_pct)} · MAE ${pct(o.mae_pct)}`}>
-      {o.hit ? <Check className="h-3 w-3" aria-label="benar" /> : <X className="h-3 w-3" aria-label="salah" />}
+    <span
+      className={cn('num inline-flex items-center gap-0.5 text-xs', signClass(o.dir_ret_pct))}
+      title={`Gerak koin ${pct(o.ret_pct)} · BTC ${pct(o.btc_ret_pct)} · terbaik ${pct(o.mfe_pct)} · terburuk ${pct(o.mae_pct)}`}
+    >
+      {o.hit ? <Check className="h-3 w-3" aria-label="arah benar" /> : <X className="h-3 w-3" aria-label="arah salah" />}
       {pct(o.dir_ret_pct, 1)}
     </span>
   )
 }
+
+const SIGNAL_COLUMNS: ResponsiveColumn<LedgerSignal>[] = [
+  {
+    key: 'coin',
+    header: 'Koin',
+    mobile: 'title',
+    cell: (s) => (
+      <span className="inline-flex items-center gap-1.5">
+        <span className="font-mono text-xs font-semibold">{s.symbol.replace(/USDT$/, '')}</span>
+        <SideBadge side={s.direction === 1 ? 'long' : 'short'} />
+      </span>
+    ),
+  },
+  {
+    key: 'signal',
+    header: 'Sinyal',
+    mobile: 'hidden',
+    cell: (s) => (
+      <div>
+        <div className="text-xs font-medium">{typeLabel(s.signal_type)}</div>
+        <div className="text-2xs text-muted-foreground">{SOURCE_LABEL[s.source] ?? s.source}</div>
+      </div>
+    ),
+  },
+  { key: 'time', header: 'Waktu', mobile: 'badge', cell: (s) => <span className="num whitespace-nowrap text-xs">{formatTime(s.ts)}</span> },
+  { key: 'entry', header: 'Harga', mobile: 'hidden', align: 'right', cell: (s) => <span className="num text-xs">{formatPrice(s.entry_price ?? s.price)}</span> },
+  ...HORIZONS.map(
+    (h): ResponsiveColumn<LedgerSignal> => ({
+      key: `h-${h}`,
+      header: HORIZON_LABEL[h],
+      mobile: h === '4h' ? 'hidden' : 'field',
+      align: 'right',
+      cell: (s) => <OutcomeCell s={s} h={h} />,
+    }),
+  ),
+]
 
 function RecentSignals({ filters }: { filters: LedgerFilters }) {
   const [pages, setPages] = useState(1)
@@ -316,60 +354,33 @@ function RecentSignals({ filters }: { filters: LedgerFilters }) {
   return (
     <Section
       title="Sinyal terbaru"
-      description={q.data ? `${q.data.total.toLocaleString('id-ID')} sinyal sesuai filter · return searah sinyal (✓ = arah benar)` : 'Sinyal terbaru beserta hasilnya'}
+      description={
+        q.data
+          ? `${formatCount(q.data.total)} sinyal sesuai filter · gerak searah sinyal (✓ = arah benar), sebelum biaya`
+          : 'Sinyal terbaru beserta hasilnya'
+      }
     >
       {q.isPending ? (
         <LoadingState rows={8} />
-      ) : q.error ? (
-        <ErrorPanel kind={errKind(q.error)} onRetry={() => q.refetch()} messageOverride="Gagal memuat daftar sinyal." />
-      ) : items.length === 0 ? (
-        <EmptyState title="Belum ada sinyal" description="Sinyal baru muncul di sini setelah worker Lab mencatatnya." />
+      ) : q.isError ? (
+        <ErrorState error={q.error} onRetry={() => q.refetch()} title="Daftar sinyal tidak bisa dimuat" compact />
       ) : (
-        <>
-          <div className="-mx-4 overflow-x-auto sm:mx-0 sm:rounded-lg sm:border sm:border-border/60">
-            <table className="w-full text-sm sm:min-w-[760px]">
-              <thead className="border-b border-border/60 bg-muted/30">
-                <tr>
-                  <th className={cn(th, 'text-left')}>Waktu</th>
-                  <th className={cn(th, 'text-left')}>Sinyal</th>
-                  <th className={cn(th, 'text-left')}>Koin</th>
-                  <th className={cn(th, 'hidden text-right sm:table-cell')}>Entry</th>
-                  {HORIZONS.map((h) => (
-                    <th key={h} className={cn(th, 'text-right')}>{HORIZON_LABEL[h]}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/50">
-                {items.map((s) => (
-                  <tr key={String(s.id)}>
-                    <td className="num whitespace-nowrap px-3 py-2 text-xs">{formatTimestamp(s.ts).slice(0, 16)}</td>
-                    <td className="px-3 py-2">
-                      <div className="text-xs font-medium">{typeLabel(s.signal_type)}</div>
-                      <div className="text-2xs text-muted-foreground">{SOURCE_LABEL[s.source] ?? s.source}</div>
-                    </td>
-                    <td className="px-3 py-2">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-mono text-xs font-semibold">{s.symbol.replace(/USDT$/, '')}</span>
-                        <SideBadge side={s.direction === 1 ? 'long' : 'short'} />
-                      </div>
-                    </td>
-                    <td className="num hidden px-3 py-2 text-right text-xs sm:table-cell">{formatPrice(s.entry_price ?? s.price)}</td>
-                    {HORIZONS.map((h) => (
-                      <td key={h} className="px-3 py-2 text-right"><OutcomeCell s={s} h={h} /></td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="space-y-3">
+          <ResponsiveTable
+            rows={items}
+            columns={SIGNAL_COLUMNS}
+            rowKey={(s) => String(s.id)}
+            caption="Sinyal terbaru dan hasilnya"
+            empty={<EmptyState title="Belum ada sinyal" description="Sinyal muncul di sini setelah worker Lab mencatatnya." />}
+          />
           {q.data && q.data.total > items.length && (
-            <div className="mt-3 flex justify-center">
+            <div className="flex justify-center">
               <Button variant="outline" size="sm" onClick={() => setPages((p) => p + 1)} disabled={q.isFetching}>
                 {q.isFetching ? 'Memuat…' : 'Muat lebih banyak'}
               </Button>
             </div>
           )}
-        </>
+        </div>
       )}
     </Section>
   )
@@ -378,9 +389,10 @@ function RecentSignals({ filters }: { filters: LedgerFilters }) {
 // ── page ───────────────────────────────────────────────────────────────────
 
 /**
+ * Rekam jejak sinyal: the answer ("which signals work, which are noise") first, then the
+ * table per signal type, the latest signals and, folded, how it works.
  * Filters live in the URL (?source=&type=&symbol=&since=&until=&split=1&h=3d) so the
- * screener can link here pre-filtered and a filtered view can be shared.
- * Needs a Suspense boundary (useSearchParams) — see app/(app)/lab/signals/page.tsx.
+ * screener can link here pre-filtered. Needs a Suspense boundary (useSearchParams).
  */
 export function LedgerView() {
   const meta = useLedgerMeta()
@@ -401,26 +413,42 @@ export function LedgerView() {
     () => ({ source: f.source, signal_type: f.signal_type, symbol: f.symbol, since: f.since, until: f.until }),
     [f.source, f.signal_type, f.symbol, f.since, f.until],
   )
+  const summary = useLedgerSummary(filters, f.split ? 'direction' : 'none')
+  const groups = useMemo(() => sortGroups(summary.data?.groups ?? [], horizon), [summary.data, horizon])
+  const answer = useMemo(() => ledgerAnswer(groups, horizon), [groups, horizon])
+  const cols = useMemo(() => summaryColumns(horizon), [horizon])
+  const filtered = Boolean(f.source || f.signal_type || f.symbol || f.since || f.until)
+
   return (
     <div className="space-y-5">
-      <Section title="Status pencatatan" description="Worker Lab mencatat sinyal dan menilai hasilnya otomatis; halaman ini hanya membaca.">
-        {meta.isPending ? (
-          <LoadingState rows={2} />
-        ) : meta.error || !meta.data ? (
-          <ErrorPanel kind={errKind(meta.error)} onRetry={() => meta.refetch()} messageOverride="Gagal memuat status Catatan Sinyal." />
-        ) : (
-          <StatusPanel meta={meta.data} />
-        )}
-      </Section>
-
-      <HonestyNote />
+      {summary.isPending ? (
+        <LoadingState rows={2} />
+      ) : summary.isError ? (
+        <ErrorState error={summary.error} onRetry={() => summary.refetch()} title="Rekam jejak tidak bisa dimuat" />
+      ) : (
+        <AnswerCard
+          tone={answer.tone}
+          title={filtered ? 'Jawaban untuk filter ini' : 'Sinyal mana yang bekerja?'}
+          answer={answer.text}
+          metrics={[
+            { label: 'Terbukti', value: formatCount(answer.proven.length), valueClassName: answer.proven.length ? 'text-bullish' : undefined },
+            { label: 'Negatif', value: formatCount(answer.negative.length), valueClassName: answer.negative.length ? 'text-bearish' : undefined },
+            { label: 'Belum terbukti', value: formatCount(answer.inconclusive.length + answer.insufficient.length), hint: 'termasuk yang belum cukup data' },
+          ]}
+          evidenceHref="#per-jenis"
+          evidenceLabel="Lihat per jenis sinyal"
+          footer={<Freshness updatedAt={meta.data?.last_cycle?.finished ?? null} />}
+        />
+      )}
 
       <Section
-        title="Ringkasan per jenis sinyal"
-        description="Klik baris untuk melihat sinyalnya. Baris pudar = kurang dari 10 sinyal yang sudah dinilai."
+        id="per-jenis"
+        className="scroll-mt-20"
+        title="Per jenis sinyal"
+        description="Ketuk satu baris untuk melihat sinyalnya di bawah. Pilih kapan arah sinyal dicek."
         action={
           <Segmented
-            aria-label="Horizon"
+            aria-label="Dicek setelah"
             size="xs"
             value={horizon}
             onChange={setHorizon}
@@ -428,18 +456,63 @@ export function LedgerView() {
           />
         }
       >
-        <div className="mb-4">
-          <Filters meta={meta.data} value={f} onChange={setF} />
+        <div className="space-y-4">
+          <details open={filtered} className="rounded-lg border px-3 py-2">
+            <summary className="cursor-pointer select-none text-xs font-semibold">Filter{filtered ? ' (aktif)' : ''}</summary>
+            <div className="mt-3">
+              <Filters meta={meta.data} value={f} onChange={setF} />
+            </div>
+          </details>
+          {summary.isPending ? (
+            <LoadingState rows={6} />
+          ) : summary.isError ? null : (
+            <ResponsiveTable
+              rows={groups}
+              columns={cols}
+              rowKey={(g) => `${g.source}|${g.signal_type}|${g.direction ?? 0}`}
+              onRowClick={(g) => setF({ ...f, source: g.source, signal_type: g.signal_type })}
+              rowLabel={(g) => `Lihat sinyal ${typeLabel(g.signal_type)}`}
+              caption="Ringkasan per jenis sinyal"
+              empty={
+                <EmptyState
+                  title="Belum ada sinyal untuk filter ini"
+                  description="Sinyal dicatat otomatis setiap tutup jam. Coba hapus filter, atau tunggu siklus berikutnya."
+                />
+              }
+            />
+          )}
+          <p className="text-2xs text-muted-foreground">Butuh minimal 10 sinyal yang sudah dinilai, di minimal 5 hari berbeda, sebelum ada kesimpulan.</p>
         </div>
-        <SummaryTable
-          filters={filters}
-          split={f.split}
-          horizon={horizon}
-          onPick={(source, signal_type) => setF({ ...f, source, signal_type })}
-        />
       </Section>
 
       <RecentSignals key={JSON.stringify(filters)} filters={filters} />
+
+      <details className="rounded-xl border bg-card px-4 py-3 sm:px-5">
+        <summary className="cursor-pointer select-none text-sm font-semibold tracking-tight">Cara kerja dan status pencatatan</summary>
+        <div className="mt-3 space-y-4">
+          {meta.isPending ? (
+            <LoadingState rows={2} />
+          ) : meta.isError || !meta.data ? (
+            <ErrorState error={meta.error} onRetry={() => meta.refetch()} title="Status pencatatan tidak bisa dimuat" compact />
+          ) : (
+            <StatusPanel meta={meta.data} />
+          )}
+          <HonestyNote />
+        </div>
+      </details>
+
+      <Link
+        href="/bot#eksekusi"
+        className="group flex items-center justify-between gap-3 rounded-xl border border-dashed px-4 py-3 text-sm hover:bg-accent/50"
+      >
+        <span className="flex min-w-0 items-start gap-2">
+          <Gauge className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <span>
+            <b>Kualitas eksekusi bot live</b> (slippage, jeda alert, simulasi order limit) sekarang ada di Status bot.
+          </span>
+        </span>
+        <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-foreground" aria-hidden="true" />
+      </Link>
     </div>
   )
 }

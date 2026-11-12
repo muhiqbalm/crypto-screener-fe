@@ -1,17 +1,29 @@
 import { Suspense } from 'react'
+import { PageContainer } from '@/components/shell/page'
 import { LoadingState } from '@/components/shell/states'
+import { StatusPill } from '@/components/ui/status-pill'
+import { LabHeader } from '@/components/lab/LabHeader'
 import { JournalView } from '@/components/journal/JournalView'
+import { PAPER_HELP } from '@/components/lab/arena/paper-help'
 
 export const metadata = {
-  title: 'Jurnal Trading',
-  description: 'Jurnal trade paper (manual & auto-follow strategi) dengan statistik R-multiple.',
+  title: 'Jurnal · Paper berjalan',
+  description: 'Setiap transaksi paper, terbaru di atas, dengan hasil bersih, R, catatan dan tag. Trade bot live hanya tampil bila dinyalakan.',
 }
 
 export default function JournalPage() {
-  // useSearchParams (?account_id= deep link) needs a Suspense boundary
   return (
-    <Suspense fallback={<LoadingState rows={6} />}>
-      <JournalView />
-    </Suspense>
+    <PageContainer width="wide">
+      <LabHeader
+        title="Paper berjalan"
+        subtitle="Jurnal: setiap transaksi simulasi, terbaru di atas. Trade bot live (uang asli) disembunyikan kecuali kamu menyalakannya."
+        status={<StatusPill kind="paper" />}
+        help={PAPER_HELP}
+      />
+      {/* useSearchParams (?account_id= deep link) needs a Suspense boundary */}
+      <Suspense fallback={<LoadingState rows={6} />}>
+        <JournalView />
+      </Suspense>
+    </PageContainer>
   )
 }

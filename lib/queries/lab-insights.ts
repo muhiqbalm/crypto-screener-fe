@@ -10,7 +10,6 @@ const keys = {
   all: ['lab'] as const,
   defaults: () => ['lab', 'run-defaults'] as const,
   estimate: (b: LabEstimateRequest) => ['lab', 'estimate', b] as const,
-  queue: () => ['lab', 'queue'] as const,
   board: (f: LabBoardFilters) => ['lab', 'leaderboard', f] as const,
   presets: () => ['lab', 'presets'] as const,
   bestPresets: (t: string, s: string[], tf: string[]) => ['lab', 'presets', 'best', t, s, tf] as const,
@@ -33,17 +32,6 @@ export function useLabEstimate(body: LabEstimateRequest | null) {
     enabled: Boolean(body && body.symbols.length > 0 && body.timeframes.length > 0),
     staleTime: 30_000,
     placeholderData: keepPreviousData,
-    retry: false,
-  })
-}
-
-export function useLabQueue(enabled = true) {
-  return useQuery({
-    queryKey: keys.queue(),
-    queryFn: ({ signal }) => labInsightsApi.getQueue(signal),
-    enabled,
-    refetchInterval: 10_000,
-    refetchIntervalInBackground: false,
     retry: false,
   })
 }
@@ -146,6 +134,7 @@ export function useWatchFromPreset() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: keys.presets() })
       void qc.invalidateQueries({ queryKey: ['lab', 'watches'] })
+      void qc.invalidateQueries({ queryKey: ['lab', 'arena'] })
     },
   })
 }

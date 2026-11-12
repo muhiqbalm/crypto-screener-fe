@@ -15,10 +15,12 @@ export function useReportWeeks() {
   })
 }
 
-export function useWeeklyReport(week: string | null) {
+/** `week` null = the running week. Pass `enabled: false` until the week is known. */
+export function useWeeklyReport(week: string | null, opts: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ['lab', 'report', 'weekly', week ?? 'current'] as const,
     queryFn: ({ signal }) => reportApi.getWeekly(week, signal),
+    enabled: opts.enabled ?? true,
     staleTime: 60_000,
     placeholderData: keepPreviousData,
   })

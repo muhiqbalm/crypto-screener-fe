@@ -35,6 +35,7 @@ import type {
   PaperPosition,
 } from '@/lib/api/types/lab'
 import type { LabBoardRow, LabEstimateRequest, LabPreset } from '@/lib/api/types/lab-insights'
+import { labPaperMock } from './lab-paper'
 
 const MOCK_LAB_TEMPLATES: LabTemplate[] = [templateJson as unknown as LabTemplate]
 const TPL = MOCK_LAB_TEMPLATES[0]
@@ -527,6 +528,9 @@ export async function getLabMock(method: string, fullPath: string, body?: unknow
   const qs = new URLSearchParams(query)
   const seg = path.split('/').filter(Boolean).map(decodeURIComponent)
 
+  // W3b pages (Preset, Paper berjalan, Jurnal, Rekam jejak sinyal, Laporan): one consistent fixture
+  const w3b = labPaperMock(method, seg, qs, body)
+  if (w3b) return w3b.value
   const extra = insightsMock(method, seg, qs, body)
   if (extra) return extra.value
   if (method === 'GET' && path === '/me') return { is_admin: true }
