@@ -125,8 +125,8 @@ function PaperBlock({ r, isAdmin }: { r: WeeklyReport; isAdmin: boolean }) {
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
-            <BigNumber label="Transaksi minggu ini" value={formatCount(s.trades_week ?? 0)} hint={`${formatCount(s.trades_total ?? 0)} sejak mulai`} />
-            <BigNumber label="Preset aktif" value={formatCount(rows.filter((p) => p.active).length)} hint={`dari ${rows.length}`} />
+            <BigNumber label="Transaksi" value={formatCount(s.trades_week ?? 0)} hint={`minggu ini · ${formatCount(s.trades_total ?? 0)} total`} />
+            <BigNumber label="Aktif" value={formatCount(rows.filter((p) => p.active).length)} hint={`dari ${rows.length} preset`} />
             <BigNumber
               label="Terbaik"
               value={s.best ? formatPct(s.best.week_return_pct, { digits: 1, signed: true }) : '—'}
@@ -421,10 +421,10 @@ function SystemBlock({ r }: { r: WeeklyReport }) {
     <Block icon={Server} title="Kesehatan sistem">
       <div className="space-y-5">
         <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
-          <BigNumber label="Pembaruan" value={d.available ? formatCount(d.live ?? 0) : '—'} hint={d.available ? undefined : NO_DATA} />
-          <BigNumber label="Pembaruan gagal" value={d.available ? formatCount(d.failed ?? 0) : '—'} tone={d.failed ? 'bearish' : undefined} />
+          <BigNumber label="Pembaruan" value={d.available ? formatCount(d.live ?? 0) : '—'} hint={d.available ? 'sistem' : NO_DATA} />
+          <BigNumber label="Gagal" value={d.available ? formatCount(d.failed ?? 0) : '—'} tone={d.failed ? 'bearish' : undefined} hint="pembaruan" />
           <BigNumber label="Cadangan" value={b.available ? `${formatCount(b.ok ?? 0)} ok` : '—'} hint={b.available ? `${b.failed ?? 0} gagal` : NO_DATA} />
-          <BigNumber label="Cadangan terakhir" value={b.last ? formatTime(b.last.ts, { date: true, time: false }) : '—'} size="sm" hint={b.last ? formatTime(b.last.ts, { date: false }) : undefined} />
+          <BigNumber label="Terakhir" value={b.last ? formatTime(b.last.ts, { date: true, time: false }) : '—'} size="sm" hint={b.last ? `cadangan ${formatTime(b.last.ts, { date: false })}` : undefined} />
         </div>
         {s.processes ? (
           <div className="flex flex-wrap gap-2">

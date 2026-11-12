@@ -139,7 +139,7 @@ function Charts({ s, perAccount }: { s: JournalStats; perAccount: boolean }) {
     <div className="grid gap-5 lg:grid-cols-3">
       <DeckCard icon={LineChartIcon} iconTone="lab" title={perAccount ? 'Kurva modal akun' : 'Hasil kumulatif (USDT)'} className="lg:col-span-2">
         {s.equity_curve?.length ? (
-          <SimpleLineChart points={s.equity_curve} label={perAccount ? 'Kurva modal akun paper' : 'Hasil kumulatif transaksi paper'} />
+          <SimpleLineChart points={s.equity_curve} label={perAccount ? 'Kurva modal akun paper' : 'Hasil kumulatif transaksi paper'} className="h-[280px] lg:h-[420px]" />
         ) : (
           <p className="text-[15px] text-muted-foreground">Tidak tersedia: belum ada transaksi tertutup.</p>
         )}

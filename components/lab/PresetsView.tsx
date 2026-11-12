@@ -421,11 +421,13 @@ export function PresetsView() {
   return (
     <div className="space-y-8">
       <div className="grid gap-5 lg:grid-cols-4">
-        <DeckCard hero icon={Layers} iconTone={heroTone} eyebrow={`${rows.length} preset`} className="lg:col-span-2 lg:row-span-2">
+        <DeckCard hero fill icon={Layers} iconTone={heroTone} eyebrow={`${rows.length} preset`} className="lg:col-span-2 lg:row-span-2">
           <p className="text-xl font-semibold leading-snug tracking-tight sm:text-2xl">{answer}</p>
-          <p className="mt-3 text-[15px] text-muted-foreground">Lolos/Gagal = rapor saat preset disimpan. Paper dinilai setelah {reviewN} transaksi.</p>
-          {arenaQ.data?.rows.length ? <CardLink href="/lab/arena" className="mt-5">Buka Paper berjalan</CardLink> : null}
-          {arenaQ.isError && <p className="mt-3 text-[13px] text-warn">Status paper tidak tersedia saat ini.</p>}
+          <div className="mt-auto space-y-3 pt-6">
+            <p className="text-[15px] text-muted-foreground">Lolos/Gagal = rapor saat disimpan. Paper dinilai setelah {reviewN} transaksi.</p>
+            {arenaQ.data?.rows.length ? <CardLink href="/lab/arena">Buka Paper berjalan</CardLink> : null}
+            {arenaQ.isError && <p className="text-[13px] text-warn">Status paper tidak tersedia saat ini.</p>}
+          </div>
         </DeckCard>
         <DeckCard icon={PlayCircle} iconTone="lab" title="Di paper">
           <BigNumber label="Preset" value={<CountUp value={paper} format={(v) => formatCount(Math.round(v))} />} size="lg" hint={n('menyimpang') ? `${n('menyimpang')} menyimpang` : 'semua sesuai sejauh ini'} />

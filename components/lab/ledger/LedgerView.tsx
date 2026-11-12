@@ -14,7 +14,7 @@ import { StatTile } from '@/components/ui/stat-tile'
 import { Term } from '@/components/ui/term'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shell/states'
 import { Chip, Section } from '@/components/lab/Section'
-import { BigNumber, CardLink, CountUp, DeckCard, Pill, RateBar, SectionHead, signTone, type Tone } from '@/components/lab/arena/deck'
+import { BigNumber, CardLink, CountUp, DeckCard, Pill, RateBar, SectionHead, type Tone } from '@/components/lab/arena/deck'
 import { SideBadge } from '@/components/trading/SideBadge'
 import { formatCount, formatPrice, signClass } from '@/lib/utils/format'
 import { formatAge, formatTime } from '@/lib/utils/time'
@@ -398,6 +398,8 @@ function VerdictCard({ g, h, onPick }: { g: LedgerGroup; h: LedgerHorizon; onPic
   const copy = VERDICT_COPY[v]
   const tone = VERDICT_TONE[v]
   const thin = isThin(st)
+  // colour only what the verdict proves; "belum terbukti" stays neutral
+  const judged = v === 'positive' || v === 'negative'
   return (
     <DeckCard
       onClick={onPick}
@@ -419,10 +421,10 @@ function VerdictCard({ g, h, onPick }: { g: LedgerGroup; h: LedgerHorizon; onPic
       outline={v === 'negative' ? 'bearish' : v === 'positive' ? 'bullish' : undefined}
     >
       <div className="grid grid-cols-2 gap-4">
-        <BigNumber label="Arah benar" value={hitPct(st?.hit_rate)} tone={thin ? undefined : signTone((st?.hit_rate ?? 0.5) - 0.5)} size="md" />
-        <BigNumber label="Rata-rata gerak" value={pct(st?.mean_pct)} tone={thin ? undefined : signTone(st?.mean_pct)} size="md" />
+        <BigNumber label="Arah benar" value={hitPct(st?.hit_rate)} tone={judged ? tone : undefined} size="md" />
+        <BigNumber label="Rata-rata gerak" value={pct(st?.mean_pct)} tone={judged ? tone : undefined} size="md" />
       </div>
-      <RateBar rate={st?.hit_rate} tone={thin ? 'muted' : undefined} className="mt-4" />
+      <RateBar rate={st?.hit_rate} tone={judged ? tone : 'muted'} className="mt-4" />
       <p className="mt-3 text-[13px] text-muted-foreground">
         {formatCount(st?.n ?? 0)} dari {formatCount(g.n_signals)} sinyal dinilai
         {st && st.n > 0 ? ` · ${st.coins} koin · ${st.days} hari` : ''}
@@ -479,7 +481,7 @@ export function LedgerView() {
         <ErrorState error={summary.error} onRetry={() => summary.refetch()} title="Rekam jejak tidak bisa dimuat" />
       ) : (
         <div className="grid gap-5 lg:grid-cols-4">
-          <DeckCard hero icon={Radar} iconTone={heroTone} eyebrow={`Dicek setelah ${HORIZON_LABEL[horizon]}${filtered ? ' · filter aktif' : ''}`} className="lg:col-span-2 lg:row-span-2">
+          <DeckCard hero fill icon={Radar} iconTone={heroTone} eyebrow={`Dicek setelah ${HORIZON_LABEL[horizon]}${filtered ? ' · filter aktif' : ''}`} className="lg:col-span-2 lg:row-span-2">
             <p className="text-xl font-semibold leading-snug tracking-tight sm:text-2xl">
               {answer.proven.length
                 ? `${answer.proven.length} jenis sinyal terbukti benar arahnya.`
@@ -500,8 +502,8 @@ export function LedgerView() {
                 ))}
               </div>
             )}
-            <p className="mt-4 text-[13px] text-muted-foreground">Sebelum biaya. Petunjuk, bukan jaminan.</p>
-            <div className="mt-2 text-[13px] text-muted-foreground">
+            <div className="mt-auto space-y-1.5 pt-6 text-[13px] text-muted-foreground">
+              <p>Sebelum biaya. Petunjuk, bukan jaminan.</p>
               <Freshness updatedAt={meta.data?.last_cycle?.finished ?? null} />
             </div>
           </DeckCard>

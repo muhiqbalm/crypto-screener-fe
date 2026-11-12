@@ -80,6 +80,8 @@ export interface DeckCardProps {
   /** Coloured outline for emphasis (e.g. warn for "menyimpang"). */
   outline?: Tone
   highlighted?: boolean
+  /** Stretch the content to the card height (put the footer in an element with mt-auto). */
+  fill?: boolean
   className?: string
   bodyClassName?: string
   id?: string
@@ -97,6 +99,7 @@ export function DeckCard({
   ariaLabel,
   outline,
   highlighted,
+  fill,
   className,
   bodyClassName,
   id,
@@ -126,7 +129,7 @@ export function DeckCard({
           className="pointer-events-none absolute -top-10 right-6 h-40 w-40 rounded-full bg-info/20 blur-3xl print:hidden"
         />
       )}
-      <div className="relative">
+      <div className={cn('relative', fill && 'flex h-full flex-col')}>
         {head}
         {children}
       </div>

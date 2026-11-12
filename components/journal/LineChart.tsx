@@ -6,7 +6,7 @@ import { useTheme } from 'next-themes'
 import { getChartTheme } from '@/lib/chart-theme'
 
 /** Single-series equity line (title names the series, so no legend box). */
-export function SimpleLineChart({ points, label }: { points: { t: string; equity: number }[]; label: string }) {
+export function SimpleLineChart({ points, label, className = 'h-[260px]' }: { points: { t: string; equity: number }[]; label: string; className?: string }) {
   const ref = useRef<HTMLDivElement>(null)
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme !== 'light'
@@ -14,7 +14,6 @@ export function SimpleLineChart({ points, label }: { points: { t: string; equity
   useEffect(() => {
     if (!ref.current) return
     const chart = createChart(ref.current, {
-      height: 260,
       autoSize: true,
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
@@ -39,5 +38,5 @@ export function SimpleLineChart({ points, label }: { points: { t: string; equity
     return () => chart.remove()
   }, [points, isDark])
 
-  return <div ref={ref} className="h-[260px] w-full" role="img" aria-label={label} />
+  return <div ref={ref} className={`${className} w-full`} role="img" aria-label={label} />
 }

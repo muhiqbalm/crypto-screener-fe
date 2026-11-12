@@ -209,14 +209,17 @@ export function ArenaView() {
               eyebrow="Jawaban"
               action={<StatusPill kind="paper" />}
               className="lg:col-span-2 lg:row-span-2"
+              fill
             >
               <p className="text-xl font-semibold leading-snug tracking-tight sm:text-2xl">{a.text}</p>
-              <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-                <Pill tone={tone}>{TONE_WORD[a.tone] ?? 'Info'}</Pill>
-                <CardLink href="#klasemen">Lihat klasemen</CardLink>
-              </div>
-              <div className="mt-4 text-[13px] text-muted-foreground">
-                <Freshness updatedAt={r.generated_at} />
+              <div className="mt-auto space-y-4 pt-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <Pill tone={tone}>{TONE_WORD[a.tone] ?? 'Info'}</Pill>
+                  <CardLink href="#klasemen">Lihat klasemen</CardLink>
+                </div>
+                <div className="text-[13px] text-muted-foreground">
+                  <Freshness updatedAt={r.generated_at} />
+                </div>
               </div>
             </DeckCard>
             <DeckCard icon={PlayCircle} iconTone="lab" title="Berjalan">
