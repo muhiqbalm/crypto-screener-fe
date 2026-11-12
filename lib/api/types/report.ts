@@ -4,7 +4,8 @@
  * Every section carries `available`; false = "belum ada data" (never shown as zeros).
  */
 
-export type LedgerVerdictCode = 'terbukti' | 'negatif' | 'belum_terbukti' | 'belum_cukup_data'
+/** 'searah_pasar' (audit 2026-11-13 P3): raw edge positive, but not relative to BTC. */
+export type LedgerVerdictCode = 'terbukti' | 'searah_pasar' | 'negatif' | 'belum_terbukti' | 'belum_cukup_data'
 
 export interface ReportWeek {
   week: string
@@ -67,7 +68,17 @@ export interface LedgerVerdictStats {
   hit_rate: number | null
   mean_pct: number | null
   mean_ci: [number, number] | null
+  /** Honest headline: 'terbukti' only when the BTC-relative interval is above zero too. */
   verdict: LedgerVerdictCode
+  // since 2026-11-13 (older frozen snapshots lack them)
+  verdict_raw?: LedgerVerdictCode | null
+  verdict_rel_btc?: LedgerVerdictCode | null
+  mean_rel_btc_pct?: number | null
+  rel_btc_ci?: [number, number] | null
+  /** Signals from the causal reconstruction (not recorded live). */
+  n_rekon?: number | null
+  first_ts?: string | null
+  last_ts?: string | null
 }
 
 export interface LedgerGroupRow {
@@ -233,7 +244,7 @@ export interface WeeklyReport {
 
 // ── notifications ────────────────────────────────────────────────────────
 
-export type NotificationType = 'job' | 'paper' | 'ledger' | 'deploy' | 'report'
+export type NotificationType = 'job' | 'paper' | 'ledger' | 'deploy' | 'report' | 'live'
 
 export interface LabNotification {
   id: number
@@ -242,11 +253,18 @@ export interface LabNotification {
   body: string | null
   link: string | null
   created_at: string
+  /** A sticky notification stays `read: false` until it is acknowledged. */
   read: boolean
+  /** Sticky (e.g. a rejected live order): pinned for every admin until one presses "Sudah dicek". */
+  sticky?: boolean
+  /** When it was acknowledged; null/absent = still open. */
+  acked_at?: string | null
 }
 
 export interface NotificationList {
   items: LabNotification[]
+  /** Open sticky notifications (newest first), shown on top whatever their age. */
+  pinned?: LabNotification[]
   unread: number
 }
 

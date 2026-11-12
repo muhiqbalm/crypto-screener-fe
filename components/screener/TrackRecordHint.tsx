@@ -26,8 +26,10 @@ import {
   signedPct,
   trackLabel,
   trackLine,
+  trackVerdict,
   type TrackKey,
 } from '@/lib/screener/track-record'
+import { HONEST_VERDICT_COPY, rekonShare, samplePeriod, searahPasarText } from '@/lib/lab/verdict'
 import type { SignalTrackRecord, TrackHorizonStats, TrackRecordItem } from '@/lib/api/types/ledger'
 
 interface Ctx {
@@ -60,7 +62,7 @@ const stop = {
   onKeyDown: (e: React.SyntheticEvent) => e.stopPropagation(),
 }
 
-function HorizonRow({ h, s }: { h: '1d' | '3d'; s: TrackHorizonStats | undefined }) {
+function HorizonRow({ h, s, direction }: { h: '1d' | '3d'; s: TrackHorizonStats | undefined; direction: number }) {
   if (!s || !isEnough(s)) {
     return (
       <div className="flex items-center justify-between gap-2">
@@ -69,7 +71,8 @@ function HorizonRow({ h, s }: { h: '1d' | '3d'; s: TrackHorizonStats | undefined
       </div>
     )
   }
-  const v = TRACK_VERDICT[s.verdict]
+  const hv = trackVerdict(s)
+  const v = HONEST_VERDICT_COPY[hv]
   const vb = TRACK_VERDICT[s.verdict_rel_btc]
   return (
     <div className="space-y-0.5">
@@ -85,14 +88,16 @@ function HorizonRow({ h, s }: { h: '1d' | '3d'; s: TrackHorizonStats | undefined
       <div className="num text-3xs text-muted-foreground">
         n={s.n} · {s.days} hari · {s.coins} koin
         {s.mean_ci ? ` · CI 95% ${signedPct(s.mean_ci[0])} … ${signedPct(s.mean_ci[1])}` : ''}
+        {s.rel_btc_ci ? ` · vs BTC ${signedPct(s.rel_btc_ci[0])} … ${signedPct(s.rel_btc_ci[1])}` : ''}
       </div>
+      {hv === 'searah_pasar' && <p className="text-3xs text-warn">{searahPasarText(direction)}</p>}
     </div>
   )
 }
 
 function Panel({ k, item, data }: { k: TrackKey; item: TrackRecordItem | null; data: SignalTrackRecord }) {
-  const period = periodLabel(data.period)
-  const rekonShare = item && item.n_signals > 0 ? item.n_rekon / item.n_signals : 0
+  const period = (item && samplePeriod(item.first_ts, item.last_ts)) ?? periodLabel(data.period)
+  const rekon = item ? rekonShare(item.n_rekon, item.n_signals) : null
   return (
     <div className="space-y-2 px-2 py-1.5 text-2xs leading-relaxed">
       <p className="eyebrow text-muted-foreground">Rekam jejak · {trackLabel(k)}</p>
@@ -100,8 +105,12 @@ function Panel({ k, item, data }: { k: TrackKey; item: TrackRecordItem | null; d
         <p className="text-muted-foreground">Belum ada sinyal jenis ini yang tercatat.</p>
       ) : (
         <>
-          <HorizonRow h="1d" s={item.stats['1d']} />
-          <HorizonRow h="3d" s={item.stats['3d']} />
+          <HorizonRow h="1d" s={item.stats['1d']} direction={k.direction} />
+          <HorizonRow h="3d" s={item.stats['3d']} direction={k.direction} />
+          <p className="num text-3xs text-muted-foreground">
+            Sampel {period ?? 'beberapa minggu'}
+            {rekon ? ` · ${rekon} (${item.n_rekon} dari ${item.n_signals} sinyal), ${item.n_live} dicatat live` : ' · semua dicatat live'}
+          </p>
           <p className="text-3xs text-muted-foreground">
             Angka utama 1 hari. Jendela 3 hari saling tumpang tindih antar hari, jadi buktinya lebih lemah.
           </p>
@@ -110,7 +119,8 @@ function Panel({ k, item, data }: { k: TrackKey; item: TrackRecordItem | null; d
       <div className="rounded-md border border-warn/30 bg-warn/[0.06] p-2 text-3xs text-muted-foreground">
         Hit = arah sinyal benar; return diukur <b>sebelum biaya</b> (fee, slippage, funding). Data baru
         {period ? ` ${period}` : ' beberapa minggu'}: <b>satu rezim pasar</b>
-        {rekonShare > 0.5 ? ', sebagian besar dari rekonstruksi screener' : ''}. Petunjuk, bukan jaminan.
+        {item && item.n_signals > 0 && item.n_rekon / item.n_signals > 0.5 ? ', sebagian besar dari rekonstruksi screener' : ''}.
+        &ldquo;Terbukti&rdquo; hanya bila gerak dibanding BTC juga di atas nol. Petunjuk, bukan jaminan.
       </div>
     </div>
   )
@@ -126,8 +136,7 @@ export function TrackRecordHint({ k, symbol, className }: { k: TrackKey | null; 
   const { data, isAdmin } = useContext(TrackRecordContext)
   if (!k || !data?.available) return null
   const item = findTrack(data, k)
-  const s = item?.stats['1d']
-  const verdict = s && isEnough(s) ? s.verdict : 'belum_cukup_data'
+  const verdict = trackVerdict(item?.stats['1d'])
   const line = trackLine(k, item)
   return (
     <DropdownMenu modal={false}>
@@ -137,7 +146,7 @@ export function TrackRecordHint({ k, symbol, className }: { k: TrackKey | null; 
         title={line}
         className={cn(
           '-m-1.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-          TONE_TEXT[TRACK_VERDICT[verdict].tone],
+          TONE_TEXT[HONEST_VERDICT_COPY[verdict].tone],
           className,
         )}
       >
@@ -177,7 +186,7 @@ export function TrackRecordFootnote() {
       <History className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
       <span>
         Ikon rekam jejak di samping arah skor: seberapa sering arah jenis itu benar arahnya 1 hari kemudian
-        (hijau terbukti, merah negatif, kuning belum terbukti, abu-abu belum cukup data). Sebelum biaya, dan baru
+        (hijau terbukti, juga dibanding BTC; kuning searah pasar atau belum terbukti; merah negatif; abu-abu belum cukup data). Sebelum biaya, dan baru
         satu rezim pasar{period ? ` (${period})` : ''}, sebagian besar dari rekonstruksi. Klik ikonnya untuk rincian.
       </span>
     </p>

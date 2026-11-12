@@ -13,12 +13,13 @@ import type {
 /** Copy + badge tone per Signal Ledger verdict code (same meaning as the screener track record). */
 export const VERDICT_COPY: Record<LedgerVerdictCode, { label: string; variant: NonNullable<BadgeProps['variant']> }> = {
   terbukti: { label: 'Terbukti', variant: 'bullish' },
+  searah_pasar: { label: 'Searah pasar', variant: 'warn' },
   negatif: { label: 'Negatif', variant: 'bearish' },
   belum_terbukti: { label: 'Belum terbukti', variant: 'warn' },
   belum_cukup_data: { label: 'Belum cukup data', variant: 'muted' },
 }
 
-export const VERDICT_ORDER: LedgerVerdictCode[] = ['terbukti', 'negatif', 'belum_terbukti', 'belum_cukup_data']
+export const VERDICT_ORDER: LedgerVerdictCode[] = ['terbukti', 'searah_pasar', 'negatif', 'belum_terbukti', 'belum_cukup_data']
 
 /** Notification groups in the bell (one name per concept, glossary §4). */
 export const NOTIF_TYPE_LABEL: Record<NotificationType, string> = {
@@ -27,6 +28,7 @@ export const NOTIF_TYPE_LABEL: Record<NotificationType, string> = {
   ledger: 'Rekam jejak sinyal',
   deploy: 'Pembaruan sistem',
   report: 'Laporan',
+  live: 'Bot live',
 }
 
 export const NO_DATA = 'Tidak tersedia'
@@ -218,10 +220,12 @@ export function topFindings(r: WeeklyReport, opts: { isAdmin: boolean; max?: num
   if (led?.available) {
     const t = led.counts_week?.terbukti ?? 0
     const neg = led.counts_week?.negatif ?? 0
-    if (t > 0 || neg > 0) {
+    const mkt = led.counts_week?.searah_pasar ?? 0
+    if (t > 0 || neg > 0 || mkt > 0) {
+      const searah = mkt > 0 ? `, ${mkt} hanya searah pasar (belum terbukti dibanding BTC)` : ''
       out.push({
         key: 'ledger', tone: t > 0 ? 'baik' : 'perlu_dicek', weight: t > 0 ? 55 : 58, href: '/lab/signals', linkLabel: 'Rekam jejak sinyal',
-        text: `Rekam jejak sinyal: ${t} jenis sinyal terbukti dan ${neg} negatif minggu ini (dicek setelah 1 hari).`,
+        text: `Rekam jejak sinyal: ${t} jenis sinyal terbukti${searah} dan ${neg} negatif minggu ini (dicek setelah 1 hari, sebelum biaya).`,
       })
     } else {
       out.push({

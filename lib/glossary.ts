@@ -63,16 +63,24 @@ export const GLOSSARY = {
     aliases: ['Open Interest'],
     group: 'pasar',
   },
+  // Audit 2026-11-13 S2: Binance has three different L/S numbers; screener and Arus besar use two of them.
   long_short_ratio: {
-    label: 'Rasio long/short',
-    short: 'Rasio L/S',
-    tip: 'Perbandingan posisi long dan short; di atas 1 berarti lebih banyak long.',
-    aliases: ['Long/Short Ratio', 'L/S Ratio'],
+    label: 'Rasio L/S akun top-trader',
+    short: 'L/S akun top-trader',
+    tip: 'Jumlah akun top-trader Binance yang net long dibagi yang net short (dipakai screener). Beda dengan rasio posisi top-trader dan rasio seluruh pasar.',
+    aliases: ['Long/Short Ratio', 'L/S Ratio', 'Rasio long/short', 'Rasio L/S', 'Top Trader Long/Short Ratio (Accounts)'],
+    group: 'pasar',
+  },
+  top_trader_position_ratio: {
+    label: 'Rasio L/S posisi top-trader',
+    short: 'L/S posisi top-trader',
+    tip: 'Besar posisi long top-trader Binance dibagi posisi short-nya (halaman Arus besar). Beda dengan rasio akun top-trader dan rasio seluruh pasar.',
+    aliases: ['Top Trader Long/Short Ratio (Positions)'],
     group: 'pasar',
   },
   top_trader: {
     label: 'Trader besar',
-    tip: 'Arah mayoritas posisi akun terbesar di Binance Futures.',
+    tip: 'Arah posisi top-trader Binance Futures: porsi posisi long dibanding short mereka (rasio posisi, bukan jumlah akun).',
     values: { long: 'condong long', short: 'condong short', netral: 'seimbang' },
     aliases: ['Top Trader Stance', 'Long Skew', 'Short Skew', 'NET LONG', 'BALANCED'],
     group: 'pasar',
@@ -100,7 +108,7 @@ export const GLOSSARY = {
   screener_score: {
     label: 'Skor screener',
     short: 'Skor',
-    tip: 'Gabungan 5 faktor (momentum 30%, funding 25%, OI 20%, rasio L/S 15%, pembalikan 1 hari 10%) dibanding koin lain.',
+    tip: 'Gabungan 5 faktor (momentum 30%, funding 25%, OI 20%, rasio L/S akun top-trader 15%, pembalikan 1 hari 10%) dibanding koin lain.',
     aliases: ['Composite Multi-Factor Score', 'Score'],
     group: 'pasar',
   },
@@ -698,8 +706,15 @@ export const GLOSSARY = {
   },
   terbukti: {
     label: 'Terbukti',
-    tip: 'Rentang ketidakpastian seluruhnya di atas nol, sebelum biaya. Petunjuk, bukan jaminan.',
+    tip: 'Rentang ketidakpastian di atas nol, baik gerak mentah maupun dibanding BTC, sebelum biaya. Petunjuk, bukan jaminan.',
     aliases: ['Positif'],
+    group: 'rekam_jejak',
+  },
+  // Audit 2026-11-13 P3: a raw edge that is not also an edge against BTC is not "terbukti".
+  searah_pasar: {
+    label: 'Searah pasar',
+    tip: 'Gerak searah sinyal positif, tapi dibanding BTC rentangnya mencakup nol: kemungkinan hanya ikut arah pasar, belum teruji di kondisi pasar lain.',
+    aliases: ['Terbukti (mentah)'],
     group: 'rekam_jejak',
   },
   belum_terbukti: {

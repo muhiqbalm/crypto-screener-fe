@@ -16,6 +16,7 @@ import { ResponsiveTable, type ResponsiveColumn } from '@/components/ui/responsi
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
 import { Term } from '@/components/ui/term'
 import { EmptyState, ErrorState } from '@/components/shell/states'
+import { LiveHistoryNote } from '@/components/bot/LiveHistoryNote'
 import type { TradeLogResponse } from '@/lib/api/types/trades'
 
 const PAGE = 50
@@ -187,6 +188,7 @@ export function SignalLogsTable() {
               empty={<EmptyState title="Belum ada alert yang tercatat" description="Alert TradingView yang sampai ke bot akan muncul di sini." />}
             />
             <p className="text-[13px] text-muted-foreground">Ketuk baris untuk detail; baris gagal atau ditolak menampilkan alasan dari bot.</p>
+            <LiveHistoryNote />
             {rows.length > limit && (
               <Button variant="outline" size="sm" onClick={() => setLimit((n) => n + PAGE)}>
                 Tampilkan {Math.min(PAGE, rows.length - limit)} lagi ({rows.length - limit} tersisa)

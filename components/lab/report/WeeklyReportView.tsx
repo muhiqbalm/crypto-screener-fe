@@ -25,17 +25,18 @@ import { ResponsiveTable, type ResponsiveColumn } from '@/components/ui/responsi
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { StatusPill } from '@/components/ui/status-pill'
 import { ErrorState, LoadingState } from '@/components/shell/states'
+import { LiveHistoryNote } from '@/components/bot/LiveHistoryNote'
 import { BigNumber, CardLink, DeckCard, Meter, Pill, Ring, SectionHead, signTone, type Tone } from '@/components/lab/arena/deck'
 import { cn } from '@/lib/utils/cn'
 import { formatBps, formatCount, formatNumber, formatPct, signClass } from '@/lib/utils/format'
 import { formatTime, formatTimeframe } from '@/lib/utils/time'
 import { SOURCE_LABEL as SIGNAL_SOURCE_LABEL, typeLabel } from '@/lib/lab/ledger'
 import { strategyLabel } from '@/lib/lab/arena'
+import { HONEST_VERDICT_COPY, HONEST_VERDICT_ORDER, rekonShare, rowVerdict, samplePeriod, type HonestVerdict } from '@/lib/lab/verdict'
+import { beforeLiveHistory } from '@/lib/bot/history'
 import {
   NO_DATA,
   RUN_MODE_LABEL,
-  VERDICT_COPY,
-  VERDICT_ORDER,
   WEEK_KIND_COPY,
   defaultWeek,
   directionLabel,
@@ -203,6 +204,7 @@ function LiveBotBlock({ r, isAdmin }: { r: WeeklyReport; isAdmin: boolean }) {
   const executed = s.executed ?? 0
   return (
     <Block icon={Webhook} title="Bot live" pill={<StatusPill kind="live" size="xs" />} link={<AdminLink href="/bot" isAdmin={isAdmin}>Status bot</AdminLink>}>
+      {beforeLiveHistory(r.start) && <LiveHistoryNote className="mb-4" />}
       {!s.available ? (
         <NoData s={s}>Tidak ada alert bot live di minggu ini.</NoData>
       ) : (
@@ -248,6 +250,7 @@ function ExecutionBlock({ r, isAdmin }: { r: WeeklyReport; isAdmin: boolean }) {
   const a = s.week
   return (
     <Block icon={Gauge} title="Kualitas eksekusi" pill={<StatusPill kind="live" size="xs" />} link={<AdminLink href="/bot#eksekusi" isAdmin={isAdmin}>Status bot</AdminLink>}>
+      {beforeLiveHistory(r.start) && <LiveHistoryNote className="mb-4" />}
       {!s.available || !a ? (
         <NoData s={s}>{s.overall ? `Tidak ada sinyal live minggu ini (${formatCount(s.overall.n_signals)} sejak mulai dicatat).` : null}</NoData>
       ) : (
@@ -284,20 +287,67 @@ function ExecutionBlock({ r, isAdmin }: { r: WeeklyReport; isAdmin: boolean }) {
   )
 }
 
-const VERDICT_TONE: Record<string, Tone> = { terbukti: 'bullish', negatif: 'bearish', belum_terbukti: 'warn', belum_cukup_data: 'muted' }
+const VERDICT_TONE: Record<HonestVerdict, Tone> = {
+  terbukti: 'bullish',
+  searah_pasar: 'warn',
+  negatif: 'bearish',
+  belum_terbukti: 'warn',
+  belum_cukup_data: 'muted',
+}
+
+/** Report row stats; the backend may add the BTC-relative verdict and sample facts (audit 2026-11-13 P3). */
+type ReportVerdictStats = Omit<LedgerGroupRow['overall'], 'verdict'> & {
+  verdict: string
+  verdict_raw?: string | null
+  verdict_rel_btc?: string | null
+  mean_rel_btc_pct?: number | null
+  rel_btc_ci?: [number, number] | null
+  n_rekon?: number | null
+  first_ts?: string | null
+  last_ts?: string | null
+}
+
+function VerdictPill({ s }: { s: ReportVerdictStats }) {
+  const v = rowVerdict(s)
+  return (
+    <span title={HONEST_VERDICT_COPY[v].hint}>
+      <Pill tone={VERDICT_TONE[v]}>{HONEST_VERDICT_COPY[v].label}</Pill>
+    </span>
+  )
+}
+
+/** Raw mean, and the mean relative to BTC right under it when the backend sends it. */
+function MeanCell({ s }: { s: ReportVerdictStats | null }) {
+  if (!s) return <span className="text-muted-foreground">—</span>
+  return (
+    <span className="inline-flex flex-col items-end">
+      <span className={cn('tabular-nums', signClass(s.mean_pct))}>{formatPct(s.mean_pct, { digits: 2, signed: true })}</span>
+      {typeof s.mean_rel_btc_pct === 'number' && (
+        <span className="text-[13px] tabular-nums text-muted-foreground">vs BTC {formatPct(s.mean_rel_btc_pct, { digits: 2, signed: true })}</span>
+      )}
+    </span>
+  )
+}
 
 function counts(c: LedgerReportSection['counts_week']) {
-  const any = VERDICT_ORDER.some((k) => c?.[k])
+  const byCode = (c ?? {}) as Partial<Record<string, number>>
+  const shown = HONEST_VERDICT_ORDER.filter((k) => byCode[k])
   return (
     <div className="flex flex-wrap gap-2">
-      {VERDICT_ORDER.filter((k) => c?.[k]).map((k) => (
+      {shown.map((k) => (
         <Pill key={k} tone={VERDICT_TONE[k]}>
-          {VERDICT_COPY[k].label} <span className="tabular-nums">{c?.[k]}</span>
+          {HONEST_VERDICT_COPY[k].label} <span className="tabular-nums">{byCode[k]}</span>
         </Pill>
       ))}
-      {!any && <span className="text-[15px] text-muted-foreground">—</span>}
+      {!shown.length && <span className="text-[15px] text-muted-foreground">—</span>}
     </div>
   )
+}
+
+/** "15 Okt – 12 Nov · 96% rekonstruksi" for the overall sample, when the backend sends it. */
+function sampleFacts(s: ReportVerdictStats): string | null {
+  const parts = [samplePeriod(s.first_ts, s.last_ts), rekonShare(s.n_rekon, s.n_signals)].filter(Boolean)
+  return parts.length ? parts.join(' · ') : null
 }
 
 const LEDGER_COLUMNS: ResponsiveColumn<LedgerGroupRow>[] = [
@@ -305,20 +355,24 @@ const LEDGER_COLUMNS: ResponsiveColumn<LedgerGroupRow>[] = [
     key: 'signal',
     header: 'Sinyal',
     mobile: 'title',
-    cell: (g) => (
-      <div className="min-w-0">
-        <div className="truncate font-medium">{typeLabel(g.signal_type)}</div>
-        <div className="truncate text-[13px] font-normal text-muted-foreground">
-          {directionLabel(g.direction)} · {SIGNAL_SOURCE_LABEL[g.source as keyof typeof SIGNAL_SOURCE_LABEL] ?? g.source}
+    cell: (g) => {
+      const facts = sampleFacts(g.overall as ReportVerdictStats)
+      return (
+        <div className="min-w-0">
+          <div className="truncate font-medium">{typeLabel(g.signal_type)}</div>
+          <div className="truncate text-[13px] font-normal text-muted-foreground">
+            {directionLabel(g.direction)} · {SIGNAL_SOURCE_LABEL[g.source as keyof typeof SIGNAL_SOURCE_LABEL] ?? g.source}
+          </div>
+          {facts && <div className="truncate text-[13px] font-normal text-muted-foreground">{facts}</div>}
         </div>
-      </div>
-    ),
+      )
+    },
   },
   {
     key: 'week',
     header: 'Minggu ini',
     mobile: 'badge',
-    cell: (g) => (g.week ? <Pill tone={VERDICT_TONE[g.week.verdict]}>{VERDICT_COPY[g.week.verdict].label}</Pill> : <span className="text-muted-foreground">—</span>),
+    cell: (g) => (g.week ? <VerdictPill s={g.week as ReportVerdictStats} /> : <span className="text-muted-foreground">—</span>),
   },
   {
     key: 'week_mean',
@@ -326,13 +380,13 @@ const LEDGER_COLUMNS: ResponsiveColumn<LedgerGroupRow>[] = [
     mobileLabel: 'Minggu ini',
     mobile: 'field',
     align: 'right',
-    cell: (g) => <span className={cn('tabular-nums', signClass(g.week?.mean_pct))}>{g.week ? formatPct(g.week.mean_pct, { digits: 2, signed: true }) : '—'}</span>,
+    cell: (g) => <MeanCell s={g.week as ReportVerdictStats | null} />,
   },
   {
     key: 'overall',
     header: 'Keseluruhan',
     mobile: 'hidden',
-    cell: (g) => <Pill tone={VERDICT_TONE[g.overall.verdict]}>{VERDICT_COPY[g.overall.verdict].label}</Pill>,
+    cell: (g) => <VerdictPill s={g.overall as ReportVerdictStats} />,
   },
   {
     key: 'overall_mean',
@@ -340,7 +394,7 @@ const LEDGER_COLUMNS: ResponsiveColumn<LedgerGroupRow>[] = [
     mobileLabel: 'Keseluruhan',
     mobile: 'field',
     align: 'right',
-    cell: (g) => <span className={cn('tabular-nums', signClass(g.overall.mean_pct))}>{formatPct(g.overall.mean_pct, { digits: 2, signed: true })}</span>,
+    cell: (g) => <MeanCell s={g.overall as ReportVerdictStats} />,
   },
 ]
 
@@ -368,7 +422,10 @@ function LedgerBlock({ r, isAdmin }: { r: WeeklyReport; isAdmin: boolean }) {
               <ResponsiveTable rows={s.groups ?? []} columns={LEDGER_COLUMNS} rowKey={(g) => g.key} caption="Rekam jejak per jenis sinyal" />
             </div>
           </details>
-          <p className="text-[13px] text-muted-foreground">Dicek 1 hari setelah sinyal, sebelum biaya.</p>
+          <p className="text-[13px] text-muted-foreground">
+            Dicek 1 hari setelah sinyal, sebelum biaya. &ldquo;Terbukti&rdquo; hanya bila gerak mentah dan gerak dibanding BTC sama-sama di atas
+            nol; &ldquo;searah pasar&rdquo; berarti untungnya kemungkinan dari arah pasar, belum teruji di kondisi pasar lain.
+          </p>
         </div>
       )}
     </Block>

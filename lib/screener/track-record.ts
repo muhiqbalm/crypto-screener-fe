@@ -12,6 +12,7 @@ import type {
   TrackVerdict,
 } from '@/lib/api/types/ledger'
 import type { AssetDetail } from '@/lib/api/types/screener'
+import { HONEST_VERDICT_COPY, honestVerdict, type HonestVerdict } from '@/lib/lab/verdict'
 
 export type TrackSignalType = 'komposit' | 'komposit_high' | 'tier_a' | 'tier_c' | 'momentum' | 'funding' | 'oi'
 
@@ -89,6 +90,15 @@ export function isEnough(s: TrackHorizonStats | undefined): boolean {
 }
 
 /**
+ * Verdict shown for one horizon (audit 2026-11-13 P3): "terbukti" only when the BTC-relative
+ * verdict is terbukti too; a raw edge alone is "searah pasar".
+ */
+export function trackVerdict(s: TrackHorizonStats | undefined): HonestVerdict {
+  if (!s || !isEnough(s)) return 'belum_cukup_data'
+  return honestVerdict(s.verdict, s.verdict_rel_btc)
+}
+
+/**
  * One line for the tooltip, e.g.
  * "Tier A long: 1d hit 42% (n=349, 27 hari) — belum terbukti, vs BTC belum terbukti · 3d: negatif, vs BTC belum terbukti".
  */
@@ -97,13 +107,13 @@ export function trackLine(k: TrackKey, item: TrackRecordItem | null, h: TrackHor
   const s = item?.stats[h]
   if (!item || !s || s.n === 0) return `${label}: belum ada sinyal yang selesai dinilai`
   if (!isEnough(s)) return `${label}: belum cukup data (n=${s.n}, ${s.days} hari; butuh ≥10 sinyal di ≥5 hari)`
-  const v = TRACK_VERDICT[s.verdict].label.toLowerCase()
+  const v = HONEST_VERDICT_COPY[trackVerdict(s)].label.toLowerCase()
   const vb = TRACK_VERDICT[s.verdict_rel_btc].label.toLowerCase()
   const head = `${label}: ${h} hit ${pct0(s.hit_rate)} (n=${s.n}, ${s.days} hari) — ${v}, vs BTC ${vb}`
   // the secondary horizon only as a verdict; its windows overlap, details live in the panel
   const s3 = h === '1d' ? item.stats['3d'] : undefined
   if (!s3 || !isEnough(s3)) return head
-  return `${head} · 3d: ${TRACK_VERDICT[s3.verdict].label.toLowerCase()}, vs BTC ${TRACK_VERDICT[s3.verdict_rel_btc].label.toLowerCase()}`
+  return `${head} · 3d: ${HONEST_VERDICT_COPY[trackVerdict(s3)].label.toLowerCase()}, vs BTC ${TRACK_VERDICT[s3.verdict_rel_btc].label.toLowerCase()}`
 }
 
 /** Short Indonesian date range, "15 Okt – 11 Nov". */

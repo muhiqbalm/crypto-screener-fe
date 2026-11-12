@@ -1,7 +1,7 @@
 'use client'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { notificationsApi, reportApi } from '@/lib/api/report'
-import type { NotificationList } from '@/lib/api/types/report'
+import type { LabNotification, NotificationList } from '@/lib/api/types/report'
 
 const NOTIF_KEY = ['lab', 'notifications'] as const
 /** Bell polling: every 60 s, paused while the tab is hidden (like the other Lab polls). */
@@ -41,14 +41,20 @@ function patchCache(qc: ReturnType<typeof useQueryClient>, fn: (d: NotificationL
   qc.setQueryData<NotificationList>(NOTIF_KEY, (d) => (d ? fn(d) : d))
 }
 
+/** Sticky and not acknowledged yet: stays unread and pinned whatever the read state says. */
+export function isOpenSticky(n: Pick<LabNotification, 'sticky' | 'acked_at'>): boolean {
+  return Boolean(n.sticky && !n.acked_at)
+}
+
 export function useMarkNotificationRead() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => notificationsApi.markRead(id),
     onSuccess: (res, id) =>
       patchCache(qc, (d) => ({
+        ...d,
         unread: res.unread,
-        items: d.items.map((n) => (n.id === id ? { ...n, read: true } : n)),
+        items: d.items.map((n) => (n.id === id && !isOpenSticky(n) ? { ...n, read: true } : n)),
       })),
   })
 }
@@ -58,6 +64,27 @@ export function useMarkAllNotificationsRead() {
   return useMutation({
     mutationFn: () => notificationsApi.markAllRead(),
     onSuccess: (res) =>
-      patchCache(qc, (d) => ({ unread: res.unread, items: d.items.map((n) => ({ ...n, read: true })) })),
+      patchCache(qc, (d) => ({
+        ...d,
+        unread: res.unread,
+        items: d.items.map((n) => (isOpenSticky(n) ? n : { ...n, read: true })),
+      })),
+  })
+}
+
+/** "Sudah dicek" on a sticky notification (shared by every admin). */
+export function useAckNotification() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => notificationsApi.ack(id),
+    onSuccess: (res, id) => {
+      const at = new Date().toISOString()
+      patchCache(qc, (d) => ({
+        ...d,
+        unread: res.unread,
+        pinned: (d.pinned ?? []).filter((n) => n.id !== id),
+        items: d.items.map((n) => (n.id === id ? { ...n, read: true, acked_at: n.acked_at ?? at } : n)),
+      }))
+    },
   })
 }

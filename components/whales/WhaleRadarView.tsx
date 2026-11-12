@@ -81,7 +81,7 @@ function RatioCard({ r }: { r: TopTraderRatio }) {
       </div>
       <p className="num flex items-center justify-between text-2xs text-muted-foreground">
         <span>
-          <Term k="long_short_ratio" short noTip /> {ratio === null ? '—' : formatNumber(ratio, { digits: 2 })}
+          <Term k="top_trader_position_ratio" short noTip /> {ratio === null ? '—' : formatNumber(ratio, { digits: 2 })}
         </span>
         <span>{typeof r.timestamp === 'number' ? formatTime(r.timestamp, { date: false }) : 'waktu tidak tersedia'}</span>
       </p>
@@ -199,7 +199,7 @@ export function WhaleRadarView() {
             'Condong long/short dihitung sama untuk tiap koin dan rata-ratanya: di atas 55% long = condong long, di bawah 45% = condong short.',
             'Transaksi besar hanya mencakup beberapa menit terakhir; lihat jendela waktunya.',
           ],
-          istilah: ['top_trader', 'whale_trades', 'net_flow', 'long_short_ratio'],
+          istilah: ['top_trader', 'top_trader_position_ratio', 'whale_trades', 'net_flow'],
         }}
         actions={
           <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
