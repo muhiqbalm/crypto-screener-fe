@@ -32,7 +32,7 @@ import { compositeKey, tierKey } from '@/lib/screener/track-record'
 import { scoreFraction, scorePosition } from '@/lib/screener/factors'
 import { koinHref } from '@/lib/lab/outlook'
 import {
-  baseAsset,
+  coinOf,
   formatPrice,
   formatVolume,
   formatFunding,
@@ -68,7 +68,7 @@ function buildColumns(positions: Map<string, Pos>): ColumnDef<AssetDetail>[] {
       cell: ({ row }) => (
         <span className="flex flex-col">
           <Link href={koinHref(row.original.symbol)} onClick={(e) => e.stopPropagation()} className="font-semibold tracking-wide hover:underline">
-            {baseAsset(row.original.symbol)}
+            {coinOf(row.original.symbol)}
           </Link>
           <span className="font-mono text-[10px] tabular-nums text-muted-foreground sm:hidden">{formatPrice(row.original.price)}</span>
         </span>
@@ -325,7 +325,7 @@ export function ScreenerTable({ data, filters, onSelectAsset }: ScreenerTablePro
                   open(row.original)
                 }
               }}
-              aria-label={`Halaman koin ${baseAsset(row.original.symbol)}`}
+              aria-label={`Halaman koin ${coinOf(row.original.symbol)}`}
               className="cursor-pointer"
             >
               {row.getVisibleCells().map((cell) => (

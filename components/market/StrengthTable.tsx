@@ -9,7 +9,8 @@ import { ErrorPanel } from '@/components/shell/ErrorPanel'
 import { Chip, EmptyState, Section } from '@/components/lab/Section'
 import { signClass } from '@/components/lab/LabBadges'
 import { Sparkline } from '@/components/market/Sparkline'
-import { FreshnessLine, InfoHint } from '@/components/market/shared'
+import { InfoTip } from '@/components/ui/info-tip'
+import { Freshness } from '@/components/ui/freshness'
 import { ApiError, apiErrorDetail } from '@/lib/api/errors'
 import { formatPercent, formatPrice, formatScore } from '@/lib/utils/format'
 import { notify } from '@/lib/utils/toast'
@@ -100,7 +101,7 @@ export function StrengthTable() {
         </Button>
       ) : undefined}
     >
-      <FreshnessLine className="mb-2" closeIso={q.data?.last_bar_close ?? null} computedAt={q.data?.computed_at} />
+      <Freshness className="mb-2" dataLabel="Data close 4H" dataAt={q.data?.last_bar_close ?? null} updatedAt={q.data?.computed_at} timeframe="4h" nextDelayMin={4} />
       <div className="mb-3 flex flex-wrap gap-1.5" aria-label="Filter">
         {([['all', 'Semua'], ['up', 'Tren naik'], ['down', 'Tren turun']] as const).map(([v, label]) => (
           <Chip key={v} active={filter === v} onClick={() => setFilter(v)} className="h-7 px-2.5">{label}</Chip>
@@ -164,11 +165,11 @@ export function StrengthTable() {
         </div>
       )}
       <div className="mt-3 flex items-start gap-1.5 text-[11px] leading-relaxed text-muted-foreground">
-        <InfoHint label="Cara membaca Terkuat">
+        <InfoTip label="Cara membaca Terkuat">
           Skor = rata-rata momentum 7, 30 dan 90 hari yang disesuaikan gejolak harga. Tren = harga dibanding rata-rata
           harga 50 hari. Funding 7 hari ditulis per tahun (positif = long membayar). Koin dengan data kurang dari 120 hari
           tidak diberi peringkat.
-        </InfoHint>
+        </InfoTip>
         <span>Peringkat relatif antar koin, bukan sinyal beli. Klik nama koin untuk keputusan dan rencananya.</span>
       </div>
     </Section>

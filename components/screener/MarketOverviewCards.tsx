@@ -5,7 +5,7 @@ import { Activity, Flame, TrendingUp, Zap } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import type { SummaryData, AssetSummary } from '@/lib/api/types/screener'
 import { cn } from '@/lib/utils/cn'
-import { baseAsset, formatFunding, formatVolume } from '@/lib/utils/format'
+import { coinOf, formatFunding, formatVolume } from '@/lib/utils/format'
 import { koinHref } from '@/lib/lab/outlook'
 
 interface MarketOverviewCardsProps {
@@ -85,7 +85,7 @@ export function MarketOverviewCards({ summary }: MarketOverviewCardsProps) {
             top_3_assets.slice(0, 3).map((a: AssetSummary, idx: number) => (
               <Link key={a.symbol} href={koinHref(a.symbol)}
                 className="flex items-center justify-between rounded-md px-1 py-0.5 text-xs transition-colors hover:bg-muted/80">
-                <span className="font-semibold">#{a.rank ?? idx + 1} {baseAsset(a.symbol)}</span>
+                <span className="font-semibold">#{a.rank ?? idx + 1} {coinOf(a.symbol)}</span>
                 <span className="text-muted-foreground">{a.signal === 'BULLISH' ? 'naik' : a.signal === 'BEARISH' ? 'turun' : 'netral'}</span>
               </Link>
             ))

@@ -3,6 +3,7 @@
  * Mirrors the v2 backend (src/lab/outlook/logic.py + calib.py); everything degrades
  * gracefully on rows computed before v2 (no plan / peluang fields).
  */
+import { formatTime } from '@/lib/utils/time'
 import type {
   CallStatus,
   EvidenceCode,
@@ -53,7 +54,7 @@ export const EVIDENCE_TONE: Record<EvidenceCode, Tone> = {
 }
 
 export const KEYAKINAN_TONE: Record<Keyakinan, Tone> = { tinggi: 'bullish', sedang: 'info', rendah: 'warn' }
-export const FASE_TEXT: Record<Fase, string> = { baru: 'Sinyal baru', berjalan: 'Menyusul' }
+export const FASE_TEXT: Record<Fase, string> = { baru: 'Posisi baru', berjalan: 'Menyusul' }
 export const FASE_HINT: Record<Fase, string> = {
   baru: 'Strategi baru masuk di close 4H terakhir.',
   berjalan: 'Posisi strategi sudah berjalan; masuk sekarang = menyusul (historis jauh lebih lemah).',
@@ -196,12 +197,8 @@ export function groupFactors(factors: OutlookFactor[]): Record<'utama' | 'mtf' |
   return out
 }
 
-/** "+0.14R" / "−0.05R" (R = multiple of the distance to SL). */
-export function formatR(v: number | null | undefined, digits = 2): string {
-  if (v === null || v === undefined || !Number.isFinite(v)) return '—'
-  const s = Math.abs(v).toFixed(digits)
-  return `${v > 0 ? '+' : v < 0 ? '−' : ''}${s}R`
-}
+/** "+0.14R" / "−0.05R" (R = multiple of the distance to SL): the app-wide formatter. */
+export { formatR } from '@/lib/utils/format'
 
 /** 0.578 -> "58%". */
 export function formatProb(p: number | null | undefined): string {
@@ -216,16 +213,9 @@ export function parseBounded(raw: string, min: number, max: number): number | nu
   return v
 }
 
-/** "9 Nov 07:00 WIB" from an ISO time (WIB = UTC+7, like the backend narrative). */
+/** "9 Nov 07:00 WIB" (the app-wide WIB formatter; no year so it reads like the backend narrative). */
 export function formatWib(iso: string | null | undefined): string {
-  if (!iso) return '—'
-  const t = Date.parse(iso)
-  if (!Number.isFinite(t)) return '—'
-  const d = new Date(t + 7 * 3600_000)
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
-  const hh = String(d.getUTCHours()).padStart(2, '0')
-  const mm = String(d.getUTCMinutes()).padStart(2, '0')
-  return `${d.getUTCDate()} ${months[d.getUTCMonth()]} ${hh}:${mm} WIB`
+  return formatTime(iso, { year: false })
 }
 
 export function coinLabel(symbol: string): string {

@@ -1,18 +1,24 @@
 'use client'
 
 import Link from 'next/link'
-import { AlertTriangle, ArrowLeft, ArrowUpRight, CandlestickChart, ExternalLink } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, ArrowUpRight, CandlestickChart, Compass, ExternalLink } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { StatTile } from '@/components/ui/stat-tile'
-import { ErrorState, errorKind } from '@/components/shell/states'
+import { ErrorState } from '@/components/shell/states'
+import { PageHeader } from '@/components/shell/page'
+import { AssistantSlot } from '@/components/shell/AssistantSlot'
 import { Section } from '@/components/lab/Section'
-import { VerdictBadge } from '@/components/lab/LabBadges'
+import { VerdictBadge } from '@/components/ui/verdict-badge'
+import { AnswerCard } from '@/components/ui/answer-card'
+import { Freshness } from '@/components/ui/freshness'
+import { InfoTip } from '@/components/ui/info-tip'
+import { Term } from '@/components/ui/term'
 import { BiasBadge, EvidenceBadge, FaseBadge, KeyakinanBadge, StatusBadge } from '@/components/lab/outlook/OutlookBadges'
 import { DISCLAIMER } from '@/components/lab/outlook/OutlookView'
 import { FactorBreakdown } from '@/components/screener/FactorBreakdown'
 import { TrackRecordProvider } from '@/components/screener/TrackRecordHint'
-import { AnswerBox, AssistantBox, Fold, FreshnessLine, InfoHint } from '@/components/market/shared'
+import { Fold } from '@/components/market/shared'
 import { CapitalInputs } from '@/components/market/coin/CapitalInputs'
 import { MiniChart } from '@/components/market/coin/MiniChart'
 import { useSavedInputs } from '@/components/market/useSavedInputs'
@@ -33,7 +39,7 @@ import {
   kDariN,
   liveNote,
 } from '@/lib/lab/outlook'
-import { formatPercent, formatPrice, formatScore, formatUsd, formatUsdSigned, signClass } from '@/lib/utils/format'
+import { formatCount, formatPercent, formatPrice, formatRR, formatScore, formatUsd, formatUsdSigned, signClass } from '@/lib/utils/format'
 import { safeExternalUrl } from '@/lib/utils/safe-url'
 import { cn } from '@/lib/utils/cn'
 import type { CalibStats, OutlookDetail, OutlookInputs, StrategyClass } from '@/lib/api/types/outlook'
@@ -44,8 +50,8 @@ function CalibLine({ label, s }: { label: string; s: CalibStats | null | undefin
   if (!s || !s.n_cases) return <li><span className="text-muted-foreground">{label}:</span> belum ada data</li>
   return (
     <li>
-      <span className="text-muted-foreground">{label}:</span> {s.n_cases.toLocaleString('en-US')} panggilan dari{' '}
-      {s.n_pos.toLocaleString('en-US')} posisi — TP dulu {formatProb(s.p_tp)}, SL dulu {formatProb(s.p_sl)}, dibatalkan{' '}
+      <span className="text-muted-foreground">{label}:</span> {formatCount(s.n_cases)} panggilan dari{' '}
+      {formatCount(s.n_pos)} posisi — TP dulu {formatProb(s.p_tp)}, SL dulu {formatProb(s.p_sl)}, dibatalkan{' '}
       {formatProb(s.p_batal)}; rata-rata <span className={cn('num', signClass(s.mean_r))}>{formatR(s.mean_r)}</span>
       {' '}(batas bawah 95% {formatR(s.lo95_r)})
     </li>
@@ -54,28 +60,45 @@ function CalibLine({ label, s }: { label: string; s: CalibStats | null | undefin
 
 function Header({ symbol, d, price, change }: { symbol: string; d?: OutlookDetail; price: number | null; change: number | null }) {
   return (
-    <header className="space-y-2">
+    <div className="space-y-2">
       <Link href="/koin" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Peluang koin
       </Link>
-      <div className="flex flex-wrap items-center gap-2">
-        <h1 className="text-2xl font-bold tracking-tight">{coinLabel(symbol)}</h1>
-        <span className="text-xs text-muted-foreground">/USDT perpetual</span>
-        {d && <BiasBadge bias={d.bias} size="default" />}
-        {d && <KeyakinanBadge bias={d.bias} />}
-        {d && <FaseBadge fase={faseOf(d)} />}
-        {d?.positions && d.positions.length > 0 && (
-          <Badge variant="lab" size="sm" title={d.positions.map((p) => `${p.source} ${p.side} @ ${formatPrice(p.entry_price)}`).join(', ')}>
-            SUDAH ADA POSISI
-          </Badge>
-        )}
-      </div>
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <span className="num text-xl font-bold">{formatPrice(price)}</span>
-        {change !== null && <span className={cn('num text-sm font-semibold', signClass(change))}>{formatPercent(change, 2)} 24 jam</span>}
-        {d && <FreshnessLine closeIso={d.last_bar_close} computedAt={d.computed_at} stale={d.stale} />}
-      </div>
-    </header>
+      <PageHeader
+        eyebrow="Pasar · Peluang koin"
+        eyebrowIcon={Compass}
+        title={<>{coinLabel(symbol)} <span className="text-base font-normal text-muted-foreground">/USDT perpetual</span></>}
+        status={d ? (
+          <>
+            <BiasBadge bias={d.bias} size="default" />
+            <KeyakinanBadge bias={d.bias} />
+            <FaseBadge fase={faseOf(d)} />
+            {d.positions && d.positions.length > 0 && (
+              <Badge variant="lab" size="sm" title={d.positions.map((p) => `${p.source} ${p.side} @ ${formatPrice(p.entry_price)}`).join(', ')}>
+                SUDAH ADA POSISI
+              </Badge>
+            )}
+          </>
+        ) : undefined}
+        description={
+          <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="num text-lg font-bold text-foreground">{formatPrice(price)}</span>
+            {change !== null && <span className={cn('num text-sm font-semibold', signClass(change))}>{formatPercent(change, 2)} 24 jam</span>}
+          </span>
+        }
+        help={{
+          apaIni: 'Satu halaman untuk satu koin: keputusan arah dari strategi utama, rencana trade lengkap, faktor dan bukti historisnya.',
+          caraPakai: [
+            'Baca kesimpulan di atas lebih dulu.',
+            'Isi modalmu di bagian Rencana untuk melihat untung/rugi dalam dolar.',
+            'Cek "Batal kalau" sebelum masuk; posisi baru lebih kuat daripada menyusul.',
+          ],
+          istilah: ['keyakinan', 'fase', 'sl', 'tp', 'target_realistis', 'rr', 'kasus_serupa', 'zona_entry'],
+        }}
+      >
+        {d && <Freshness dataLabel="Data close 4H" dataAt={d.last_bar_close} updatedAt={d.computed_at} timeframe="4h" nextDelayMin={4} stale={d.stale} />}
+      </PageHeader>
+    </div>
   )
 }
 
@@ -96,20 +119,20 @@ function Plan({ d, inputs, setInputs }: { d: OutlookDetail; inputs: OutlookInput
     <Section title="Rencana" description="Kalau masuk sekarang di harga close 4H terakhir, dengan SL dan TP strategi saat ini.">
       {pl.geometry_ok ? (
         <>
-          <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-            <StatTile label="Zona entry" value={pl.entry_zone ? `${formatPrice(pl.entry_zone[0])}–${formatPrice(pl.entry_zone[1])}` : formatPrice(d.price)}
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <StatTile label={<Term k="zona_entry" />} value={pl.entry_zone ? `${formatPrice(pl.entry_zone[0])}–${formatPrice(pl.entry_zone[1])}` : formatPrice(d.price)}
               hint={pl.dont_chase ? `jangan kejar lewat ${formatPrice(pl.dont_chase)}` : undefined} />
-            <StatTile label="Batal jika (SL)" value={formatPrice(st.sl)} valueClassName="text-bearish"
+            <StatTile label={<Term k="sl" />} value={formatPrice(st.sl)} valueClassName="text-bearish"
               hint={pl.r_unit_pct !== undefined ? `${formatScore(pl.r_unit_pct, 1)}% dari harga` : undefined} />
-            <StatTile label="Target strategi (TP)" value={st.tp !== null && st.tp !== undefined ? formatPrice(st.tp) : 'tidak ada'} valueClassName="text-bullish"
+            <StatTile label={<Term k="tp" />} value={st.tp !== null && st.tp !== undefined ? formatPrice(st.tp) : 'tidak ada'} valueClassName="text-bullish"
               hint="exit resmi strategi" />
-            <StatTile label="Untung : rugi" value={pl.rr ? `${formatScore(pl.rr, 2)} : 1` : '—'}
+            <StatTile label={<Term k="rr" />} value={pl.rr ? formatRR(pl.rr, 2) : '—'}
               hint={`berlaku s/d ${formatWib(pl.valid_until)}`} />
           </div>
           {pl.target_typical && (
             <p className="mt-2 flex items-start gap-1 text-xs">
               <span>
-                <span className="font-semibold">Target realistis {formatPrice(pl.target_typical)}</span>{' '}
+                <span className="font-semibold"><Term k="target_realistis" /> {formatPrice(pl.target_typical)}</span>{' '}
                 <span className="text-muted-foreground">
                   ({formatR(pl.target_typical_r)}): setengah panggilan serupa di masa lalu sempat mencapai harga ini sebelum
                   ditutup. Ini gerak tipikal, bukan exit strategi.
@@ -153,8 +176,8 @@ function Plan({ d, inputs, setInputs }: { d: OutlookDetail; inputs: OutlookInput
                 hint={pj.at_tp ? `${formatPercent(pj.at_tp.move_pct, 1)} gerak harga` : 'TP tidak tersedia'} />
               <StatTile label="Di target realistis" value={formatUsdSigned(pj.at_typical?.net)} valueClassName={signClass(pj.at_typical?.net)}
                 hint={pj.at_typical ? 'gerak tipikal' : 'tidak tersedia'} />
-              <StatTile label="Rata-rata kasus serupa" value={formatUsdSigned(pj.calibrated?.ev_usd)} valueClassName={signClass(pj.calibrated?.ev_usd)}
-                hint={pj.calibrated ? `${formatR(pj.calibrated.mean_r)} · ${pj.calibrated.n_pos.toLocaleString('en-US')} posisi` : 'belum dikalibrasi'} />
+              <StatTile label="Rata-rata serupa" value={formatUsdSigned(pj.calibrated?.ev_usd)} valueClassName={signClass(pj.calibrated?.ev_usd)}
+                hint={pj.calibrated ? `${formatR(pj.calibrated.mean_r)} · ${formatCount(pj.calibrated.n_pos)} posisi` : 'belum dikalibrasi'} />
             </div>
             {(pj.warnings ?? []).map((w) => (
               <p key={w} className="mt-1 flex items-start gap-1 text-xs text-warn">
@@ -209,10 +232,10 @@ function Factors({ d }: { d: OutlookDetail }) {
       <div className="rounded-lg border bg-muted/20 p-3">
         <div className="mb-1 flex items-center gap-1 text-sm font-semibold">
           Bukti: panggilan serupa di masa lalu
-          <InfoHint label="Kasus serupa">
+          <InfoTip label="Kasus serupa">
             Setiap close 4H sejak 2020 dihitung ulang tanpa melihat masa depan, lalu dinilai seperti instruksi halaman ini
             (masuk di close, SL &amp; TP terpasang, keluar saat strategi menutup posisi atau setelah 7 hari).
-          </InfoHint>
+          </InfoTip>
         </div>
         {bukti && <p className="text-xs leading-relaxed">{bukti.replace(/^Bukti: /, '')}</p>}
         {cal && (
@@ -301,20 +324,20 @@ export function CoinPage({ symbol }: { symbol: string }) {
       {q.isPending && !d ? (
         <div className="space-y-2" aria-busy="true">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
       ) : q.error && !d && !notFound ? (
-        <ErrorState kind={errorKind(q.error)} onRetry={() => q.refetch()} message="Gagal memuat keputusan koin ini." />
+        <ErrorState error={q.error} onRetry={() => q.refetch()} title="Gagal memuat keputusan koin ini." />
       ) : d ? (
         <>
-          <AnswerBox
+          <AnswerCard
+            title="Kesimpulan"
             tone={d.peluang?.label === 'positif' ? 'baik' : d.strategy.side ? 'perlu_dicek' : 'menunggu'}
-            stats={d.strategy.side ? [
-              { label: 'Untung : rugi', value: d.plan?.rr ? `${formatScore(d.plan.rr, 1)} : 1` : '—' },
-              { label: 'Kasus serupa', value: formatR(d.bias.calib?.stats?.mean_r), hint: d.bias.calib?.stats ? `${d.bias.calib.stats.n_pos.toLocaleString('en-US')} posisi` : 'belum dikalibrasi' },
-              { label: 'Konteks searah', value: kDariN(d) ? `${kDariN(d)?.k} dari ${kDariN(d)?.n}` : '—', hint: 'belum terbukti' },
+            answer={(paras[0] ?? d.explanation.summary).replace(/^Keputusan: /, '')}
+            metrics={d.strategy.side ? [
+              { label: <Term k="rr" short />, value: d.plan?.rr ? formatRR(d.plan.rr) : '—' },
+              { label: <Term k="kasus_serupa" />, value: formatR(d.bias.calib?.stats?.mean_r), hint: d.bias.calib?.stats ? `${formatCount(d.bias.calib.stats.n_pos)} posisi` : 'belum dikalibrasi' },
+              { label: <Term k="konteks_searah" />, value: kDariN(d) ? `${kDariN(d)?.k} dari ${kDariN(d)?.n}` : '—', hint: 'belum terbukti' },
             ] : undefined}
             footer={<>{driverText(d)} {liveNote(d) && <span className="text-warn">{liveNote(d)}</span>}</>}
-          >
-            {(paras[0] ?? d.explanation.summary).replace(/^Keputusan: /, '')}
-          </AnswerBox>
+          />
 
           <Plan d={d} inputs={inputs} setInputs={setInputs} />
 
@@ -368,7 +391,11 @@ export function CoinPage({ symbol }: { symbol: string }) {
             <p className="mt-2 text-2xs text-muted-foreground">Berita hanya konteks: tidak dihitung sebagai sinyal karena tidak ada arsip berita per koin untuk diuji.</p>
           </Section>
 
-          <AssistantBox context={coinLabel(symbol)} items={paras.slice(1).filter((p) => !p.startsWith('Ini informasi'))} />
+          <AssistantSlot
+            context={{ kind: 'koin', subject: d.symbol, label: coinLabel(symbol) }}
+            source="otomatis"
+            items={paras.slice(1).filter((p) => !p.startsWith('Ini informasi')).map((p) => ({ text: p, at: d.computed_at }))}
+          />
           <Fold title="Cara keputusan ini dihitung">
             <ul className="list-disc space-y-1 pl-4 text-xs leading-relaxed text-muted-foreground">
               {(d.method?.text ?? []).map((t) => <li key={t}>{t}</li>)}
@@ -377,7 +404,7 @@ export function CoinPage({ symbol }: { symbol: string }) {
         </>
       ) : (
         <>
-          <AnswerBox tone="menunggu">Outlook belum tersedia untuk koin ini. Skor screener di bawah tetap bisa kamu baca.</AnswerBox>
+          <AnswerCard tone="menunggu" answer="Outlook belum tersedia untuk koin ini. Skor screener di bawah tetap bisa kamu baca." />
           <Section title="Skor screener (Tabel faktor)">
             {asset ? (
               <TrackRecordProvider><FactorBreakdown asset={asset} all={scr.data?.assets ?? []} /></TrackRecordProvider>

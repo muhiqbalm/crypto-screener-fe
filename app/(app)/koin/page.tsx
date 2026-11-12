@@ -20,7 +20,16 @@ export default async function KoinPage({
         eyebrow="Pasar"
         eyebrowIcon={Compass}
         title="Peluang koin"
-        description="Koin mana yang layak dilihat sekarang: arah dari strategi, rencana entry/SL/TP, dan bukti dari panggilan serupa di masa lalu. Informasi, bukan saran investasi."
+        description="Koin mana yang layak dilihat sekarang: arah dari strategi, rencana entry/SL/TP, dan bukti dari panggilan serupa di masa lalu."
+        help={{
+          apaIni: 'Satu tempat untuk pertanyaan "koin mana?". Outlook memberi arah per koin dari strategi utamanya beserta buktinya; Terkuat memeringkat momentum; Tabel faktor menampilkan skor 5 faktor screener.',
+          caraPakai: [
+            'Mulai dari "Peluang terbaik": hanya panggilan yang kasus serupanya terbukti untung.',
+            'Klik koin untuk rencana lengkap: zona entry, batal kalau, target, dan untung/rugi untuk modalmu.',
+            'Posisi baru lebih kuat daripada menyusul posisi yang sudah berjalan.',
+          ],
+          istilah: ['peluang_terbaik', 'keyakinan', 'fase', 'kasus_serupa', 'direction', 'screener_score', 'tier'],
+        }}
       />
       <KoinHub view={view} />
     </PageContainer>

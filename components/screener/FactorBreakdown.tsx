@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { SignalBadge } from '@/components/screener/SignalBadge'
 import { TierBadge } from '@/components/screener/TierBadge'
 import { TrackRecordHint } from '@/components/screener/TrackRecordHint'
-import { InfoHint } from '@/components/market/shared'
+import { InfoTip } from '@/components/ui/info-tip'
 import { compositeKey, factorKey, tierKey } from '@/lib/screener/track-record'
 import {
   CONFIDENCE_TEXT,
@@ -84,7 +84,7 @@ export function FactorBreakdown({ asset, all }: { asset: AssetDetail; all: Asset
           </span>
         </div>
         <div className="rounded-lg border bg-card p-2.5">
-          <span className="flex items-center gap-1 text-2xs text-muted-foreground">Posisi skor <InfoHint label="Skor screener">{SCORE_HINT}</InfoHint></span>
+          <span className="flex items-center gap-1 text-2xs text-muted-foreground">Posisi skor <InfoTip label="Skor screener">{SCORE_HINT}</InfoTip></span>
           {pos ? (
             <>
               <span className="num block text-sm font-semibold">ke-{pos.pos} dari {pos.n}</span>
@@ -95,7 +95,7 @@ export function FactorBreakdown({ asset, all }: { asset: AssetDetail; all: Asset
           ) : <span className="text-muted-foreground">tidak tersedia</span>}
         </div>
         <div className="rounded-lg border bg-card p-2.5">
-          <span className="flex items-center gap-1 text-2xs text-muted-foreground">Kelompok <InfoHint label="Kelompok skor">{TIER_HINT}</InfoHint></span>
+          <span className="flex items-center gap-1 text-2xs text-muted-foreground">Kelompok <InfoTip label="Kelompok skor">{TIER_HINT}</InfoTip></span>
           <span className="mt-0.5 flex items-center gap-1">
             <TierBadge tier={asset.tier} />
             <TrackRecordHint k={tierKey(asset)} symbol={asset.symbol} />
@@ -119,7 +119,7 @@ export function FactorBreakdown({ asset, all }: { asset: AssetDetail; all: Asset
                 <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                 <span className="min-w-0">
                   <span className="flex items-center gap-1 font-semibold">
-                    {f.label} <InfoHint label={f.label}>{f.hint}</InfoHint>
+                    {f.label} <InfoTip label={f.label}>{f.hint}</InfoTip>
                   </span>
                   <span className="block text-2xs text-muted-foreground">Bobot {f.weight}% dari skor</span>
                 </span>

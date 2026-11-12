@@ -1,8 +1,9 @@
 'use client'
 
-import { AlertTriangle, ArrowDownRight, ArrowUpRight, Clock, Minus, Sparkles } from 'lucide-react'
+import { AlertTriangle, Clock, Sparkles } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { VerdictBadge } from '@/components/lab/LabBadges'
+import { DirectionBadge } from '@/components/ui/direction-badge'
+import { VerdictBadge } from '@/components/ui/verdict-badge'
 import {
   EVIDENCE_TONE,
   FACTOR_SHORT,
@@ -25,15 +26,9 @@ import type {
   OutlookStrategy,
 } from '@/lib/api/types/outlook'
 
+/** Arah of a call: the app-wide DirectionBadge (LONG / SHORT / NETRAL). */
 export function BiasBadge({ bias, size = 'sm' }: { bias: OutlookBiasInfo; size?: 'sm' | 'default' }) {
-  const v = bias.bias === 'LONG' ? 'bullish' : bias.bias === 'SHORT' ? 'bearish' : 'muted'
-  const Icon = bias.bias === 'LONG' ? ArrowUpRight : bias.bias === 'SHORT' ? ArrowDownRight : Minus
-  return (
-    <Badge variant={v} size={size === 'sm' ? 'sm' : 'default'}>
-      <Icon aria-hidden="true" />
-      {bias.bias === 'NETRAL' ? 'TUNGGU' : bias.bias}
-    </Badge>
-  )
+  return <DirectionBadge direction={bias.bias} size={size === 'sm' ? 'sm' : 'md'} />
 }
 
 /** "keyakinan tinggi / sedang / rendah", or the FLAT lean. Word + tone, never colour alone. */

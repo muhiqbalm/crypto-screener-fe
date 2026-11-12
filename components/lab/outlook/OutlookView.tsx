@@ -6,11 +6,13 @@ import { ChevronRight, RefreshCw, Target } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { EmptyState, ErrorState, errorKind } from '@/components/shell/states'
+import { EmptyState, ErrorState } from '@/components/shell/states'
 import { Chip, Section } from '@/components/lab/Section'
 import { BiasBadge, FaseBadge, KeyakinanBadge, PeluangBadge } from '@/components/lab/outlook/OutlookBadges'
 import { OutlookTrackRecord } from '@/components/lab/outlook/OutlookTrackRecord'
-import { AnswerBox, Fold, FreshnessLine } from '@/components/market/shared'
+import { Fold } from '@/components/market/shared'
+import { AnswerCard } from '@/components/ui/answer-card'
+import { Freshness } from '@/components/ui/freshness'
 import { useSavedInputs } from '@/components/market/useSavedInputs'
 import { useOutlook, useRefreshOutlook } from '@/lib/queries/outlook'
 import {
@@ -31,7 +33,7 @@ import {
   type OutlookFilters,
 } from '@/lib/lab/outlook'
 import { apiErrorDetail } from '@/lib/api/errors'
-import { formatPrice, formatScore, formatUsd, formatUsdSigned, signClass } from '@/lib/utils/format'
+import { formatCount, formatPrice, formatRR, formatScore, formatUsd, formatUsdSigned, signClass } from '@/lib/utils/format'
 import { notify } from '@/lib/utils/toast'
 import { cn } from '@/lib/utils/cn'
 import type { Keyakinan, OutlookRow } from '@/lib/api/types/outlook'
@@ -42,9 +44,9 @@ export const DISCLAIMER =
 function Level({ label, value, hint, tone }: { label: string; value: React.ReactNode; hint?: React.ReactNode; tone?: string }) {
   return (
     <div className="min-w-0">
-      <div className="eyebrow truncate">{label}</div>
-      <div className={cn('num truncate text-sm font-semibold', tone)}>{value}</div>
-      {hint !== undefined && <div className="truncate text-3xs text-muted-foreground">{hint}</div>}
+      <div className="eyebrow">{label}</div>
+      <div className={cn('num break-words text-sm font-semibold', tone)}>{value}</div>
+      {hint !== undefined && <div className="break-words text-3xs text-muted-foreground">{hint}</div>}
     </div>
   )
 }
@@ -70,13 +72,13 @@ function PeluangCard({ r }: { r: OutlookRow }) {
       </div>
       <p className="mt-1.5 text-2xs text-muted-foreground">{driverText(r)}</p>
       {pl?.saran && <p className="mt-1.5 text-xs leading-snug">{pl.saran}</p>}
-      <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4">
+      <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2">
         <Level label="Zona entry" value={zone ? `${formatPrice(zone[0])}–${formatPrice(zone[1])}` : formatPrice(r.price)} />
         <Level label="Batal jika (SL)" value={formatPrice(r.strategy.sl)} tone="text-bearish"
           hint={pl?.r_unit_pct !== undefined ? `${formatScore(pl.r_unit_pct, 1)}% dari harga` : undefined} />
-        <Level label="Target strategi (TP)" value={tp !== null && tp !== undefined ? formatPrice(tp) : 'tidak ada'} tone="text-bullish"
+        <Level label="Target (TP)" value={tp !== null && tp !== undefined ? formatPrice(tp) : 'tidak ada'} tone="text-bullish"
           hint={pl?.target_typical ? `target realistis ${formatPrice(pl.target_typical)}` : undefined} />
-        <Level label="Untung : rugi" value={pl?.rr ? `${formatScore(pl.rr, 1)} : 1` : '—'}
+        <Level label="Untung : rugi" value={pl?.rr ? formatRR(pl.rr) : '—'}
           hint={pl?.valid_until ? `berlaku s/d ${formatWib(pl.valid_until)}` : undefined} />
       </div>
       {pj?.available && (
@@ -90,7 +92,7 @@ function PeluangCard({ r }: { r: OutlookRow }) {
       {cal && cal.n_cases > 0 && (
         <p className="mt-1 text-2xs text-muted-foreground">
           Kasus serupa: rata-rata <span className={cn('num', signClass(cal.mean_r))}>{formatR(cal.mean_r)}</span> · TP dulu{' '}
-          {formatProb(cal.p_tp)} · SL dulu {formatProb(cal.p_sl)} · {cal.n_pos.toLocaleString('en-US')} posisi
+          {formatProb(cal.p_tp)} · SL dulu {formatProb(cal.p_sl)} · {formatCount(cal.n_pos)} posisi
         </p>
       )}
       {r.changes?.[0] && <p className="mt-1 line-clamp-1 text-2xs text-info">Berubah: {r.changes[0]}</p>}
@@ -101,24 +103,26 @@ function PeluangCard({ r }: { r: OutlookRow }) {
   )
 }
 
-/** Compact row for calls without positive evidence. */
+/** Compact row for calls without positive evidence: one line of facts, one line naming the strategy. */
 function CallRow({ r }: { r: OutlookRow }) {
   const cal = r.bias.calib?.stats
   const k = kDariN(r)
   return (
     <li>
-      <Link href={koinHref(r.symbol)} className="flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2.5 hover:bg-muted/40 sm:flex-nowrap">
-        <span className="w-14 shrink-0 font-mono text-xs font-bold">{coinLabel(r.symbol)}</span>
-        <BiasBadge bias={r.bias} />
-        <span className="text-2xs text-muted-foreground">{callLabel(r)}</span>
-        <span className="ml-auto flex items-center gap-2 text-2xs">
-          {k && <span className="hidden text-muted-foreground md:inline">{k.k}/{k.n} konteks searah</span>}
-          {r.plan?.rr && <span className="num text-muted-foreground">R:R {formatScore(r.plan.rr, 1)}</span>}
-          {cal && cal.n_cases > 0 && <span className={cn('num', signClass(cal.mean_r))}>{formatR(cal.mean_r)}</span>}
-          <PeluangBadge p={r.peluang} />
-          <ChevronRight className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
-        </span>
-        <span className="basis-full truncate text-3xs text-muted-foreground">{driverText(r)}</span>
+      <Link href={koinHref(r.symbol)} className="block px-4 py-2.5 hover:bg-muted/40 sm:px-5">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="w-16 shrink-0 font-mono text-xs font-bold">{coinLabel(r.symbol)}</span>
+          <BiasBadge bias={r.bias} />
+          <span className="whitespace-nowrap text-2xs text-muted-foreground">{callLabel(r)}</span>
+          <span className="ml-auto flex items-center gap-3 whitespace-nowrap text-2xs">
+            {k && <span className="hidden text-muted-foreground md:inline">{k.k} dari {k.n} konteks searah</span>}
+            {r.plan?.rr && <span className="num text-muted-foreground">R:R {formatRR(r.plan.rr)}</span>}
+            {cal && cal.n_cases > 0 && <span className={cn('num', signClass(cal.mean_r))}>{formatR(cal.mean_r)}</span>}
+            <PeluangBadge p={r.peluang} />
+            <ChevronRight className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
+          </span>
+        </div>
+        <p className="mt-0.5 truncate text-3xs text-muted-foreground">{driverText(r)}</p>
       </Link>
     </li>
   )
@@ -161,7 +165,7 @@ export function OutlookView() {
   if (q.isPending) {
     return <div className="space-y-2" aria-busy="true">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}</div>
   }
-  if (q.error) return <ErrorState kind={errorKind(q.error)} onRetry={() => q.refetch()} message="Gagal memuat Outlook." />
+  if (q.error) return <ErrorState error={q.error} onRetry={() => q.refetch()} title="Gagal memuat Outlook." />
   if (all.length === 0) {
     return (
       <EmptyState
@@ -175,21 +179,20 @@ export function OutlookView() {
   const topNames = best.slice(0, 3).map((r) => `${coinLabel(r.symbol)} ${r.bias.bias}`).join(', ')
   return (
     <div className="space-y-4">
-      <AnswerBox
+      <AnswerCard
         tone={best.length ? 'baik' : directional ? 'perlu_dicek' : 'menunggu'}
-        stats={[
-          { label: 'Bukti positif', value: best.length, hint: 'panggilan' },
-          { label: 'Punya arah', value: directional, hint: `dari ${all.length - unavailable.length} koin` },
-          { label: 'Sinyal baru', value: all.filter((r) => r.strategy?.fresh).length, hint: 'di close 4H terakhir' },
-        ]}
-        footer={<FreshnessLine closeIso={closeIso} computedAt={meta?.computed_at} stale={stale} />}
-      >
-        {best.length
+        answer={best.length
           ? `${best.length} peluang dengan bukti historis positif sekarang: ${topNames}.`
           : directional
             ? `Belum ada peluang dengan bukti positif. ${directional} koin punya arah, tapi bukti historisnya belum meyakinkan.`
-            : 'Semua strategi sedang tidak berposisi (NETRAL). Tunggu sinyal baru setelah close 4H berikutnya.'}
-      </AnswerBox>
+            : 'Semua strategi sedang tidak berposisi (NETRAL). Tunggu posisi baru setelah close 4H berikutnya.'}
+        metrics={[
+          { label: 'Bukti positif', value: formatCount(best.length), hint: 'panggilan' },
+          { label: 'Punya arah', value: formatCount(directional), hint: `dari ${formatCount(all.length - unavailable.length)} koin` },
+          { label: 'Posisi baru', value: formatCount(all.filter((r) => r.strategy?.fresh).length), hint: 'di close 4H terakhir' },
+        ]}
+        footer={<Freshness dataLabel="Data close 4H" dataAt={closeIso} updatedAt={meta?.computed_at} timeframe="4h" nextDelayMin={4} stale={stale} />}
+      />
 
       <div className="flex flex-wrap items-center gap-1.5" aria-label="Filter">
         {ARAH.map(([v, label]) => (
@@ -200,7 +203,7 @@ export function OutlookView() {
           <Chip key={v} active={filters.keyakinan.has(v)} onClick={() => setFilters((f) => ({ ...f, keyakinan: toggle(f.keyakinan, v) }))} className="h-7 px-2.5">{label}</Chip>
         ))}
         <span className="mx-1 h-4 w-px bg-border" aria-hidden="true" />
-        <Chip active={filters.baru} onClick={() => setFilters((f) => ({ ...f, baru: !f.baru }))} className="h-7 px-2.5">Sinyal baru</Chip>
+        <Chip active={filters.baru} onClick={() => setFilters((f) => ({ ...f, baru: !f.baru }))} className="h-7 px-2.5">Posisi baru</Chip>
         {q.data?.positions_available && (
           <Chip active={filters.posisi === 'ada'} onClick={() => setFilters((f) => ({ ...f, posisi: f.posisi === 'ada' ? null : 'ada' }))} className="h-7 px-2.5">
             Sudah ada posisi

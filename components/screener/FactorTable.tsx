@@ -7,7 +7,7 @@ import { ScreenerFilters, type ScreenerFilterState } from '@/components/screener
 import { ScreenerTable } from '@/components/screener/ScreenerTable'
 import { MarketOverviewCards } from '@/components/screener/MarketOverviewCards'
 import { TrackRecordFootnote, TrackRecordProvider } from '@/components/screener/TrackRecordHint'
-import { InfoHint } from '@/components/market/shared'
+import { InfoTip } from '@/components/ui/info-tip'
 import { ErrorPanel } from '@/components/shell/ErrorPanel'
 import { EmptyPanel } from '@/components/shell/EmptyPanel'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -65,10 +65,10 @@ export function FactorTable() {
               )}
               <span className="num">{assets.length} koin</span>
               <span className="inline-flex items-center gap-1">
-                Skor <InfoHint label="Skor screener">{SCORE_HINT}</InfoHint>
+                Skor <InfoTip label="Skor screener">{SCORE_HINT}</InfoTip>
               </span>
               <span className="inline-flex items-center gap-1">
-                Kelompok <InfoHint label="Kelompok skor">{TIER_HINT}</InfoHint>
+                Kelompok <InfoTip label="Kelompok skor">{TIER_HINT}</InfoTip>
               </span>
             </div>
           </div>
