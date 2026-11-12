@@ -1,32 +1,48 @@
 'use client'
 
 import { useState } from 'react'
-import { Eye, EyeOff, Copy, Loader2, PlusCircle, Trash2, RefreshCw } from 'lucide-react'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { Copy, Eye, EyeOff, Loader2, Power, PowerOff, RefreshCw } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useWebhookConfig, useAutomationToggle } from '@/lib/queries/webhook'
+import { ConfirmLive } from '@/components/ui/confirm-live'
+import { StatusPill } from '@/components/ui/status-pill'
+import { Term } from '@/components/ui/term'
+import { ErrorState } from '@/components/shell/states'
+import { describeError } from '@/components/shell/error-copy'
+import { ACTIVATE_COPY, DEACTIVATE_COPY } from '@/components/webhook/WebhookConfigCard'
+import { useWebhookConfig, useAutomationToggle, webhookKeys } from '@/lib/queries/webhook'
 import { maskPassphrase } from '@/lib/utils/mask'
 import { notify } from '@/lib/utils/toast'
+import { formatTime } from '@/lib/utils/time'
 import { ApiError } from '@/lib/api/errors'
 import { generatePassphrase } from '@/lib/utils/random'
 import { api } from '@/lib/api/client'
-import { useQueryClient } from '@tanstack/react-query'
-import { webhookKeys } from '@/lib/queries/webhook'
 
 const WEBHOOK_URL =
   (process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000') +
   '/webhook/tradingview'
 
-function copyToClipboard(text: string) {
+function copyToClipboard(text: string, what: string) {
   navigator.clipboard
     .writeText(text)
-    .then(() => notify.success('Copied to clipboard'))
-    .catch((err: Error) => notify.error('Copy failed: ' + err.message))
+    .then(() => notify.success(`${what} disalin`))
+    .catch(() => notify.error(`Gagal menyalin ${what.toLowerCase()}`))
 }
 
+const Title = () => (
+  <CardTitle className="text-base">
+    <Term k="webhook" />
+  </CardTitle>
+)
+
+/**
+ * Webhook settings in Akun & koneksi. Same hooks, the same PATCH call and the same toggle
+ * arguments as before; every live action (activate, deactivate, change passphrase) now asks
+ * first through ConfirmLive instead of acting on the first or second click.
+ */
 export function WebhookConfigSettings() {
   const { data, isPending, error, refetch } = useWebhookConfig()
   const automationToggle = useAutomationToggle()
@@ -37,14 +53,14 @@ export function WebhookConfigSettings() {
   const [newPassphrase, setNewPassphrase] = useState('')
   const [passphraseError, setPassphraseError] = useState('')
   const [isSavingPassphrase, setIsSavingPassphrase] = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmPassphrase, setConfirmPassphrase] = useState(false)
 
   // ── Pending ──────────────────────────────────────────────────────────────
   if (isPending) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Webhook Configuration</CardTitle>
+          <Title />
         </CardHeader>
         <CardContent className="space-y-4">
           <Skeleton className="h-9 w-full" />
@@ -54,31 +70,41 @@ export function WebhookConfigSettings() {
     )
   }
 
-  // ── No config yet ─────────────────────────────────────────────────────────
+  // ── 404: never created OR paused (the backend answers 404 for both) ──────
   const noConfig = error instanceof ApiError && error.kind === 'not_found'
   if (noConfig) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Webhook Configuration</CardTitle>
-          <CardDescription>
-            Create a webhook config to receive TradingView signals.
-          </CardDescription>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Title />
+            <StatusPill kind="menunggu" label="Tidak aktif" />
+          </div>
+          <CardDescription>Webhook tidak aktif (belum dibuat atau sedang dijeda). Selama tidak aktif, semua alert TradingView ditolak.</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col items-center gap-4 py-6 text-center">
-          <p className="text-sm text-muted-foreground">No webhook configuration yet.</p>
-          <Button
-            onClick={() => automationToggle.mutate({ nextEnabled: true, hasExisting: false })}
-            disabled={automationToggle.isPending}
-            className="cursor-pointer gap-1.5"
-          >
-            {automationToggle.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            ) : (
-              <PlusCircle className="h-4 w-4" aria-hidden="true" />
-            )}
-            Create webhook config
-          </Button>
+        <CardContent>
+          <ConfirmLive
+            title={ACTIVATE_COPY.title}
+            description={ACTIVATE_COPY.description}
+            confirmLabel={ACTIVATE_COPY.confirmLabel}
+            destructive={false}
+            pending={automationToggle.isPending}
+            onConfirm={() =>
+              automationToggle.mutateAsync({ nextEnabled: true, hasExisting: false }).then(
+                () => notify.success('Webhook aktif'),
+                (err) => {
+                  notify.error(describeError(err).message)
+                  throw err
+                },
+              )
+            }
+            trigger={
+              <Button className="gap-1.5" disabled={automationToggle.isPending}>
+                {automationToggle.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Power className="h-4 w-4" aria-hidden="true" />}
+                Aktifkan webhook (LIVE)
+              </Button>
+            }
+          />
         </CardContent>
       </Card>
     )
@@ -88,12 +114,11 @@ export function WebhookConfigSettings() {
   if (error || !data) {
     return (
       <Card>
-        <CardHeader><CardTitle>Webhook Configuration</CardTitle></CardHeader>
+        <CardHeader>
+          <Title />
+        </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">Failed to load webhook config.</p>
-          <Button size="sm" variant="outline" onClick={() => refetch()} className="mt-3 cursor-pointer">
-            Retry
-          </Button>
+          <ErrorState compact error={error ?? undefined} onRetry={() => refetch()} message="Pengaturan webhook belum bisa dimuat." />
         </CardContent>
       </Card>
     )
@@ -103,84 +128,69 @@ export function WebhookConfigSettings() {
   const passphrase = data.passphrase
   const displayedPassphrase = isPassphraseVisible ? passphrase : maskPassphrase(passphrase)
 
-  async function handleSavePassphrase() {
+  /** Step 1: check the new passphrase, then ask. */
+  function requestSavePassphrase() {
     if (newPassphrase.length < 8) {
-      setPassphraseError('Passphrase must be at least 8 characters')
+      setPassphraseError('Kata sandi webhook minimal 8 karakter')
       return
     }
+    setConfirmPassphrase(true)
+  }
+
+  /** Step 2 (after "Ya"): the same PATCH call as before. */
+  async function savePassphrase() {
     setIsSavingPassphrase(true)
     try {
       await api.patchWebhookConfig({ passphrase: newPassphrase })
       queryClient.invalidateQueries({ queryKey: webhookKeys.config() })
-      notify.success('Passphrase updated')
+      notify.success('Kata sandi webhook diganti. Perbarui semua alert TradingView.')
       setIsEditingPassphrase(false)
       setNewPassphrase('')
     } catch (err) {
-      const msg = err instanceof ApiError
-        ? err.status === 409 ? 'Passphrase already in use' : err.message
-        : 'Failed to update passphrase'
+      const msg = err instanceof ApiError && err.status === 409 ? 'Kata sandi itu sudah dipakai. Pilih yang lain.' : describeError(err).message
       notify.error(msg)
+      throw err
     } finally {
       setIsSavingPassphrase(false)
     }
   }
 
-  function handleDeactivate() {
-    if (!confirmDelete) { setConfirmDelete(true); return }
-    automationToggle.mutate(
-      { nextEnabled: false, hasExisting: true },
-      {
-        onSuccess: () => { notify.success('Webhook deactivated'); setConfirmDelete(false) },
-        onError: (err) => {
-          notify.error(err instanceof ApiError ? err.message : 'Failed to deactivate')
-          setConfirmDelete(false)
-        },
-      }
+  function deactivate() {
+    return automationToggle.mutateAsync({ nextEnabled: false, hasExisting: true }).then(
+      () => notify.success('Webhook dinonaktifkan'),
+      (err) => {
+        notify.error(describeError(err).message)
+        throw err
+      },
     )
   }
 
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>Webhook Configuration</CardTitle>
-          <Badge
-            variant="outline"
-            className={data.is_active
-              ? 'border-bullish/40 bg-bullish/10 text-bullish'
-              : 'text-muted-foreground'}
-          >
-            {data.is_active ? 'Active' : 'Inactive'}
-          </Badge>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Title />
+          {data.is_active ? <StatusPill kind="sehat" label="Otomasi aktif" /> : <StatusPill kind="menunggu" label="Tidak aktif" />}
         </div>
-        <CardDescription className="text-xs">
-          Created {new Date(data.created_at).toLocaleDateString()}
-        </CardDescription>
+        <CardDescription className="text-xs">Dibuat {formatTime(data.created_at)}</CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Webhook URL */}
         <div className="space-y-1.5">
-          <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Webhook URL
-          </label>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Alamat webhook (URL)</p>
           <div className="flex items-center gap-2">
-            <div className="flex-1 rounded-md border border-input bg-muted/40 px-3 py-2 text-xs font-mono break-all select-all">
-              {WEBHOOK_URL}
-            </div>
-            <Button variant="outline" size="icon" onClick={() => copyToClipboard(WEBHOOK_URL)}
-              className="shrink-0 cursor-pointer" aria-label="Copy webhook URL">
+            <div className="min-w-0 flex-1 break-all rounded-md border border-input bg-muted/40 px-3 py-2 font-mono text-xs select-all">{WEBHOOK_URL}</div>
+            <Button variant="outline" size="icon" onClick={() => copyToClipboard(WEBHOOK_URL, 'Alamat webhook')} className="shrink-0" aria-label="Salin alamat webhook">
               <Copy className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
         </div>
 
-        {/* Passphrase */}
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Passphrase
-            </label>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <Term k="webhook_passphrase" />
+            </p>
             <button
               type="button"
               onClick={() => {
@@ -188,10 +198,10 @@ export function WebhookConfigSettings() {
                 setNewPassphrase('')
                 setPassphraseError('')
               }}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+              className="flex cursor-pointer items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
               <RefreshCw className="h-3 w-3" aria-hidden="true" />
-              Change passphrase
+              Ganti kata sandi webhook
             </button>
           </div>
 
@@ -200,89 +210,86 @@ export function WebhookConfigSettings() {
               <div className="flex gap-2">
                 <Input
                   type="text"
-                  placeholder="New passphrase (min. 8 chars)"
+                  aria-label="Kata sandi webhook baru"
+                  placeholder="Kata sandi baru (min. 8 karakter)"
                   value={newPassphrase}
-                  onChange={(e) => { setNewPassphrase(e.target.value); setPassphraseError('') }}
+                  onChange={(e) => {
+                    setNewPassphrase(e.target.value)
+                    setPassphraseError('')
+                  }}
                   className="font-mono text-sm"
                   disabled={isSavingPassphrase}
+                  autoComplete="off"
                 />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setNewPassphrase(generatePassphrase())}
-                  className="shrink-0 cursor-pointer text-xs"
-                  disabled={isSavingPassphrase}
-                >
-                  Generate
+                <Button variant="outline" size="sm" onClick={() => setNewPassphrase(generatePassphrase())} className="shrink-0 text-xs" disabled={isSavingPassphrase}>
+                  Buat acak
                 </Button>
               </div>
               {passphraseError && (
-                <p className="text-xs text-bearish" role="alert">{passphraseError}</p>
+                <p className="text-xs text-bearish" role="alert">
+                  {passphraseError}
+                </p>
               )}
+              <p className="text-2xs text-muted-foreground">Setelah diganti, semua alert TradingView yang memakai kata sandi lama langsung ditolak.</p>
               <div className="flex gap-2">
-                <Button size="sm" onClick={handleSavePassphrase} disabled={isSavingPassphrase}
-                  className="cursor-pointer">
-                  {isSavingPassphrase && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
-                  Save
+                <Button size="sm" onClick={requestSavePassphrase} disabled={isSavingPassphrase}>
+                  {isSavingPassphrase && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />}
+                  Simpan
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => setIsEditingPassphrase(false)}
-                  disabled={isSavingPassphrase} className="cursor-pointer">
-                  Cancel
+                <Button size="sm" variant="ghost" onClick={() => setIsEditingPassphrase(false)} disabled={isSavingPassphrase}>
+                  Batal
                 </Button>
               </div>
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <div className="flex-1 rounded-md border border-input bg-muted/40 px-3 py-2 text-sm font-mono tracking-widest select-all">
-                {displayedPassphrase}
-              </div>
-              <Button variant="outline" size="icon"
+              <div className="min-w-0 flex-1 break-all rounded-md border border-input bg-muted/40 px-3 py-2 font-mono text-sm tracking-widest select-all">{displayedPassphrase}</div>
+              <Button
+                variant="outline"
+                size="icon"
                 onClick={() => setIsPassphraseVisible((v) => !v)}
-                aria-label={isPassphraseVisible ? 'Hide passphrase' : 'Show passphrase'}
+                aria-label={isPassphraseVisible ? 'Sembunyikan kata sandi webhook' : 'Tampilkan kata sandi webhook'}
                 aria-pressed={isPassphraseVisible}
-                className="shrink-0 cursor-pointer">
-                {isPassphraseVisible
-                  ? <EyeOff className="h-4 w-4" aria-hidden="true" />
-                  : <Eye className="h-4 w-4" aria-hidden="true" />}
+                className="shrink-0"
+              >
+                {isPassphraseVisible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
               </Button>
-              <Button variant="outline" size="icon"
-                onClick={() => copyToClipboard(passphrase)}
-                aria-label="Copy passphrase"
-                className="shrink-0 cursor-pointer">
+              <Button variant="outline" size="icon" onClick={() => copyToClipboard(passphrase, 'Kata sandi webhook')} aria-label="Salin kata sandi webhook" className="shrink-0">
                 <Copy className="h-4 w-4" aria-hidden="true" />
               </Button>
             </div>
           )}
         </div>
 
-        {/* Deactivate */}
         {data.is_active && (
-          <div className="flex items-center gap-2 pt-2 border-t border-border">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleDeactivate}
-              disabled={automationToggle.isPending}
-              className={`cursor-pointer gap-1.5 transition-colors duration-200 ${
-                confirmDelete
-                  ? 'border border-bearish/40 bg-bearish/10 text-bearish hover:bg-bearish/20'
-                  : 'text-muted-foreground hover:text-bearish'
-              }`}
-            >
-              {automationToggle.isPending
-                ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-                : <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />}
-              {confirmDelete ? 'Confirm deactivate' : 'Deactivate webhook'}
-            </Button>
-            {confirmDelete && (
-              <Button size="sm" variant="ghost" onClick={() => setConfirmDelete(false)}
-                className="cursor-pointer text-muted-foreground">
-                Cancel
-              </Button>
-            )}
+          <div className="border-t border-border pt-3">
+            <ConfirmLive
+              title={DEACTIVATE_COPY.title}
+              description={DEACTIVATE_COPY.description}
+              confirmLabel={DEACTIVATE_COPY.confirmLabel}
+              pending={automationToggle.isPending}
+              onConfirm={deactivate}
+              trigger={
+                <Button size="sm" variant="ghost" disabled={automationToggle.isPending} className="gap-1.5 text-muted-foreground hover:text-bearish">
+                  {automationToggle.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <PowerOff className="h-3.5 w-3.5" aria-hidden="true" />}
+                  Nonaktifkan webhook
+                </Button>
+              }
+            />
           </div>
         )}
       </CardContent>
+
+      <ConfirmLive
+        open={confirmPassphrase}
+        onOpenChange={setConfirmPassphrase}
+        title="Ganti kata sandi webhook?"
+        description="Semua alert TradingView yang masih memakai kata sandi lama langsung ditolak, termasuk alert tutup posisi. Perbarui setiap alert (atau input di skrip Pine) dengan kata sandi baru."
+        confirmLabel="Ya, ganti kata sandi"
+        typeToConfirm
+        pending={isSavingPassphrase}
+        onConfirm={savePassphrase}
+      />
     </Card>
   )
 }

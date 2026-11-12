@@ -1,15 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { Eye, EyeOff, Loader2, Trash2, CheckCircle2, PlusCircle } from 'lucide-react'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
+import { CheckCircle2, Eye, EyeOff, KeyRound, Loader2, PlusCircle, Trash2 } from 'lucide-react'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { useUpsertCredential, useDeleteCredential } from '@/lib/queries/credentials'
+import { ConfirmLive } from '@/components/ui/confirm-live'
+import { Term } from '@/components/ui/term'
+import { describeError } from '@/components/shell/error-copy'
+import { useDeleteCredential, useUpsertCredential } from '@/lib/queries/credentials'
 import { notify } from '@/lib/utils/toast'
-import { ApiError } from '@/lib/api/errors'
+import { formatTime } from '@/lib/utils/time'
 import type { CredentialSummaryResponse, Exchange } from '@/lib/api/types/credentials'
 
 interface ExchangeCredentialCardProps {
@@ -17,21 +20,21 @@ interface ExchangeCredentialCardProps {
   existing: CredentialSummaryResponse | undefined
 }
 
-// Exchange display metadata
-const EXCHANGE_META: Record<Exchange, { label: string; color: string }> = {
-  binance: { label: 'Binance', color: 'text-yellow-500' },
-  okx: { label: 'OKX', color: 'text-info' },
-}
+const EXCHANGE_LABEL: Record<Exchange, string> = { binance: 'Binance', okx: 'OKX' }
 
+/**
+ * API key per exchange. Same hooks and request bodies as before; saving or removing a key
+ * now goes through ConfirmLive (the key is what the live bot trades with).
+ */
 export function ExchangeCredentialCard({ exchange, existing }: ExchangeCredentialCardProps) {
-  const meta = EXCHANGE_META[exchange]
+  const label = EXCHANGE_LABEL[exchange]
   const upsert = useUpsertCredential()
   const remove = useDeleteCredential()
 
   const [isEditing, setIsEditing] = useState(false)
   const [showSecret, setShowSecret] = useState(false)
   const [showPassphrase, setShowPassphrase] = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmSave, setConfirmSave] = useState(false)
 
   const [form, setForm] = useState({ api_key: '', secret: '', api_passphrase: '' })
   const [errors, setErrors] = useState<Partial<typeof form>>({})
@@ -43,57 +46,54 @@ export function ExchangeCredentialCard({ exchange, existing }: ExchangeCredentia
 
   function validate(): boolean {
     const next: Partial<typeof form> = {}
-    if (!form.api_key.trim()) next.api_key = 'API Key is required'
-    if (!form.secret.trim()) next.secret = 'Secret is required'
+    if (!form.api_key.trim()) next.api_key = 'API key wajib diisi'
+    if (!form.secret.trim()) next.secret = 'Secret wajib diisi'
     if (exchange === 'okx' && !form.api_passphrase.trim()) {
-      next.api_passphrase = 'Passphrase is required for OKX'
+      next.api_passphrase = 'Passphrase API OKX wajib diisi'
     }
     setErrors(next)
     return Object.keys(next).length === 0
   }
 
+  /** Step 1: check the form, then ask. */
   function handleSave() {
-    if (!validate()) return
-    upsert.mutate(
-      {
+    if (validate()) setConfirmSave(true)
+  }
+
+  /** Step 2 (after "Ya"): the same upsert call and body as before. */
+  function save() {
+    return upsert
+      .mutateAsync({
         exchange,
         api_key: form.api_key.trim(),
         secret: form.secret.trim(),
         api_passphrase: exchange === 'okx' ? form.api_passphrase.trim() : null,
-      },
-      {
-        onSuccess: () => {
-          notify.success(`${meta.label} credentials saved`)
+      })
+      .then(
+        () => {
+          notify.success(`API key ${label} disimpan`)
           setIsEditing(false)
           setForm({ api_key: '', secret: '', api_passphrase: '' })
         },
-        onError: (err) => {
-          notify.error(err instanceof ApiError ? err.message : 'Failed to save credentials')
+        (err) => {
+          notify.error(describeError(err).message)
+          throw err
         },
-      }
-    )
+      )
   }
 
-  function handleDelete() {
-    if (!confirmDelete) {
-      setConfirmDelete(true)
-      return
-    }
-    remove.mutate(exchange, {
-      onSuccess: () => {
-        notify.success(`${meta.label} credentials removed`)
-        setConfirmDelete(false)
+  function removeKey() {
+    return remove.mutateAsync(exchange).then(
+      () => notify.success(`API key ${label} dihapus`),
+      (err) => {
+        notify.error(describeError(err).message)
+        throw err
       },
-      onError: (err) => {
-        notify.error(err instanceof ApiError ? err.message : 'Failed to remove credentials')
-        setConfirmDelete(false)
-      },
-    })
+    )
   }
 
   function handleCancel() {
     setIsEditing(false)
-    setConfirmDelete(false)
     setForm({ api_key: '', secret: '', api_passphrase: '' })
     setErrors({})
   }
@@ -103,186 +103,175 @@ export function ExchangeCredentialCard({ exchange, existing }: ExchangeCredentia
   return (
     <Card>
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <CardTitle className={`text-base ${meta.color}`}>{meta.label}</CardTitle>
+            <KeyRound className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            <CardTitle className="text-base">{label}</CardTitle>
             {existing ? (
-              <Badge variant="outline" className="border-bullish/40 bg-bullish/10 text-bullish text-xs">
-                <CheckCircle2 className="mr-1 h-3 w-3" aria-hidden="true" />
-                Configured
+              <Badge variant="bullish" size="sm">
+                <CheckCircle2 aria-hidden="true" />
+                Tersimpan
               </Badge>
             ) : (
-              <Badge variant="outline" className="text-xs text-muted-foreground">
-                Not configured
+              <Badge variant="muted" size="sm">
+                Belum ada
               </Badge>
             )}
           </div>
-          {existing && !isEditing && (
-            <span className="text-xs text-muted-foreground">
-              Added {new Date(existing.created_at).toLocaleDateString()}
-            </span>
-          )}
+          {existing && !isEditing && <span className="text-2xs text-muted-foreground">Disimpan {formatTime(existing.created_at, { time: false })}</span>}
         </div>
         <CardDescription className="text-xs">
-          {exchange === 'okx'
-            ? 'Requires API Key, Secret, and API Passphrase'
-            : 'Requires API Key and Secret'}
+          {exchange === 'okx' ? 'Butuh API key, secret, dan passphrase API OKX.' : 'Butuh API key dan secret dengan izin futures.'}
         </CardDescription>
       </CardHeader>
 
       {isEditing ? (
         <CardContent className="space-y-3">
-          {/* API Key */}
           <div className="space-y-1.5">
-            <Label htmlFor={`${exchange}-api-key`} className="text-xs">API Key</Label>
+            <Label htmlFor={`${exchange}-api-key`} className="text-xs">
+              API key
+            </Label>
             <Input
               id={`${exchange}-api-key`}
               type="text"
-              placeholder="Enter API key"
+              placeholder="Tempel API key"
               value={form.api_key}
               onChange={(e) => setField('api_key', e.target.value)}
               aria-invalid={!!errors.api_key}
               disabled={isPending}
+              autoComplete="off"
               className="font-mono text-sm"
             />
             {errors.api_key && (
-              <p className="text-xs text-bearish" role="alert">{errors.api_key}</p>
+              <p className="text-xs text-bearish" role="alert">
+                {errors.api_key}
+              </p>
             )}
           </div>
 
-          {/* Secret */}
           <div className="space-y-1.5">
-            <Label htmlFor={`${exchange}-secret`} className="text-xs">Secret</Label>
+            <Label htmlFor={`${exchange}-secret`} className="text-xs">
+              Secret
+            </Label>
             <div className="relative">
               <Input
                 id={`${exchange}-secret`}
                 type={showSecret ? 'text' : 'password'}
-                placeholder="Enter secret"
+                placeholder="Tempel secret"
                 value={form.secret}
                 onChange={(e) => setField('secret', e.target.value)}
                 aria-invalid={!!errors.secret}
                 disabled={isPending}
+                autoComplete="off"
                 className="pr-10 font-mono text-sm"
               />
               <button
                 type="button"
                 onClick={() => setShowSecret((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
-                aria-label={showSecret ? 'Hide secret' : 'Show secret'}
+                className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground transition-colors hover:text-foreground"
+                aria-label={showSecret ? 'Sembunyikan secret' : 'Tampilkan secret'}
                 tabIndex={-1}
               >
                 {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
             {errors.secret && (
-              <p className="text-xs text-bearish" role="alert">{errors.secret}</p>
+              <p className="text-xs text-bearish" role="alert">
+                {errors.secret}
+              </p>
             )}
           </div>
 
-          {/* API Passphrase — OKX only */}
           {exchange === 'okx' && (
             <div className="space-y-1.5">
               <Label htmlFor="okx-api-passphrase" className="text-xs">
-                API Passphrase
-                <span className="ml-1 text-muted-foreground">(OKX only)</span>
+                <Term k="okx_passphrase" />
               </Label>
               <div className="relative">
                 <Input
                   id="okx-api-passphrase"
                   type={showPassphrase ? 'text' : 'password'}
-                  placeholder="Enter API passphrase"
+                  placeholder="Passphrase yang kamu buat di OKX"
                   value={form.api_passphrase}
                   onChange={(e) => setField('api_passphrase', e.target.value)}
                   aria-invalid={!!errors.api_passphrase}
                   disabled={isPending}
+                  autoComplete="off"
                   className="pr-10 font-mono text-sm"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassphrase((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
-                  aria-label={showPassphrase ? 'Hide passphrase' : 'Show passphrase'}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground transition-colors hover:text-foreground"
+                  aria-label={showPassphrase ? 'Sembunyikan passphrase API OKX' : 'Tampilkan passphrase API OKX'}
                   tabIndex={-1}
                 >
                   {showPassphrase ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
               {errors.api_passphrase && (
-                <p className="text-xs text-bearish" role="alert">{errors.api_passphrase}</p>
+                <p className="text-xs text-bearish" role="alert">
+                  {errors.api_passphrase}
+                </p>
               )}
             </div>
           )}
         </CardContent>
       ) : null}
 
-      <CardFooter className={`gap-2 ${isEditing ? 'pt-2' : 'pt-0'}`}>
+      <CardFooter className={`flex-wrap gap-2 ${isEditing ? 'pt-2' : 'pt-0'}`}>
         {isEditing ? (
           <>
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={isPending}
-              className="cursor-pointer"
-            >
-              {upsert.isPending ? (
-                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-              ) : null}
-              Save
+            <Button size="sm" onClick={handleSave} disabled={isPending}>
+              {upsert.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />}
+              Simpan
             </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleCancel}
-              disabled={isPending}
-              className="cursor-pointer"
-            >
-              Cancel
+            <Button size="sm" variant="ghost" onClick={handleCancel} disabled={isPending}>
+              Batal
             </Button>
           </>
         ) : (
           <>
-            <Button
-              size="sm"
-              variant={existing ? 'outline' : 'default'}
-              onClick={() => setIsEditing(true)}
-              className="cursor-pointer gap-1.5"
-            >
+            <Button size="sm" variant={existing ? 'outline' : 'default'} onClick={() => setIsEditing(true)} className="gap-1.5">
               <PlusCircle className="h-3.5 w-3.5" aria-hidden="true" />
-              {existing ? 'Update' : 'Add credentials'}
+              {existing ? 'Ganti API key' : 'Tambah API key'}
             </Button>
             {existing && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleDelete}
-                disabled={remove.isPending}
-                className={`cursor-pointer gap-1.5 transition-colors duration-200 ${
-                  confirmDelete
-                    ? 'border border-bearish/40 bg-bearish/10 text-bearish hover:bg-bearish/20'
-                    : 'text-muted-foreground hover:text-bearish'
-                }`}
-              >
-                {remove.isPending ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-                ) : (
-                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                )}
-                {confirmDelete ? 'Confirm remove' : 'Remove'}
-              </Button>
-            )}
-            {confirmDelete && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setConfirmDelete(false)}
-                className="cursor-pointer text-muted-foreground"
-              >
-                Cancel
-              </Button>
+              <ConfirmLive
+                title={`Hapus API key ${label}?`}
+                description={`Bot tidak bisa lagi membuka atau menutup posisi di ${label} untuk akun ini, termasuk menutup posisi yang sedang terbuka. Saldo dan posisi di halaman Saldo & posisi juga tidak bisa dibaca sampai key baru disimpan.`}
+                confirmLabel="Ya, hapus API key"
+                typeToConfirm
+                pending={remove.isPending}
+                onConfirm={removeKey}
+                trigger={
+                  <Button size="sm" variant="ghost" disabled={remove.isPending} className="gap-1.5 text-muted-foreground hover:text-bearish">
+                    {remove.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />}
+                    Hapus
+                  </Button>
+                }
+              />
             )}
           </>
         )}
       </CardFooter>
+
+      <ConfirmLive
+        open={confirmSave}
+        onOpenChange={setConfirmSave}
+        title={existing ? `Ganti API key ${label}?` : `Simpan API key ${label}?`}
+        description={
+          existing
+            ? `Key lama diganti. Order bot berikutnya di ${label} memakai key baru ini; kalau key salah atau izinnya kurang, order live akan gagal.`
+            : `Bot memakai key ini untuk order sungguhan di ${label} setiap kali alert TradingView ke akunmu masuk dan webhook aktif.`
+        }
+        confirmLabel={existing ? 'Ya, ganti key' : 'Ya, simpan key'}
+        destructive={Boolean(existing)}
+        pending={upsert.isPending}
+        onConfirm={save}
+      >
+        <p className="text-xs text-muted-foreground">Key disimpan terenkripsi; secret tidak pernah ditampilkan lagi.</p>
+      </ConfirmLive>
     </Card>
   )
 }

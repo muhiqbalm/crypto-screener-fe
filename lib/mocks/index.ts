@@ -44,6 +44,10 @@ export async function getMock(method: string, path: string, body?: unknown): Pro
   if (method === 'GET' && path === PATHS.balance) return MOCK_BALANCE
   if (method === 'GET' && path === PATHS.positions) return MOCK_OPEN_POSITIONS
   if (method === 'GET' && path === PATHS.positionsHistory) return MOCK_POSITIONS_HISTORY
+  // Akun & koneksi (mock mode only): one stored key, a demo profile.
+  if (method === 'GET' && path === PATHS.credentials) return [{ exchange: 'binance', is_configured: true, created_at: '2026-10-01T00:00:00Z' }]
+  if (method === 'GET' && path === PATHS.userMe)
+    return { id: 'mock-user', email: 'demo@bmtm.io', name: 'Demo', telegram_chat_id: null, is_active: true, created_at: '2026-01-01T00:00:00Z' }
 
   const home = (await import('./home')).homeMock(method, path)
   if (home !== undefined) return home

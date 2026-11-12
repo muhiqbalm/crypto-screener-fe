@@ -1,8 +1,8 @@
 import { SettingsView } from '@/components/settings/SettingsView'
 
 export const metadata = {
-  title: 'Pengaturan',
-  description: 'API key exchange, webhook TradingView dan notifikasi Telegram.',
+  title: 'Akun & koneksi',
+  description: 'API key exchange, webhook TradingView, profil dan notifikasi Telegram.',
 }
 
 export default function SettingsPage() {
