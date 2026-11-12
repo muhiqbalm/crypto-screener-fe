@@ -66,19 +66,21 @@ export function EquityChart({
 
   useEffect(() => {
     if (!ref.current) return
+    const theme = getChartTheme(isDark)
     const chart: IChartApi = createChart(ref.current, {
       autoSize: true,
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: getChartTheme(isDark).text,
-        fontFamily: getChartTheme(isDark).fontFamily,
-        fontSize: 11,
+        textColor: theme.text,
+        fontFamily: theme.fontFamily,
+        fontSize: theme.fontSize,
       },
       grid: {
         vertLines: { visible: false },
-        horzLines: { color: getChartTheme(isDark).grid },
+        horzLines: { color: theme.grid },
       },
-      rightPriceScale: { borderVisible: false },
+      localization: { priceFormatter: theme.priceFormatter },
+      rightPriceScale: { borderVisible: false, scaleMargins: theme.scaleMargins },
       timeScale: { borderVisible: false },
       handleScroll: false,
       handleScale: false,
@@ -119,7 +121,7 @@ export function EquityChart({
           </li>
         ))}
       </ul>
-      <div ref={ref} className={`${heightClass} w-full`} role="img" aria-label="Kurva equity per segmen" />
+      <div ref={ref} className={`${heightClass} w-full`} role="img" aria-label="Kurva modal per segmen" />
     </div>
   )
 }

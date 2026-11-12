@@ -115,7 +115,7 @@ export const INVALID_REASON_COPY: Record<string, string> = {
   cakupan: 'kurang dari 90% sinyal engine diikuti paper',
   selisih_hasil: 'selisih hasil paper vs engine lebih dari 0.30 poin %',
   keputusan_beda: 'keputusan dari transaksi engine berbeda',
-  acuan_dd_tidak_ada: 'angka acuan drawdown belum tersimpan',
+  acuan_dd_tidak_ada: 'angka acuan turun terdalam belum tersimpan',
 }
 
 /** One sentence + tone for a basket: what the pre-registered rules say right now. */

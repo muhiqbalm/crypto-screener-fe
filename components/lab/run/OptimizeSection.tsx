@@ -124,7 +124,7 @@ export function OptimizeSection({ run, template }: { run: LabRunDetail; template
               <table className="w-full min-w-[640px] text-sm">
                 <thead className="border-b border-border bg-muted/30">
                   <tr>
-                    {['#', 'Parameter', 'Hasil', 'PF', 'Turun terdalam', 'Trade', 'Waktu untung', ''].map((h, i) => (
+                    {['#', 'Parameter', 'Hasil bersih', 'PF', 'Turun terdalam', 'Transaksi', 'Waktu untung', ''].map((h, i) => (
                       <th key={h || i} className={cn('px-3 py-2 text-2xs font-medium uppercase tracking-wide text-muted-foreground', i >= 2 && i < 7 ? 'text-right' : 'text-left')}>
                         {h}
                       </th>

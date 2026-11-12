@@ -96,7 +96,7 @@ export function BotHero({
           center={
             <div className="flex flex-col items-center">
               <span className="num display text-5xl font-extrabold leading-none">{split.judged ? `${split.cocok}/${split.judged}` : '—'}</span>
-              <span className="mt-1.5 text-sm font-medium text-muted-foreground">{split.judged ? 'sinyal sesuai' : 'belum ada sinyal'}</span>
+              <span className="mt-1.5 text-sm font-medium text-muted-foreground">{split.judged ? 'sinyal cocok' : 'belum ada sinyal'}</span>
               {split.menunggu > 0 && <span className="text-xs text-muted-foreground">+{split.menunggu} menunggu</span>}
             </div>
           }

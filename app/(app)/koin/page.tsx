@@ -1,7 +1,7 @@
 import { Compass } from 'lucide-react'
 import { PageContainer, PageHeader } from '@/components/shell/page'
 import { KoinHub } from '@/components/market/KoinHub'
-import { parseView } from '@/lib/lab/outlook'
+import { parseSymbolQuery, parseView } from '@/lib/lab/outlook'
 
 export const metadata = {
   title: 'Peluang koin',
@@ -13,7 +13,10 @@ export default async function KoinPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
-  const view = parseView((await searchParams).view)
+  const sp = await searchParams
+  const view = parseView(sp.view)
+  // Old /screener?symbol=ETH links land here: the coin goes into the Tabel faktor search box.
+  const symbol = parseSymbolQuery(sp.symbol)
   return (
     <PageContainer width="wide">
       <PageHeader
@@ -31,7 +34,7 @@ export default async function KoinPage({
           istilah: ['peluang_terbaik', 'keyakinan', 'fase', 'kasus_serupa', 'direction', 'screener_score', 'tier'],
         }}
       />
-      <KoinHub view={view} />
+      <KoinHub view={view} symbol={symbol} />
     </PageContainer>
   )
 }

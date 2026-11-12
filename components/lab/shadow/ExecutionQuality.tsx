@@ -101,19 +101,19 @@ const ACTUAL_COLUMNS: ResponsiveColumn<ShadowSignal>[] = [
   },
   {
     key: 'fill',
-    header: 'Fill market · slippage',
+    header: 'Harga eksekusi · selisih',
     align: 'right',
     mobile: 'field',
-    mobileLabel: 'Fill market',
+    mobileLabel: 'Harga eksekusi',
     cell: (s) =>
       s.fill_price ? (
         <div className="num text-[14px]">
           {formatPrice(s.fill_price)}
-          <div className={cn('text-[13px]', costClass(s.slippage_bps))}>slip {bps(s.slippage_bps)}</div>
+          <div className={cn('text-[13px]', costClass(s.slippage_bps))}>selisih {bps(s.slippage_bps)}</div>
         </div>
       ) : (
         <div className="num text-[14px]">
-          <span className="text-muted-foreground">tanpa fill</span>
+          <span className="text-muted-foreground">belum tereksekusi</span>
           <div className={cn('text-[13px]', costClass(s.drift_bps))}>perkiraan {bps(s.drift_bps)}</div>
         </div>
       ),
@@ -305,8 +305,8 @@ function LimitSimulation({ r }: { r: ShadowReport }) {
             transaksi publik yang <b>menembus</b> harga limit (bukan sekadar menyentuh).
           </li>
           <li>
-            Hemat = selisih harga dibanding fill market + selisih fee ({r.settings.taker_bps} − {r.settings.maker_bps} ={' '}
-            {r.settings.fee_diff_bps} bps). Kalau tidak terisi, dianggap dikejar market order di akhir masa tunggu. Tanpa fill aktual,
+            Hemat = selisih harga dibanding harga eksekusi market + selisih fee ({r.settings.taker_bps} − {r.settings.maker_bps} ={' '}
+            {r.settings.fee_diff_bps} bps). Kalau tidak terisi, dianggap dikejar market order di akhir masa tunggu. Tanpa eksekusi aktual,
             pembandingnya transaksi publik pertama setelah alert (perkiraan).
           </li>
           <li>
@@ -358,7 +358,7 @@ export function ExecutionQuality({ id = 'eksekusi' }: { id?: string }) {
               value={r.actual.n_with_fill ? bps(r.actual.mean_slippage_bps) : '—'}
               tone={r.actual.n_with_fill && r.actual.mean_slippage_bps ? (r.actual.mean_slippage_bps > 0 ? 'bearish' : 'bullish') : 'brand'}
               toneValue
-              hint={r.actual.n_with_fill ? `rata-rata ${r.actual.n_with_fill} fill · + = lebih mahal` : `belum ada fill · perkiraan ${bps(r.actual.mean_drift_bps)}`}
+              hint={r.actual.n_with_fill ? `rata-rata ${r.actual.n_with_fill} eksekusi · + = lebih mahal` : `belum ada eksekusi · perkiraan ${bps(r.actual.mean_drift_bps)}`}
             />
             <KpiTile
               icon={Timer}

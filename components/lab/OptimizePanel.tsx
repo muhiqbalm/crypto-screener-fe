@@ -1,7 +1,7 @@
 'use client'
 
 import { Input } from '@/components/ui/input'
-import { Chip } from '@/components/lab/Section'
+import { Checkbox, Chip } from '@/components/lab/Section'
 import { cn } from '@/lib/utils/cn'
 import type { LabTemplate } from '@/lib/api/types/lab'
 import type { LabImportanceParam } from '@/lib/api/types/lab-uji'
@@ -91,12 +91,10 @@ export function OptimizePanel({ template, value, errors, onChange, importance, i
               return (
                 <li key={p.key} className="px-4 py-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <input
+                    <Checkbox
                       id={`opt-${p.key}`}
-                      type="checkbox"
                       checked={r.enabled}
                       onChange={(e) => setRange(p.key, { enabled: e.target.checked })}
-                      className="h-5 w-5 shrink-0 cursor-pointer accent-lab"
                     />
                     <label htmlFor={`opt-${p.key}`} className="min-w-0 flex-1 text-sm">
                       {paramLabel(p)}

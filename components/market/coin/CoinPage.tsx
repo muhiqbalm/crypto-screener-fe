@@ -15,9 +15,8 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { StatTile } from '@/components/ui/stat-tile'
-import { ErrorState } from '@/components/shell/states'
+import { EmptyState, ErrorState } from '@/components/shell/states'
 import { PageHeader } from '@/components/shell/page'
-import { AssistantSlot } from '@/components/shell/AssistantSlot'
 import { AiFactorCard } from '@/components/ai/AiFactorSummary'
 import { VerdictBadge } from '@/components/ui/verdict-badge'
 import { AnswerCard } from '@/components/ui/answer-card'
@@ -41,6 +40,8 @@ import {
   CLASS_TEXT,
   coinLabel,
   driverText,
+  factorLabel,
+  factorValueText,
   FASE_HINT,
   FASE_TEXT,
   faseOf,
@@ -55,9 +56,10 @@ import {
 import { formatCount, formatPercent, formatPrice, formatRR, formatScore, formatUsd, signClass } from '@/lib/utils/format'
 import { safeExternalUrl } from '@/lib/utils/safe-url'
 import { cn } from '@/lib/utils/cn'
+import { termLabel } from '@/lib/glossary'
 import type { CalibStats, OutlookDetail, OutlookFactor, OutlookInputs, StrategyClass } from '@/lib/api/types/outlook'
 
-const GROUP_SHORT = { utama: 'Strategi', mtf: 'Konteks 1D · 1H · BTC', konteks: 'Konteks lain' } as const
+const GROUP_SHORT = { utama: 'Strategi (penentu arah)', mtf: 'Konteks 1D · 1H · BTC', konteks: 'Konteks lain & skor screener' } as const
 
 function Header({ symbol, d, price, change }: { symbol: string; d?: OutlookDetail; price: number | null; change: number | null }) {
   const fase = d ? faseOf(d) : null
@@ -93,7 +95,7 @@ function Header({ symbol, d, price, change }: { symbol: string; d?: OutlookDetai
           </span>
         }
         help={{
-          apaIni: 'Satu halaman untuk satu koin: keputusan arah dari strategi utama, rencana trade lengkap, faktor dan bukti historisnya.',
+          apaIni: 'Satu halaman untuk satu koin: keputusan arah dari strategi utama, rencana lengkap, faktor dan bukti historisnya.',
           caraPakai: [
             'Baca keputusan di atas lebih dulu.',
             'Isi modalmu di samping chart untuk melihat untung/rugi dalam dolar.',
@@ -173,8 +175,8 @@ function Projection({ d, inputs, setInputs }: { d: OutlookDetail; inputs: Outloo
             <span className="num text-lg font-semibold">{formatUsd(pj.capital)} · {pj.leverage}×</span>
           </div>
           <div className="mt-2">
-            <MoneyRow big label="Kena take profit" value={pj.at_tp?.net} sub={pj.at_tp ? `${formatPercent(pj.at_tp.move_pct, 1)} gerak harga` : 'TP tidak tersedia'} />
-            <MoneyRow big label="Kena stop loss" value={pj.at_sl?.net} sub={pj.at_sl ? `${formatPercent(pj.at_sl.move_pct, 1)} gerak harga` : undefined} />
+            <MoneyRow big label={termLabel('money_at_tp')} value={pj.at_tp?.net} sub={pj.at_tp ? `${formatPercent(pj.at_tp.move_pct, 1)} gerak harga` : 'TP tidak tersedia'} />
+            <MoneyRow big label={termLabel('money_at_sl')} value={pj.at_sl?.net} sub={pj.at_sl ? `${formatPercent(pj.at_sl.move_pct, 1)} gerak harga` : undefined} />
             {pj.at_typical && <MoneyRow label="Di target realistis" value={pj.at_typical.net} />}
             {pj.calibrated && <MoneyRow label="Rata-rata kasus serupa" value={pj.calibrated.ev_usd} sub={`${formatR(pj.calibrated.mean_r)} · ${formatCount(pj.calibrated.n_pos)} posisi`} />}
           </div>
@@ -226,7 +228,8 @@ function Plan({ d }: { d: OutlookDetail }) {
   }
   return (
     <TitledPanel title="Rencana" icon={ClipboardList}
-      action={pl.valid_until ? <Pill>berlaku s/d {formatWib(pl.valid_until)}</Pill> : undefined}>
+      action={pl.valid_until ? <Pill className="hidden sm:inline-flex">berlaku s/d {formatWib(pl.valid_until)}</Pill> : undefined}>
+      {pl.valid_until && <div className="-mt-2 mb-4 sm:hidden"><Pill>berlaku s/d {formatWib(pl.valid_until)}</Pill></div>}
       {pl.geometry_ok ? (
         <>
           <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
@@ -274,14 +277,15 @@ function Plan({ d }: { d: OutlookDetail }) {
   )
 }
 
-function FactorChip({ f }: { f: OutlookFactor }) {
+/** `context`: a context factor (incl. the screener score). Plain text, so it never reads as a second LONG/SHORT verdict. */
+function FactorChip({ f, context = false }: { f: OutlookFactor; context?: boolean }) {
   const arrow = f.direction > 0 ? '▲' : f.direction < 0 ? '▼' : '–'
-  const tone = f.direction > 0 ? 'text-bullish' : f.direction < 0 ? 'text-bearish' : 'text-muted-foreground'
+  const tone = context ? 'text-foreground' : f.direction > 0 ? 'text-bullish' : f.direction < 0 ? 'text-bearish' : 'text-muted-foreground'
   return (
-    <li title={f.detail} className={cn('flex min-w-0 flex-col gap-1.5 rounded-2xl border bg-muted/20 px-4 py-3', !f.available && 'opacity-60')}>
-      <span className="text-2xs text-muted-foreground">{f.label}</span>
+    <li title={factorValueText(f.detail)} className={cn('flex min-w-0 flex-col gap-1.5 rounded-2xl border bg-muted/20 px-4 py-3', !f.available && 'opacity-60')}>
+      <span className="text-2xs text-muted-foreground">{factorLabel(f)}</span>
       <span className={cn('flex items-center gap-1.5 text-base font-semibold', tone)}>
-        <span aria-hidden="true">{arrow}</span><span className="min-w-0 break-words">{f.value}</span>
+        <span aria-hidden="true" className={context ? 'text-muted-foreground' : undefined}>{arrow}</span><span className="min-w-0 break-words">{factorValueText(f.value)}</span>
       </span>
       <span className="min-w-0 [&>span]:whitespace-normal"><EvidenceBadge code={f.evidence} text={f.evidence_text} /></span>
     </li>
@@ -291,11 +295,11 @@ function FactorChip({ f }: { f: OutlookFactor }) {
 function CalibRow({ label, s }: { label: string; s: CalibStats | null | undefined }) {
   const has = !!s && s.n_cases > 0
   return (
-    <li className="grid grid-cols-1 items-center gap-2 py-3 sm:grid-cols-[minmax(0,14rem)_6rem_minmax(0,1fr)] sm:gap-4">
+    <li className="grid grid-cols-1 items-center gap-2 py-3 sm:grid-cols-[minmax(0,14rem)_9rem_minmax(0,1fr)] sm:gap-4">
       <span className="text-sm">{label}</span>
-      <span className={cn('num text-lg font-bold', has ? signClass(s?.mean_r) : 'text-muted-foreground')}>
+      <span className={cn('num whitespace-nowrap text-lg font-bold', has ? signClass(s?.mean_r) : 'text-muted-foreground')}>
         {has ? formatR(s?.mean_r) : '—'}
-        {has && <span className="ml-1.5 text-2xs font-normal text-muted-foreground">{formatCount(s?.n_pos)} pos.</span>}
+        {has && <span className="ml-1.5 text-2xs font-normal text-muted-foreground">{formatCount(s?.n_pos)} posisi</span>}
       </span>
       {has ? <EvidenceBar pTp={s?.p_tp} pSl={s?.p_sl} pBatal={s?.p_batal} /> : <span className="text-2xs text-muted-foreground">belum ada data</span>}
     </li>
@@ -311,18 +315,35 @@ function Factors({ d, asset, allAssets, loadingAsset }: {
   const groups = groupFactors(d.factors)
   const cal = d.bias.calib
   const cls = (d.bias.cls ?? 'belum_diuji') as StrategyClass
+  const nContext = groups.mtf.length + groups.konteks.length
   return (
     <TitledPanel title="Faktor & bukti" icon={Layers}>
-      <div className="space-y-5">
-        {(['utama', 'mtf', 'konteks'] as const).map((g) => groups[g].length > 0 && (
-          <div key={g}>
-            <div className="eyebrow mb-2">{GROUP_SHORT[g]}</div>
-            <ul className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-              {groups[g].map((f) => <FactorChip key={f.key} f={f} />)}
-            </ul>
+      {groups.utama.length > 0 && (
+        <div>
+          <div className="eyebrow mb-2">{GROUP_SHORT.utama}</div>
+          <ul className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+            {groups.utama.map((f) => <FactorChip key={f.key} f={f} />)}
+          </ul>
+        </div>
+      )}
+      {nContext > 0 && (
+        <Fold title={`Konteks pasar (${nContext} faktor), bukan penentu arah`} className="mt-5 rounded-2xl">
+          <p className="mb-4 text-sm text-muted-foreground">
+            Hanya konteks. {d.strategy.side ? `Arah ${d.strategy.side.toUpperCase()} di atas` : 'Arah di atas'} tetap dari strategi utama;
+            skor screener mengukur hal lain (condong 5 faktor pasar).
+          </p>
+          <div className="space-y-5">
+            {(['mtf', 'konteks'] as const).map((g) => groups[g].length > 0 && (
+              <div key={g}>
+                <div className="eyebrow mb-2">{GROUP_SHORT[g]}</div>
+                <ul className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+                  {groups[g].map((f) => <FactorChip key={f.key} f={f} context />)}
+                </ul>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </Fold>
+      )}
 
       {cal && (
         <div className="mt-7">
@@ -335,14 +356,14 @@ function Factors({ d, asset, allAssets, loadingAsset }: {
           </div>
           <ul className="mt-1 divide-y divide-border/60">
             <CalibRow label={`Strategi ini (${CLASS_TEXT[cls]}, ${faseOf(d) === 'baru' ? 'posisi baru' : 'menyusul'})`} s={cal.own} />
-            <CalibRow label="Semua strategi (out-of-sample)" s={cal.pooled} />
+            <CalibRow label="Semua strategi (di luar data latih)" s={cal.pooled} />
             {d.coin_calibration?.fase && <CalibRow label={`${coinLabel(d.symbol)} saja`} s={d.coin_calibration.fase} />}
           </ul>
           <EvidenceLegend className="mt-2" />
         </div>
       )}
 
-      <Fold title="Skor screener (Tabel faktor)" className="mt-6 rounded-2xl">
+      <Fold title="Skor screener: 5 faktor pasar (bukan posisi strategi)" className="mt-4 rounded-2xl">
         {asset ? (
           <TrackRecordProvider><FactorBreakdown asset={asset} all={allAssets} /></TrackRecordProvider>
         ) : (
@@ -359,9 +380,9 @@ function TrackSection({ d }: { d: OutlookDetail }) {
     <div className="space-y-5">
       <div>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatTile label="Trade" value={bt.n} hint={`long ${bt.by_side?.long?.n ?? 0} · short ${bt.by_side?.short?.n ?? 0}`} />
+          <StatTile label={termLabel('trade')} value={bt.n} hint={`long ${bt.by_side?.long?.n ?? 0} · short ${bt.by_side?.short?.n ?? 0}`} />
           <StatTile label="Menang" value={bt.win_rate_pct === null ? '—' : `${formatScore(bt.win_rate_pct, 0)}%`} />
-          <StatTile label="Rata-rata per trade" value={formatPercent(bt.mean_pct, 2)} valueClassName={signClass(bt.mean_pct)} hint="% dari nilai posisi" />
+          <StatTile label="Rata-rata per transaksi" value={formatPercent(bt.mean_pct, 2)} valueClassName={signClass(bt.mean_pct)} hint="% dari nilai posisi" />
           <StatTile label="Lama tahan" value={bt.median_hold_hours === null ? '—' : `${formatScore(bt.median_hold_hours / 24, 1)} hari`} hint="median" />
         </div>
         <p className="mt-2 text-2xs text-muted-foreground">Backtest strategi utama · {bt.basis_text}.</p>
@@ -420,6 +441,28 @@ export function CoinPage({ symbol }: { symbol: string }) {
   const notFound = q.error instanceof ApiError && q.error.kind === 'not_found'
   const price = d?.price ?? asset?.price ?? null
   const paras = d?.explanation.paragraphs ?? []
+  // K6: "not found" only when BOTH lookups have finished without a fetch error and neither knows
+  // the coin. Never while loading, on placeholder data, or on a failed request.
+  const outlookSettled = !q.isPending && !q.isPlaceholderData && (!q.error || notFound)
+  const screenerSettled = !scr.isPending && !scr.error
+  if (!d && !asset && outlookSettled && screenerSettled) {
+    return (
+      <div className="space-y-6">
+        <Link href="/koin" className="inline-flex min-h-10 items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Peluang koin
+        </Link>
+        <EmptyState
+          title="Koin tidak ditemukan"
+          description={`${coinLabel(symbol)} tidak ada di Outlook maupun data screener. Cek lagi penulisan simbolnya.`}
+          action={
+            <Link href="/koin" className="inline-flex h-10 items-center rounded-full border px-5 text-sm font-semibold text-info hover:bg-info/10">
+              Kembali ke Peluang koin
+            </Link>
+          }
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8">
@@ -456,7 +499,8 @@ export function CoinPage({ symbol }: { symbol: string }) {
 
           <Plan d={d} />
 
-          <AiFactorCard symbol={d.symbol} />
+          {/* The one AI/assistant block: the rule-based "kenapa / bukti / risiko" sits folded inside it. */}
+          <AiFactorCard symbol={d.symbol} detail={paras.slice(1).filter((p) => !p.startsWith('Ini informasi'))} />
 
           <Factors d={d} asset={asset} allAssets={scr.data?.assets ?? []} loadingAsset={scr.isPending} />
 
@@ -486,11 +530,6 @@ export function CoinPage({ symbol }: { symbol: string }) {
             <p className="mt-3 text-2xs text-muted-foreground">Berita hanya konteks, tidak dihitung sebagai sinyal.</p>
           </Fold>
 
-          <AssistantSlot
-            context={{ kind: 'koin', subject: d.symbol, label: coinLabel(symbol) }}
-            source="otomatis"
-            items={paras.slice(1).filter((p) => !p.startsWith('Ini informasi')).map((p) => ({ text: p, at: formatWib(d.computed_at) }))}
-          />
           <Fold title="Cara keputusan ini dihitung">
             <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-muted-foreground">
               {(d.method?.text ?? []).map((t) => <li key={t}>{t}</li>)}
@@ -500,7 +539,7 @@ export function CoinPage({ symbol }: { symbol: string }) {
       ) : (
         <>
           <AnswerCard tone="menunggu" answer="Outlook belum tersedia untuk koin ini. Skor screener di bawah tetap bisa kamu baca." />
-          <TitledPanel title="Skor screener (Tabel faktor)" icon={Layers}>
+          <TitledPanel title="Skor screener: 5 faktor pasar" icon={Layers}>
             {asset ? (
               <TrackRecordProvider><FactorBreakdown asset={asset} all={scr.data?.assets ?? []} /></TrackRecordProvider>
             ) : (

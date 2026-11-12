@@ -208,31 +208,7 @@ export function WebhookConfigCard() {
   return (
     <Card className="overflow-hidden rounded-3xl">
       <div className={`h-0.5 w-full ${isActive ? 'bg-bullish' : 'bg-muted'}`} aria-hidden="true" />
-      <Header
-        status={<StatusPill kind="live" size="xs" />}
-        action={
-          <ConfirmLive
-            title={copy.title}
-            description={copy.description}
-            confirmLabel={copy.confirmLabel}
-            destructive={isActive}
-            pending={automationToggle.isPending}
-            onConfirm={() => runToggle(!isActive)}
-            trigger={
-              <Button variant="outline" size="sm" className="shrink-0 gap-1.5 rounded-full" disabled={automationToggle.isPending}>
-                {automationToggle.isPending ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-                ) : isActive ? (
-                  <PowerOff className="h-3.5 w-3.5" aria-hidden="true" />
-                ) : (
-                  <Power className="h-3.5 w-3.5" aria-hidden="true" />
-                )}
-                {isActive ? 'Nonaktifkan' : 'Aktifkan (LIVE)'}
-              </Button>
-            }
-          />
-        }
-      />
+      <Header status={<StatusPill kind="live" size="xs" />} />
 
       <CardContent className="space-y-5 px-6 pb-6">
         <div className="flex items-center gap-3">
@@ -293,6 +269,29 @@ export function WebhookConfigCard() {
           }
         />
         <p className="text-[13px] text-muted-foreground">Ganti kata sandi webhook di Akun & koneksi.</p>
+        {/* Status first, the on/off control last (audit K12). Same handler and ConfirmLive. */}
+        <div className="border-t border-border pt-4">
+          <ConfirmLive
+            title={copy.title}
+            description={copy.description}
+            confirmLabel={copy.confirmLabel}
+            destructive={isActive}
+            pending={automationToggle.isPending}
+            onConfirm={() => runToggle(!isActive)}
+            trigger={
+              <Button variant="outline" size="sm" className="shrink-0 gap-1.5 rounded-full" disabled={automationToggle.isPending}>
+                {automationToggle.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                ) : isActive ? (
+                  <PowerOff className="h-3.5 w-3.5" aria-hidden="true" />
+                ) : (
+                  <Power className="h-3.5 w-3.5" aria-hidden="true" />
+                )}
+                {isActive ? 'Nonaktifkan webhook' : 'Aktifkan webhook (LIVE)'}
+              </Button>
+            }
+          />
+        </div>
       </CardContent>
     </Card>
   )

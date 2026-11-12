@@ -177,3 +177,26 @@ describe('peluang koin helpers', () => {
     expect(loadInputs()).toEqual(DEFAULT_INPUTS)
   })
 })
+
+describe('wording helpers for the coin page and Tabel faktor (audit 2026-11-13)', () => {
+  it('pre-fills the Tabel faktor search from the old ?symbol= link', async () => {
+    const { parseSymbolQuery } = await import('./outlook')
+    expect(parseSymbolQuery('ETH')).toBe('ETH')
+    expect(parseSymbolQuery('ethusdt')).toBe('ETH')
+    expect(parseSymbolQuery(['1000PEPEUSDT', 'x'])).toBe('1000PEPE')
+    expect(parseSymbolQuery('ETH/USDT:USDT')).toBe('ETH')
+    expect(parseSymbolQuery(undefined)).toBe('')
+    expect(parseSymbolQuery('<b>')).toBe('B')
+  })
+
+  it('never shows BULLISH / BEARISH / tier X from a screener factor', async () => {
+    const { factorValueText, factorLabel } = await import('./outlook')
+    expect(factorValueText('BULLISH')).toBe('naik')
+    expect(factorValueText('BEARISH, tier B')).toBe('turun, kelompok tengah')
+    expect(factorValueText('Sinyal OI screener: NEUTRAL; tier A')).toBe('Sinyal OI screener: netral; kelompok atas')
+    expect(factorValueText('funding +0.01%')).toBe('funding +0.01%')
+    expect(factorValueText(null)).toBe('')
+    expect(factorLabel({ key: 'screener', label: 'Screener komposit' })).toBe('Arah skor screener')
+    expect(factorLabel({ key: 'oi', label: 'Open interest' })).toBe('Open interest')
+  })
+})

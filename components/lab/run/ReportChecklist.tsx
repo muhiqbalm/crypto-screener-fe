@@ -2,18 +2,10 @@
 
 import { Check, ClipboardCheck, X } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
-import { formatNumber } from '@/lib/utils/format'
-import { checkLabel, checkReason, thresholdText } from '@/lib/lab/form'
+import { checkLabel, checkReason, checkUnit, checkValueText, thresholdText } from '@/lib/lab/form'
 import type { LabCheck } from '@/lib/api/types/lab'
 import { ProgressBar } from '@/components/ui/progress-bar'
 import { Panel } from './v2-ui'
-
-function value(v: LabCheck['value']): string {
-  if (v === null || v === undefined) return '—'
-  if (typeof v === 'boolean') return v ? 'ya' : 'tidak'
-  if (typeof v === 'number') return v >= 999 ? '∞' : formatNumber(v, { digits: Number.isInteger(v) ? 0 : 2 })
-  return v
-}
 
 /**
  * The report as big tick / cross rows (design v2): one row per requirement, the value and its
@@ -58,8 +50,8 @@ export function ReportChecklist({ checks, className }: { checks: LabCheck[]; cla
               {!c.passed && <p className="text-sm text-bearish">{checkReason(c)}</p>}
             </div>
             <div className="shrink-0 text-right">
-              <p className={cn('num display text-xl font-extrabold', !c.passed && 'text-bearish')}>{value(c.value)}</p>
-              <p className="text-2xs text-muted-foreground">{thresholdText(c.threshold)}</p>
+              <p className={cn('num display text-xl font-extrabold', !c.passed && 'text-bearish')}>{checkValueText(c)}</p>
+              <p className="text-2xs text-muted-foreground">{thresholdText(c.threshold, checkUnit(c.name))}</p>
             </div>
           </li>
         ))}

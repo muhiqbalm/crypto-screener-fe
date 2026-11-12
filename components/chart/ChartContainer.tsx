@@ -67,6 +67,25 @@ const INTERVALS: { value: string; label: string; long: string }[] = CHART_TFS.ma
 // Segment button
 // ---------------------------------------------------------------------------
 
+/**
+ * Scrolling chip row. On phones the right edge fades out, so a chip cut by the screen
+ * reads as "geser untuk lainnya" instead of a broken row (audit K9). The extra right
+ * padding keeps the last chip clear of the fade once scrolled to the end.
+ */
+function ChipRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex max-w-full overflow-hidden rounded-full border bg-muted/40">
+      <div
+        role="group"
+        aria-label={label}
+        className="flex min-w-0 items-center gap-1 overflow-x-auto p-1 max-sm:pr-7 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]"
+      >
+        {children}
+      </div>
+    </div>
+  )
+}
+
 function SegBtn({
   active,
   onClick,
@@ -356,7 +375,7 @@ export function ChartContainer() {
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Symbol selector */}
-        <div role="group" aria-label="Pilih koin" className="flex max-w-full items-center gap-1 overflow-x-auto rounded-full border bg-muted/40 p-1">
+        <ChipRow label="Pilih koin">
           {symbolOptions.map(s => (
             <SegBtn
               key={s.value}
@@ -367,10 +386,10 @@ export function ChartContainer() {
               {s.label}
             </SegBtn>
           ))}
-        </div>
+        </ChipRow>
 
         {/* Interval selector */}
-        <div role="group" aria-label="Pilih timeframe" className="flex max-w-full items-center gap-1 overflow-x-auto rounded-full border bg-muted/40 p-1">
+        <ChipRow label="Pilih timeframe">
           {intervalOptions.map(i => (
             <SegBtn
               key={i.value}
@@ -382,7 +401,7 @@ export function ChartContainer() {
               {i.label}
             </SegBtn>
           ))}
-        </div>
+        </ChipRow>
       </div>
 
       <div className={cn('grid items-start gap-4', showSidePanel && 'lg:grid-cols-[minmax(0,1fr)_340px]')}>

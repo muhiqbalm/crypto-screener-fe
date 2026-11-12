@@ -62,7 +62,7 @@ export function VerdictHero({ run, strategyName, className }: { run: LabRunDetai
         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
           <HeroKpi label={`Hasil ${where}`} value={net} format={(v) => formatPct(v, { signed: true })} tone={signTone(net)} />
           <HeroKpi label="Turun terdalam" value={dd === null ? null : -Math.abs(dd)} format={(v) => formatPct(v)} tone={dd === null ? undefined : 'bearish'} />
-          <HeroKpi label="Trade" value={trades} format={(v) => formatNumber(Math.round(v), { digits: 0 })} hint={pf === null ? undefined : `PF ${formatNumber(pf)}`} />
+          <HeroKpi label="Transaksi" value={trades} format={(v) => formatNumber(Math.round(v), { digits: 0 })} hint={pf === null ? undefined : `PF ${formatNumber(pf)}`} />
         </div>
       )}
     </HeroCard>

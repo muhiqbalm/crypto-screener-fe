@@ -8,7 +8,7 @@ import { PAPER_HELP } from '@/components/lab/arena/paper-help'
 
 export const metadata = {
   title: 'Jurnal · Paper berjalan',
-  description: 'Setiap transaksi paper, terbaru di atas, dengan hasil bersih, R, catatan dan tag. Trade bot live hanya tampil bila dinyalakan.',
+  description: 'Setiap transaksi paper, terbaru di atas, dengan hasil bersih, R, catatan dan tag. Transaksi bot live hanya tampil bila dinyalakan.',
 }
 
 export default function JournalPage() {

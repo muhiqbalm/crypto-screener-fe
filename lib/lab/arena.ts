@@ -186,7 +186,7 @@ export function arenaAnswer(r: ArenaReport): ArenaAnswer {
     return {
       ...base,
       tone: 'menunggu',
-      text: `${n} preset berjalan di paper dan belum ada yang menyimpang dari hasil uji. Belum ada yang mencapai ${reviewN} transaksi (terbanyak ${maxClosed}/${reviewN}), jadi hasilnya belum bisa dinilai.`,
+      text: `${running > 0 ? `${running} preset berjalan di paper` : 'Tidak ada preset yang sedang berjalan di paper'}${running < n ? ` (${n} punya akun simulasi)` : ''} dan belum ada yang menyimpang dari hasil uji. Belum ada yang mencapai ${reviewN} transaksi (terbanyak ${maxClosed}/${reviewN}), jadi hasilnya belum bisa dinilai.`,
     }
   }
   const ok = reached.filter((x) => x.drift.status === 'sesuai').length

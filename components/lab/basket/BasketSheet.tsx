@@ -109,7 +109,7 @@ export function BasketSheet({ row, onClose }: { row: BasketRow | null; onClose: 
             </header>
 
             <div className="grid grid-cols-2 gap-2.5">
-              <Stat label="Hasil" value={formatPct(s?.return_pct ?? null, { digits: 2, signed: true })} className={signClass(s?.return_pct ?? null)} hint={s ? `ekuitas ${formatPrice(s.equity)}` : undefined} />
+              <Stat label="Hasil bersih" value={formatPct(s?.return_pct ?? null, { digits: 2, signed: true })} className={signClass(s?.return_pct ?? null)} hint={s ? `ekuitas ${formatPrice(s.equity)}` : undefined} />
               <Stat label={<Term k="max_drawdown" short noTip />} value={s?.max_dd_pct === null || s?.max_dd_pct === undefined ? 'tidak tersedia' : formatPct(-Math.abs(s.max_dd_pct), { digits: 1 })} />
               <Stat label="Posisi terbuka" value={`${formatCount(row.open_positions)} dari ${formatCount(b.n_coins)}`} hint={`${formatCount(row.gate.coins)} koin sudah bertransaksi`} />
               <Stat label="Berjalan" value={`${formatNumber(row.gate.days, { digits: 1 })} hari`} hint={`batas akhir ${formatTime(ev.deadline, { time: false })}`} />

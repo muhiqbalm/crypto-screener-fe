@@ -98,7 +98,7 @@ export function SettingsView() {
       </section>
 
       <section className="space-y-4">
-        <SectionHeading title="Profil, password & Telegram" description="Nama tampilan, password login, dan chat Telegram untuk notifikasi eksekusi." />
+        <SectionHeading title="Profil, kata sandi & Telegram" description="Nama tampilan, kata sandi login, dan chat Telegram untuk notifikasi eksekusi." />
         <ProfileSettings />
       </section>
     </PageContainer>

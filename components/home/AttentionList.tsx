@@ -53,8 +53,8 @@ export function AttentionList({ items, loading }: { items: AttentionItem[]; load
                     {l.label}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="line-clamp-2 text-base leading-snug">{it.text}</span>
-                    {it.detail && <span className="mt-0.5 block truncate text-sm text-muted-foreground">{it.detail}</span>}
+                    <span className="block text-base leading-snug">{it.text}</span>
+                    {it.detail && <span className="mt-0.5 block break-words text-sm text-muted-foreground">{it.detail}</span>}
                   </span>
                   <span className="sr-only">Buka {it.linkLabel}</span>
                   <ChevronRight className="mt-1 h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden="true" />

@@ -1,4 +1,5 @@
 /** Pure helpers for the Signal Ledger page (labels, honesty copy, formatting). */
+import { formatPct } from '@/lib/utils/format'
 import type {
   LedgerFilters,
   LedgerGroup,
@@ -76,9 +77,8 @@ export const VERDICT_COPY: Record<LedgerVerdict, { label: string; tone: 'muted' 
 }
 
 export function pct(v: number | null | undefined, digits = 2): string {
-  if (v === null || v === undefined || !Number.isFinite(v)) return '—'
-  const s = v > 0 ? '+' : v < 0 ? '-' : ''
-  return `${s}${Math.abs(v).toFixed(digits)}%`
+  // Shared formatter: real minus sign "−", same as every other page (audit 2026-11-13 K15).
+  return formatPct(v, { digits, signed: true })
 }
 
 /** Hit rate as "54%" (fraction in, whole percent out). */

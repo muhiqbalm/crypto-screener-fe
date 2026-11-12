@@ -5,14 +5,16 @@
  * interest, whale flow, Fear & Greed, news) relate to the Outlook direction, written by a model
  * from data BMTM already has. Every number was checked against that data in the backend.
  *
- * - `AiFactorCard`: full card on /koin/[simbol].
+ * - `AiFactorCard`: full card on /koin/[simbol]. It is the ONE AI/assistant block of that page:
+ *   the rule-based "kenapa / bukti / risiko" sentences come in as `detail` and sit in a folded
+ *   "Rincian" (audit 2026-11-13 P8). Model id and cost (admin-only meta) are in that fold too.
  * - `AiFactorLine`: compact version inside the best-opportunity card on /koin (no links or
  *   buttons: it sits inside a <Link>).
  *
  * Off / no summary: members see nothing; admins see one subtle line (the backend sends `note`
  * only to admins). Loading and errors (incl. 403) render nothing. Read-only: no actions.
  */
-import { CircleAlert, CircleCheck, CircleMinus, Sparkles } from 'lucide-react'
+import { ChevronDown, CircleAlert, CircleCheck, CircleMinus, Sparkles } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { IconChip } from '@/components/ui/icon-title'
 import { InfoTip } from '@/components/ui/info-tip'
@@ -74,14 +76,58 @@ function AdminNote({ note, className }: { note: string; className?: string }) {
   )
 }
 
-/** Full "Ringkasan AI" card for the coin page. */
-export function AiFactorCard({ symbol, className }: { symbol: string; className?: string }) {
+const CHEVRON = 'shrink-0 text-muted-foreground transition-transform group-open:rotate-180 motion-reduce:transition-none'
+
+/** The page's own rule-based sentences (not written by the model), one short item each. */
+function DetailList({ items }: { items: string[] }) {
+  return (
+    <ul className="space-y-2.5">
+      {items.map((t) => (
+        <li key={t} className="flex gap-2.5 text-sm leading-relaxed">
+          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-lab" aria-hidden="true" />
+          <span className="min-w-0">{t}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+/**
+ * Full "Ringkasan AI" card for the coin page. `detail` = the rule-based explanation of the
+ * decision; it is always folded, and still shown (as its own fold) when there is no AI summary.
+ */
+export function AiFactorCard({ symbol, className, detail = [] }: { symbol: string; className?: string; detail?: string[] }) {
   const q = useAiFactors(symbol)
   const d = q.data
-  if (!d || q.error) return null
-  const s = d.summary
-  if (!s) return d.note ? <AdminNote note={d.note} className={className} /> : null
+  const s = d && !q.error ? d.summary : null
+  if (!s) {
+    const note = d && !q.error && d.note ? d.note : null
+    if (detail.length === 0) return note ? <AdminNote note={note} className={className} /> : null
+    return (
+      <div className={cn('space-y-2', className)}>
+        <details className="group rounded-3xl border bg-card">
+          <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-base font-semibold sm:px-6 [&::-webkit-details-marker]:hidden">
+            <span className="min-w-0">Rincian: kenapa, bukti, risiko</span>
+            <ChevronDown className={cn('h-5 w-5', CHEVRON)} aria-hidden="true" />
+          </summary>
+          <div className="border-t px-5 pb-5 pt-4 sm:px-6">
+            <DetailList items={detail} />
+            <p className="mt-3 text-2xs text-muted-foreground">Ringkasan otomatis dari data halaman ini · bukan saran investasi</p>
+          </div>
+        </details>
+        {note && <AdminNote note={note} />}
+      </div>
+    )
+  }
   const meta = s.meta
+  const metaLine = meta
+    ? [
+        meta.model,
+        meta.cost_usd !== undefined && meta.cost_usd !== null ? `biaya $${meta.cost_usd.toFixed(4)}` : null,
+        meta.dropped_factors > 0 ? `${meta.dropped_factors} faktor dibuang validasi` : null,
+      ].filter(Boolean).join(' · ')
+    : ''
+  const hasFold = detail.length > 0 || s.data_gaps.length > 0 || metaLine !== ''
   return (
     <Panel className={className} aria-label="Ringkasan AI">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -99,7 +145,7 @@ export function AiFactorCard({ symbol, className }: { symbol: string; className?
             <p className="text-sm text-muted-foreground">Faktor konteks terhadap arah Outlook</p>
           </div>
         </div>
-        <span className="eyebrow text-lab">{d.label || AI_LABEL}</span>
+        <span className="eyebrow text-lab">{d?.label || AI_LABEL}</span>
       </div>
 
       <p className="mt-4 max-w-4xl display text-lg font-semibold leading-snug tracking-tight sm:text-xl">{s.sentence}</p>
@@ -110,17 +156,32 @@ export function AiFactorCard({ symbol, className }: { symbol: string; className?
         </ul>
       )}
 
-      {s.data_gaps.length > 0 && (
-        <div className="mt-4 text-2xs text-muted-foreground">
-          <span className="font-semibold">Data kosong (tidak ditebak):</span> {s.data_gaps.join(' ')}
-        </div>
+      {hasFold && (
+        <details className="group mt-4 rounded-2xl border bg-muted/20">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+            <span className="min-w-0">Rincian{detail.length > 0 ? ': kenapa, bukti, risiko' : ''}</span>
+            <ChevronDown className={cn('h-4 w-4', CHEVRON)} aria-hidden="true" />
+          </summary>
+          <div className="space-y-3 border-t px-4 pb-4 pt-3">
+            {detail.length > 0 && (
+              <div>
+                <DetailList items={detail} />
+                <p className="mt-2 text-2xs text-muted-foreground">Butir di atas ringkasan otomatis dari data halaman ini, bukan tulisan AI.</p>
+              </div>
+            )}
+            {s.data_gaps.length > 0 && (
+              <p className="text-2xs text-muted-foreground">
+                <span className="font-semibold">Data kosong (tidak ditebak):</span> {s.data_gaps.join(' ')}
+              </p>
+            )}
+            {/* Admin-only meta from the backend: members never receive it. */}
+            {metaLine && <p className="text-2xs text-muted-foreground" data-testid="ai-meta">Admin: {metaLine}</p>}
+          </div>
+        </details>
       )}
 
       <p className="mt-4 text-2xs text-muted-foreground">
         Data close 4H {wib(s.bar_close)} · dibuat {wib(s.created_at)}
-        {meta?.model ? ` · ${meta.model}` : ''}
-        {meta?.cost_usd !== undefined && meta?.cost_usd !== null ? ` · biaya $${meta.cost_usd.toFixed(4)}` : ''}
-        {meta && meta.dropped_factors > 0 ? ` · ${meta.dropped_factors} faktor dibuang validasi` : ''}
       </p>
     </Panel>
   )

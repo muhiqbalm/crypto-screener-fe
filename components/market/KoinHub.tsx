@@ -8,14 +8,14 @@ import { StrengthTable } from '@/components/market/StrengthTable'
 import type { KoinView } from '@/lib/lab/outlook'
 
 /** /koin: market ribbon first, then the 3 views (Outlook default · Terkuat · Tabel faktor). */
-export function KoinHub({ view }: { view: KoinView }) {
+export function KoinHub({ view, symbol = '' }: { view: KoinView; symbol?: string }) {
   return (
     <div className="space-y-6">
       <MarketRibbon />
       <HubTabs hub="koin" value={view} label="Tampilan Peluang koin" />
       {view === 'outlook' && <OutlookView />}
       {view === 'terkuat' && <StrengthTable />}
-      {view === 'faktor' && <FactorTable />}
+      {view === 'faktor' && <FactorTable key={symbol} initialSymbol={symbol} />}
     </div>
   )
 }

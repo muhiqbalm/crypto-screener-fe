@@ -245,7 +245,7 @@ export function RunDetailView({ id }: { id: string }) {
         <Panel>
           <Tabs defaultValue="trades">
             <TabsList className="mb-4">
-              <TabsTrigger value="trades">Trade</TabsTrigger>
+              <TabsTrigger value="trades">Transaksi</TabsTrigger>
               <TabsTrigger value="params">Parameter{changed.length > 0 ? ` (${changed.length})` : ''}</TabsTrigger>
               <TabsTrigger value="sens">Ketahanan</TabsTrigger>
             </TabsList>

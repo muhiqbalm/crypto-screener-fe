@@ -4,7 +4,7 @@ import { ChevronRight, Layers } from 'lucide-react'
 import { BigNumber, CoinAvatar, CountUp, DeckCard, Meter, Pill, RankBadge, Spark, signTone } from '@/components/lab/arena/deck'
 import { BasketAvatar, OutcomePill } from '@/components/lab/basket/BasketBits'
 import { formatCount, formatPct } from '@/lib/utils/format'
-import { formatTimeframe } from '@/lib/utils/time'
+import { formatDate, formatTimeframe } from '@/lib/utils/time'
 import { sortCoins } from '@/lib/lab/basket'
 import type { BasketRow } from '@/lib/api/types/basket'
 
@@ -21,6 +21,8 @@ export function BasketLeaderRow({ row, rank, highlighted, onOpen }: { row: Baske
   const b = row.basket
   const ret = s?.return_pct ?? null
   const dd = s?.max_dd_pct ?? null
+  // Period of the paper result (audit 2026-11-13 P11): the simulation account's start date.
+  const since = row.account?.created_at ? formatDate(row.account.created_at, { year: 'auto' }) : null
   const bad = row.evaluation.status === 'GAGAL' || row.evaluation.status === 'TIDAK_SAH'
   const active = sortCoins(row.coins).filter((c) => c.open_position || c.trades > 0)
   const pills = (
@@ -46,8 +48,8 @@ export function BasketLeaderRow({ row, rank, highlighted, onOpen }: { row: Baske
           </div>
         </div>
         <div className="grid grid-cols-[1fr_1fr_auto] items-end gap-4 lg:contents">
-          <BigNumber label="Hasil" value={<CountUp value={ret ?? 0} format={pct2} />} tone={signTone(ret)} size="sm" />
-          <BigNumber label="Drawdown" value={dd === null ? '—' : formatPct(-Math.abs(dd), { digits: 1 })} tone={dd ? 'bearish' : 'muted'} size="sm" />
+          <BigNumber label="Hasil bersih" value={<CountUp value={ret ?? 0} format={pct2} />} tone={signTone(ret)} size="sm" hint={since ? `sejak ${since}` : undefined} />
+          <BigNumber label="Turun terdalam" value={dd === null ? '—' : formatPct(-Math.abs(dd), { digits: 1 })} tone={dd ? 'bearish' : 'muted'} size="sm" hint={since ? 'dari puncak' : undefined} />
           <Spark values={row.spark} width={120} height={44} label={`Kurva modal ${b.name}`} className="lg:w-[140px]" />
         </div>
         <div className="min-w-0 space-y-2">

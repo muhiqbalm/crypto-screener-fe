@@ -21,7 +21,7 @@ export default function WebhookPage() {
           apaIni:
             'Webhook adalah alamat yang menerima alert TradingView dan meneruskannya menjadi order sungguhan di exchange akunmu. Halaman ini mengatur webhook milik akun yang sedang login.',
           caraPakai: [
-            'Pastikan status otomasi "aktif" kalau bot memang harus berjalan; jeda kalau tidak.',
+            'Pastikan status webhook "Aktif" kalau bot memang harus berjalan; nonaktifkan kalau tidak.',
             'Salin alamat webhook dan isi alert (JSON) ke alert TradingView. Satu alert untuk satu aksi.',
             'Cek Log alert: baris yang gagal atau ditolak bisa diketuk untuk melihat alasannya.',
           ],

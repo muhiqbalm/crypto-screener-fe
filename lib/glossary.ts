@@ -104,10 +104,12 @@ export const GLOSSARY = {
     group: 'pasar',
   },
   screener_signal: {
-    label: 'Sinyal screener',
-    tip: 'Arah skor screener saat ini, bukan perintah beli atau jual.',
+    // Audit 2026-11-13 P7: not "sinyal", so it is never read as the strategy's LONG/SHORT.
+    label: 'Arah skor screener',
+    short: 'Arah skor',
+    tip: 'Ke mana 5 faktor pasar condong saat ini. Ini bukan posisi strategi (LONG/SHORT) dan bukan perintah beli atau jual.',
     values: { BULLISH: 'naik', BEARISH: 'turun', NEUTRAL: 'netral' },
-    aliases: ['Signal BULLISH / BEARISH / NEUTRAL'],
+    aliases: ['Signal BULLISH / BEARISH / NEUTRAL', 'Sinyal screener', 'Sinyal'],
     group: 'pasar',
   },
   tier: {
@@ -233,8 +235,8 @@ export const GLOSSARY = {
     group: 'outlook',
   },
   entry: {
-    label: 'Entry (harga masuk)',
-    short: 'Entry',
+    label: 'Harga masuk (entry)',
+    short: 'Harga masuk',
     tip: 'Harga saat strategi masuk posisi.',
     group: 'outlook',
   },
@@ -265,10 +267,24 @@ export const GLOSSARY = {
     group: 'outlook',
   },
   rr: {
-    label: 'Untung : rugi',
+    // Audit 2026-11-13 P5: the long form carries the short one, so "R:R" in a
+    // tight list is recognisably the same number as on the cards.
+    label: 'Untung : rugi (R:R)',
     short: 'R:R',
     tip: 'Untung di target dibanding rugi di SL setelah biaya; 2 : 1 berarti target dua kali risiko.',
-    aliases: ['R:R'],
+    aliases: ['R:R', 'Untung : Rugi', 'Reward-to-risk'],
+    group: 'outlook',
+  },
+  money_at_tp: {
+    label: 'Untung di target',
+    tip: 'Hasil bersih dalam dolar kalau harga sampai target (TP); termasuk fee & slippage, belum funding.',
+    aliases: ['Kena TP', 'Kena take profit', 'Di target', 'Profit TP'],
+    group: 'outlook',
+  },
+  money_at_sl: {
+    label: 'Rugi di SL',
+    tip: 'Hasil bersih dalam dolar kalau harga kena batas rugi (SL); termasuk fee & slippage, belum funding.',
+    aliases: ['Kena SL', 'Kena stop loss', 'Di SL', 'Rugi SL'],
     group: 'outlook',
   },
   money_at_tp_sl: {
@@ -400,14 +416,14 @@ export const GLOSSARY = {
   },
   monte_carlo: {
     label: 'Uji acak berulang',
-    tip: 'Urutan trade diacak berkali-kali; DD95 adalah penurunan yang tidak dilampaui 95% simulasi.',
+    tip: 'Urutan transaksi diacak berkali-kali; DD95 adalah penurunan yang tidak dilampaui 95% simulasi.',
     aliases: ['Monte Carlo'],
     group: 'lab',
   },
   dd95: {
     label: 'Turun terdalam wajar (DD95)',
     short: 'DD95',
-    tip: 'Urutan trade diacak berkali-kali; DD95 adalah penurunan yang tidak dilampaui 95% simulasi.',
+    tip: 'Urutan transaksi diacak berkali-kali; DD95 adalah penurunan yang tidak dilampaui 95% simulasi.',
     aliases: ['DD95'],
     group: 'lab',
   },
@@ -424,10 +440,16 @@ export const GLOSSARY = {
     aliases: ['LOLOS / GAGAL', 'PASS / FAIL'],
     group: 'lab',
   },
+  trade: {
+    label: 'Transaksi',
+    tip: 'Satu posisi dari dibuka sampai ditutup.',
+    aliases: ['Trade', 'trade'],
+    group: 'lab',
+  },
   net_return: {
     label: 'Hasil bersih',
     tip: 'Untung atau rugi total setelah fee, slippage, dan funding.',
-    aliases: ['Net return', 'Return'],
+    aliases: ['Net return', 'Return', 'Hasil'],
     group: 'lab',
   },
   cagr: {
@@ -437,10 +459,9 @@ export const GLOSSARY = {
     group: 'lab',
   },
   max_drawdown: {
-    label: 'Drawdown (turun terdalam)',
-    short: 'Drawdown',
-    tip: 'Penurunan terdalam dari puncak modal.',
-    aliases: ['Max drawdown', 'Max DD'],
+    label: 'Turun terdalam',
+    tip: 'Penurunan terdalam dari puncak modal (drawdown).',
+    aliases: ['Max drawdown', 'Max DD', 'Drawdown', 'Turun maks'],
     group: 'lab',
   },
   profit_factor: {
@@ -460,7 +481,7 @@ export const GLOSSARY = {
   win_rate: {
     label: 'Win rate (persentase menang)',
     short: 'Win rate',
-    tip: 'Persentase trade yang untung.',
+    tip: 'Persentase transaksi yang untung.',
     aliases: ['Winrate'],
     group: 'lab',
   },
@@ -711,6 +732,11 @@ export const GLOSSARY = {
     tip: 'Alamat yang menerima alert TradingView lalu meneruskannya menjadi order di exchange.',
     group: 'bot',
   },
+  login_password: {
+    label: 'Kata sandi login',
+    aliases: ['Password', 'Password login'],
+    group: 'bot',
+  },
   webhook_passphrase: {
     label: 'Kata sandi webhook',
     tip: 'Kode rahasia di setiap alert; tanpa kode ini alert ditolak.',
@@ -800,7 +826,7 @@ export const GLOSSARY = {
   },
   upnl: {
     label: 'Untung/rugi berjalan',
-    tip: 'Hasil posisi yang masih terbuka di harga mark.',
+    tip: 'Hasil posisi yang masih terbuka di harga acuan (mark).',
     aliases: ['Unrealized PnL', 'uPnL'],
     group: 'bot',
   },
@@ -813,7 +839,7 @@ export const GLOSSARY = {
   },
   mark_price: {
     label: 'Harga acuan (mark)',
-    short: 'Mark',
+    short: 'Harga acuan',
     tip: 'Harga acuan exchange untuk PnL dan likuidasi.',
     aliases: ['Mark'],
     group: 'bot',
@@ -879,7 +905,7 @@ export const GLOSSARY = {
   },
   ready_review: {
     label: 'Siap dinilai',
-    tip: 'Aturan tim: preset dinilai setelah minimal 30 trade simulasi.',
+    tip: 'Aturan tim: preset dinilai setelah minimal 30 transaksi simulasi.',
     aliases: ['Siap direview (≥ 30 trade)'],
     group: 'laporan',
   },

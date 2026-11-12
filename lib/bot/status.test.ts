@@ -70,8 +70,8 @@ describe('botVerdict', () => {
       bot: BOT_OK,
     }))
     expect(v.tone).toBe('ok')
-    expect(v.sentence).toBe('Ya, aman: 2 dari 2 sinyal strategi 7 hari terakhir dieksekusi bot sesuai rencana. 1 sinyal terbaru masih menunggu hasil.')
-    expect(v.facts.map((f) => f.value)).toEqual(['2 dari 2 sesuai', 'aktif (Rosyade)', 'T(11-12T04:00)'])
+    expect(v.sentence).toBe('Ya, aman: 2 dari 2 sinyal strategi 7 hari terakhir cocok dengan eksekusi bot. 1 sinyal terbaru masih menunggu hasil.')
+    expect(v.facts.map((f) => f.value)).toEqual(['2 dari 2 cocok', 'aktif (Rosyade)', 'T(11-12T04:00)'])
     expect(v.facts[2].hint).toBe('berhasil')
     expect(v.focus).toBe('semua')
   })
@@ -105,7 +105,7 @@ describe('botVerdict', () => {
   it('treats a miss that may be a Lab-vs-Pine difference as "perlu dicek", not "belum aman"', () => {
     const v = botVerdict(base({ live: report([row('tidak_terkirim', '2026-11-11T04:00:00Z', { perlu_dicek: true })]), bot: BOT_OK }))
     expect(v.tone).toBe('warn')
-    expect(v.sentence).toMatch(/^Perlu dicek: 0 dari 1 sinyal 7 hari terakhir sesuai, tapi 1 sinyal menurut Lab/)
+    expect(v.sentence).toMatch(/^Perlu dicek: 0 dari 1 sinyal 7 hari terakhir cocok, tapi 1 sinyal menurut Lab/)
   })
 
   it('reports price differences and unexpected deliveries', () => {
@@ -115,7 +115,7 @@ describe('botVerdict', () => {
     }))
     expect(v.tone).toBe('warn')
     expect(v.sentence).toBe(
-      'Perlu dicek: 1 dari 2 sinyal 7 hari terakhir sesuai, tapi 1 dieksekusi dengan harga jauh dari harga sinyal (T(11-11T04:00)) dan 1 kiriman ke bot tanpa sinyal strategi (T(11-11T12:00)).',
+      'Perlu dicek: 1 dari 2 sinyal 7 hari terakhir cocok, tapi 1 dieksekusi dengan harga jauh dari harga sinyal (T(11-11T04:00)) dan 1 kiriman ke bot tanpa sinyal strategi (T(11-11T12:00)).',
     )
   })
 

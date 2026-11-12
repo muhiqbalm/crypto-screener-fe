@@ -57,8 +57,8 @@ export function MarketOverviewCards({ summary }: MarketOverviewCardsProps) {
         )}
       </Tile>
 
-      <Tile label="Arah sinyal screener" icon={<TrendingUp className="h-4 w-4" aria-hidden="true" />}
-        foot={bullPct > bearPct ? 'Lebih banyak koin bersinyal naik.' : bearPct > bullPct ? 'Lebih banyak koin bersinyal turun.' : 'Sinyal naik dan turun seimbang.'}>
+      <Tile label="Arah skor screener" icon={<TrendingUp className="h-4 w-4" aria-hidden="true" />}
+        foot={bullPct > bearPct ? 'Lebih banyak koin dengan skor condong naik.' : bearPct > bullPct ? 'Lebih banyak koin dengan skor condong turun.' : 'Skor naik dan turun seimbang.'}>
         <div className="flex items-center justify-between text-xs font-medium">
           <span className="text-bullish">{bull} naik</span>
           <span className="text-muted-foreground">{neu} netral</span>

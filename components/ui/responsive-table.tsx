@@ -25,6 +25,11 @@ export interface ResponsiveColumn<T> {
    * Default: the first 3 columns without a role become fields, the rest hidden.
    */
   mobile?: 'title' | 'badge' | 'field' | 'hidden'
+  /**
+   * 'full': the field takes the whole card width on phones (times, long
+   * explanations), so its value is never squeezed into a third of the card.
+   */
+  mobileSpan?: 'full'
 }
 
 export interface ResponsiveTableProps<T> {
@@ -59,8 +64,9 @@ function mobileRoles<T>(columns: ResponsiveColumn<T>[], max: number) {
 }
 
 /**
- * Table on ≥ 640 px, cards on phones (title + badge + up to 3 key fields +
- * arrow), so no page needs sideways scrolling. Both layouts are rendered and
+ * Table on ≥ 640 px, cards on phones (title + badge + key fields + arrow), so
+ * no page needs sideways scrolling. Card values and labels wrap, they are
+ * never cut with "…" (audit 2026-11-13 P2): 2 columns under 400 px, 3 above. Both layouts are rendered and
  * switched with CSS (no layout flash, SSR-safe). Wide desktop tables still
  * scroll inside their own box, never the page.
  */
@@ -172,18 +178,19 @@ export function ResponsiveTable<T>({
           const body = (
             <>
               <div className="flex min-w-0 items-start justify-between gap-2">
-                <div className="min-w-0 truncate text-base font-bold">{title ? title.cell(row) : null}</div>
+                <div className="min-w-0 break-words text-base font-bold">{title ? title.cell(row) : null}</div>
                 <div className="flex shrink-0 items-center gap-1.5">
                   {badge?.cell(row)}
                   {clickable && <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />}
                 </div>
               </div>
               {fields.length > 0 && (
-                <dl className="mt-3 grid grid-cols-3 gap-3">
+                <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-3 min-[400px]:grid-cols-3">
                   {fields.map((c) => (
-                    <div key={c.key} className="min-w-0">
-                      <dt className="truncate text-3xs font-bold uppercase tracking-wider text-muted-foreground">{labelOf(c)}</dt>
-                      <dd className="mt-1 min-w-0 truncate text-sm">{c.cell(row)}</dd>
+                    <div key={c.key} className={cn('min-w-0', c.mobileSpan === 'full' && 'col-span-full')}>
+                      <dt className="text-3xs font-bold uppercase tracking-wide text-muted-foreground">{labelOf(c)}</dt>
+                      {/* Right-aligned desktop cells read left-aligned in a card. */}
+                      <dd className="mt-1 min-w-0 break-words text-sm [&_.text-right]:text-left [&_.whitespace-nowrap]:whitespace-normal">{c.cell(row)}</dd>
                     </div>
                   ))}
                 </dl>

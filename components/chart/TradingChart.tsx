@@ -161,7 +161,7 @@ export function TradingChart({
         background: { type: ColorType.Solid, color: colors.background },
         textColor: colors.text,
         fontFamily: 'var(--font-geist-mono, ui-monospace, monospace)',
-        fontSize: 11,
+        fontSize: colors.fontSize,
       },
       grid: {
         vertLines: { color: colors.grid },

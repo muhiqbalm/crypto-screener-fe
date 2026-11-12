@@ -14,6 +14,7 @@ import { BentoGrid, BigStat, bigUsd, CoinAvatar, ConfidenceDots, CountUp, Direct
 import { IconChip, IconTitle } from '@/components/ui/icon-title'
 import { AnswerCard } from '@/components/ui/answer-card'
 import { Freshness } from '@/components/ui/freshness'
+import { termLabel } from '@/lib/glossary'
 import { useSavedInputs } from '@/components/market/useSavedInputs'
 import { useOutlook, useRefreshOutlook } from '@/lib/queries/outlook'
 import {
@@ -71,20 +72,20 @@ function PeluangCard({ r, hero = false }: { r: OutlookRow; hero?: boolean }) {
         </div>
 
         <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <BigStat label="Untung : rugi" size={size} className="col-span-2 sm:col-span-1"
+          <BigStat label={termLabel('rr')} size={size} className="col-span-2 sm:col-span-1"
             value={pl?.rr ? <CountUp value={pl.rr} format={(v) => formatRR(v)} /> : '—'} />
-          <BigStat label="Kena TP" size={size} tone={signClass(pj?.at_tp?.net)}
+          <BigStat label={termLabel('money_at_tp')} size={size} tone={signClass(pj?.at_tp?.net)}
             value={pj?.available && pj.at_tp ? <CountUp value={pj.at_tp.net} format={bigUsd} /> : '—'}
             sub={pj?.available ? `modal ${formatUsd(pj.capital)}` : undefined} />
-          <BigStat label="Kena SL" size={size} tone={signClass(pj?.at_sl?.net)}
+          <BigStat label={termLabel('money_at_sl')} size={size} tone={signClass(pj?.at_sl?.net)}
             value={pj?.available && pj.at_sl ? <CountUp value={pj.at_sl.net} format={bigUsd} /> : '—'}
             sub={pj?.available ? 'simulasi, termasuk biaya' : undefined} />
         </div>
 
         <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <LevelTile className="col-span-2 sm:col-span-1" label="Entry" value={zone ? `${formatPrice(zone[0])}–${formatPrice(zone[1])}` : formatPrice(r.price)} dot="bg-info" />
-          <LevelTile label="Stop loss" value={formatPrice(r.strategy.sl)} dot="bg-bearish" />
-          <LevelTile label="Take profit" value={tp !== null && tp !== undefined ? formatPrice(tp) : 'tidak ada'} dot="bg-bullish" />
+          <LevelTile className="col-span-2 sm:col-span-1" label={termLabel('zona_entry')} value={zone ? `${formatPrice(zone[0])}–${formatPrice(zone[1])}` : formatPrice(r.price)} dot="bg-info" />
+          <LevelTile label={termLabel('sl')} value={formatPrice(r.strategy.sl)} dot="bg-bearish" />
+          <LevelTile label={termLabel('tp')} value={tp !== null && tp !== undefined ? formatPrice(tp) : 'tidak ada'} dot="bg-bullish" />
         </dl>
 
         {cal && cal.n_cases > 0 && (
@@ -130,9 +131,9 @@ function ArahCard({ rows, positive }: { rows: OutlookRow[]; positive: number }) 
       <BigStat label="Punya arah" size="xl" value={<>{formatCount(short + long)}<span className="text-xl font-semibold text-muted-foreground"> / {formatCount(ok.length)} koin</span></>} />
       <div className="mt-5 flex h-10 w-full overflow-hidden rounded-xl text-sm font-bold" role="img"
         aria-label={`SHORT ${short}, NETRAL ${netral}, LONG ${long}`}>
-        {short > 0 && <span className="flex items-center justify-center bg-bearish text-white" style={{ width: pct(short) }}>{short}</span>}
+        {short > 0 && <span className="flex items-center justify-center bg-bearish text-bearish-foreground" style={{ width: pct(short) }}>{short}</span>}
         {netral > 0 && <span className="flex items-center justify-center bg-muted text-muted-foreground" style={{ width: pct(netral) }}>{netral}</span>}
-        {long > 0 && <span className="flex items-center justify-center bg-bullish text-background" style={{ width: pct(long) }}>{long}</span>}
+        {long > 0 && <span className="flex items-center justify-center bg-bullish text-bullish-foreground" style={{ width: pct(long) }}>{long}</span>}
       </div>
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-2xs text-muted-foreground">
         <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-bearish" />SHORT {short}</span>
@@ -171,7 +172,7 @@ function CallRow({ r }: { r: OutlookRow }) {
           {fase && <span className="hidden text-2xs text-muted-foreground sm:inline">· {FASE_TEXT[fase].toLowerCase()}</span>}
         </span>
         <span className="ml-auto flex items-center gap-4 text-sm">
-          {r.plan?.rr ? <span className="num hidden text-muted-foreground sm:inline">R:R <span className="font-semibold text-foreground">{formatRR(r.plan.rr)}</span></span> : null}
+          {r.plan?.rr ? <span className="num hidden text-muted-foreground sm:inline" title={termLabel('rr')}>{termLabel('rr', { short: true })} <span className="font-semibold text-foreground">{formatRR(r.plan.rr)}</span></span> : null}
           {cal && cal.n_cases > 0 && <span className={cn('num font-semibold', signClass(cal.mean_r))}>{formatR(cal.mean_r)}</span>}
           {p && <Pill tone={PELUANG_TONE[p.label]} title={p.reason}>{PELUANG_TEXT[p.label]}</Pill>}
           <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
@@ -307,7 +308,7 @@ export function OutlookView() {
             {netral.map((r) => (
               <li key={r.symbol}>
                 <Link href={koinHref(r.symbol)} className="inline-flex items-center gap-2 rounded-full border py-1 pl-1 pr-3.5 text-sm hover:bg-muted/50">
-                  <CoinAvatar symbol={r.symbol} size="sm" />
+                  <CoinAvatar symbol={r.symbol} />
                   <span className="font-semibold">{coinLabel(r.symbol)}</span>
                   {r.bias?.condong && <span className="text-2xs text-muted-foreground">condong {r.bias.condong}</span>}
                 </Link>

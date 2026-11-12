@@ -148,3 +148,19 @@ describe('verdict / holdout copy', () => {
     expect(verdictCopy('PASS', 'validate', 'running').tone).toBe('none')
   })
 })
+
+describe('check value units (audit 2026-11-13 P11)', () => {
+  it('adds % only to checks known to be percentages', async () => {
+    const { checkUnit, checkValueText, thresholdText } = await import('./form')
+    expect(checkValueText({ name: 'oos_net_return', value: 30.13 })).toBe('30.13%')
+    expect(checkValueText({ name: 'mc_dd_p95', value: -29.75 })).toBe('−29.75%')
+    expect(checkValueText({ name: 'cost_stress', value: 7.67 })).toBe('7.67%')
+    expect(checkValueText({ name: 'oos_profit_factor', value: 1.41 })).toBe('1.41')
+    expect(checkValueText({ name: 'min_oos_trades', value: 1234 })).toBe('1,234')
+    expect(checkValueText({ name: 'unknown_check', value: 5.5 })).toBe('5.50')
+    expect(checkValueText({ name: 'oos_profit_factor', value: 999 })).toBe('∞')
+    expect(checkUnit('unknown_check')).toBe('')
+    expect(thresholdText('> -50.0', checkUnit('mc_dd_p95'))).toBe('di atas −50%')
+    expect(thresholdText('>= 1.2')).toBe('minimal 1.2')
+  })
+})

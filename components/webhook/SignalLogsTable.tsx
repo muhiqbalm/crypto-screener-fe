@@ -45,6 +45,7 @@ const COLUMNS: ResponsiveColumn<TradeLogResponse>[] = [
     key: 'waktu',
     header: 'Waktu (WIB)',
     mobile: 'field',
+    mobileSpan: 'full',
     cell: (r) => (
       <div className="num whitespace-nowrap text-[14px]">
         {formatTime(r.created_at, { zone: false, seconds: true })}
@@ -78,6 +79,7 @@ const COLUMNS: ResponsiveColumn<TradeLogResponse>[] = [
   {
     key: 'harga',
     header: 'Harga eksekusi',
+    mobileLabel: 'Harga',
     align: 'right',
     mobile: 'field',
     cell: (r) => <span className="num text-[14px]">{formatPrice(r.fill_price)}</span>,
@@ -86,7 +88,7 @@ const COLUMNS: ResponsiveColumn<TradeLogResponse>[] = [
     key: 'jumlah',
     header: 'Jumlah',
     align: 'right',
-    mobile: 'hidden',
+    mobile: 'field',
     cell: (r) => <span className="num text-[14px]">{r.filled_quantity != null ? formatQty(r.filled_quantity) : '—'}</span>,
   },
 ]
@@ -177,6 +179,7 @@ export function SignalLogsTable() {
             <ResponsiveTable
               rows={shown}
               columns={COLUMNS}
+              mobileFields={4}
               rowKey={(r) => r.id}
               onRowClick={(r) => setOpenId(r.id)}
               rowLabel={(r) => `Detail alert ${r.symbol}`}

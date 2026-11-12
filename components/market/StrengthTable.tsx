@@ -14,6 +14,7 @@ import { InfoTip } from '@/components/ui/info-tip'
 import { Freshness } from '@/components/ui/freshness'
 import { ApiError, apiErrorDetail } from '@/lib/api/errors'
 import { formatPercent, formatPrice, formatScore } from '@/lib/utils/format'
+import { termLabel } from '@/lib/glossary'
 import { notify } from '@/lib/utils/toast'
 import { cn } from '@/lib/utils/cn'
 import { coinLabel, koinHref } from '@/lib/lab/outlook'
@@ -57,7 +58,7 @@ const COLS: { key: StrengthSortKey; label: string; hide?: string; right?: boolea
   { key: 'ret_90d_pct', label: '90 hari', hide: 'hidden lg:table-cell', right: true },
   { key: 'vol_ann_pct', label: 'Gejolak/thn', hide: 'hidden lg:table-cell', right: true },
   { key: 'ema_dist_pct', label: 'Tren', right: true },
-  { key: 'funding_7d_apr_pct', label: 'Funding 7 hari', hide: 'hidden xl:table-cell', right: true },
+  { key: 'funding_7d_apr_pct', label: termLabel('funding_apr_7d'), hide: 'hidden xl:table-cell', right: true },
 ]
 
 const th = 'eyebrow px-4 py-3'
@@ -104,11 +105,11 @@ export function StrengthTable() {
           <span className="text-sm text-muted-foreground">Paling kuat sekarang</span>
           {top.map((r, i) => (
             <Link key={r.symbol} href={koinHref(r.symbol)} className="inline-flex items-center gap-2 rounded-full border py-1 pl-1 pr-4 text-base font-semibold hover:bg-muted/50">
-              <CoinAvatar symbol={r.symbol} size="sm" />
+              <CoinAvatar symbol={r.symbol} />
               <span className="num text-2xs text-muted-foreground">#{r.rank ?? i + 1}</span>{coinLabel(r.symbol)}
             </Link>
           ))}
-          <span className="text-2xs text-muted-foreground">dari {eligible} koin · bukan sinyal beli</span>
+          <span className="text-2xs text-muted-foreground">dari {eligible} koin · bukan perintah beli</span>
         </div>
       )}
       <Freshness className="mb-3" dataLabel="Data close 4H" dataAt={q.data?.last_bar_close ?? null} updatedAt={q.data?.computed_at} timeframe="4h" nextDelayMin={4} />
@@ -149,7 +150,7 @@ export function StrengthTable() {
                   <td className={cn(td, 'num text-sm font-bold text-muted-foreground')}>{r.rank ?? '—'}</td>
                   <td className={td}>
                     <Link href={koinHref(r.symbol)} className="flex items-center gap-3 hover:underline">
-                      <CoinAvatar symbol={r.symbol} size="sm" />
+                      <CoinAvatar symbol={r.symbol} />
                       <span className="min-w-0">
                         <span className="block text-sm font-semibold">{coinLabel(r.symbol)}</span>
                         <span className="num block text-2xs text-muted-foreground">
@@ -171,6 +172,7 @@ export function StrengthTable() {
                   </td>
                   <td className={cn(td, 'num hidden text-right text-sm xl:table-cell', signClass(r.funding_7d_apr_pct === null ? null : -r.funding_7d_apr_pct))}>
                     {formatPercent(r.funding_7d_apr_pct, 1)}
+                    {r.funding_7d_apr_pct !== null && <span className="text-2xs font-normal text-muted-foreground">/thn</span>}
                   </td>
                   <td className={cn(td, 'hidden text-right sm:table-cell')}><Sparkline values={r.spark} /></td>
                 </tr>
@@ -187,6 +189,9 @@ export function StrengthTable() {
         </InfoTip>
         <span>Momentum 7/30/90 hari, disesuaikan gejolak. Klik koin untuk rencananya.</span>
       </div>
+      <p className="mt-1 hidden text-2xs text-muted-foreground xl:block">
+        Funding positif (merah) = long membayar, jadi biaya untuk long. Negatif (hijau) = long dibayar.
+      </p>
     </TitledPanel>
   )
 }

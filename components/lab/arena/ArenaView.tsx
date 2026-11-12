@@ -14,7 +14,7 @@ import { PaperDetailSheet } from '@/components/lab/arena/PaperDetailSheet'
 import { BigNumber, CardLink, CoinAvatar, CountUp, DeckCard, Meter, Pill, RankBadge, SectionHead, Spark, signTone, type Tone } from '@/components/lab/arena/deck'
 import { cn } from '@/lib/utils/cn'
 import { formatCount, formatPct } from '@/lib/utils/format'
-import { formatTimeframe } from '@/lib/utils/time'
+import { formatDate, formatTimeframe } from '@/lib/utils/time'
 import {
   HIGHLIGHT_PARAM,
   REVIEW_MIN_TRADES,
@@ -65,14 +65,15 @@ function LeaderRow({ row, rank, reviewN, spark, highlighted, onOpen }: { row: Ar
             </div>
           </div>
         </div>
-        {/* phones: Hasil · Drawdown · sparkline side by side; ≥ lg: three columns of the row grid */}
+        {/* phones: Hasil bersih · Turun terdalam · sparkline side by side; ≥ lg: three columns of the row grid */}
         <div className="grid grid-cols-[1fr_1fr_auto] items-end gap-4 lg:contents">
-          <BigNumber label="Hasil" value={<CountUp value={s.return_pct ?? 0} format={pct2} />} tone={signTone(s.return_pct)} size="sm" />
+          <BigNumber label="Hasil bersih" value={<CountUp value={s.return_pct ?? 0} format={pct2} />} tone={signTone(s.return_pct)} size="sm" hint={`sejak ${formatDate(row.account.created_at, { year: 'auto' })}`} />
           <BigNumber
-            label="Drawdown"
+            label="Turun terdalam"
             value={s.max_dd_pct === null ? '—' : formatPct(-Math.abs(s.max_dd_pct), { digits: 1 })}
             tone={s.max_dd_pct ? 'bearish' : 'muted'}
             size="sm"
+            hint="dari puncak"
           />
           <Spark values={spark} width={120} height={44} label={`Kurva modal ${row.preset.name}`} className="lg:w-[140px]" />
         </div>

@@ -92,3 +92,23 @@ export function Chip({
 
 /** Empty state — re-exported from the shared shell states. */
 export { EmptyState } from '@/components/shell/states'
+
+/**
+ * Checkbox styled like the rest of the app (audit 2026-11-13 K10): rounded
+ * box, lab colour when ticked. A real <input>, so keyboard and screen readers
+ * work as before.
+ */
+export function Checkbox({ className, ...props }: Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'>) {
+  return (
+    <span className={cn('relative inline-flex h-5 w-5 shrink-0 align-middle', className)}>
+      <input
+        type="checkbox"
+        {...props}
+        className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 border-muted-foreground/60 bg-transparent transition-colors checked:border-lab checked:bg-lab hover:border-lab focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-40"
+      />
+      <svg viewBox="0 0 16 16" aria-hidden="true" className="pointer-events-none absolute inset-0 m-auto h-3.5 w-3.5 text-background opacity-0 peer-checked:opacity-100">
+        <path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </span>
+  )
+}

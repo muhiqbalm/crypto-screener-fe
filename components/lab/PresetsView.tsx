@@ -321,13 +321,13 @@ function PresetCard({ row, templates, onDetail, onAction }: { row: Row; template
 
       <div className="mt-5 grid grid-cols-3 gap-4">
         <BigNumber
-          label="Hasil uji"
+          label="Hasil bersih"
           value={h?.net_return_pct === null || h?.net_return_pct === undefined ? '—' : <CountUp value={h.net_return_pct} format={(v) => formatPct(v, { digits: 1, signed: true })} />}
           tone={signTone(h?.net_return_pct)}
           size="sm"
         />
         <BigNumber
-          label="Drawdown"
+          label="Turun terdalam"
           value={h?.max_dd_pct === null || h?.max_dd_pct === undefined ? '—' : formatPct(-Math.abs(h.max_dd_pct), { digits: 1 })}
           tone={h?.max_dd_pct ? 'bearish' : undefined}
           size="sm"

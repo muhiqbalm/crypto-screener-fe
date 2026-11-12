@@ -4,6 +4,7 @@
  * Used as a FALLBACK: a page's own mock (lab.ts …) always answers first.
  * Times are relative to "now" so ages read naturally.
  */
+import { mockRoleIsMember } from './role'
 
 const H = 3_600_000
 const iso = (msAgo: number) => new Date(Date.now() - msAgo).toISOString()
@@ -258,25 +259,33 @@ export function homeMock(method: string, fullPath: string): unknown {
   return undefined
 }
 
-/** Mock-mode QA switch: env NEXT_PUBLIC_MOCK_ROLE=member, or localStorage "bmtm:mock-role" = "member". */
-export function mockRoleIsMember(): boolean {
-  if (process.env.NEXT_PUBLIC_MOCK_ROLE === 'member') return true
-  try {
-    return typeof window !== 'undefined' && window.localStorage.getItem('bmtm:mock-role') === 'member'
-  } catch {
-    return false
-  }
+export { mockRoleIsMember }
+
+/**
+ * Lab endpoints the backend lets every logged-in account read (`lab_user`):
+ * outlook_routes.py (outlook, track-record, calibration, {symbol}, regime),
+ * universal_routes.py (strength), ai_routes.py (factors, status),
+ * report_routes.py (weeks, weekly). Everything else under /lab is admin-only.
+ * Keep in step with the backend (audit 2026-11-13 P12).
+ */
+export function memberCanRead(method: string, path: string): boolean {
+  if (method !== 'GET') return false
+  const p = path.replace(/^\/api\/v1\/lab/, '')
+  if (p === '/regime' || p === '/strength' || p === '/outlook') return true
+  if (/^\/outlook\/[^/]+$/.test(p)) return true
+  return p === '/ai/factors' || p === '/ai/status' || p === '/report/weeks' || p === '/report/weekly'
 }
 
 /**
  * QA helper (mock mode only): as a non-admin team member, GET /lab/me says
- * is_admin false and admin-only Lab endpoints answer 403. Checked before
- * every other mock.
+ * is_admin false and admin-only Lab endpoints answer 403; the read endpoints
+ * in `memberCanRead` fall through to the normal mocks, which answer in their
+ * member shape (no refresh, no AI cost). Checked before every other mock.
  */
 export function memberOverride(method: string, fullPath: string): { value: unknown } | { error: 403 } | undefined {
   if (!mockRoleIsMember()) return undefined
   const [path] = fullPath.split('?')
   if (method === 'GET' && path === '/api/v1/lab/me') return { value: { is_admin: false } }
-  if (path.startsWith('/api/v1/lab/') && path !== '/api/v1/lab/regime') return { error: 403 }
+  if (path.startsWith('/api/v1/lab/') && !memberCanRead(method, path)) return { error: 403 }
   return undefined
 }

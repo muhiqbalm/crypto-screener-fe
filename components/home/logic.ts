@@ -10,6 +10,7 @@ import type { LiveCheckReport } from '@/lib/api/types/livecheck'
 import type { LabNotification, ReportWeek, WeeklyReport } from '@/lib/api/types/report'
 import type { AssetSummary, ScreenerResponse } from '@/lib/api/types/screener'
 import { coinHref } from '@/lib/nav'
+import { isRunning } from '@/lib/lab/arena'
 import { coinOf, formatPct, formatPrice, formatRR } from '@/lib/utils/format'
 import { formatTime } from '@/lib/utils/time'
 
@@ -317,7 +318,10 @@ export function attentionItems(
 // ── Paper & laporan ─────────────────────────────────────────────────────────
 
 export interface PaperSummary {
+  /** Presets whose paper is really running (same rule as Paper berjalan: lib/lab/arena.ts isRunning). */
   presets: number
+  /** Every preset with a paper account, running or stopped. */
+  accounts: number
   ready: number
   drifting: number
   target: number
@@ -331,10 +335,11 @@ export function paperSummary(a: ArenaReport | undefined): PaperSummary | null {
   const target = a.review_min_trades || 30
   const leader = rows.reduce<{ name: string; closed: number } | null>((best, r) => {
     const closed = r.stats?.n_closed ?? 0
-    return !best || closed > best.closed ? { name: r.preset.label || r.preset.name, closed } : best
+    return !best || closed > best.closed ? { name: r.preset.name || r.preset.label, closed } : best
   }, null)
   return {
-    presets: rows.length,
+    presets: rows.filter(isRunning).length,
+    accounts: rows.length,
     ready: rows.filter((r) => (r.stats?.n_closed ?? 0) >= target).length,
     drifting: rows.filter((r) => r.drift?.status === 'menyimpang').length,
     target,
@@ -410,7 +415,7 @@ export function assistantSummary(p: {
     items.push({ text: 'Tidak ada koin dengan arah LONG/SHORT saat ini; strategi menunggu sinyal.', href: '/koin' })
   }
   if (p.bot) items.push({ text: p.bot.sentence, href: '/bot' })
-  if (p.paper && p.paper.presets > 0) {
+  if (p.paper && p.paper.accounts > 0) {
     items.push({
       text: `Paper: ${p.paper.presets} preset berjalan, ${p.paper.ready} siap dinilai, ${p.paper.drifting} menyimpang.`,
       href: '/lab/arena',

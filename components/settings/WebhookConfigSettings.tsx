@@ -170,7 +170,7 @@ export function WebhookConfigSettings() {
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Title />
-          {data.is_active ? <StatusPill kind="sehat" label="Otomasi aktif" /> : <StatusPill kind="menunggu" label="Tidak aktif" />}
+          {data.is_active ? <StatusPill kind="sehat" label="Aktif" /> : <StatusPill kind="menunggu" label="Tidak aktif" />}
         </div>
         <CardDescription className="text-[14px]">Dibuat {formatTime(data.created_at)}</CardDescription>
       </CardHeader>

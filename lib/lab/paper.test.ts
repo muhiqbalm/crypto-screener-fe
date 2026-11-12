@@ -125,7 +125,7 @@ describe('mirrorSizing (same rule as ops/lab_seed_presets.py)', () => {
   })
   it('explains the sizing in words', () => {
     const s = mirrorSizing({ sizing_mode: 'risk', risk_per_trade_pct: 0.5, max_notional_mult: 2 })
-    expect(s.ok && s.summary).toBe('risiko 0.5% per trade, posisi maks. 2× modal')
+    expect(s.ok && s.summary).toBe('risiko 0.5% per transaksi, posisi maks. 2× modal')
   })
 })
 

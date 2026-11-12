@@ -78,7 +78,7 @@ function Tiles({ r }: { r: LiveCheckReport }) {
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-5">
       <KpiTile icon={CheckCircle2} label="Cocok" value={c.cocok ?? 0} tone="bullish" toneValue={Boolean(c.cocok)} hint={`dari ${r.summary.expected} sinyal`} />
-      <KpiTile icon={TriangleAlert} label="Harga beda" value={c.harga_beda ?? 0} tone="warn" toneValue={Boolean(c.harga_beda)} hint="harga fill jauh" />
+      <KpiTile icon={TriangleAlert} label="Harga beda" value={c.harga_beda ?? 0} tone="warn" toneValue={Boolean(c.harga_beda)} hint="harga eksekusi jauh" />
       <KpiTile
         icon={XCircle}
         label="Gagal"
@@ -259,8 +259,11 @@ const COLUMNS: ResponsiveColumn<LiveCheckRow>[] = [
     key: 'ket',
     header: 'Keterangan',
     mobile: 'field',
+    // Phone card: full width and never clamped, so the reason a signal failed
+    // is readable in full (audit 2026-11-13 P2). Desktop keeps two lines.
+    mobileSpan: 'full',
     className: 'max-w-[340px]',
-    cell: (r) => <span className="line-clamp-2 text-[14px] text-muted-foreground">{r.reason ?? '—'}</span>,
+    cell: (r) => <span className="text-[14px] text-muted-foreground sm:line-clamp-2">{r.reason ?? '—'}</span>,
   },
 ]
 
@@ -335,7 +338,7 @@ function Detail({ r, causes, onClose }: { r: LiveCheckRow | null; causes: Record
                   <Field k="Sinyal">{d.action ? signalLabel(d.action, d.side) : d.trade_dir ? (d.trade_dir > 0 ? 'order beli' : 'order jual') : '—'}</Field>
                   <Field k="Tereksekusi">{d.executed ? 'ya' : d.pending ? 'menunggu' : 'tidak'}</Field>
                   {d.fill_price && (
-                    <Field k="Harga fill">
+                    <Field k="Harga eksekusi">
                       <span className="num">{formatPrice(d.fill_price)}</span>
                     </Field>
                   )}
@@ -390,7 +393,7 @@ function Notes({ r }: { r: LiveCheckReport }) {
             memutus koneksi setelah ±3 detik; hasil di server dilihat dari log aplikasi.
           </li>
           <li>
-            Harga beda: selisih harga fill dengan harga Lab di atas {r.price_bps} bps (+ = lebih mahal bagi bot).
+            Harga beda: selisih harga eksekusi dengan harga Lab di atas {r.price_bps} bps (+ = lebih mahal bagi bot).
           </li>
           {lc?.coverage && lc.coverage.length > 0 && (
             <li>
