@@ -33,7 +33,7 @@ export function Segmented<T extends string>({
     <div
       role="group"
       aria-label={ariaLabel}
-      className={cn('inline-flex gap-0.5 rounded-lg border bg-muted/40 p-0.5', className)}
+      className={cn('inline-flex gap-0.5 rounded-full border bg-muted/60 p-1', className)}
     >
       {options.map((o) => {
         const active = o.value === value
@@ -45,9 +45,9 @@ export function Segmented<T extends string>({
             disabled={o.disabled}
             onClick={() => onChange(o.value)}
             className={cn(
-              'inline-flex items-center justify-center gap-1.5 rounded-md font-medium transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-3.5',
-              size === 'xs' ? 'h-6 px-2 text-2xs' : 'h-7 px-3 text-xs',
-              active ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+              'inline-flex items-center justify-center gap-1.5 rounded-full font-semibold transition-all duration-200 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-4',
+              size === 'xs' ? 'h-7 px-3 text-xs' : 'h-8 px-4 text-sm',
+              active ? 'bg-brand text-brand-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
             )}
           >
             {o.icon}

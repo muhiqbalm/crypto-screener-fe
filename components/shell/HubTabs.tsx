@@ -41,7 +41,7 @@ export function HubTabs({ hub, items, value, label, className }: HubTabsProps) {
     <nav aria-label={label} className={className}>
       {/* phones: segmented */}
       <div
-        className="grid gap-0.5 rounded-lg border bg-muted/40 p-0.5 sm:hidden"
+        className="grid gap-1 rounded-full border bg-muted/60 p-1 sm:hidden"
         style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
       >
         {tabs.map((t) => {
@@ -52,8 +52,8 @@ export function HubTabs({ hub, items, value, label, className }: HubTabsProps) {
               href={t.href}
               aria-current={active ? 'page' : undefined}
               className={cn(
-                'flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                active ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                'flex h-10 min-w-0 items-center justify-center gap-1.5 rounded-full px-2 text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                active ? 'bg-brand text-brand-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
               )}
             >
               {t.icon && <t.icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
@@ -63,7 +63,7 @@ export function HubTabs({ hub, items, value, label, className }: HubTabsProps) {
         })}
       </div>
       {/* ≥ sm: underline tabs */}
-      <div className="hidden gap-1 border-b sm:flex">
+      <div className="hidden w-fit gap-1 rounded-full border bg-muted/60 p-1 sm:flex">
         {tabs.map((t) => {
           const active = isActive(t)
           return (
@@ -73,10 +73,8 @@ export function HubTabs({ hub, items, value, label, className }: HubTabsProps) {
               title={t.hint}
               aria-current={active ? 'page' : undefined}
               className={cn(
-                '-mb-px inline-flex shrink-0 items-center gap-1.5 rounded-t-sm border-b-2 px-3 pb-2.5 pt-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                active
-                  ? 'border-brand text-foreground'
-                  : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground',
+                'inline-flex h-10 shrink-0 items-center gap-2 rounded-full px-5 text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                active ? 'bg-brand text-brand-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
               )}
             >
               {t.icon && <t.icon className="h-4 w-4" aria-hidden="true" />}

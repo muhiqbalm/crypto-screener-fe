@@ -34,7 +34,7 @@ export function PageContainer({
   className?: string
 }) {
   return (
-    <div className={cn('mx-auto w-full space-y-6 px-4 pb-16 pt-6 sm:px-6 sm:pt-8 lg:px-8', WIDTHS[width], className)}>
+    <div className={cn('mx-auto w-full space-y-8 px-4 pb-20 pt-6 sm:px-6 sm:pt-8 lg:px-8', WIDTHS[width], className)}>
       {children}
     </div>
   )
@@ -83,21 +83,21 @@ export function PageHeader({
   className?: string
 }) {
   return (
-    <header className={cn('flex flex-col gap-4 border-b pb-5', className)}>
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div className="min-w-0 space-y-1.5">
+    <header className={cn('flex flex-col gap-5', className)}>
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="min-w-0 space-y-2">
           {eyebrow && (
-            <div className={cn('eyebrow flex items-center gap-1.5', EYEBROW_TONE[tone])}>
-              {EyebrowIcon && <EyebrowIcon className="h-3.5 w-3.5" aria-hidden="true" />}
+            <div className={cn('kicker flex items-center gap-1.5', EYEBROW_TONE[tone])}>
+              {EyebrowIcon && <EyebrowIcon className="h-4 w-4" aria-hidden="true" />}
               {eyebrow}
             </div>
           )}
-          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-[1.75rem] sm:leading-9">{title}</h1>
-            {status && <div className="flex flex-wrap items-center gap-1.5">{status}</div>}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <h1 className="display text-3xl font-extrabold leading-tight text-foreground sm:text-[2.125rem] sm:leading-[2.5rem]">{title}</h1>
+            {status && <div className="flex flex-wrap items-center gap-2">{status}</div>}
           </div>
           {description && (
-            <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">{description}</p>
+            <p className="max-w-3xl text-base leading-relaxed text-muted-foreground">{description}</p>
           )}
           {help && <PageHelp help={help} helpId={helpId} className="pt-0.5" />}
         </div>
@@ -122,9 +122,9 @@ export function SectionHeading({
 }) {
   return (
     <div className={cn('flex flex-wrap items-end justify-between gap-3', className)}>
-      <div className="min-w-0 space-y-0.5">
-        <h2 className="text-base font-semibold tracking-tight">{title}</h2>
-        {description && <p className="text-sm text-muted-foreground">{description}</p>}
+      <div className="min-w-0 space-y-1">
+        <h2 className="display text-xl font-bold sm:text-[1.375rem]">{title}</h2>
+        {description && <p className="text-base text-muted-foreground">{description}</p>}
       </div>
       {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
     </div>

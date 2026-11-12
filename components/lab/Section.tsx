@@ -25,22 +25,22 @@ export function Section({
   id?: string
 }) {
   return (
-    <section id={id} className={cn('rounded-xl border border-border bg-card text-card-foreground shadow-sm', className)}>
+    <section id={id} className={cn('rounded-3xl border border-border bg-card text-card-foreground', className)}>
       {(title || action) && (
-        <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-4 pt-4 sm:px-5">
-          <div className="min-w-0 space-y-0.5">
+        <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-5 pt-5 sm:px-6 sm:pt-6">
+          <div className="min-w-0 space-y-1">
             {title && (
-              <h2 className="flex items-center gap-2 text-sm font-semibold tracking-tight">
+              <h2 className="flex items-center gap-2.5 text-lg font-bold leading-tight tracking-tight [&>svg]:h-5 [&>svg]:w-5 [&>svg]:text-brand">
                 {icon}
                 {title}
               </h2>
             )}
-            {description && <p className="text-xs text-muted-foreground">{description}</p>}
+            {description && <p className="text-sm text-muted-foreground">{description}</p>}
           </div>
           {action && <div className="flex shrink-0 flex-wrap items-center gap-2">{action}</div>}
         </header>
       )}
-      <div className={cn('px-4 pb-4 pt-3 sm:px-5 sm:pb-5', !title && !action && 'pt-4', bodyClassName)}>{children}</div>
+      <div className={cn('px-5 pb-5 pt-4 sm:px-6 sm:pb-6', !title && !action && 'pt-5 sm:pt-6', bodyClassName)}>{children}</div>
     </section>
   )
 }
