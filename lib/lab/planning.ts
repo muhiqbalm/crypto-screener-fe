@@ -192,7 +192,7 @@ export function normaliseEquity(points: LabEquityPoint[]): NormalisedPoint[] {
 // ---------------------------------------------------------------------------
 
 export function attemptsLabel(a: LabBoardRow['attempts']): string {
-  const parts = [`${a.runs} run`, `${a.timeframes} TF`]
+  const parts = [`${a.runs} uji`, `${a.timeframes} TF`]
   if (a.trials > 0) parts.push(`${a.trials} percobaan`)
   return parts.join(' · ')
 }
@@ -201,7 +201,7 @@ export function attemptsLabel(a: LabBoardRow['attempts']): string {
 export function boardSnoopingWarning(summary: { runs: number; trials: number; combinations: number }): string | null {
   if (summary.runs < 5 && summary.trials < 100) return null
   const t = summary.trials > 0 ? ` dan ${summary.trials.toLocaleString('en-US')} percobaan parameter` : ''
-  return `Peringkat ini memilih yang terbaik dari ${summary.runs} run (${summary.combinations} kombinasi koin × TF)${t}. Makin banyak yang dicoba, makin besar peluang juara #1 cuma beruntung — paper trade dulu sebelum percaya.`
+  return `Peringkat ini memilih yang terbaik dari ${summary.runs} uji (${summary.combinations} kombinasi strategi × koin × timeframe)${t}. Makin banyak yang dicoba, makin besar peluang juara #1 cuma kebetulan, jadi jalankan paper dulu sebelum percaya.`
 }
 
 // ---------------------------------------------------------------------------

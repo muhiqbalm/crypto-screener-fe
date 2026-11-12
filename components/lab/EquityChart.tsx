@@ -9,9 +9,9 @@ import type { LabEquityPoint, LabSegment } from '@/lib/api/types/lab'
 // Validated categorical palette (dataviz validator: lightness band, CVD and
 // contrast pass on both surfaces). Order is fixed: IS, OOS, holdout.
 const SEGMENT_META: Record<LabSegment, { label: string; light: string; dark: string }> = {
-  is: { label: 'In-sample (pengembangan)', light: '#0284c7', dark: '#0284c7' },
-  oos: { label: 'Out-of-sample', light: '#d97706', dark: '#d97706' },
-  holdout: { label: 'Holdout (ujian terkunci)', light: '#7c3aed', dark: '#8b5cf6' },
+  is: { label: 'Data latih', light: '#0284c7', dark: '#0284c7' },
+  oos: { label: 'Uji maju bertahap', light: '#d97706', dark: '#d97706' },
+  holdout: { label: 'Data baru (holdout)', light: '#7c3aed', dark: '#8b5cf6' },
 }
 const SEGMENT_ORDER: LabSegment[] = ['is', 'oos', 'holdout']
 
@@ -89,7 +89,7 @@ export function EquityChart({ points, holdoutStart }: { points: LabEquityPoint[]
       // Mark where the locked holdout begins (first holdout bar).
       if (seg.segment === 'holdout' && seg.data.length > 0) {
         const first = seg.data.find((d) => !Number.isFinite(hsTs) || d.time >= hsTs) ?? seg.data[0]
-        series.setMarkers([{ time: first.time, position: 'aboveBar', shape: 'arrowDown', color, text: 'Mulai holdout' }])
+        series.setMarkers([{ time: first.time, position: 'aboveBar', shape: 'arrowDown', color, text: 'Mulai data baru' }])
       }
     }
     chart.timeScale().fitContent()

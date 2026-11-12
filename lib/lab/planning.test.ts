@@ -124,8 +124,8 @@ describe('normaliseEquity', () => {
 describe('leaderboard + preset copy', () => {
   it('warns only when many things were tried', () => {
     expect(boardSnoopingWarning({ runs: 3, trials: 0, combinations: 3 })).toBeNull()
-    expect(boardSnoopingWarning({ runs: 12, trials: 400, combinations: 9 })).toMatch(/terbaik dari 12 run/)
-    expect(attemptsLabel({ runs: 5, timeframes: 3, trials: 90, runs_this_tf: 2, holdout_touches: 4 })).toBe('5 run · 3 TF · 90 percobaan')
+    expect(boardSnoopingWarning({ runs: 12, trials: 400, combinations: 9 })).toMatch(/terbaik dari 12 uji/)
+    expect(attemptsLabel({ runs: 5, timeframes: 3, trials: 90, runs_this_tf: 2, holdout_touches: 4 })).toBe('5 uji · 3 TF · 90 percobaan')
   })
   it('names presets {TF}-{COIN}-{Label} and suggests free labels', () => {
     expect(presetName('4h', 'ETHUSDT', 'Basic')).toBe('4H-ETH-Basic')
