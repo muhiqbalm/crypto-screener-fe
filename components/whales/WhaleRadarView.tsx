@@ -19,10 +19,10 @@ import { useIntelWhales } from '@/lib/queries/intel'
 import { formatNumber, formatUsdCompact } from '@/lib/utils/format'
 import { formatAge, formatTime } from '@/lib/utils/time'
 import { cn } from '@/lib/utils/cn'
+import { coinHref } from '@/lib/nav'
 import {
   LEAN_LABEL,
   averageLong,
-  coinPath,
   isTakerBuy,
   leanOf,
   liveRatios,
@@ -56,7 +56,7 @@ function RatioCard({ r }: { r: TopTraderRatio }) {
   return (
     <div className="space-y-2.5 rounded-xl border bg-background/60 p-3.5">
       <div className="flex items-center justify-between gap-2">
-        <Link href={coinPath(r.symbol)} className="font-mono text-sm font-bold hover:underline">
+        <Link href={coinHref(r.symbol)} className="font-mono text-sm font-bold hover:underline">
           {coin}
         </Link>
         <DirectionBadge direction={leanDirection(r.longPct)} label={lean ? LEAN_LABEL[lean] : '—'} size="xs" />
@@ -106,7 +106,7 @@ const TRADE_COLUMNS: ResponsiveColumn<WhaleTrade>[] = [
     header: 'Koin',
     mobile: 'title',
     cell: (t) => (
-      <Link href={coinPath(t.symbol)} className="rounded-md border bg-muted/60 px-2 py-0.5 font-mono text-2xs font-semibold hover:underline">
+      <Link href={coinHref(t.symbol)} className="rounded-md border bg-muted/60 px-2 py-0.5 font-mono text-2xs font-semibold hover:underline">
         {t.symbol}
       </Link>
     ),

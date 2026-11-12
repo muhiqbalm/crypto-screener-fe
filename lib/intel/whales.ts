@@ -105,8 +105,3 @@ export function whaleAnswer(intel: IntelWhalesResponse | null | undefined): Whal
   }
   return { lean, avgLong: avg, sentence: parts.join(' ') }
 }
-
-/** Coin page link: "BTCUSDT" / "BTC" -> "/koin/BTC" (W2a's /koin/[simbol] accepts both forms). */
-export function coinPath(symbol: string): string {
-  return `/koin/${encodeURIComponent(symbol.toUpperCase().replace(/USDT$/, ''))}`
-}
