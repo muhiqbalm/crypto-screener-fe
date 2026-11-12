@@ -27,7 +27,7 @@ import { PaperProgress, PresetStatusPill } from '@/components/lab/arena/PaperBit
 import { StartPaperDialog } from '@/components/lab/arena/StartPaperDialog'
 import { apiErrorDetail } from '@/lib/api/errors'
 import { cn } from '@/lib/utils/cn'
-import { displaySymbol, formatCount, formatNumber, formatPct, signClass } from '@/lib/utils/format'
+import { coinOf, formatCount, formatNumber, formatPct, signClass } from '@/lib/utils/format'
 import { formatTime, formatTimeframe } from '@/lib/utils/time'
 import { notify } from '@/lib/utils/toast'
 import { sortTimeframes } from '@/lib/lab/timeframes'
@@ -180,7 +180,7 @@ function PresetSheet({
                 )}
               </div>
               <SheetDescription className="text-xs">
-                {strategyLabel(p.template_id, templates)} · {displaySymbol(p.symbol)} {formatTimeframe(p.timeframe)}
+                {strategyLabel(p.template_id, templates)} · {coinOf(p.symbol)} {formatTimeframe(p.timeframe)}
                 {p.live_reference && ' · setting yang sama dengan bot live'}
               </SheetDescription>
               <p className="text-sm">{PRESET_STATUS_COPY[st.kind].hint}</p>
@@ -478,7 +478,7 @@ export function PresetsView() {
           <Section
             key={c}
             id={`coin-${c}`}
-            title={<span className="num">{displaySymbol(c)}</span>}
+            title={<span className="num">{coinOf(c)}</span>}
             icon={<Bookmark className="h-4 w-4 text-lab" aria-hidden="true" />}
             description={`${list.length} preset · ${order.map(formatTimeframe).join(', ')}`}
           >
@@ -488,7 +488,7 @@ export function PresetsView() {
               rowKey={(r) => String(r.p.id)}
               onRowClick={(r) => setOpenId(String(r.p.id))}
               rowLabel={(r) => `Detail dan aksi ${r.p.name}`}
-              caption={`Preset ${displaySymbol(c)}`}
+              caption={`Preset ${coinOf(c)}`}
             />
           </Section>
         )

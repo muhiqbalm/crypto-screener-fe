@@ -9,7 +9,7 @@ import { StatusPill } from '@/components/ui/status-pill'
 import { Term } from '@/components/ui/term'
 import { SideBadge } from '@/components/trading/SideBadge'
 import { cn } from '@/lib/utils/cn'
-import { displaySymbol, formatPrice, formatQty, formatR, formatUsdSigned, signClass } from '@/lib/utils/format'
+import { coinOf, formatPrice, formatQty, formatR, formatUsdSigned, signClass } from '@/lib/utils/format'
 import { formatTime } from '@/lib/utils/time'
 import { notify } from '@/lib/utils/toast'
 import { JOURNAL_SOURCE_LABEL, exitReasonLabel, isLiveSource, parseTags } from '@/lib/lab/paper'
@@ -68,7 +68,7 @@ export function TradeSheet({ entry, onClose }: { entry: JournalEntry | null; onC
           <div className="space-y-5 p-5 pt-12">
             <header className="space-y-1.5">
               <div className="flex flex-wrap items-center gap-2">
-                <SheetTitle className="text-lg font-bold">{displaySymbol(entry.symbol)}</SheetTitle>
+                <SheetTitle className="text-lg font-bold">{coinOf(entry.symbol)}</SheetTitle>
                 <SideBadge side={entry.side} />
                 <StatusPill kind={live ? 'live' : 'paper'} />
               </div>

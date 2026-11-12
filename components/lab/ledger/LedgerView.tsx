@@ -214,7 +214,7 @@ function summaryColumns(h: LedgerHorizon): ResponsiveColumn<LedgerGroup>[] {
             <Badge variant={v.tone} size="sm" title={v.hint}>
               {v.label}
             </Badge>
-            {at(g)?.verdict !== 'insufficient' && <span className="hidden text-3xs text-muted-foreground sm:inline">dibanding BTC: {vb.label.toLowerCase()}</span>}
+            {at(g)?.verdict !== 'insufficient' && <span className="hidden text-3xs text-muted-foreground 2xl:inline">dibanding BTC: {vb.label.toLowerCase()}</span>}
           </div>
         )
       },
@@ -251,7 +251,7 @@ function summaryColumns(h: LedgerHorizon): ResponsiveColumn<LedgerGroup>[] {
     },
     {
       key: 'mean',
-      header: <Term k="mean_move" short />,
+      header: <Term k="mean_move">Rata-rata gerak</Term>,
       mobileLabel: 'Rata-rata',
       mobile: 'field',
       align: 'right',
@@ -279,6 +279,8 @@ function summaryColumns(h: LedgerHorizon): ResponsiveColumn<LedgerGroup>[] {
       header: <Term k="mfe_mae" short />,
       mobile: 'hidden',
       align: 'right',
+      className: 'hidden 2xl:table-cell',
+      headerClassName: 'hidden 2xl:table-cell',
       cell: (g) => (
         <span className="num text-xs">
           <span className="text-bullish">{pct(at(g)?.mean_mfe_pct, 1)}</span>

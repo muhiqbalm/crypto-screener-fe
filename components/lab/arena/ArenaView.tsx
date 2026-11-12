@@ -22,6 +22,7 @@ import { formatAge, formatTimeframe } from '@/lib/utils/time'
 import {
   HIGHLIGHT_PARAM,
   REVIEW_MIN_TRADES,
+  STATUS_COPY,
   arenaAnswer,
   arenaRowFor,
   baseSlots,
@@ -34,6 +35,7 @@ import {
   strategyLabel,
   type ArenaGroupMode,
 } from '@/lib/lab/arena'
+import { exitReasonLabel } from '@/lib/lab/paper'
 import { useArenaCurves, useArenaReport } from '@/lib/queries/arena'
 import type { ArenaReport, ArenaRow } from '@/lib/api/types/arena'
 
@@ -120,12 +122,18 @@ function columns(reviewN: number): ResponsiveColumn<ArenaRow>[] {
       key: 'last',
       header: 'Aksi terakhir',
       mobile: 'hidden',
-      cell: (r) => (
-        <div className="text-xs">
-          <div>{lastActionLabel(r.last_action)}</div>
-          {r.last_action && <div className="text-3xs text-muted-foreground">{formatAge(r.last_action.time)}</div>}
-        </div>
-      ),
+      cell: (r) => {
+        const a = r.last_action
+        if (!a) return <span className="text-xs text-muted-foreground">{lastActionLabel(null)}</span>
+        const side = a.side === 'long' ? 'Long' : a.side === 'short' ? 'Short' : a.side
+        return (
+          <div className="text-xs">
+            <div className="whitespace-nowrap">{a.kind === 'open' ? `Buka ${side}` : `Tutup ${side}`}</div>
+            {a.kind === 'close' && a.reason && <div className="text-3xs text-muted-foreground">{exitReasonLabel(a.reason)}</div>}
+            <div className="text-3xs text-muted-foreground">{formatAge(a.time)}</div>
+          </div>
+        )
+      },
     },
   ]
 }
@@ -225,8 +233,10 @@ export function ArenaView() {
             <p className="flex min-w-0 items-start gap-2">
               <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden="true" />
               <span>
-                <b className="num">{picked.preset.name}</b> berjalan di paper ({picked.stats.n_closed}/{reviewN} transaksi). Transaksi pertama muncul setelah
-                sinyal berikutnya; sinyal dicek tiap candle {formatTimeframe(picked.preset.timeframe)} tutup.
+                <b className="num">{picked.preset.name}</b> berjalan di paper:{' '}
+                {picked.stats.n_closed === 0 && !picked.open_position
+                  ? `belum ada transaksi. Transaksi pertama muncul setelah sinyal berikutnya; sinyal dicek tiap candle ${formatTimeframe(picked.preset.timeframe)} tutup.`
+                  : `${picked.stats.n_closed}/${reviewN} transaksi tertutup, ${STATUS_COPY[picked.drift.status].label.toLowerCase()}.`}
               </span>
             </p>
             <button

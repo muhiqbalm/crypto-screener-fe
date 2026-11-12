@@ -19,8 +19,8 @@ import { SimpleLineChart } from '@/components/journal/LineChart'
 import { TradeSheet } from '@/components/journal/TradeSheet'
 import { SideBadge } from '@/components/trading/SideBadge'
 import { cn } from '@/lib/utils/cn'
-import { displaySymbol, formatCount, formatNumber, formatPct, formatR, formatUsdSigned, signClass } from '@/lib/utils/format'
-import { formatTime } from '@/lib/utils/time'
+import { coinOf, formatCount, formatNumber, formatPct, formatR, formatUsdSigned, signClass } from '@/lib/utils/format'
+import { formatTime, formatTimeframe } from '@/lib/utils/time'
 import {
   COMPARE_LABEL,
   JOURNAL_MAX,
@@ -99,7 +99,7 @@ function Breakdown({ title, keyLabel, rows }: { title: string; keyLabel: string;
 
 function Stats({ s, live, perAccount }: { s: JournalStats; live: boolean; perAccount: boolean }) {
   const wr = winratePct(s.winrate)
-  const bySymbol = normalizeBreakdown(s.by_symbol, 'symbol').map((r) => ({ ...r, key: displaySymbol(r.key) }))
+  const bySymbol = normalizeBreakdown(s.by_symbol, 'symbol').map((r) => ({ ...r, key: coinOf(r.key) }))
   const bySource = normalizeBreakdown(s.by_source, 'source').map((r) => ({ ...r, key: JOURNAL_SOURCE_LABEL[r.key] ?? r.key }))
   return (
     <div className="space-y-4">
@@ -153,7 +153,7 @@ const TRADE_COLUMNS: ResponsiveColumn<JournalEntry>[] = [
     mobile: 'title',
     cell: (r) => (
       <span className="inline-flex items-center gap-1.5">
-        <span className="font-semibold">{displaySymbol(r.symbol)}</span>
+        <span className="font-semibold">{coinOf(r.symbol)}</span>
         <SideBadge side={r.side} />
       </span>
     ),
@@ -245,7 +245,7 @@ function PaperVsTest() {
               <select id="cmp-watch" value={effective} onChange={(e) => setWatchId(e.target.value)} className={selectCls}>
                 {(watchesQ.data ?? []).map((w) => (
                   <option key={String(w.id)} value={String(w.id)} className="bg-popover">
-                    {displaySymbol(w.symbol)} {w.timeframe} · pantau #{String(w.id)}
+                    {coinOf(w.symbol)} {formatTimeframe(w.timeframe)} · pantau #{String(w.id)}
                   </option>
                 ))}
               </select>
@@ -415,7 +415,7 @@ export function JournalView() {
             <div className="flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2">
               <Switch id="incl-live" checked={includeLive} onCheckedChange={setIncludeLive} disabled={Boolean(filters.source)} />
               <Label htmlFor="incl-live" className="cursor-pointer text-sm">
-                Tampilkan juga <Term k="live_bot_trades" variant="underline" /> (uang asli)
+                Tampilkan juga <Term k="live_bot_trades" variant="underline">trade bot live</Term> (uang asli)
               </Label>
               <span className="text-2xs text-muted-foreground">
                 {filters.source ? 'Hanya untuk sumber "Semua paper".' : includeLive ? 'Ditandai LIVE; tetap tidak dihitung di statistik paper.' : 'Mati: hanya paper.'}
@@ -432,7 +432,7 @@ export function JournalView() {
               columns={TRADE_COLUMNS}
               rowKey={(r) => String(r.id)}
               onRowClick={(r) => setOpenId(String(r.id))}
-              rowLabel={(r) => `Detail transaksi ${displaySymbol(r.symbol)} ${formatTime(r.exit_time)}`}
+              rowLabel={(r) => `Detail transaksi ${coinOf(r.symbol)} ${formatTime(r.exit_time)}`}
               caption="Transaksi di jurnal, terbaru di atas"
               empty={<EmptyState title="Belum ada transaksi untuk filter ini" description="Coba reset filter, atau tunggu sinyal paper berikutnya." />}
             />

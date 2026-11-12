@@ -705,7 +705,11 @@ export function WeeklyReportView() {
             </div>
             <p className="mt-1 text-muted-foreground">{weekPeriod(r)}</p>
             <p className="text-muted-foreground">
-              {kind ? WEEK_KIND_COPY[kind].hint : ''} {r.snapshot ? `Dibekukan ${formatTime(r.snapshot.generated_at)}.` : `Dihitung ${formatTime(r.generated_at)}.`}
+              {r.snapshot
+                ? `Laporan final, dibekukan ${formatTime(r.snapshot.generated_at)}: angkanya tidak berubah lagi.`
+                : r.partial
+                  ? `Sementara, dihitung ${formatTime(r.generated_at)}: angka masih bisa berubah sampai minggu selesai.`
+                  : `Dihitung ulang ${formatTime(r.generated_at)} karena minggu ini tidak punya laporan final.`}
             </p>
           </div>
           <Findings r={r} isAdmin={isAdmin} />

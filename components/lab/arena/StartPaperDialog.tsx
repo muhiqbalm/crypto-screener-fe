@@ -85,9 +85,12 @@ export function StartPaperDialog({
     <AlertDialog open={open} onOpenChange={(o) => !start.isPending && onOpenChange(o)}>
       <AlertDialogContent className="max-h-[90vh] overflow-y-auto">
         <AlertDialogHeader>
-          <AlertDialogTitle className="flex flex-wrap items-center gap-2">
-            Mulai paper untuk <span className="num">{preset.name}</span>? <StatusPill kind="paper" />
+          <AlertDialogTitle>
+            Mulai paper untuk <span className="num">{preset.name}</span>?
           </AlertDialogTitle>
+          <div>
+            <StatusPill kind="paper" />
+          </div>
           <AlertDialogDescription>
             Lab menghitung sinyal preset ini tiap candle {formatTimeframe(preset.timeframe)} tutup lalu membuka posisi di akun simulasi.{' '}
             <b>Tidak ada order sungguhan</b> ke exchange. Hasilnya muncul di Paper berjalan.
@@ -111,7 +114,7 @@ export function StartPaperDialog({
 
         <fieldset className="space-y-3">
           <legend className="sr-only">Akun simulasi</legend>
-          <label className="flex cursor-pointer items-start gap-2 rounded-lg border p-3 has-[:checked]:border-lab/50 has-[:checked]:bg-lab/[0.06]">
+          <label className="flex cursor-pointer items-start gap-2 rounded-lg border p-3 has-[input:checked]:border-lab/50 has-[input:checked]:bg-lab/[0.06]">
             <input type="radio" name="paper-account" className="mt-1" checked={mode === 'new'} disabled={!sizing.ok} onChange={() => setMode('new')} />
             <span className="min-w-0 space-y-2 text-sm">
               <span className="block font-medium">
@@ -142,7 +145,7 @@ export function StartPaperDialog({
             </span>
           </label>
 
-          <label className="flex cursor-pointer items-start gap-2 rounded-lg border p-3 has-[:checked]:border-lab/50 has-[:checked]:bg-lab/[0.06]">
+          <label className="flex cursor-pointer items-start gap-2 rounded-lg border p-3 has-[input:checked]:border-lab/50 has-[input:checked]:bg-lab/[0.06]">
             <input type="radio" name="paper-account" className="mt-1" checked={mode === 'existing'} onChange={() => setMode('existing')} />
             <span className="min-w-0 flex-1 space-y-2 text-sm">
               <span className="block font-medium">Pakai akun simulasi yang sudah ada</span>
