@@ -85,7 +85,7 @@ export function OutlookTrackRecord({ data }: { data: OutlookResponse }) {
         )}
       </div>
       <div className="grid gap-5 lg:grid-cols-2">
-        <div>
+        <div className="min-w-0">
           <h3 className="mb-1 text-xs font-semibold">Live (panggilan yang tersimpan)</h3>
           <p className="mb-2 text-2xs text-muted-foreground">
             {data.track_record?.first_call ? `Sejak ${formatWib(data.track_record.first_call)}.` : 'Belum ada panggilan tersimpan: rekam jejak live mulai setelah versi ini aktif.'}
@@ -131,7 +131,7 @@ export function OutlookTrackRecord({ data }: { data: OutlookResponse }) {
           )}
         </div>
 
-        <div>
+        <div className="min-w-0">
           <h3 className="mb-1 text-xs font-semibold">Simulasi historis (kalibrasi)</h3>
           {!cal ? (
             <p className="text-2xs text-muted-foreground">
