@@ -1,10 +1,13 @@
-import type { ArenaCurveSeries, ArenaRow, CheckStatus, DriftCheck } from '@/lib/api/types/arena'
+import type { ArenaCurveSeries, ArenaReport, ArenaRow, CheckStatus, DriftCheck } from '@/lib/api/types/arena'
+import type { LabId } from '@/lib/api/types/lab'
 import type { NormalisedPoint } from '@/lib/lab/planning'
+import { exitReasonLabel } from '@/lib/lab/paper'
 
 export type ArenaGroupMode = 'all' | 'coin' | 'family'
 
+/** "Sesuai uji?" per preset / per check (glossary "drift"). */
 export const STATUS_COPY: Record<CheckStatus, { label: string; variant: 'info' | 'warn' | 'muted' | 'lab' }> = {
-  sesuai: { label: 'Sesuai', variant: 'info' },
+  sesuai: { label: 'Sesuai uji', variant: 'info' },
   menyimpang: { label: 'Menyimpang', variant: 'warn' },
   belum_cukup: { label: 'Belum cukup data', variant: 'muted' },
   info: { label: 'Info', variant: 'lab' },
@@ -12,7 +15,7 @@ export const STATUS_COPY: Record<CheckStatus, { label: string; variant: 'info' |
 
 /** Sizing families in a fixed order: 2× (seed mirror), 1×, vol target. Unknown ones go last. */
 export const FAMILY_ORDER = ['2x', '1x', 'VT60']
-export const FAMILY_LABEL: Record<string, string> = { '2x': 'Sizing 2× (bawaan)', '1x': 'Sizing 1×', VT60: 'Sizing VT60' }
+export const FAMILY_LABEL: Record<string, string> = { '2x': 'Ukuran 2× (bawaan)', '1x': 'Ukuran 1×', VT60: 'Ikut gejolak (VT60)' }
 
 /** Line style per sizing family (lightweight-charts LineStyle: 0 solid, 1 dotted, 2 dashed). */
 export const FAMILY_LINE_STYLE: Record<string, 0 | 1 | 2> = { '2x': 0, '1x': 2, VT60: 1 }
@@ -122,9 +125,9 @@ export function checkValues(c: DriftCheck): { observed: string; expected: string
 }
 
 export function lastActionLabel(a: ArenaRow['last_action']): string {
-  if (!a) return 'Belum ada'
+  if (!a) return 'Belum ada transaksi'
   const side = a.side === 'long' ? 'Long' : a.side === 'short' ? 'Short' : a.side
-  return a.kind === 'open' ? `Buka ${side}` : `Tutup ${side}${a.reason ? ` (${a.reason})` : ''}`
+  return a.kind === 'open' ? `Buka ${side}` : `Tutup ${side}${a.reason ? ` · ${exitReasonLabel(a.reason)}` : ''}`
 }
 
 export const arenaLinks = (r: ArenaRow) => ({
@@ -132,3 +135,150 @@ export const arenaLinks = (r: ArenaRow) => ({
   journal: `/journal?account_id=${r.account.id}`,
   watch: `/chart?watch=${r.watch.id}`,
 })
+
+// ── Paper berjalan: one sentence first, method folded ───────────────────────
+
+/** Default review minimum when the report is not loaded yet (backend REVIEW_MIN_TRADES). */
+export const REVIEW_MIN_TRADES = 30
+
+/** Paper is really running: the watch is active and auto-paper is on. */
+export const isRunning = (r: ArenaRow): boolean => r.watch.active && r.watch.autopaper_enabled
+
+export type AnswerTone = 'baik' | 'perlu_dicek' | 'menunggu' | 'info'
+
+export interface ArenaAnswer {
+  tone: AnswerTone
+  text: string
+  running: number
+  closedTotal: number
+  maxClosed: number
+  drifting: ArenaRow[]
+}
+
+const names = (rows: ArenaRow[], max = 3) => {
+  const n = rows.map((r) => r.preset.name)
+  return n.length > max ? `${n.slice(0, max).join(', ')} dan ${n.length - max} lainnya` : n.join(', ')
+}
+
+/**
+ * The page's answer: are the paper presets behaving like their tests? Progress is shown
+ * toward the review minimum only (no "siap live" verdict: the CEO has not set that rule).
+ */
+export function arenaAnswer(r: ArenaReport): ArenaAnswer {
+  const rows = r.rows
+  const n = rows.length
+  const reviewN = r.review_min_trades || REVIEW_MIN_TRADES
+  const running = rows.filter(isRunning).length
+  const closedTotal = rows.reduce((a, x) => a + x.stats.n_closed, 0)
+  const maxClosed = rows.reduce((a, x) => Math.max(a, x.stats.n_closed), 0)
+  const drifting = rows.filter((x) => x.drift.status === 'menyimpang')
+  const reached = rows.filter((x) => x.stats.n_closed >= reviewN)
+  const base = { running, closedTotal, maxClosed, drifting }
+  if (n === 0) return { ...base, tone: 'info', text: 'Belum ada preset yang berjalan di paper. Mulai dari halaman Preset.' }
+  if (drifting.length > 0) {
+    return {
+      ...base,
+      tone: 'perlu_dicek',
+      text: `${drifting.length} dari ${n} preset paper menyimpang dari hasil ujinya: ${names(drifting)}. Buka detailnya sebelum menyimpulkan; satu tanda bisa saja kebetulan.`,
+    }
+  }
+  if (reached.length === 0) {
+    return {
+      ...base,
+      tone: 'menunggu',
+      text: `${n} preset berjalan di paper dan belum ada yang menyimpang dari hasil uji. Belum ada yang mencapai ${reviewN} transaksi (terbanyak ${maxClosed}/${reviewN}), jadi hasilnya belum bisa dinilai.`,
+    }
+  }
+  const ok = reached.filter((x) => x.drift.status === 'sesuai').length
+  return {
+    ...base,
+    tone: 'baik',
+    text: `${reached.length} dari ${n} preset sudah mencapai ${reviewN} transaksi${ok ? ` dan ${ok} di antaranya sesuai hasil uji` : ''}. Belum ada yang menyimpang.`,
+  }
+}
+
+/** Plain-language name and meaning of every drift check (no statistics jargon). */
+export const CHECK_COPY: Record<DriftCheck['key'], { label: string; what: string }> = {
+  frequency: { label: 'Jumlah transaksi', what: 'Seberapa sering paper masuk posisi dibanding saat uji.' },
+  win_rate: { label: 'Persentase menang', what: 'Persentase transaksi yang untung dibanding saat uji.' },
+  trade_return: { label: 'Hasil per transaksi', what: 'Rata-rata untung/rugi per transaksi (% modal) dibanding saat uji.' },
+  drawdown: { label: 'Turun terdalam', what: 'Penurunan terdalam modal paper dibanding batas wajar dari uji.' },
+  avg_r: { label: 'Rata-rata R', what: 'Hanya informasi: hasil uji tidak menyimpan R per transaksi.' },
+}
+
+/** One sentence per preset, written from the checks (the backend summary is for engineers). */
+export function driftPlain(row: ArenaRow, reviewN = REVIEW_MIN_TRADES): string {
+  const n = row.stats.n_closed
+  if (!row.drift.has_backtest) return 'Preset ini tidak menyimpan hasil uji, jadi belum ada pembanding.'
+  if (row.drift.status === 'menyimpang') {
+    const bad = row.drift.checks.filter((c) => c.status === 'menyimpang').map((c) => CHECK_COPY[c.key]?.label.toLowerCase() ?? c.label)
+    return `Menyimpang dari hasil uji di ${bad.join(', ')}. Satu tanda bisa kebetulan (kira-kira 1 dari 20 per cek), jadi lihat juga cek lainnya.`
+  }
+  if (row.drift.status === 'sesuai') return `${n} transaksi tertutup dan semua cek masih dalam rentang wajar hasil uji.`
+  return `${n}/${reviewN} transaksi tertutup. Belum cukup data untuk menilai; sejauh ini tidak ada cek yang keluar dari rentang wajar.`
+}
+
+// ── preset status (Preset page) ────────────────────────────────────────────
+
+export type PresetStatusKind = 'belum_diuji' | 'lolos' | 'gagal' | 'paper' | 'menyimpang'
+
+export const PRESET_STATUS_COPY: Record<PresetStatusKind, { label: string; hint: string }> = {
+  belum_diuji: { label: 'Belum diuji', hint: 'Disimpan tanpa rapor uji jujur, jadi belum ada bukti.' },
+  lolos: { label: 'Lolos', hint: 'Lolos uji jujur saat disimpan: untung di data baru setelah biaya dan memenuhi semua syarat rapor.' },
+  gagal: { label: 'Gagal', hint: 'Gagal uji jujur saat disimpan.' },
+  paper: { label: 'Paper berjalan', hint: 'Sinyal preset ini sedang dijalankan di akun simulasi.' },
+  menyimpang: { label: 'Menyimpang', hint: 'Hasil paper keluar dari rentang wajar hasil uji preset ini.' },
+}
+
+export interface PresetStatus {
+  kind: PresetStatusKind
+  /** Test verdict saved with the preset (independent of paper). */
+  verdict: 'lolos' | 'gagal' | 'belum_diuji'
+  /** Progress toward the review minimum while paper runs. */
+  progress: { n: number; of: number } | null
+  /** Paper row of this preset (running or stopped), if any. */
+  row: ArenaRow | null
+  /** A paper account exists but auto-paper is off or the watch is inactive. */
+  paperStopped: boolean
+}
+
+export function arenaRowFor(presetId: LabId, rows: readonly ArenaRow[] | null | undefined): ArenaRow | null {
+  const id = Number(presetId)
+  return (rows ?? []).find((r) => r.preset.id === id) ?? null
+}
+
+/** Belum diuji · Lolos · Gagal from the saved verdict; Paper berjalan / Menyimpang while paper runs. */
+export function presetStatus(
+  p: { id: LabId; verdict: string | null | undefined },
+  rows: readonly ArenaRow[] | null | undefined,
+  reviewN = REVIEW_MIN_TRADES,
+): PresetStatus {
+  const verdict = p.verdict === 'PASS' ? 'lolos' : p.verdict === 'FAIL' ? 'gagal' : 'belum_diuji'
+  const row = arenaRowFor(p.id, rows)
+  if (row && isRunning(row)) {
+    return {
+      kind: row.drift.status === 'menyimpang' ? 'menyimpang' : 'paper',
+      verdict,
+      progress: { n: row.stats.n_closed, of: reviewN },
+      row,
+      paperStopped: false,
+    }
+  }
+  return { kind: verdict, verdict, progress: null, row, paperStopped: Boolean(row) }
+}
+
+// ── ?highlight=<presetId> ──────────────────────────────────────────────────
+
+/**
+ * `/lab/arena?highlight=<presetId>` scrolls to that preset and marks it. Used by
+ * "Mulai paper" (Preset page) and "Simpan sebagai preset & mulai paper" (run detail).
+ * Anything but a plain positive integer is ignored.
+ */
+export const HIGHLIGHT_PARAM = 'highlight'
+
+export function parseHighlight(v: string | null | undefined): number | null {
+  return v && /^\d{1,9}$/.test(v) && Number(v) > 0 ? Number(v) : null
+}
+
+export const arenaHref = (presetId?: LabId | null) =>
+  presetId === undefined || presetId === null ? '/lab/arena' : `/lab/arena?${HIGHLIGHT_PARAM}=${encodeURIComponent(String(presetId))}`

@@ -19,8 +19,8 @@ export const HORIZON_LABEL: Record<LedgerHorizon, string> = {
 export const SOURCE_LABEL: Record<LedgerSource, string> = {
   screener: 'Screener (live)',
   screener_rekon: 'Screener (rekonstruksi)',
-  lab_watch: 'Lab watch',
-  universal: 'Universal v0',
+  lab_watch: 'Pantau Lab',
+  universal: 'Universal (arsip)',
   webhook: 'Webhook TradingView',
 }
 
@@ -54,24 +54,24 @@ export const SAMPLE_COPY: Record<LedgerSample, { label: string; tone: 'muted' | 
 
 export const VERDICT_COPY: Record<LedgerVerdict, { label: string; tone: 'muted' | 'bullish' | 'bearish' | 'warn'; hint: string }> = {
   insufficient: {
-    label: 'Belum bisa dinilai',
+    label: 'Belum cukup data',
     tone: 'muted',
     hint: 'Butuh minimal 10 sinyal yang sudah dinilai, tersebar di minimal 5 hari berbeda.',
   },
   inconclusive: {
     label: 'Belum terbukti',
     tone: 'warn',
-    hint: 'Interval 95% rata-rata return masih mencakup 0: tidak bisa dibedakan dari kebetulan.',
+    hint: 'Rentang ketidakpastian masih mencakup nol: belum bisa dibedakan dari kebetulan.',
   },
   positive: {
-    label: 'Positif',
+    label: 'Terbukti',
     tone: 'bullish',
-    hint: 'Interval 95% rata-rata return di atas 0 (sebelum biaya). Indikasi, bukan bukti: cek juga vs BTC dan periodenya.',
+    hint: 'Rentang ketidakpastian seluruhnya di atas nol, sebelum biaya. Petunjuk, bukan jaminan: cek juga "dibanding BTC" dan periodenya.',
   },
   negative: {
     label: 'Negatif',
     tone: 'bearish',
-    hint: 'Interval 95% rata-rata return di bawah 0: sinyal ini cenderung salah arah (sebelum biaya).',
+    hint: 'Rentang ketidakpastian seluruhnya di bawah nol: sinyal ini cenderung salah arah (sebelum biaya).',
   },
 }
 
@@ -169,4 +169,60 @@ export function filtersToParams(f: LedgerFilterState, horizon: LedgerHorizon): s
   if (f.split) qs.set('split', '1')
   if (horizon !== '1d') qs.set('h', horizon)
   return qs.toString()
+}
+
+// ── answer first: which signals work, which are noise ───────────────────────
+
+export interface LedgerAnswer {
+  tone: 'baik' | 'perlu_dicek' | 'menunggu' | 'info'
+  text: string
+  /** "Terbukti" at the horizon, best average move first. */
+  proven: LedgerGroup[]
+  /** "Negatif": tends to point the wrong way. */
+  negative: LedgerGroup[]
+  /** "Belum terbukti": cannot be told apart from chance yet. */
+  inconclusive: LedgerGroup[]
+  /** "Belum cukup data". */
+  insufficient: LedgerGroup[]
+}
+
+/** "Tier A long (Screener (live))" — one name per signal group. */
+export function groupName(g: Pick<LedgerGroup, 'source' | 'signal_type' | 'direction'>): string {
+  const label = typeLabel(g.signal_type)
+  // labels like "Masuk Tier A → Long" already carry the direction
+  const dir = label.includes('→') ? '' : g.direction === 1 ? ' long' : g.direction === -1 ? ' short' : ''
+  return `${label}${dir} · ${SOURCE_LABEL[g.source] ?? g.source}`
+}
+
+const listNames = (gs: LedgerGroup[], max = 3) => {
+  const n = gs.map(groupName)
+  return n.length > max ? `${n.slice(0, max).join('; ')}; dan ${n.length - max} lainnya` : n.join('; ')
+}
+
+/** Split groups by their verdict at `h` and write the one-sentence answer for the page. */
+export function ledgerAnswer(groups: LedgerGroup[], h: LedgerHorizon): LedgerAnswer {
+  const at = (g: LedgerGroup) => g.horizons[h]
+  const by = (v: LedgerVerdict) => groups.filter((g) => (at(g)?.verdict ?? 'insufficient') === v)
+  const proven = by('positive').sort((a, b) => (at(b)?.mean_pct ?? -Infinity) - (at(a)?.mean_pct ?? -Infinity))
+  const negative = by('negative').sort((a, b) => (at(a)?.mean_pct ?? Infinity) - (at(b)?.mean_pct ?? Infinity))
+  const inconclusive = by('inconclusive')
+  const insufficient = by('insufficient')
+  const base = { proven, negative, inconclusive, insufficient }
+  const when = `setelah ${HORIZON_LABEL[h]}`
+  if (groups.length === 0) return { ...base, tone: 'info', text: 'Belum ada sinyal yang tercatat untuk filter ini.' }
+  const parts: string[] = []
+  parts.push(
+    proven.length
+      ? `${proven.length} jenis sinyal terbukti benar arahnya ${when}: ${listNames(proven)}.`
+      : `Belum ada jenis sinyal yang terbukti ${when}.`,
+  )
+  if (negative.length) parts.push(`${negative.length} cenderung salah arah: ${listNames(negative)}.`)
+  const rest = inconclusive.length + insufficient.length
+  if (rest) {
+    parts.push(
+      `${rest} lainnya belum bisa dibedakan dari kebetulan${insufficient.length ? ` (${insufficient.length} masih menunggu cukup data)` : ''}.`,
+    )
+  }
+  const tone = proven.length ? 'baik' : negative.length ? 'perlu_dicek' : 'menunggu'
+  return { ...base, tone, text: parts.join(' ') }
 }
