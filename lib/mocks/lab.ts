@@ -37,6 +37,7 @@ import type {
 import type { LabBoardRow, LabEstimateRequest, LabPreset } from '@/lib/api/types/lab-insights'
 import { MOCK_FAMILY_TEMPLATES, labUjiMock } from './lab-uji'
 import { labPaperMock } from './lab-paper'
+import { basketMock } from './basket'
 
 const MOCK_LAB_TEMPLATES: LabTemplate[] = [templateJson as unknown as LabTemplate, ...MOCK_FAMILY_TEMPLATES]
 const TPL = MOCK_LAB_TEMPLATES[0]
@@ -543,6 +544,9 @@ export async function getLabMock(method: string, fullPath: string, body?: unknow
   // W3a pages (Uji strategi): parameter importance + holdout lock
   const uji = labUjiMock(method, seg, qs)
   if (uji) return uji.value
+  // Basket paper strategies (Paper berjalan klasemen, Preset)
+  const bk = basketMock(method, seg)
+  if (bk) return bk.value
   // W3b pages (Preset, Paper berjalan, Jurnal, Rekam jejak sinyal, Laporan): one consistent fixture
   const w3b = labPaperMock(method, seg, qs, body)
   if (w3b) return w3b.value

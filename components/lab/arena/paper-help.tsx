@@ -12,7 +12,8 @@ export const PAPER_HELP: PageHelpContent = {
     'Mulai paper dari halaman Preset (tombol "Mulai paper"). Preset itu langsung muncul di Klasemen.',
     'Klasemen menjawab: preset mana yang masih sesuai hasil ujinya dan mana yang menyimpang. Ketuk satu baris untuk detailnya.',
     'Tim baru menilai sebuah preset setelah 30 transaksi tertutup; sebelum itu angkanya masih anekdot.',
+    'Basket = satu strategi default di banyak koin dengan satu akun; dihitung sebagai satu baris, progresnya x/30 transaksi gabungan semua koin.',
     'Jurnal berisi setiap transaksi paper. Trade bot live (uang asli) disembunyikan kecuali kamu menyalakannya.',
   ],
-  istilah: ['paper', 'paper_progress', 'drift', 'fair_range', 'r_multiple', 'live_bot_trades'],
+  istilah: ['paper', 'paper_progress', 'basket', 'pre_paper_position', 'drift', 'fair_range', 'r_multiple', 'live_bot_trades'],
 }
