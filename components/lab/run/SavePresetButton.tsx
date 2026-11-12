@@ -37,7 +37,7 @@ export function SavePresetButton({ run }: { run: LabRunDetail }) {
       { runId: run.id, label, notes },
       {
         onSuccess: (p) => {
-          notify.success(`Preset ${p.name} tersimpan`, { description: 'Bisa dipakai di Uji strategi, Scan dan Pantau.' })
+          notify.success(`Preset ${p.name} tersimpan`, { description: 'Bisa dipakai di Uji strategi, Banyak koin dan Paper berjalan.' })
           setOpen(false)
         },
         onError: (err) => notify.error('Gagal menyimpan preset', { description: apiErrorDetail(err) ?? undefined }),
@@ -58,16 +58,16 @@ export function SavePresetButton({ run }: { run: LabRunDetail }) {
         }}
       >
         <BookmarkPlus className="h-3.5 w-3.5" />
-        Simpan sebagai preset
+        Simpan preset saja
       </Button>
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Simpan sebagai preset</AlertDialogTitle>
+            <AlertDialogTitle>Simpan sebagai preset (tanpa paper)</AlertDialogTitle>
             <AlertDialogDescription>
-              Preset = parameter khusus untuk <span className="font-mono">{run.symbol} {run.timeframe}</span>
-              {run.mode === 'optimize' ? ' (parameter terbaik hasil optimize)' : ''}. Rapor, metrik holdout dan jumlah percobaan saat ini
-              ikut disimpan sebagai bukti. Tiap koin/TF wajar punya preset berbeda.
+              Preset = setting khusus untuk <span className="font-mono">{run.symbol} {run.timeframe}</span>
+              {run.mode === 'optimize' ? ' (setting terbaik dari Cari setting terbaik)' : ''}. Rapor, angka data baru dan jumlah percobaan saat ini
+              ikut disimpan sebagai bukti. Tiap koin dan timeframe wajar punya preset sendiri.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-3">
@@ -86,7 +86,7 @@ export function SavePresetButton({ run }: { run: LabRunDetail }) {
             </div>
             {run.verdict !== 'PASS' && (
               <p className="rounded-md border border-warn/30 bg-warn/10 px-2.5 py-2 text-2xs text-warn">
-                Run ini {run.verdict === 'FAIL' ? 'GAGAL' : 'tidak punya'} rapor kejujuran. Preset tetap bisa disimpan, tapi ditandai begitu dan tidak pernah dipilih otomatis sebagai &ldquo;preset terbaik&rdquo;.
+                {run.verdict === 'FAIL' ? 'Uji ini Gagal.' : 'Uji ini tidak punya rapor.'} Preset tetap bisa disimpan, tapi ditandai begitu dan tidak pernah dipilih otomatis sebagai &ldquo;preset terbaik&rdquo;.
               </p>
             )}
           </div>

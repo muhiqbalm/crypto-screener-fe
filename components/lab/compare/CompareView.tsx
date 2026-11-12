@@ -209,7 +209,7 @@ export function CompareView() {
                                   {c.passed ? <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> : <XCircle className="h-3.5 w-3.5" aria-hidden="true" />}
                                   {c.passed ? 'Lolos' : 'Gagal'}
                                 </span>
-                                <span className="num ml-1.5 text-muted-foreground">{typeof c.value === 'number' ? formatNumber(c.value) : String(c.value ?? '—')}</span>
+                                <span className="num ml-1.5 text-muted-foreground">{typeof c.value === 'number' ? formatNumber(c.value, { digits: Number.isInteger(c.value) ? 0 : 2 }) : String(c.value ?? '—')}</span>
                               </td>
                             )
                           })}

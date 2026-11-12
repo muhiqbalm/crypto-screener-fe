@@ -120,7 +120,9 @@ export function StrategyStep({
               )
             })}
           </div>
-          <p className="text-2xs text-muted-foreground">Bot live memakai 4h. Timeframe 1h ke bawah (garis putus-putus) membuat biaya lebih berat.</p>
+          <p className="text-2xs text-muted-foreground">
+            {live ? 'Bot live memakai 4h. ' : ''}Timeframe 1h ke bawah (garis putus-putus) membuat biaya lebih berat.
+          </p>
           {lowTf && <p className="text-2xs text-warn">{lowTf}</p>}
         </div>
       </div>

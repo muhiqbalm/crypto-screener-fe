@@ -310,7 +310,7 @@ export function ScanResults({ id }: { id: string }) {
           {rows.length === 0 ? (
             <EmptyState title="Belum ada hasil" description="Baris muncul satu per satu saat kombinasi selesai diuji." />
           ) : (
-            <div className="grid items-start gap-5 xl:grid-cols-[auto_minmax(0,1fr)]">
+            <div className="grid items-start gap-5 2xl:grid-cols-[auto_minmax(0,1fr)]">
               <ScanHeatmap rows={rows} />
               <ScanTable rows={rows} />
             </div>
