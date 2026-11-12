@@ -98,7 +98,7 @@ export function SidebarNav({
         <div role="status" className="mx-1 space-y-1.5 rounded-lg border border-warn/40 bg-warn/10 p-2.5 text-2xs text-foreground">
           <p className="flex items-start gap-1.5">
             <TriangleAlert className="mt-px h-3.5 w-3.5 shrink-0 text-warn" aria-hidden="true" />
-            Akses menu admin tidak bisa dicek ke server, jadi menu Strategi disembunyikan dulu.
+            Akses admin tidak bisa dicek ke server, jadi alat khusus admin disembunyikan dulu.
           </p>
           {onRetryAdmin && (
             <button

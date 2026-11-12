@@ -11,12 +11,12 @@ import {
 } from './nav'
 
 describe('menu v2', () => {
-  it('admin sees 14 items, other accounts 7', () => {
+  it('admin sees 14 items, other accounts 8', () => {
     expect(navItemsForRole(true)).toHaveLength(14)
-    expect(navItemsForRole(false)).toHaveLength(7)
+    expect(navItemsForRole(false)).toHaveLength(8)
   })
 
-  it('non-admin menu = Beranda + 4 Pasar + Saldo + Webhook', () => {
+  it('non-admin menu = Beranda + 4 Pasar + Saldo + Webhook + Laporan mingguan', () => {
     expect(navItemsForRole(false).map((i) => i.href)).toEqual([
       '/beranda',
       '/news',
@@ -25,6 +25,7 @@ describe('menu v2', () => {
       '/chart',
       '/balance',
       '/webhook',
+      '/lab/report',
     ])
   })
 
