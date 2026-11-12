@@ -2,18 +2,16 @@
 
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { RefreshCw } from 'lucide-react'
-import { AnswerCard, type AnswerTone } from '@/components/ui/answer-card'
+import { Coins, Gauge, Layers, LineChart as LineChartIcon, ListOrdered, RefreshCw, Scale, Target, TrendingDown, Wallet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ResponsiveTable, type ResponsiveColumn } from '@/components/ui/responsive-table'
-import { StatTile } from '@/components/ui/stat-tile'
 import { StatusPill } from '@/components/ui/status-pill'
 import { Switch } from '@/components/ui/switch'
 import { Term } from '@/components/ui/term'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shell/states'
-import { Section } from '@/components/lab/Section'
+import { BigNumber, CardLink, CountUp, DeckCard, Ring, SectionHead, signTone } from '@/components/lab/arena/deck'
 import { PaperAccountsSection } from '@/components/journal/PaperAccountsSection'
 import { SimpleLineChart } from '@/components/journal/LineChart'
 import { TradeSheet } from '@/components/journal/TradeSheet'
@@ -44,101 +42,111 @@ const SOURCE_OPTIONS: { value: JournalSource | ''; label: string }[] = [
   { value: 'paper_auto', label: 'Simulasi otomatis' },
   { value: 'bot', label: 'Bot live saja (uang asli)' },
 ]
-const selectCls = 'flex h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm'
+const selectCls = 'flex h-11 w-full rounded-xl border border-input bg-transparent px-3 text-[15px]'
 const EMPTY: JournalFilters = { account_id: '', source: '', symbol: '', from: '', to: '' }
 
-// ── answer ──────────────────────────────────────────────────────────────────
+// ── answer + numbers (bento) ────────────────────────────────────────────────
 
-function answerOf(s: JournalStats, live: boolean): { tone: AnswerTone; text: string } {
+function answerOf(s: JournalStats, live: boolean): string {
   const who = live ? 'Bot live (uang asli)' : 'Paper'
-  if (!s.trades) return { tone: 'menunggu', text: `${who}: belum ada transaksi tertutup untuk filter ini.` }
-  const wr = winratePct(s.winrate)
-  const parts = [
-    `${who}: ${formatCount(s.trades)} transaksi tertutup`,
-    `hasil bersih ${formatUsdSigned(s.net_pnl)}`,
-    wr === null ? null : `menang ${formatPct(wr, { digits: 0 })}`,
-    s.avg_r === null ? null : `rata-rata ${formatR(s.avg_r)} per transaksi`,
-  ].filter(Boolean)
-  const small = !live && s.trades < REVIEW_MIN_TRADES ? ` Masih di bawah ${REVIEW_MIN_TRADES} transaksi, jadi belum bisa dinilai.` : ''
-  return { tone: 'info', text: `${parts.join(', ')}.${small}` }
+  if (!s.trades) return `${who}: belum ada transaksi tertutup untuk filter ini.`
+  const small = !live && s.trades < REVIEW_MIN_TRADES ? ` Di bawah ${REVIEW_MIN_TRADES} transaksi: belum bisa dinilai.` : ''
+  return `${who}: ${formatCount(s.trades)} transaksi tertutup.${small}`
 }
 
-// ── stats ───────────────────────────────────────────────────────────────────
-
-function Breakdown({ title, keyLabel, rows }: { title: string; keyLabel: string; rows: NormalizedBreakdown[] }) {
+function Numbers({ s, live, perAccount }: { s: JournalStats; live: boolean; perAccount: boolean }) {
+  const wr = winratePct(s.winrate)
   return (
-    <div className="min-w-0 rounded-xl border bg-card p-3">
-      <h3 className="mb-2 text-sm font-semibold tracking-tight">{title}</h3>
-      {rows.length === 0 ? (
-        <p className="text-xs text-muted-foreground">Tidak tersedia.</p>
-      ) : (
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="border-b text-3xs uppercase tracking-wide text-muted-foreground">
-              <th className="py-1 pr-2 text-left font-semibold">{keyLabel}</th>
-              <th className="py-1 pr-2 text-right font-semibold">Transaksi</th>
-              <th className="py-1 pr-2 text-right font-semibold">Menang</th>
-              <th className="py-1 text-right font-semibold">Hasil</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.key} className="border-b last:border-0">
-                <td className="max-w-[9rem] truncate py-1.5 pr-2 font-medium">{r.key}</td>
-                <td className="num py-1.5 pr-2 text-right">{formatCount(r.trades)}</td>
-                <td className="num py-1.5 pr-2 text-right">{r.winrate === null ? '—' : formatPct(r.winrate, { digits: 0 })}</td>
-                <td className={cn('num py-1.5 text-right', signClass(r.net_pnl))}>{formatUsdSigned(r.net_pnl)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+    <div className="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
+      <DeckCard
+        hero
+        icon={Wallet}
+        iconTone={live ? 'warn' : 'lab'}
+        eyebrow={live ? 'Hasil bersih · uang asli' : 'Hasil bersih · simulasi'}
+        action={<StatusPill kind={live ? 'live' : 'paper'} />}
+        className="col-span-2 lg:row-span-2"
+      >
+        <div className={cn('font-display text-[48px] font-bold leading-none tracking-tight tabular-nums sm:text-[56px]', signClass(s.net_pnl))}>
+          <CountUp value={s.net_pnl ?? 0} format={(v) => formatUsdSigned(v)} />
+        </div>
+        <p className="mt-4 text-lg font-medium leading-snug">{answerOf(s, live)}</p>
+        <p className="mt-1 text-[13px] text-muted-foreground">Setelah fee dan funding.{live ? '' : ' Trade bot live tidak pernah ikut dihitung.'}</p>
+        <CardLink href="#transaksi" className="mt-5">Lihat transaksi</CardLink>
+      </DeckCard>
+      <DeckCard icon={Target} iconTone="info" title="Persentase menang">
+        <div className="flex items-center gap-4">
+          <Ring value={wr ?? 0} max={100} tone={wr !== null && wr >= 50 ? 'bullish' : 'warn'} size={76} label={wr === null ? 'tidak tersedia' : `${Math.round(wr)}% menang`}>
+            <span className="font-display text-lg font-bold tabular-nums">{wr === null ? '—' : `${Math.round(wr)}%`}</span>
+          </Ring>
+          <span className="text-[13px] text-muted-foreground">transaksi yang untung</span>
+        </div>
+      </DeckCard>
+      <DeckCard icon={Gauge} iconTone="lab" title={<Term k="r_multiple" />}>
+        <BigNumber label="Rata-rata per transaksi" value={formatR(s.avg_r)} tone={signTone(s.avg_r)} size="lg" hint="1R = jarak masuk ke SL" />
+      </DeckCard>
+      <DeckCard icon={Scale} iconTone="info" title={<Term k="profit_factor" short />}>
+        <BigNumber label="Untung ÷ rugi" value={s.profit_factor === null ? '—' : formatNumber(s.profit_factor)} tone={s.profit_factor === null ? undefined : s.profit_factor >= 1 ? 'bullish' : 'bearish'} size="lg" />
+      </DeckCard>
+      <DeckCard icon={TrendingDown} iconTone="bearish" title={<Term k="max_drawdown" short />}>
+        <BigNumber
+          label={perAccount ? 'Dari modal akun' : 'Turun terdalam'}
+          value={s.max_dd_pct === null ? '—' : formatPct(-Math.abs(s.max_dd_pct), { digits: 1 })}
+          tone={s.max_dd_pct ? 'bearish' : undefined}
+          size="lg"
+          hint={perAccount ? undefined : 'pilih satu akun'}
+        />
+      </DeckCard>
     </div>
   )
 }
 
-function Stats({ s, live, perAccount }: { s: JournalStats; live: boolean; perAccount: boolean }) {
-  const wr = winratePct(s.winrate)
+/** Horizontal bars instead of a table: who made / lost the most. */
+function BarList({ title, icon, rows }: { title: string; icon: typeof Wallet; rows: NormalizedBreakdown[] }) {
+  const max = Math.max(1, ...rows.map((r) => Math.abs(r.net_pnl ?? 0)))
+  return (
+    <DeckCard icon={icon} iconTone="info" title={title}>
+      {rows.length === 0 ? (
+        <p className="text-[15px] text-muted-foreground">Tidak tersedia.</p>
+      ) : (
+        <ul className="space-y-4">
+          {rows.map((r) => {
+            const v = r.net_pnl ?? 0
+            return (
+              <li key={r.key} className="space-y-1.5">
+                <div className="flex items-baseline justify-between gap-3 text-[15px]">
+                  <span className="truncate font-semibold">{r.key}</span>
+                  <span className={cn('shrink-0 font-semibold tabular-nums', signClass(v))}>{formatUsdSigned(v)}</span>
+                </div>
+                <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div className={cn('h-full rounded-full', v >= 0 ? 'bg-bullish' : 'bg-bearish')} style={{ width: `${(Math.abs(v) / max) * 100}%` }} />
+                </div>
+                <div className="text-[13px] text-muted-foreground">
+                  {formatCount(r.trades)} transaksi · menang {r.winrate === null ? '—' : formatPct(r.winrate, { digits: 0 })}
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </DeckCard>
+  )
+}
+
+function Charts({ s, perAccount }: { s: JournalStats; perAccount: boolean }) {
   const bySymbol = normalizeBreakdown(s.by_symbol, 'symbol').map((r) => ({ ...r, key: coinOf(r.key) }))
   const bySource = normalizeBreakdown(s.by_source, 'source').map((r) => ({ ...r, key: JOURNAL_SOURCE_LABEL[r.key] ?? r.key }))
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <StatTile label="Persentase menang" value={wr === null ? '—' : formatPct(wr, { digits: 1 })} hint="transaksi yang untung" />
-        <StatTile
-          label={<Term k="r_multiple" short />}
-          value={formatR(s.avg_r)}
-          valueClassName={signClass(s.avg_r)}
-          hint="rata-rata per transaksi"
-        />
-        <StatTile label={<Term k="profit_factor" short />} value={s.profit_factor === null ? '—' : formatNumber(s.profit_factor)} hint="total untung ÷ total rugi" />
-        <StatTile
-          label={live ? 'Hasil bersih · LIVE' : 'Hasil bersih · PAPER'}
-          value={formatUsdSigned(s.net_pnl)}
-          valueClassName={signClass(s.net_pnl)}
-          hint="setelah fee dan funding"
-        />
-        <StatTile
-          label={<Term k="max_drawdown" short />}
-          value={s.max_dd_pct === null ? '—' : formatPct(-Math.abs(s.max_dd_pct), { digits: 1 })}
-          hint={perAccount ? 'dari modal akun' : 'pilih satu akun untuk melihatnya'}
-        />
-      </div>
-      <p className="rounded-lg border border-dashed px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-        <b className="text-foreground">Cara membaca R:</b> 1R adalah jarak harga masuk ke batas rugi (SL), yaitu risiko yang dipasang. +2R berarti untung dua
-        kali risiko; −1R berarti kena SL penuh. Trade bot live tidak punya R karena SL-nya tidak tercatat di sini.
-      </p>
-      <div className="rounded-xl border bg-card p-3">
-        <h3 className="mb-1 text-sm font-semibold tracking-tight">{perAccount ? 'Kurva modal akun' : 'Hasil kumulatif (USDT)'}</h3>
+    <div className="grid gap-5 lg:grid-cols-3">
+      <DeckCard icon={LineChartIcon} iconTone="lab" title={perAccount ? 'Kurva modal akun' : 'Hasil kumulatif (USDT)'} className="lg:col-span-2">
         {s.equity_curve?.length ? (
-          <SimpleLineChart points={s.equity_curve} label={perAccount ? 'Kurva modal akun paper' : 'Hasil kumulatif transaksi paper'} />
+          <SimpleLineChart points={s.equity_curve} label={perAccount ? 'Kurva modal akun paper' : 'Hasil kumulatif transaksi paper'} className="h-[280px] lg:h-[420px]" />
         ) : (
-          <p className="text-xs text-muted-foreground">Tidak tersedia: belum ada transaksi tertutup.</p>
+          <p className="text-[15px] text-muted-foreground">Tidak tersedia: belum ada transaksi tertutup.</p>
         )}
-      </div>
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <Breakdown title="Per koin" keyLabel="Koin" rows={bySymbol} />
-        <Breakdown title="Per sumber" keyLabel="Sumber" rows={bySource} />
+      </DeckCard>
+      <div className="grid gap-5">
+        <BarList title="Per koin" icon={Coins} rows={bySymbol} />
+        <BarList title="Per sumber" icon={Layers} rows={bySource} />
       </div>
     </div>
   )
@@ -153,7 +161,7 @@ const TRADE_COLUMNS: ResponsiveColumn<JournalEntry>[] = [
     mobile: 'title',
     cell: (r) => (
       <span className="inline-flex items-center gap-1.5">
-        <span className="font-semibold">{coinOf(r.symbol)}</span>
+        <span className="font-display text-base font-semibold">{coinOf(r.symbol)}</span>
         <SideBadge side={r.side} />
       </span>
     ),
@@ -177,7 +185,8 @@ const TRADE_COLUMNS: ResponsiveColumn<JournalEntry>[] = [
     header: 'Hasil bersih',
     mobile: 'field',
     align: 'right',
-    cell: (r) => <span className={cn('num font-semibold', signClass(r.pnl))}>{formatUsdSigned(r.pnl)}</span>,
+    className: 'py-4',
+    cell: (r) => <span className={cn('text-[15px] font-semibold tabular-nums', signClass(r.pnl))}>{formatUsdSigned(r.pnl)}</span>,
   },
   {
     key: 'r',
@@ -185,26 +194,26 @@ const TRADE_COLUMNS: ResponsiveColumn<JournalEntry>[] = [
     mobileLabel: 'R',
     mobile: 'field',
     align: 'right',
-    cell: (r) => <span className={cn('num', signClass(r.r_multiple))}>{r.r_multiple === null ? '—' : formatR(r.r_multiple)}</span>,
+    cell: (r) => <span className={cn('text-[15px] tabular-nums', signClass(r.r_multiple))}>{r.r_multiple === null ? '—' : formatR(r.r_multiple)}</span>,
   },
   {
     key: 'closed',
     header: 'Ditutup',
     mobile: 'field',
-    cell: (r) => <span className="num whitespace-nowrap text-xs">{r.exit_time ? formatTime(r.exit_time) : 'masih terbuka'}</span>,
+    cell: (r) => <span className="whitespace-nowrap text-[15px] tabular-nums">{r.exit_time ? formatTime(r.exit_time) : 'masih terbuka'}</span>,
   },
   {
     key: 'reason',
     header: 'Alasan keluar',
     mobile: 'hidden',
-    cell: (r) => <span className="text-xs">{exitReasonLabel(r.exit_reason)}</span>,
+    cell: (r) => <span className="text-[15px]">{exitReasonLabel(r.exit_reason)}</span>,
   },
   {
     key: 'notes',
     header: 'Catatan',
     mobile: 'hidden',
     cell: (r) => (
-      <span className="block max-w-[16rem] truncate text-xs text-muted-foreground">
+      <span className="block max-w-[16rem] truncate text-[14px] text-muted-foreground">
         {[r.notes, ...(r.tags ?? []).map((t) => `#${t}`)].filter(Boolean).join(' ') || '—'}
       </span>
     ),
@@ -305,7 +314,6 @@ export function JournalView() {
   const listQ = useJournalList(filters, { includeLive, limit })
   const rows = useMemo(() => listQ.data ?? [], [listQ.data])
   const open = rows.find((r) => String(r.id) === openId) ?? null
-  const answer = statsQ.data ? answerOf(statsQ.data, liveOnly) : null
 
   const apply = () => {
     setFilters(Object.fromEntries(Object.entries(draft).filter(([, v]) => v)) as JournalFilters)
@@ -313,28 +321,22 @@ export function JournalView() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       {statsQ.isPending ? (
-        <LoadingState rows={2} />
-      ) : statsQ.isError ? (
+        <LoadingState rows={3} />
+      ) : statsQ.isError || !statsQ.data ? (
         <ErrorState error={statsQ.error} onRetry={() => statsQ.refetch()} title="Ringkasan jurnal tidak bisa dimuat" />
       ) : (
-        answer && (
-          <AnswerCard
-            tone={answer.tone}
-            title={liveOnly ? 'Bot live' : 'Jurnal paper'}
-            answer={answer.text}
-            status={<StatusPill kind={liveOnly ? 'live' : 'paper'} />}
-            evidenceHref="#transaksi"
-            evidenceLabel="Lihat transaksi"
-          />
-        )
+        <Numbers s={statsQ.data} live={liveOnly} perAccount={Boolean(filters.account_id)} />
       )}
 
-      <Section title="Filter" description="Statistik dan daftar di bawah selalu mengikuti filter yang sama.">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6">
-          <div className="space-y-1">
-            <Label htmlFor="f-account" className="text-xs">Akun simulasi</Label>
+      <details open={Boolean(Object.keys(filters).length)} className="rounded-3xl border bg-card px-6 py-4">
+        <summary className="cursor-pointer select-none text-[17px] font-semibold tracking-tight">
+          Filter{Object.keys(filters).length ? ' (aktif)' : ''}
+        </summary>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
+          <div className="space-y-1.5">
+            <Label htmlFor="f-account" className="text-sm">Akun simulasi</Label>
             <select id="f-account" value={String(draft.account_id ?? '')} onChange={(e) => setDraft({ ...draft, account_id: e.target.value })} className={selectCls}>
               <option value="" className="bg-popover">Semua akun</option>
               {(accountsQ.data ?? []).map((a) => (
@@ -344,8 +346,8 @@ export function JournalView() {
               ))}
             </select>
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="f-source" className="text-xs">Sumber</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="f-source" className="text-sm">Sumber</Label>
             <select id="f-source" value={draft.source ?? ''} onChange={(e) => setDraft({ ...draft, source: e.target.value as JournalSource | '' })} className={selectCls}>
               {SOURCE_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value} className="bg-popover">
@@ -354,26 +356,25 @@ export function JournalView() {
               ))}
             </select>
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="f-symbol" className="text-xs">Koin</Label>
-            <Input id="f-symbol" value={draft.symbol ?? ''} onChange={(e) => setDraft({ ...draft, symbol: e.target.value.toUpperCase() })} placeholder="ETHUSDT" className="h-9 font-mono text-sm" />
+          <div className="space-y-1.5">
+            <Label htmlFor="f-symbol" className="text-sm">Koin</Label>
+            <Input id="f-symbol" value={draft.symbol ?? ''} onChange={(e) => setDraft({ ...draft, symbol: e.target.value.toUpperCase() })} placeholder="ETHUSDT" className="h-11 rounded-xl text-[15px]" />
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="f-from" className="text-xs">Dari tanggal</Label>
-            <Input id="f-from" type="date" value={draft.from ?? ''} onChange={(e) => setDraft({ ...draft, from: e.target.value })} className="h-9 px-2 text-sm" />
+          <div className="space-y-1.5">
+            <Label htmlFor="f-from" className="text-sm">Dari tanggal</Label>
+            <Input id="f-from" type="date" value={draft.from ?? ''} onChange={(e) => setDraft({ ...draft, from: e.target.value })} className="h-11 rounded-xl px-3 text-[15px]" />
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="f-to" className="text-xs">Sampai tanggal</Label>
-            <Input id="f-to" type="date" value={draft.to ?? ''} onChange={(e) => setDraft({ ...draft, to: e.target.value })} className="h-9 px-2 text-sm" />
+          <div className="space-y-1.5">
+            <Label htmlFor="f-to" className="text-sm">Sampai tanggal</Label>
+            <Input id="f-to" type="date" value={draft.to ?? ''} onChange={(e) => setDraft({ ...draft, to: e.target.value })} className="h-11 rounded-xl px-3 text-[15px]" />
           </div>
           <div className="flex items-end gap-2">
-            <Button size="sm" className="h-9 flex-1" onClick={apply}>
+            <Button className="h-11 flex-1 rounded-full" onClick={apply}>
               Terapkan
             </Button>
             <Button
-              size="sm"
               variant="ghost"
-              className="h-9"
+              className="h-11 rounded-full"
               onClick={() => {
                 setDraft(EMPTY)
                 setFilters({})
@@ -384,40 +385,31 @@ export function JournalView() {
             </Button>
           </div>
         </div>
-      </Section>
+      </details>
 
-      <Section title={liveOnly ? 'Statistik bot live' : 'Statistik paper'} description={liveOnly ? 'Uang asli. Tidak dicampur dengan paper.' : 'Hanya transaksi simulasi; trade bot live tidak pernah ikut dihitung.'}>
-        {statsQ.isPending ? (
-          <LoadingState rows={3} />
-        ) : statsQ.isError || !statsQ.data ? (
-          <ErrorState error={statsQ.error} onRetry={() => statsQ.refetch()} title="Statistik tidak bisa dimuat" compact />
-        ) : statsQ.data.trades === 0 ? (
-          <EmptyState title="Belum ada transaksi tertutup" description="Statistik muncul setelah transaksi pertama ditutup." />
-        ) : (
-          <Stats s={statsQ.data} live={liveOnly} perAccount={Boolean(filters.account_id)} />
-        )}
-      </Section>
+      {statsQ.data && statsQ.data.trades > 0 && <Charts s={statsQ.data} perAccount={Boolean(filters.account_id)} />}
 
-      <Section
-        id="transaksi"
-        className="scroll-mt-20"
-        title="Daftar transaksi"
-        description={listQ.data ? `${formatCount(rows.length)} transaksi, terbaru di atas. Ketuk satu baris untuk detail dan catatan.` : 'Transaksi terbaru di atas.'}
-        action={
-          <Button variant="outline" size="sm" onClick={() => listQ.refetch()} disabled={listQ.isFetching} className="gap-1.5">
-            <RefreshCw className={cn('h-3.5 w-3.5', listQ.isFetching && 'animate-spin')} aria-hidden="true" />
-            Muat ulang
-          </Button>
-        }
-      >
-        <div className="space-y-3">
+      <section className="space-y-4">
+        <SectionHead
+          id="transaksi"
+          icon={ListOrdered}
+          title="Transaksi"
+          sub={listQ.data ? `${formatCount(rows.length)} transaksi, terbaru di atas. Ketuk untuk detail dan catatan.` : 'Terbaru di atas.'}
+          action={
+            <Button variant="outline" onClick={() => listQ.refetch()} disabled={listQ.isFetching} className="gap-1.5 rounded-full">
+              <RefreshCw className={cn('h-4 w-4', listQ.isFetching && 'animate-spin')} aria-hidden="true" />
+              Muat ulang
+            </Button>
+          }
+        />
+        <div className="space-y-4">
           {!liveOnly && (
-            <div className="flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2">
+            <div className="flex flex-wrap items-center gap-3 rounded-2xl border bg-card px-5 py-3.5">
               <Switch id="incl-live" checked={includeLive} onCheckedChange={setIncludeLive} disabled={Boolean(filters.source)} />
-              <Label htmlFor="incl-live" className="cursor-pointer text-sm">
+              <Label htmlFor="incl-live" className="cursor-pointer text-[15px]">
                 Tampilkan juga <Term k="live_bot_trades" variant="underline">trade bot live</Term> (uang asli)
               </Label>
-              <span className="text-2xs text-muted-foreground">
+              <span className="text-[13px] text-muted-foreground">
                 {filters.source ? 'Hanya untuk sumber "Semua paper".' : includeLive ? 'Ditandai LIVE; tetap tidak dihitung di statistik paper.' : 'Mati: hanya paper.'}
               </span>
             </div>
@@ -439,13 +431,13 @@ export function JournalView() {
           )}
           {rows.length >= limit && limit < JOURNAL_MAX && (
             <div className="flex justify-center">
-              <Button variant="outline" size="sm" onClick={() => setLimit((l) => Math.min(JOURNAL_MAX, l + JOURNAL_PAGE))} disabled={listQ.isFetching}>
+              <Button variant="outline" className="rounded-full" onClick={() => setLimit((l) => Math.min(JOURNAL_MAX, l + JOURNAL_PAGE))} disabled={listQ.isFetching}>
                 {listQ.isFetching ? 'Memuat…' : `Tampilkan ${JOURNAL_PAGE} lagi`}
               </Button>
             </div>
           )}
         </div>
-      </Section>
+      </section>
 
       <PaperAccountsSection />
       <PaperVsTest />

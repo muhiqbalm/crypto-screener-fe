@@ -3,8 +3,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { AlertTriangle, ArrowRight, Check, Clock, Gauge, History, X } from 'lucide-react'
-import { AnswerCard } from '@/components/ui/answer-card'
+import { AlertTriangle, ArrowRight, Check, CheckCircle2, Clock, Gauge, HelpCircle, History, ListChecks, Radar, X, XCircle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Freshness } from '@/components/ui/freshness'
@@ -15,6 +14,7 @@ import { StatTile } from '@/components/ui/stat-tile'
 import { Term } from '@/components/ui/term'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shell/states'
 import { Chip, Section } from '@/components/lab/Section'
+import { BigNumber, CardLink, CountUp, DeckCard, Pill, RateBar, SectionHead, type Tone } from '@/components/lab/arena/deck'
 import { SideBadge } from '@/components/trading/SideBadge'
 import { formatCount, formatPrice, signClass } from '@/lib/utils/format'
 import { formatAge, formatTime } from '@/lib/utils/time'
@@ -386,13 +386,61 @@ function RecentSignals({ filters }: { filters: LedgerFilters }) {
   )
 }
 
+// ── verdict cards ──────────────────────────────────────────────────────────
+
+const VERDICT_TONE: Record<string, Tone> = { positive: 'bullish', negative: 'bearish', inconclusive: 'warn', insufficient: 'muted' }
+const VERDICT_ICON: Record<string, typeof CheckCircle2> = { positive: CheckCircle2, negative: XCircle, inconclusive: HelpCircle, insufficient: Clock }
+const VERDICT_RANK: Record<string, number> = { positive: 0, negative: 1, inconclusive: 2, insufficient: 3 }
+
+function VerdictCard({ g, h, onPick }: { g: LedgerGroup; h: LedgerHorizon; onPick: () => void }) {
+  const st = g.horizons[h]
+  const v = st?.verdict ?? 'insufficient'
+  const copy = VERDICT_COPY[v]
+  const tone = VERDICT_TONE[v]
+  const thin = isThin(st)
+  // colour only what the verdict proves; "belum terbukti" stays neutral
+  const judged = v === 'positive' || v === 'negative'
+  return (
+    <DeckCard
+      onClick={onPick}
+      ariaLabel={`Lihat sinyal ${typeLabel(g.signal_type)}`}
+      icon={VERDICT_ICON[v]}
+      iconTone={tone}
+      title={
+        <span className="inline-flex items-center gap-2">
+          {typeLabel(g.signal_type)}
+          {g.direction !== null && <SideBadge side={g.direction === 1 ? 'long' : 'short'} />}
+        </span>
+      }
+      eyebrow={SOURCE_LABEL[g.source] ?? g.source}
+      action={
+        <Pill tone={tone} icon={VERDICT_ICON[v]}>
+          {copy.label}
+        </Pill>
+      }
+      outline={v === 'negative' ? 'bearish' : v === 'positive' ? 'bullish' : undefined}
+    >
+      <div className="grid grid-cols-2 gap-4">
+        <BigNumber label="Arah benar" value={hitPct(st?.hit_rate)} tone={judged ? tone : undefined} size="md" />
+        <BigNumber label="Rata-rata gerak" value={pct(st?.mean_pct)} tone={judged ? tone : undefined} size="md" />
+      </div>
+      <RateBar rate={st?.hit_rate} tone={judged ? tone : 'muted'} className="mt-4" />
+      <p className="mt-3 text-[13px] text-muted-foreground">
+        {formatCount(st?.n ?? 0)} dari {formatCount(g.n_signals)} sinyal dinilai
+        {st && st.n > 0 ? ` · ${st.coins} koin · ${st.days} hari` : ''}
+        {!thin && st?.verdict_rel_btc ? ` · dibanding BTC: ${VERDICT_COPY[st.verdict_rel_btc].label.toLowerCase()}` : ''}
+      </p>
+    </DeckCard>
+  )
+}
+
 // ── page ───────────────────────────────────────────────────────────────────
 
 /**
- * Rekam jejak sinyal: the answer ("which signals work, which are noise") first, then the
- * table per signal type, the latest signals and, folded, how it works.
- * Filters live in the URL (?source=&type=&symbol=&since=&until=&split=1&h=3d) so the
- * screener can link here pre-filtered. Needs a Suspense boundary (useSearchParams).
+ * Rekam jejak sinyal: the answer first (big), then one visual card per signal type; the
+ * dense tables are folded under "Lihat detail". Filters live in the URL
+ * (?source=&type=&symbol=&since=&until=&split=1&h=3d) so other pages can link here
+ * pre-filtered. Needs a Suspense boundary (useSearchParams).
  */
 export function LedgerView() {
   const meta = useLedgerMeta()
@@ -415,57 +463,110 @@ export function LedgerView() {
   )
   const summary = useLedgerSummary(filters, f.split ? 'direction' : 'none')
   const groups = useMemo(() => sortGroups(summary.data?.groups ?? [], horizon), [summary.data, horizon])
+  const cards = useMemo(
+    () => [...groups].sort((a, b) => (VERDICT_RANK[a.horizons[horizon]?.verdict ?? 'insufficient'] ?? 3) - (VERDICT_RANK[b.horizons[horizon]?.verdict ?? 'insufficient'] ?? 3)),
+    [groups, horizon],
+  )
   const answer = useMemo(() => ledgerAnswer(groups, horizon), [groups, horizon])
   const cols = useMemo(() => summaryColumns(horizon), [horizon])
   const filtered = Boolean(f.source || f.signal_type || f.symbol || f.since || f.until)
+  const rest = answer.inconclusive.length + answer.insufficient.length
+  const heroTone: Tone = answer.proven.length ? 'bullish' : answer.negative.length ? 'warn' : 'muted'
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       {summary.isPending ? (
-        <LoadingState rows={2} />
+        <LoadingState rows={3} />
       ) : summary.isError ? (
         <ErrorState error={summary.error} onRetry={() => summary.refetch()} title="Rekam jejak tidak bisa dimuat" />
       ) : (
-        <AnswerCard
-          tone={answer.tone}
-          title={filtered ? 'Jawaban untuk filter ini' : 'Sinyal mana yang bekerja?'}
-          answer={answer.text}
-          metrics={[
-            { label: 'Terbukti', value: formatCount(answer.proven.length), valueClassName: answer.proven.length ? 'text-bullish' : undefined },
-            { label: 'Negatif', value: formatCount(answer.negative.length), valueClassName: answer.negative.length ? 'text-bearish' : undefined },
-            { label: 'Belum terbukti', value: formatCount(answer.inconclusive.length + answer.insufficient.length), hint: 'termasuk yang belum cukup data' },
-          ]}
-          evidenceHref="#per-jenis"
-          evidenceLabel="Lihat per jenis sinyal"
-          footer={<Freshness updatedAt={meta.data?.last_cycle?.finished ?? null} />}
-        />
+        <div className="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
+          <DeckCard hero fill icon={Radar} iconTone={heroTone} eyebrow={`Dicek setelah ${HORIZON_LABEL[horizon]}${filtered ? ' · filter aktif' : ''}`} className="col-span-2 lg:row-span-2">
+            <p className="text-xl font-semibold leading-snug tracking-tight sm:text-2xl">
+              {answer.proven.length
+                ? `${answer.proven.length} jenis sinyal terbukti benar arahnya.`
+                : 'Belum ada jenis sinyal yang terbukti.'}{' '}
+              {answer.negative.length ? `${answer.negative.length} cenderung salah arah.` : ''}
+            </p>
+            {(answer.proven.length > 0 || answer.negative.length > 0) && (
+              <div className="mt-5 flex flex-wrap gap-2">
+                {answer.proven.slice(0, 4).map((g) => (
+                  <Pill key={`p-${g.source}-${g.signal_type}-${g.direction}`} tone="bullish" icon={CheckCircle2}>
+                    {typeLabel(g.signal_type)}
+                  </Pill>
+                ))}
+                {answer.negative.slice(0, 4).map((g) => (
+                  <Pill key={`n-${g.source}-${g.signal_type}-${g.direction}`} tone="bearish" icon={XCircle}>
+                    {typeLabel(g.signal_type)}
+                  </Pill>
+                ))}
+              </div>
+            )}
+            <div className="mt-auto space-y-1.5 pt-6 text-[13px] text-muted-foreground">
+              <p>Sebelum biaya. Petunjuk, bukan jaminan.</p>
+              <Freshness updatedAt={meta.data?.last_cycle?.finished ?? null} />
+            </div>
+          </DeckCard>
+          <DeckCard icon={CheckCircle2} iconTone="bullish" title="Terbukti">
+            <BigNumber label="Jenis sinyal" value={<CountUp value={answer.proven.length} format={(v) => formatCount(Math.round(v))} />} tone="bullish" size="lg" />
+          </DeckCard>
+          <DeckCard icon={XCircle} iconTone="bearish" title="Negatif">
+            <BigNumber label="Salah arah" value={<CountUp value={answer.negative.length} format={(v) => formatCount(Math.round(v))} />} tone={answer.negative.length ? 'bearish' : undefined} size="lg" />
+          </DeckCard>
+          <DeckCard icon={HelpCircle} iconTone="warn" title="Belum terbukti" className="col-span-2">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <BigNumber label="Jenis sinyal" value={formatCount(rest)} size="lg" hint={answer.insufficient.length ? `${answer.insufficient.length} masih menunggu cukup data` : 'belum bisa dibedakan dari kebetulan'} />
+              <CardLink href="#kartu">Lihat semua</CardLink>
+            </div>
+          </DeckCard>
+        </div>
       )}
 
-      <Section
-        id="per-jenis"
-        className="scroll-mt-20"
-        title="Per jenis sinyal"
-        description="Ketuk satu baris untuk melihat sinyalnya di bawah. Pilih kapan arah sinyal dicek."
-        action={
-          <Segmented
-            aria-label="Dicek setelah"
-            size="xs"
-            value={horizon}
-            onChange={setHorizon}
-            options={HORIZONS.map((h) => ({ value: h, label: HORIZON_LABEL[h] }))}
-          />
-        }
-      >
-        <div className="space-y-4">
-          <details open={filtered} className="rounded-lg border px-3 py-2">
-            <summary className="cursor-pointer select-none text-xs font-semibold">Filter{filtered ? ' (aktif)' : ''}</summary>
-            <div className="mt-3">
-              <Filters meta={meta.data} value={f} onChange={setF} />
-            </div>
-          </details>
-          {summary.isPending ? (
-            <LoadingState rows={6} />
-          ) : summary.isError ? null : (
+      <section className="space-y-4">
+        <SectionHead
+          id="kartu"
+          icon={ListChecks}
+          title="Per jenis sinyal"
+          sub="Ketuk satu kartu untuk melihat sinyalnya."
+          action={
+            <Segmented
+              aria-label="Dicek setelah"
+              size="sm"
+              value={horizon}
+              onChange={setHorizon}
+              options={HORIZONS.map((h) => ({ value: h, label: HORIZON_LABEL[h] }))}
+            />
+          }
+        />
+        <details open={filtered} className="rounded-3xl border bg-card px-6 py-4">
+          <summary className="cursor-pointer select-none text-[17px] font-semibold tracking-tight">Filter{filtered ? ' (aktif)' : ''}</summary>
+          <div className="mt-4">
+            <Filters meta={meta.data} value={f} onChange={setF} />
+          </div>
+        </details>
+        {summary.isPending ? (
+          <LoadingState rows={6} />
+        ) : summary.isError ? null : cards.length === 0 ? (
+          <EmptyState title="Belum ada sinyal untuk filter ini" description="Coba hapus filter, atau tunggu siklus berikutnya." />
+        ) : (
+          <div className="grid gap-5 lg:grid-cols-2">
+            {cards.map((g) => (
+              <VerdictCard
+                key={`${g.source}|${g.signal_type}|${g.direction ?? 0}`}
+                g={g}
+                h={horizon}
+                onPick={() => setF({ ...f, source: g.source, signal_type: g.signal_type })}
+              />
+            ))}
+          </div>
+        )}
+        <p className="text-[13px] text-muted-foreground">Kesimpulan butuh minimal 10 sinyal yang dinilai, di minimal 5 hari berbeda.</p>
+      </section>
+
+      <details className="rounded-3xl border bg-card px-6 py-4">
+        <summary className="cursor-pointer select-none text-[17px] font-semibold tracking-tight">Lihat detail: tabel dan sinyal terbaru</summary>
+        <div className="mt-5 space-y-6">
+          {!summary.isPending && !summary.isError && (
             <ResponsiveTable
               rows={groups}
               columns={cols}
@@ -473,23 +574,15 @@ export function LedgerView() {
               onRowClick={(g) => setF({ ...f, source: g.source, signal_type: g.signal_type })}
               rowLabel={(g) => `Lihat sinyal ${typeLabel(g.signal_type)}`}
               caption="Ringkasan per jenis sinyal"
-              empty={
-                <EmptyState
-                  title="Belum ada sinyal untuk filter ini"
-                  description="Sinyal dicatat otomatis setiap tutup jam. Coba hapus filter, atau tunggu siklus berikutnya."
-                />
-              }
             />
           )}
-          <p className="text-2xs text-muted-foreground">Butuh minimal 10 sinyal yang sudah dinilai, di minimal 5 hari berbeda, sebelum ada kesimpulan.</p>
+          <RecentSignals key={JSON.stringify(filters)} filters={filters} />
         </div>
-      </Section>
+      </details>
 
-      <RecentSignals key={JSON.stringify(filters)} filters={filters} />
-
-      <details className="rounded-xl border bg-card px-4 py-3 sm:px-5">
-        <summary className="cursor-pointer select-none text-sm font-semibold tracking-tight">Cara kerja dan status pencatatan</summary>
-        <div className="mt-3 space-y-4">
+      <details className="rounded-3xl border bg-card px-6 py-4">
+        <summary className="cursor-pointer select-none text-[17px] font-semibold tracking-tight">Cara kerja dan status pencatatan</summary>
+        <div className="mt-4 space-y-4">
           {meta.isPending ? (
             <LoadingState rows={2} />
           ) : meta.isError || !meta.data ? (
@@ -501,17 +594,14 @@ export function LedgerView() {
         </div>
       </details>
 
-      <Link
-        href="/bot#eksekusi"
-        className="group flex items-center justify-between gap-3 rounded-xl border border-dashed px-4 py-3 text-sm hover:bg-accent/50"
-      >
-        <span className="flex min-w-0 items-start gap-2">
-          <Gauge className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      <Link href="/bot#eksekusi" className="group flex items-center justify-between gap-3 rounded-3xl border border-dashed px-6 py-4 text-[15px] hover:bg-accent/50">
+        <span className="flex min-w-0 items-start gap-3">
+          <Gauge className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />
           <span>
-            <b>Kualitas eksekusi bot live</b> (slippage, jeda alert, simulasi order limit) sekarang ada di Status bot.
+            <b>Kualitas eksekusi bot live</b> sekarang ada di Status bot.
           </span>
         </span>
-        <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-foreground" aria-hidden="true" />
+        <ArrowRight className="h-5 w-5 shrink-0 text-muted-foreground group-hover:text-foreground" aria-hidden="true" />
       </Link>
     </div>
   )

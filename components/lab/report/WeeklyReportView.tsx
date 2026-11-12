@@ -1,20 +1,33 @@
 'use client'
 
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { Activity, ArrowRight, ArrowUpRight, FlaskConical, Gauge, ListChecks, Printer, Server, TriangleAlert, Wallet, Webhook } from 'lucide-react'
-import { AnswerCard, ANSWER_TONE, type AnswerTone } from '@/components/ui/answer-card'
-import { Badge } from '@/components/ui/badge'
+import {
+  Activity,
+  ArrowUpRight,
+  CheckCircle2,
+  FileText,
+  FlaskConical,
+  Gauge,
+  Info,
+  ListChecks,
+  Printer,
+  Server,
+  TriangleAlert,
+  Wallet,
+  Webhook,
+  XCircle,
+  type LucideIcon,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ResponsiveTable, type ResponsiveColumn } from '@/components/ui/responsive-table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { StatTile } from '@/components/ui/stat-tile'
 import { StatusPill } from '@/components/ui/status-pill'
-import { Term } from '@/components/ui/term'
 import { ErrorState, LoadingState } from '@/components/shell/states'
-import { Section } from '@/components/lab/Section'
+import { BigNumber, CardLink, DeckCard, Meter, Pill, Ring, SectionHead, signTone, type Tone } from '@/components/lab/arena/deck'
 import { cn } from '@/lib/utils/cn'
-import { formatBps, formatCount, formatNumber, formatPct, formatUsdSigned, signClass } from '@/lib/utils/format'
+import { formatBps, formatCount, formatNumber, formatPct, signClass } from '@/lib/utils/format'
 import { formatTime, formatTimeframe } from '@/lib/utils/time'
 import { SOURCE_LABEL as SIGNAL_SOURCE_LABEL, typeLabel } from '@/lib/lab/ledger'
 import { strategyLabel } from '@/lib/lab/arena'
@@ -36,182 +49,69 @@ import {
 } from '@/lib/lab/report'
 import { useLabMe } from '@/lib/queries/lab'
 import { useReportWeeks, useWeeklyReport } from '@/lib/queries/report'
-import type {
-  ExecActual,
-  LedgerGroupRow,
-  LedgerReportSection,
-  LedgerVerdictStats,
-  LiveAlert,
-  PaperPresetRow,
-  SectionBase,
-  WeeklyReport,
-} from '@/lib/api/types/report'
+import type { LedgerGroupRow, LedgerReportSection, LiveAlert, SectionBase, WeeklyReport } from '@/lib/api/types/report'
 
-const sectionCls = 'break-inside-avoid print:shadow-none'
-const linkCls = 'inline-flex items-center gap-1 text-2xs text-info hover:underline print:hidden'
+const foldCls = 'rounded-2xl border px-5 py-3 print:border-0 print:px-0'
+const sumCls = 'cursor-pointer select-none text-[15px] font-semibold print:hidden'
 
 function NoData({ s, children }: { s: SectionBase | undefined; children?: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-dashed px-4 py-6 text-center text-xs text-muted-foreground">
+    <div className="rounded-2xl border border-dashed px-5 py-8 text-center text-[15px] text-muted-foreground">
       <p className="font-medium">{NO_DATA}</p>
       {s?.error ? <p className="mt-1 text-bearish">Sumber data bermasalah: {s.error}</p> : children && <p className="mt-1">{children}</p>}
     </div>
   )
 }
 
-/** A link to an admin-only page: plain text for team members (no dead ends). */
+/** Link to an admin-only page; nothing for team members (no dead ends). */
 function AdminLink({ href, isAdmin, children }: { href: string; isAdmin: boolean; children: React.ReactNode }) {
-  if (!isAdmin) return null
-  return (
-    <Link href={href} className={linkCls}>
-      {children} <ArrowRight className="h-3 w-3" aria-hidden="true" />
-    </Link>
-  )
+  return isAdmin ? <CardLink href={href}>{children}</CardLink> : null
 }
 
-function Verdict({ v }: { v: LedgerVerdictStats | null | undefined }) {
-  if (!v) return <span className="text-muted-foreground">—</span>
-  const c = VERDICT_COPY[v.verdict]
-  return (
-    <span className="inline-flex flex-wrap items-center gap-1">
-      <Badge variant={c.variant} size="xs">
-        {c.label}
-      </Badge>
-      <span className="num text-2xs text-muted-foreground">{formatCount(v.n)} sinyal</span>
-    </span>
-  )
+// ── 3 findings ─────────────────────────────────────────────────────────────
+
+const FINDING: Record<Finding['tone'], { tone: Tone; icon: LucideIcon; word: string }> = {
+  buruk: { tone: 'bearish', icon: XCircle, word: 'Masalah' },
+  perlu_dicek: { tone: 'warn', icon: TriangleAlert, word: 'Perlu dicek' },
+  baik: { tone: 'bullish', icon: CheckCircle2, word: 'Baik' },
+  info: { tone: 'info', icon: Info, word: 'Info' },
 }
-
-// ── Ringkasan minggu ini ───────────────────────────────────────────────────
-
-const FINDING_TONE: Record<Finding['tone'], AnswerTone> = { buruk: 'buruk', perlu_dicek: 'perlu_dicek', baik: 'baik', info: 'info' }
 
 function Findings({ r, isAdmin }: { r: WeeklyReport; isAdmin: boolean }) {
   const f = topFindings(r, { isAdmin })
   if (f.length === 0) {
-    return <AnswerCard tone="menunggu" title={<Term k="weekly_findings" />} answer="Tidak ada temuan: semua bagian laporan minggu ini kosong." />
+    return (
+      <DeckCard icon={Info} iconTone="muted" title="Ringkasan minggu ini">
+        <p className="text-lg">Tidak ada temuan: semua bagian laporan minggu ini kosong.</p>
+      </DeckCard>
+    )
   }
-  const [top, ...rest] = f
   return (
-    <AnswerCard
-      tone={FINDING_TONE[top.tone]}
-      title={<Term k="weekly_findings" />}
-      answer={top.text}
-      evidenceHref={top.href}
-      evidenceLabel={top.linkLabel}
-      className={sectionCls}
-    >
-      {rest.length > 0 && (
-        <ol className="mt-1 space-y-1.5 text-sm">
-          {rest.map((x) => {
-            const t = ANSWER_TONE[FINDING_TONE[x.tone]]
-            return (
-              <li key={x.key} className="flex items-start gap-2">
-                <t.Icon className={cn('mt-0.5 h-4 w-4 shrink-0', t.text)} aria-label={t.label} />
-                <span className="min-w-0">
-                  {x.text}
-                  {x.href && (
-                    <>
-                      {' '}
-                      <Link href={x.href} className="whitespace-nowrap text-info hover:underline print:hidden">
-                        {x.linkLabel ?? 'Detail'} →
-                      </Link>
-                    </>
-                  )}
-                </span>
-              </li>
-            )
-          })}
-        </ol>
-      )}
-    </AnswerCard>
+    <section className="space-y-4">
+      <SectionHead icon={FileText} title="3 hal terpenting" />
+      <div className="grid gap-5 lg:grid-cols-3">
+        {f.map((x, i) => {
+          const c = FINDING[x.tone]
+          return (
+            <DeckCard key={x.key} hero={i === 0} icon={c.icon} iconTone={c.tone} eyebrow={`#${i + 1}`} action={<Pill tone={c.tone}>{c.word}</Pill>} outline={i === 0 ? undefined : c.tone === 'muted' ? undefined : c.tone}>
+              <p className="text-lg font-semibold leading-snug tracking-tight">{x.text}</p>
+              {x.href && <CardLink href={x.href} className="mt-4">{x.linkLabel ?? 'Lihat detail'}</CardLink>}
+            </DeckCard>
+          )
+        })}
+      </div>
+    </section>
   )
 }
 
 // ── sections ────────────────────────────────────────────────────────────────
 
-function paperColumns(target: number): ResponsiveColumn<PaperPresetRow>[] {
-  return [
-    {
-      key: 'preset',
-      header: 'Preset',
-      mobile: 'title',
-      cell: (p) => (
-        <div className="min-w-0">
-          <div className="num truncate font-medium">{p.preset}</div>
-          <div className="truncate text-3xs font-normal text-muted-foreground">
-            mulai {formatTime(p.started_at, { time: false })}
-            {p.live_reference && ' · setting bot live'}
-            {!p.active && ' · paper otomatis mati'}
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: 'week',
-      header: 'Hasil minggu ini',
-      mobileLabel: 'Minggu ini',
-      mobile: 'field',
-      align: 'right',
-      cell: (p) => (
-        <span className={cn('num', signClass(p.trades_week ? p.week_return_pct : null))}>
-          {p.trades_week ? formatPct(p.week_return_pct, { digits: 2, signed: true }) : '—'}
-        </span>
-      ),
-    },
-    {
-      key: 'total',
-      header: 'Hasil total',
-      mobile: 'field',
-      align: 'right',
-      cell: (p) => (
-        <span className={cn('num', signClass(p.trades_total ? p.total_return_pct : null))}>
-          {p.trades_total ? formatPct(p.total_return_pct, { digits: 2, signed: true }) : '—'}
-        </span>
-      ),
-    },
-    {
-      key: 'trades',
-      header: 'Transaksi',
-      mobile: 'field',
-      align: 'right',
-      cell: (p) => (
-        <span className="num">
-          {p.trades_week} / {p.trades_total}
-          <span className="hidden text-3xs text-muted-foreground sm:inline"> (minggu / total)</span>
-        </span>
-      ),
-    },
-    {
-      key: 'dd',
-      header: <Term k="max_drawdown" short />,
-      mobile: 'hidden',
-      align: 'right',
-      cell: (p) => <span className="num">{p.max_dd_pct === null ? '—' : formatPct(-Math.abs(p.max_dd_pct), { digits: 2 })}</span>,
-    },
-    {
-      key: 'open',
-      header: 'Posisi terbuka',
-      mobile: 'hidden',
-      align: 'right',
-      cell: (p) => (
-        <span className="num">
-          {p.open_positions}
-          {p.unrealized_pnl !== null && <span className={cn('ml-1 text-3xs', signClass(p.unrealized_pnl))}>({formatUsdSigned(p.unrealized_pnl)})</span>}
-        </span>
-      ),
-    },
-    {
-      key: 'progress',
-      header: `Progres ke ${target}`,
-      mobile: 'badge',
-      cell: (p) => (
-        <span className="num text-xs">
-          {p.trades_total}/{target}
-        </span>
-      ),
-    },
-  ]
+function Block({ icon, title, pill, link, children }: { icon: LucideIcon; title: string; pill?: React.ReactNode; link?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <DeckCard icon={icon} iconTone="info" title={<span className="inline-flex items-center gap-2">{title} {pill}</span>} action={link}>
+      {children}
+    </DeckCard>
+  )
 }
 
 function PaperBlock({ r, isAdmin }: { r: WeeklyReport; isAdmin: boolean }) {
@@ -219,200 +119,58 @@ function PaperBlock({ r, isAdmin }: { r: WeeklyReport; isAdmin: boolean }) {
   const rows = s.presets ?? []
   const target = s.target_trades ?? 30
   return (
-    <Section
-      className={sectionCls}
-      icon={<Wallet className="h-4 w-4 text-lab" aria-hidden="true" />}
-      title={
-        <span className="inline-flex items-center gap-2">
-          Paper <StatusPill kind="paper" size="xs" />
-        </span>
-      }
-      description={`Hasil, transaksi dan turun terdalam per preset simulasi. Preset dinilai setelah ${target} transaksi.`}
-      action={<AdminLink href="/lab/arena" isAdmin={isAdmin}>Paper berjalan</AdminLink>}
-    >
+    <Block icon={Wallet} title="Paper" pill={<StatusPill kind="paper" size="xs" />} link={<AdminLink href="/lab/arena" isAdmin={isAdmin}>Paper berjalan</AdminLink>}>
       {!s.available || rows.length === 0 ? (
-        <NoData s={s}>Belum ada preset paper yang berjalan di minggu ini.</NoData>
+        <NoData s={s}>Belum ada preset paper di minggu ini.</NoData>
       ) : (
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <StatTile label="Transaksi minggu ini" value={formatCount(s.trades_week ?? 0)} hint={`${formatCount(s.trades_total ?? 0)} sejak mulai`} />
-            <StatTile label="Preset aktif" value={formatCount(rows.filter((p) => p.active).length)} hint={`${rows.length} preset tercatat`} />
-            <StatTile
-              label="Terbaik minggu ini"
-              value={s.best ? s.best.preset : '—'}
-              hint={s.best ? formatPct(s.best.week_return_pct, { digits: 2, signed: true }) : 'belum ada transaksi ditutup'}
-              valueClassName="text-base"
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
+            <BigNumber label="Transaksi" value={formatCount(s.trades_week ?? 0)} hint="minggu ini" />
+            <BigNumber label="Aktif" value={formatCount(rows.filter((p) => p.active).length)} hint={`dari ${rows.length} preset`} />
+            <BigNumber
+              label="Terbaik"
+              value={s.best ? formatPct(s.best.week_return_pct, { digits: 1, signed: true }) : '—'}
+              tone={signTone(s.best?.week_return_pct)}
+              hint={s.best?.preset ?? 'belum ada transaksi'}
             />
-            <StatTile
-              label="Terburuk minggu ini"
-              value={s.worst ? s.worst.preset : '—'}
-              hint={s.worst ? formatPct(s.worst.week_return_pct, { digits: 2, signed: true }) : 'butuh minimal 2 preset yang bertransaksi'}
-              valueClassName="text-base"
+            <BigNumber
+              label="Terburuk"
+              value={s.worst ? formatPct(s.worst.week_return_pct, { digits: 1, signed: true }) : '—'}
+              tone={signTone(s.worst?.week_return_pct)}
+              hint={s.worst?.preset ?? 'butuh 2 preset bertransaksi'}
             />
           </div>
-          <ResponsiveTable rows={rows} columns={paperColumns(target)} rowKey={(p) => p.preset_id} caption="Preset paper minggu ini" />
-          {s.note && <p className="text-2xs text-muted-foreground">Hasil dan turun terdalam dari transaksi yang sudah ditutup; posisi terbuka dihitung terpisah.</p>}
+          <ul className="space-y-4">
+            {rows.map((p) => (
+              <li key={p.preset_id} className="grid items-center gap-x-5 gap-y-2 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1.2fr)]">
+                <div className="min-w-0">
+                  <div className="truncate text-[15px] font-semibold">{p.preset}</div>
+                  <div className="truncate text-[13px] text-muted-foreground">
+                    {p.live_reference ? 'setting bot live' : `mulai ${formatTime(p.started_at, { time: false })}`}
+                    {!p.active && ' · paper mati'}
+                  </div>
+                </div>
+                <div>
+                  <div className={cn('text-[15px] font-semibold tabular-nums', signClass(p.trades_week ? p.week_return_pct : null))}>
+                    {p.trades_week ? formatPct(p.week_return_pct, { digits: 2, signed: true }) : '—'}
+                  </div>
+                  <div className="text-[13px] text-muted-foreground">minggu ini</div>
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-[13px]">
+                    <span className="text-muted-foreground">Transaksi</span>
+                    <span className="font-semibold tabular-nums">
+                      {p.trades_total}/{target}
+                    </span>
+                  </div>
+                  <Meter value={p.trades_total} max={target} label={`${p.trades_total} dari ${target} transaksi`} />
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
-    </Section>
-  )
-}
-
-function counts(c: LedgerReportSection['counts_week']) {
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {VERDICT_ORDER.filter((k) => c?.[k]).map((k) => (
-        <Badge key={k} variant={VERDICT_COPY[k].variant} size="sm">
-          {VERDICT_COPY[k].label}: {c?.[k]}
-        </Badge>
-      ))}
-      {!VERDICT_ORDER.some((k) => c?.[k]) && <span className="text-2xs text-muted-foreground">—</span>}
-    </div>
-  )
-}
-
-const LEDGER_COLUMNS: ResponsiveColumn<LedgerGroupRow>[] = [
-  {
-    key: 'signal',
-    header: 'Sinyal',
-    mobile: 'title',
-    cell: (g) => (
-      <div className="min-w-0">
-        <div className="truncate font-medium">{typeLabel(g.signal_type)}</div>
-        <div className="truncate text-3xs font-normal text-muted-foreground">
-          {directionLabel(g.direction)} · {SIGNAL_SOURCE_LABEL[g.source as keyof typeof SIGNAL_SOURCE_LABEL] ?? g.source}
-        </div>
-      </div>
-    ),
-  },
-  { key: 'week', header: 'Minggu ini', mobile: 'badge', cell: (g) => <Verdict v={g.week} /> },
-  {
-    key: 'week_mean',
-    header: 'Rata-rata minggu ini',
-    mobileLabel: 'Minggu ini',
-    mobile: 'field',
-    align: 'right',
-    cell: (g) => <span className={cn('num', signClass(g.week?.mean_pct))}>{g.week ? formatPct(g.week.mean_pct, { digits: 2, signed: true }) : '—'}</span>,
-  },
-  { key: 'overall', header: 'Keseluruhan', mobile: 'hidden', cell: (g) => <Verdict v={g.overall} /> },
-  {
-    key: 'overall_mean',
-    header: 'Rata-rata keseluruhan',
-    mobileLabel: 'Keseluruhan',
-    mobile: 'field',
-    align: 'right',
-    cell: (g) => <span className={cn('num', signClass(g.overall.mean_pct))}>{formatPct(g.overall.mean_pct, { digits: 2, signed: true })}</span>,
-  },
-]
-
-function LedgerBlock({ r, isAdmin }: { r: WeeklyReport; isAdmin: boolean }) {
-  const s = r.sections.ledger
-  return (
-    <Section
-      className={sectionCls}
-      icon={<ListChecks className="h-4 w-4 text-info" aria-hidden="true" />}
-      title="Rekam jejak sinyal"
-      description="Jenis sinyal mana yang terbukti, negatif, atau belum terbukti, dicek 1 hari setelah sinyal: minggu ini dibanding keseluruhan."
-      action={<AdminLink href="/lab/signals" isAdmin={isAdmin}>Rekam jejak sinyal</AdminLink>}
-    >
-      {!s.available ? (
-        <NoData s={s} />
-      ) : (
-        <div className="space-y-3">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-lg border p-3">
-              <div className="eyebrow mb-1.5">Minggu ini · {formatCount(s.signals_week ?? 0)} sinyal</div>
-              {counts(s.counts_week)}
-            </div>
-            <div className="rounded-lg border p-3">
-              <div className="eyebrow mb-1.5">Keseluruhan (sampai akhir minggu)</div>
-              {counts(s.counts_overall)}
-            </div>
-          </div>
-          <ResponsiveTable rows={s.groups ?? []} columns={LEDGER_COLUMNS} rowKey={(g) => g.key} caption="Rekam jejak per jenis sinyal" />
-          <p className="text-2xs text-muted-foreground">
-            Sinyal di hari terakhir minggu ini belum punya hasil 1 hari saat laporan dibuat. Butuh minimal 10 sinyal di 5 hari berbeda sebelum ada kesimpulan.
-          </p>
-        </div>
-      )}
-    </Section>
-  )
-}
-
-function ExecTiles({ a, label }: { a: ExecActual; label: string }) {
-  return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <StatTile label={`Sinyal ${label}`} value={formatCount(a.n_counted)} hint={`${formatCount(a.n_signals)} tercatat · ${formatCount(a.n_with_fill)} terisi`} />
-      <StatTile
-        label={<Term k="slippage_bps" short />}
-        value={a.mean_slippage_bps === null ? '—' : formatBps(a.mean_slippage_bps)}
-        hint={`rata-rata; median ${a.median_slippage_bps === null ? '—' : formatBps(a.median_slippage_bps)}`}
-      />
-      <StatTile
-        label={<Term k="alert_latency" short />}
-        value={a.mean_latency_s === null ? '—' : `${formatNumber(a.mean_latency_s, { digits: 1 })} dtk`}
-        hint={a.latency_upper_bound ? 'batas atas (waktu catat)' : `median ${a.median_latency_s === null ? '—' : `${formatNumber(a.median_latency_s, { digits: 1 })} dtk`}`}
-      />
-      <StatTile label="Sinyal terisi" value={formatCount(a.n_with_fill)} hint="ada harga eksekusi" />
-    </div>
-  )
-}
-
-function ExecutionBlock({ r, isAdmin }: { r: WeeklyReport; isAdmin: boolean }) {
-  const s = r.sections.execution
-  return (
-    <Section
-      className={sectionCls}
-      icon={<Gauge className="h-4 w-4 text-info" aria-hidden="true" />}
-      title={
-        <span className="inline-flex items-center gap-2">
-          Kualitas eksekusi bot live <StatusPill kind="live" size="xs" />
-        </span>
-      }
-      description="Selisih harga dan jeda alert bot live, plus simulasi kalau dulu memakai order limit."
-      action={<AdminLink href="/bot#eksekusi" isAdmin={isAdmin}>Status bot</AdminLink>}
-    >
-      {!s.available || !s.week ? (
-        <NoData s={s}>{s.overall ? `Tidak ada sinyal live minggu ini (${formatCount(s.overall.n_signals)} sinyal sejak mulai dicatat).` : null}</NoData>
-      ) : (
-        <div className="space-y-3">
-          <ExecTiles a={s.week} label="minggu ini" />
-          {(s.grid_week ?? []).length > 0 && (
-            <div className="rounded-lg border p-3">
-              <h3 className="mb-2 text-xs font-semibold">
-                <Term k="limit_sim" />
-              </h3>
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b text-3xs uppercase tracking-wide text-muted-foreground">
-                    <th className="py-1 text-left font-semibold">Jarak dari harga</th>
-                    <th className="py-1 text-left font-semibold">Ditunggu</th>
-                    <th className="py-1 text-right font-semibold">Terisi</th>
-                    <th className="py-1 text-right font-semibold">Hemat</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {s.grid_week!.map((c) => (
-                    <tr key={`${c.k}|${c.ttl_min}`} className="border-b last:border-0">
-                      <td className="num py-1.5">{formatNumber(c.k, { maxDigits: 2 })} × ATR</td>
-                      <td className="num py-1.5">{c.ttl_min} mnt</td>
-                      <td className="num py-1.5 text-right">
-                        {c.filled}/{c.n}
-                      </td>
-                      <td className={cn('num py-1.5 text-right', signClass(c.mean_saving_bps))}>{c.mean_saving_bps === null ? '—' : formatBps(c.mean_saving_bps)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          <p className="text-2xs text-muted-foreground">
-            Sampel kecil = anekdot. Keseluruhan: {formatCount(s.overall?.n_counted ?? 0)} sinyal, slippage rata-rata{' '}
-            {s.overall?.mean_slippage_bps === null || s.overall?.mean_slippage_bps === undefined ? '—' : formatBps(s.overall.mean_slippage_bps)}.
-          </p>
-        </div>
-      )}
-    </Section>
+    </Block>
   )
 }
 
@@ -427,99 +185,223 @@ const ALERT_COLUMNS: ResponsiveColumn<LiveAlert>[] = [
       </span>
     ),
   },
-  { key: 'time', header: 'Waktu', mobile: 'badge', cell: (a) => <span className="num whitespace-nowrap text-xs">{formatTime(a.ts)}</span> },
-  { key: 'orders', header: 'Order', mobile: 'field', align: 'right', cell: (a) => <span className="num">{a.orders}</span> },
-  { key: 'executed', header: 'Tereksekusi', mobile: 'field', align: 'right', cell: (a) => <span className="num">{a.executed}</span> },
+  { key: 'time', header: 'Waktu', mobile: 'badge', cell: (a) => <span className="whitespace-nowrap tabular-nums">{formatTime(a.ts)}</span> },
+  { key: 'orders', header: 'Order', mobile: 'field', align: 'right', cell: (a) => <span className="tabular-nums">{a.orders}</span> },
+  { key: 'executed', header: 'Tereksekusi', mobile: 'field', align: 'right', cell: (a) => <span className="tabular-nums">{a.executed}</span> },
   {
     key: 'rejected',
     header: 'Ditolak',
     mobile: 'field',
     align: 'right',
-    cell: (a) => <span className={cn('num', a.rejected ? 'font-semibold text-bearish' : '')}>{a.rejected}</span>,
+    cell: (a) => <span className={cn('tabular-nums', a.rejected ? 'font-semibold text-bearish' : '')}>{a.rejected}</span>,
   },
 ]
 
 function LiveBotBlock({ r, isAdmin }: { r: WeeklyReport; isAdmin: boolean }) {
   const s = r.sections.live_bot
+  const orders = s.orders ?? 0
+  const executed = s.executed ?? 0
   return (
-    <Section
-      className={sectionCls}
-      icon={<Webhook className="h-4 w-4 text-brand" aria-hidden="true" />}
-      title={
-        <span className="inline-flex items-center gap-2">
-          Aktivitas bot live <StatusPill kind="live" size="xs" />
-        </span>
-      }
-      description="Alert TradingView yang masuk, order yang tereksekusi dan yang ditolak (dibaca saja, tanpa mengubah apa pun)."
-      action={<AdminLink href="/bot" isAdmin={isAdmin}>Status bot</AdminLink>}
-    >
+    <Block icon={Webhook} title="Bot live" pill={<StatusPill kind="live" size="xs" />} link={<AdminLink href="/bot" isAdmin={isAdmin}>Status bot</AdminLink>}>
       {!s.available ? (
         <NoData s={s}>Tidak ada alert bot live di minggu ini.</NoData>
       ) : (
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <StatTile label="Sinyal" value={formatCount(s.signals ?? 0)} hint="alert TradingView" />
-            <StatTile label="Order" value={formatCount(s.orders ?? 0)} hint="satu per akun" />
-            <StatTile label="Tereksekusi" value={formatCount(s.executed ?? 0)} />
-            <StatTile label="Ditolak / gagal" value={formatCount(s.rejected ?? 0)} valueClassName={s.rejected ? 'text-bearish' : ''} />
+        <div className="space-y-5">
+          <div className="flex flex-wrap items-center gap-6">
+            <Ring value={executed} max={orders || 1} tone={s.rejected ? 'warn' : 'bullish'} size={96} label={`${executed} dari ${orders} order tereksekusi`}>
+              <span className="leading-tight">
+                <span className="font-display block text-xl font-bold tabular-nums">
+                  {executed}/{orders}
+                </span>
+                <span className="text-[11px] text-muted-foreground">order</span>
+              </span>
+            </Ring>
+            <dl className="min-w-[160px] flex-1 space-y-2">
+              {(
+                [
+                  ['sinyal (alert)', formatCount(s.signals ?? 0), undefined],
+                  ['order tereksekusi', formatCount(executed), 'text-bullish'],
+                  ['order ditolak', formatCount(s.rejected ?? 0), s.rejected ? 'text-bearish' : undefined],
+                ] as const
+              ).map(([label, value, cls]) => (
+                <div key={label} className="flex items-baseline gap-3">
+                  <dd className={cn('font-display w-12 text-right text-[28px] font-bold leading-none tabular-nums', cls)}>{value}</dd>
+                  <dt className="text-[15px] text-muted-foreground">{label}</dt>
+                </div>
+              ))}
+            </dl>
           </div>
-          <ResponsiveTable
-            rows={s.alerts ?? []}
-            columns={ALERT_COLUMNS}
-            rowKey={(a) => `${a.ts}|${a.symbol}|${a.action}|${a.side}`}
-            caption="Alert bot live minggu ini"
-          />
+          <details className={foldCls}>
+            <summary className={sumCls}>Lihat alert ({(s.alerts ?? []).length})</summary>
+            <div className="mt-4">
+              <ResponsiveTable rows={s.alerts ?? []} columns={ALERT_COLUMNS} rowKey={(a) => `${a.ts}|${a.symbol}|${a.action}|${a.side}`} caption="Alert bot live minggu ini" />
+            </div>
+          </details>
         </div>
       )}
-    </Section>
+    </Block>
+  )
+}
+
+function ExecutionBlock({ r, isAdmin }: { r: WeeklyReport; isAdmin: boolean }) {
+  const s = r.sections.execution
+  const a = s.week
+  return (
+    <Block icon={Gauge} title="Kualitas eksekusi" pill={<StatusPill kind="live" size="xs" />} link={<AdminLink href="/bot#eksekusi" isAdmin={isAdmin}>Status bot</AdminLink>}>
+      {!s.available || !a ? (
+        <NoData s={s}>{s.overall ? `Tidak ada sinyal live minggu ini (${formatCount(s.overall.n_signals)} sejak mulai dicatat).` : null}</NoData>
+      ) : (
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3">
+            <BigNumber label="Slippage" value={a.mean_slippage_bps === null ? '—' : formatBps(a.mean_slippage_bps)} hint="rata-rata" />
+            <BigNumber label="Jeda alert" value={a.mean_latency_s === null ? '—' : `${formatNumber(a.mean_latency_s, { digits: 1 })} dtk`} hint={a.latency_upper_bound ? 'batas atas' : 'rata-rata'} />
+            <BigNumber label="Terisi" value={`${formatCount(a.n_with_fill)}/${formatCount(a.n_counted)}`} hint="sinyal" />
+          </div>
+          {(s.grid_week ?? []).length > 0 && (
+            <details className={foldCls}>
+              <summary className={sumCls}>Simulasi order limit</summary>
+              <ul className="mt-4 space-y-3">
+                {s.grid_week!.map((c) => (
+                  <li key={`${c.k}|${c.ttl_min}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 text-[15px]">
+                    <span>
+                      {formatNumber(c.k, { maxDigits: 2 })} × ATR, tunggu {c.ttl_min} mnt
+                    </span>
+                    <span className={cn('font-semibold tabular-nums', signClass(c.mean_saving_bps))}>
+                      {c.mean_saving_bps === null ? '—' : `hemat ${formatBps(c.mean_saving_bps)}`}
+                    </span>
+                    <Meter value={c.filled} max={c.n || 1} tone="info" label={`${c.filled} dari ${c.n} terisi`} />
+                    <span className="text-[13px] tabular-nums text-muted-foreground">
+                      {c.filled}/{c.n} terisi
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </div>
+      )}
+    </Block>
+  )
+}
+
+const VERDICT_TONE: Record<string, Tone> = { terbukti: 'bullish', negatif: 'bearish', belum_terbukti: 'warn', belum_cukup_data: 'muted' }
+
+function counts(c: LedgerReportSection['counts_week']) {
+  const any = VERDICT_ORDER.some((k) => c?.[k])
+  return (
+    <div className="flex flex-wrap gap-2">
+      {VERDICT_ORDER.filter((k) => c?.[k]).map((k) => (
+        <Pill key={k} tone={VERDICT_TONE[k]}>
+          {VERDICT_COPY[k].label} <span className="tabular-nums">{c?.[k]}</span>
+        </Pill>
+      ))}
+      {!any && <span className="text-[15px] text-muted-foreground">—</span>}
+    </div>
+  )
+}
+
+const LEDGER_COLUMNS: ResponsiveColumn<LedgerGroupRow>[] = [
+  {
+    key: 'signal',
+    header: 'Sinyal',
+    mobile: 'title',
+    cell: (g) => (
+      <div className="min-w-0">
+        <div className="truncate font-medium">{typeLabel(g.signal_type)}</div>
+        <div className="truncate text-[13px] font-normal text-muted-foreground">
+          {directionLabel(g.direction)} · {SIGNAL_SOURCE_LABEL[g.source as keyof typeof SIGNAL_SOURCE_LABEL] ?? g.source}
+        </div>
+      </div>
+    ),
+  },
+  {
+    key: 'week',
+    header: 'Minggu ini',
+    mobile: 'badge',
+    cell: (g) => (g.week ? <Pill tone={VERDICT_TONE[g.week.verdict]}>{VERDICT_COPY[g.week.verdict].label}</Pill> : <span className="text-muted-foreground">—</span>),
+  },
+  {
+    key: 'week_mean',
+    header: 'Rata-rata minggu ini',
+    mobileLabel: 'Minggu ini',
+    mobile: 'field',
+    align: 'right',
+    cell: (g) => <span className={cn('tabular-nums', signClass(g.week?.mean_pct))}>{g.week ? formatPct(g.week.mean_pct, { digits: 2, signed: true }) : '—'}</span>,
+  },
+  {
+    key: 'overall',
+    header: 'Keseluruhan',
+    mobile: 'hidden',
+    cell: (g) => <Pill tone={VERDICT_TONE[g.overall.verdict]}>{VERDICT_COPY[g.overall.verdict].label}</Pill>,
+  },
+  {
+    key: 'overall_mean',
+    header: 'Rata-rata keseluruhan',
+    mobileLabel: 'Keseluruhan',
+    mobile: 'field',
+    align: 'right',
+    cell: (g) => <span className={cn('tabular-nums', signClass(g.overall.mean_pct))}>{formatPct(g.overall.mean_pct, { digits: 2, signed: true })}</span>,
+  },
+]
+
+function LedgerBlock({ r, isAdmin }: { r: WeeklyReport; isAdmin: boolean }) {
+  const s = r.sections.ledger
+  return (
+    <Block icon={ListChecks} title="Rekam jejak sinyal" link={<AdminLink href="/lab/signals" isAdmin={isAdmin}>Rekam jejak</AdminLink>}>
+      {!s.available ? (
+        <NoData s={s} />
+      ) : (
+        <div className="space-y-5">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div className="space-y-2.5">
+              <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Minggu ini · {formatCount(s.signals_week ?? 0)} sinyal</div>
+              {counts(s.counts_week)}
+            </div>
+            <div className="space-y-2.5">
+              <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Keseluruhan</div>
+              {counts(s.counts_overall)}
+            </div>
+          </div>
+          <details className={foldCls}>
+            <summary className={sumCls}>Lihat per jenis sinyal ({(s.groups ?? []).length})</summary>
+            <div className="mt-4">
+              <ResponsiveTable rows={s.groups ?? []} columns={LEDGER_COLUMNS} rowKey={(g) => g.key} caption="Rekam jejak per jenis sinyal" />
+            </div>
+          </details>
+          <p className="text-[13px] text-muted-foreground">Dicek 1 hari setelah sinyal, sebelum biaya.</p>
+        </div>
+      )}
+    </Block>
   )
 }
 
 function LabBlock({ r, isAdmin }: { r: WeeklyReport; isAdmin: boolean }) {
   const s = r.sections.lab
+  const warnings = s.snooping_warnings ?? []
   return (
-    <Section
-      className={sectionCls}
-      icon={<FlaskConical className="h-4 w-4 text-lab" aria-hidden="true" />}
-      title="Aktivitas Lab"
-      description="Uji yang dijalankan, yang lolos dan gagal, preset baru, dan peringatan terlalu banyak mencoba."
-    >
+    <Block icon={FlaskConical} title="Aktivitas Lab">
       {!s.available ? (
-        <NoData s={s}>Tidak ada uji, uji banyak koin atau preset baru di minggu ini.</NoData>
+        <NoData s={s}>Tidak ada uji atau preset baru di minggu ini.</NoData>
       ) : (
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <StatTile
-              label="Uji"
-              value={formatCount(s.runs ?? 0)}
-              hint={Object.entries(s.runs_by_mode ?? {}).map(([m, n]) => `${RUN_MODE_LABEL[m] ?? m} ${n}`).join(' · ') || '—'}
-            />
-            <StatTile label="Lolos" value={formatCount(s.pass ?? 0)} hint={`${formatCount(s.fail ?? 0)} gagal`} />
-            <StatTile label="Uji banyak koin" value={formatCount(s.scans ?? 0)} />
-            <StatTile label="Preset baru" value={formatCount(s.presets_saved?.length ?? 0)} />
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
+            <BigNumber label="Uji" value={formatCount(s.runs ?? 0)} hint={`${formatCount(s.scans ?? 0)} banyak koin`} />
+            <BigNumber label="Lolos" value={formatCount(s.pass ?? 0)} tone={s.pass ? 'bullish' : undefined} />
+            <BigNumber label="Gagal" value={formatCount(s.fail ?? 0)} tone={s.fail ? 'bearish' : undefined} />
+            <BigNumber label="Preset" value={formatCount(s.presets_saved?.length ?? 0)} hint="baru" />
           </div>
-          {(s.snooping_warnings ?? []).length > 0 && (
-            <div className="flex gap-2 rounded-lg border border-warn/30 bg-warn/[0.06] p-3 text-xs">
-              <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warn" aria-hidden="true" />
-              <div>
-                <b className="text-warn">
-                  <Term k="data_snooping" />
-                </b>
-                <ul className="mt-1 space-y-0.5 text-muted-foreground">
-                  {s.snooping_warnings!.map((w) => (
-                    <li key={`${w.template_id}|${w.symbol}`}>
-                      {w.symbol.replace(/USDT$/, '')} · {strategyLabel(w.template_id)}: {w.runs} uji jujur/cari setting, {w.timeframes} timeframe,{' '}
-                      {formatCount(w.trials)} kombinasi setting, data baru dipakai {w.holdout_touches}×
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+          {warnings.length > 0 && (
+            <p className="flex items-start gap-2 rounded-2xl border border-warn/40 bg-warn/10 px-4 py-3 text-[15px]">
+              <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-warn" aria-hidden="true" />
+              <span>
+                Terlalu banyak mencoba: {warnings.map((w) => `${w.symbol.replace(/USDT$/, '')} ${strategyLabel(w.template_id)}`).join(', ')}. Hasil terbaiknya bisa kebetulan.
+              </span>
+            </p>
           )}
           {(s.pass_runs ?? []).length > 0 && (
-            <div>
-              <div className="eyebrow mb-1">Uji yang lolos</div>
-              <ul className="space-y-0.5 text-xs">
+            <details className={foldCls}>
+              <summary className={sumCls}>Uji yang lolos ({s.pass_runs!.length})</summary>
+              <ul className="mt-3 space-y-1.5 text-[15px]">
                 {s.pass_runs!.map((p) => (
                   <li key={p.id}>
                     {isAdmin ? (
@@ -530,29 +412,15 @@ function LabBlock({ r, isAdmin }: { r: WeeklyReport; isAdmin: boolean }) {
                       <span>#{p.id}</span>
                     )}{' '}
                     {RUN_MODE_LABEL[p.mode] ?? p.mode} · {p.symbol.replace(/USDT$/, '')} {formatTimeframe(p.timeframe)} · {strategyLabel(p.template_id)} ·{' '}
-                    <span className={cn('num', signClass(p.net_return_pct))}>{formatPct(p.net_return_pct, { digits: 2, signed: true })}</span>
+                    <span className={cn('font-semibold tabular-nums', signClass(p.net_return_pct))}>{formatPct(p.net_return_pct, { digits: 2, signed: true })}</span>
                   </li>
                 ))}
               </ul>
-            </div>
-          )}
-          {(s.presets_saved ?? []).length > 0 && (
-            <div>
-              <div className="eyebrow mb-1">Preset baru</div>
-              <div className="flex flex-wrap gap-1.5">
-                {s.presets_saved!.map((p) => (
-                  <Badge key={p.id} variant={p.archived ? 'muted' : 'lab'} size="sm">
-                    {p.name}
-                    {p.verdict === 'PASS' ? ' · Lolos' : p.verdict === 'FAIL' ? ' · Gagal' : ''}
-                    {p.archived ? ' · dihapus' : ''}
-                  </Badge>
-                ))}
-              </div>
-            </div>
+            </details>
           )}
         </div>
       )}
-    </Section>
+    </Block>
   )
 }
 
@@ -561,57 +429,25 @@ function SystemBlock({ r }: { r: WeeklyReport }) {
   const d = s.deploys
   const b = s.backups
   return (
-    <Section
-      className={sectionCls}
-      icon={<Server className="h-4 w-4 text-muted-foreground" aria-hidden="true" />}
-      title="Kesehatan sistem"
-      description="Pembaruan sistem, cadangan harian dan proses server. Log hanya dibaca; rahasia disensor."
-    >
-      <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatTile label="Pembaruan sistem" value={d.available ? formatCount(d.live ?? 0) : '—'} hint={d.available ? `${d.dry_run ?? 0} uji coba` : NO_DATA} />
-          <StatTile label="Pembaruan gagal" value={d.available ? formatCount(d.failed ?? 0) : '—'} valueClassName={d.failed ? 'text-bearish' : ''} />
-          <StatTile label="Cadangan berhasil" value={b.available ? formatCount(b.ok ?? 0) : '—'} hint={b.available ? `${b.failed ?? 0} gagal` : NO_DATA} />
-          <StatTile label="Cadangan terakhir" value={b.last ? formatTime(b.last.ts) : '—'} valueClassName="text-sm" hint={b.last ? undefined : NO_DATA} />
+    <Block icon={Server} title="Kesehatan sistem">
+      <div className="space-y-5">
+        <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
+          <BigNumber label="Pembaruan" value={d.available ? formatCount(d.live ?? 0) : '—'} hint={d.available ? 'sistem' : NO_DATA} />
+          <BigNumber label="Gagal" value={d.available ? formatCount(d.failed ?? 0) : '—'} tone={d.failed ? 'bearish' : undefined} hint="pembaruan" />
+          <BigNumber label="Cadangan" value={b.available ? `${formatCount(b.ok ?? 0)} ok` : '—'} hint={b.available ? `${b.failed ?? 0} gagal` : NO_DATA} />
+          <BigNumber label="Terakhir" value={b.last ? formatTime(b.last.ts, { date: true, time: false }) : '—'} size="sm" hint={b.last ? formatTime(b.last.ts, { date: false }) : undefined} />
         </div>
-        {d.available && (d.events ?? []).some((e) => e.kind === 'live' || e.kind === 'failed') ? (
-          <ul className="space-y-1 text-xs">
-            {d.events!
-              .filter((e) => e.kind === 'live' || e.kind === 'failed')
-              .map((e, i) => (
-                <li key={`${e.ts}|${i}`} className="flex flex-wrap gap-x-2 gap-y-0.5">
-                  <span className="num shrink-0 text-muted-foreground">{formatTime(e.ts)}</span>
-                  <Badge variant={e.kind === 'live' ? 'bullish' : 'bearish'} size="xs">
-                    {e.kind === 'live' ? 'terpasang' : 'gagal'}
-                  </Badge>
-                  <span className="min-w-0 break-words font-mono text-2xs">{e.message}</span>
-                </li>
-              ))}
-          </ul>
-        ) : (
-          <p className="text-2xs text-muted-foreground">{d.available ? 'Tidak ada pembaruan sistem di minggu ini.' : 'Log pembaruan sistem tidak tersedia.'}</p>
-        )}
         {s.processes ? (
-          <div className="space-y-1.5">
-            <div className="flex flex-wrap gap-1.5">
-              {s.processes.map((p) => (
-                <StatusPill
-                  key={p.name}
-                  kind={p.status === 'online' ? 'sehat' : 'bermasalah'}
-                  label={`${p.name}: ${p.status === 'online' ? 'berjalan' : p.status}`}
-                />
-              ))}
-            </div>
-            <p className="text-3xs text-muted-foreground">
-              Dibaca {formatTime(s.processes_at)}. Jumlah restart: {s.processes.map((p) => `${p.name} ${p.restarts ?? '—'}`).join(', ')} (kumulatif sejak proses
-              didaftarkan, bukan per minggu).
-            </p>
+          <div className="flex flex-wrap gap-2">
+            {s.processes.map((p) => (
+              <StatusPill key={p.name} kind={p.status === 'online' ? 'sehat' : 'bermasalah'} label={`${p.name}: ${p.status === 'online' ? 'berjalan' : p.status}`} />
+            ))}
           </div>
         ) : (
-          <p className="text-2xs text-muted-foreground">Status proses server: tidak tersedia (hanya dibaca untuk minggu berjalan atau saat laporan dibekukan).</p>
+          <p className="text-[13px] text-muted-foreground">Status proses server tidak tersedia untuk minggu ini.</p>
         )}
       </div>
-    </Section>
+    </Block>
   )
 }
 
@@ -619,32 +455,38 @@ function HooksBlock({ r, isAdmin }: { r: WeeklyReport; isAdmin: boolean }) {
   const hooks = reportHooks(r.hooks, isAdmin)
   if (hooks.length === 0) return null
   return (
-    <Section
-      className={cn(sectionCls, 'print:hidden')}
-      icon={<Activity className="h-4 w-4 text-muted-foreground" aria-hidden="true" />}
-      title="Halaman terkait"
-    >
-      <div className="grid gap-2 sm:grid-cols-3" data-report-hooks="">
-        {hooks.map((h) => (
-          <Link key={h.id} href={h.href} data-report-hook={h.id} className="group rounded-lg border p-3 transition-colors hover:bg-accent">
-            <div className="flex items-center justify-between text-sm font-medium">
-              {h.title}
-              <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground" aria-hidden="true" />
-            </div>
-            <p className="mt-0.5 text-2xs text-muted-foreground">{h.note}</p>
-          </Link>
-        ))}
-      </div>
-    </Section>
+    <div className="grid gap-5 sm:grid-cols-3 print:hidden" data-report-hooks="">
+      {hooks.map((h) => (
+        <Link key={h.id} href={h.href} data-report-hook={h.id} className="group rounded-3xl border bg-card p-6 transition hover:-translate-y-0.5 hover:shadow-lg motion-reduce:transform-none">
+          <div className="flex items-center justify-between text-[17px] font-semibold">
+            {h.title}
+            <ArrowUpRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground" aria-hidden="true" />
+          </div>
+          <p className="mt-1 text-[15px] text-muted-foreground">{h.note}</p>
+        </Link>
+      ))}
+    </div>
   )
 }
 
 // ── page ────────────────────────────────────────────────────────────────────
 
+function openFolds(open: boolean) {
+  document.querySelectorAll<HTMLDetailsElement>('[data-report-print] details').forEach((d) => {
+    if (open) {
+      d.dataset.wasOpen = d.open ? '1' : '0'
+      d.open = true
+    } else if (d.dataset.wasOpen === '0') {
+      d.open = false
+    }
+  })
+}
+
 /**
  * Laporan mingguan. Readable by every logged-in account (CEO decision); links to admin-only
  * pages are hidden for team members. Opens the newest final (frozen) week unless `?week=` says
- * otherwise; the running week is "sementara" and heavier to build. Needs a Suspense boundary.
+ * otherwise. Printing (button or Ctrl+P) unfolds every detail first so the PDF is complete.
+ * Needs a Suspense boundary.
  */
 export function WeeklyReportView() {
   const router = useRouter()
@@ -657,6 +499,17 @@ export function WeeklyReportView() {
   const week = params.get('week') ?? fallback
   const report = useWeeklyReport(week, { enabled: Boolean(week) })
 
+  useEffect(() => {
+    const before = () => openFolds(true)
+    const after = () => openFolds(false)
+    window.addEventListener('beforeprint', before)
+    window.addEventListener('afterprint', after)
+    return () => {
+      window.removeEventListener('beforeprint', before)
+      window.removeEventListener('afterprint', after)
+    }
+  }, [])
+
   function pick(w: string) {
     router.replace(w === fallback ? pathname : `${pathname}?week=${encodeURIComponent(w)}`, { scroll: false })
   }
@@ -664,10 +517,10 @@ export function WeeklyReportView() {
   const r = report.data
   const kind = r ? reportKind(r) : null
   return (
-    <div className="space-y-5" data-report-print="">
+    <div className="space-y-8" data-report-print="">
       <div className="flex flex-wrap items-center gap-3 print:hidden">
         <Select value={week ?? ''} onValueChange={pick} disabled={!weeks.data}>
-          <SelectTrigger className="w-full sm:w-[320px]" aria-label="Pilih minggu">
+          <SelectTrigger className="h-11 w-full rounded-full px-5 text-[15px] sm:w-[340px]" aria-label="Pilih minggu">
             <SelectValue placeholder="Pilih minggu" />
           </SelectTrigger>
           <SelectContent>
@@ -679,11 +532,18 @@ export function WeeklyReportView() {
             ))}
           </SelectContent>
         </Select>
-        <Button variant="outline" size="sm" onClick={() => window.print()} disabled={!r}>
+        <Button
+          variant="outline"
+          className="h-11 rounded-full px-5"
+          onClick={() => {
+            openFolds(true)
+            window.print()
+          }}
+          disabled={!r}
+        >
           <Printer className="h-4 w-4" aria-hidden="true" />
           Simpan PDF
         </Button>
-        <span className="text-2xs text-muted-foreground">Pakai dialog cetak browser, lalu pilih &quot;Simpan sebagai PDF&quot;.</span>
       </div>
 
       {weeks.isError ? (
@@ -694,31 +554,28 @@ export function WeeklyReportView() {
         <ErrorState error={report.error} onRetry={() => report.refetch()} title="Laporan tidak bisa dimuat" />
       ) : (
         <>
-          <div className={cn('rounded-xl border bg-card p-4 text-xs', sectionCls)}>
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-base font-semibold">Laporan mingguan {weekLabel(r)}</h2>
-              {kind && (
-                <Badge variant={kind === 'final' ? 'info' : kind === 'sementara' ? 'warn' : 'muted'} size="sm" title={WEEK_KIND_COPY[kind].hint}>
-                  {WEEK_KIND_COPY[kind].label}
-                </Badge>
-              )}
+          <div className="flex flex-wrap items-end justify-between gap-4 break-inside-avoid">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.14em] text-info">Laporan mingguan</div>
+              <h2 className="font-display mt-1 text-[28px] font-bold leading-tight tracking-tight sm:text-[34px]">{weekLabel(r)}</h2>
+              <p className="mt-1 text-[15px] text-muted-foreground">{weekPeriod(r)}</p>
             </div>
-            <p className="mt-1 text-muted-foreground">{weekPeriod(r)}</p>
-            <p className="text-muted-foreground">
-              {r.snapshot
-                ? `Laporan final, dibekukan ${formatTime(r.snapshot.generated_at)}: angkanya tidak berubah lagi.`
-                : r.partial
-                  ? `Sementara, dihitung ${formatTime(r.generated_at)}: angka masih bisa berubah sampai minggu selesai.`
-                  : `Dihitung ulang ${formatTime(r.generated_at)} karena minggu ini tidak punya laporan final.`}
-            </p>
+            {kind && (
+              <Pill tone={kind === 'final' ? 'info' : kind === 'sementara' ? 'warn' : 'muted'} icon={kind === 'final' ? CheckCircle2 : Activity}>
+                {WEEK_KIND_COPY[kind].label}
+                {r.snapshot ? ` · ${formatTime(r.snapshot.generated_at)}` : ''}
+              </Pill>
+            )}
           </div>
           <Findings r={r} isAdmin={isAdmin} />
-          <PaperBlock r={r} isAdmin={isAdmin} />
-          <LiveBotBlock r={r} isAdmin={isAdmin} />
-          <ExecutionBlock r={r} isAdmin={isAdmin} />
-          <LedgerBlock r={r} isAdmin={isAdmin} />
-          <LabBlock r={r} isAdmin={isAdmin} />
-          <SystemBlock r={r} />
+          <div className="grid gap-5 xl:grid-cols-2">
+            <PaperBlock r={r} isAdmin={isAdmin} />
+            <LiveBotBlock r={r} isAdmin={isAdmin} />
+            <ExecutionBlock r={r} isAdmin={isAdmin} />
+            <LedgerBlock r={r} isAdmin={isAdmin} />
+            <LabBlock r={r} isAdmin={isAdmin} />
+            <SystemBlock r={r} />
+          </div>
           <HooksBlock r={r} isAdmin={isAdmin} />
         </>
       )}

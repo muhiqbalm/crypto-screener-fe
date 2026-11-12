@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Bookmark, CandlestickChart, FlaskConical, Loader2, Lock, PlayCircle, Trash2, TriangleAlert } from 'lucide-react'
+import { Bookmark, CandlestickChart, CircleDashed, FlaskConical, Layers, Loader2, Lock, MoreHorizontal, PlayCircle, Trash2, TriangleAlert, XCircle } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,23 +14,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { AnswerCard, type AnswerTone } from '@/components/ui/answer-card'
 import { Button } from '@/components/ui/button'
 import { NextStep } from '@/components/ui/next-step'
-import { ResponsiveTable, type ResponsiveColumn } from '@/components/ui/responsive-table'
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
 import { Term } from '@/components/ui/term'
 import { VerdictBadge } from '@/components/ui/verdict-badge'
 import { ErrorState, LoadingState } from '@/components/shell/states'
-import { Section } from '@/components/lab/Section'
 import { PaperProgress, PresetStatusPill } from '@/components/lab/arena/PaperBits'
+import { BigNumber, CardLink, CoinAvatar, CountUp, DeckCard, Meter, signTone, type Tone } from '@/components/lab/arena/deck'
 import { StartPaperDialog } from '@/components/lab/arena/StartPaperDialog'
 import { apiErrorDetail } from '@/lib/api/errors'
 import { cn } from '@/lib/utils/cn'
 import { coinOf, formatCount, formatNumber, formatPct, signClass } from '@/lib/utils/format'
 import { formatTime, formatTimeframe } from '@/lib/utils/time'
 import { notify } from '@/lib/utils/toast'
-import { sortTimeframes } from '@/lib/lab/timeframes'
 import { PRESET_STATUS_COPY, REVIEW_MIN_TRADES, arenaHref, driftPlain, presetStatus, strategyLabel, type PresetStatus } from '@/lib/lab/arena'
 import { templateDefaults } from '@/lib/lab/paper'
 import { useArenaReport } from '@/lib/queries/arena'
@@ -141,7 +138,7 @@ function DeleteDialog({ preset, running, onClose }: { preset: LabPreset; running
 function Metric({ label, value, className }: { label: React.ReactNode; value: React.ReactNode; className?: string }) {
   return (
     <div className="min-w-0 rounded-lg border bg-card p-2.5">
-      <div className="text-3xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
       <div className={cn('num mt-0.5 text-sm font-semibold', className)}>{value}</div>
     </div>
   )
@@ -174,7 +171,7 @@ function PresetSheet({
                 <SheetTitle className="num text-lg font-bold">{p.name}</SheetTitle>
                 <PresetStatusPill status={st} />
                 {p.readonly && (
-                  <span className="inline-flex items-center gap-1 text-2xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1 text-[13px] text-muted-foreground">
                     <Lock className="h-3 w-3" aria-hidden="true" /> terkunci
                   </span>
                 )}
@@ -273,7 +270,7 @@ function PresetSheet({
               </section>
             )}
             {p.notes && <p className="text-xs text-muted-foreground">Catatan: {p.notes}</p>}
-            <p className="text-3xs text-muted-foreground">
+            <p className="text-[13px] text-muted-foreground">
               Dipakai di {p.usage.runs} uji dan {p.usage.watches} pantauan · disimpan {formatTime(p.created_at)}
             </p>
           </div>
@@ -283,144 +280,102 @@ function PresetSheet({
   )
 }
 
-// ── table ──────────────────────────────────────────────────────────────────
+// ── cards ──────────────────────────────────────────────────────────────────
 
-function useColumns(templates: LabTemplate[] | undefined, onAction: (d: NonNullable<Dialog>) => void): ResponsiveColumn<Row>[] {
-  return useMemo(
-    () => [
-      {
-        key: 'preset',
-        header: 'Preset',
-        mobile: 'title',
-        cell: ({ p }) => (
+const ORDER: PresetStatus['kind'][] = ['menyimpang', 'paper', 'lolos', 'belum_diuji', 'gagal']
+
+type Filter = 'semua' | 'paper' | 'lolos' | 'belum_diuji' | 'gagal'
+const FILTERS: { value: Filter; label: string; match: (k: PresetStatus['kind']) => boolean }[] = [
+  { value: 'semua', label: 'Semua', match: () => true },
+  { value: 'paper', label: 'Di paper', match: (k) => k === 'paper' || k === 'menyimpang' },
+  { value: 'lolos', label: 'Lolos', match: (k) => k === 'lolos' },
+  { value: 'belum_diuji', label: 'Belum diuji', match: (k) => k === 'belum_diuji' },
+  { value: 'gagal', label: 'Gagal', match: (k) => k === 'gagal' },
+]
+
+function PresetCard({ row, templates, onDetail, onAction }: { row: Row; templates: LabTemplate[] | undefined; onDetail: () => void; onAction: (d: NonNullable<Dialog>) => void }) {
+  const { p, status } = row
+  const h = p.holdout
+  const running = status.kind === 'paper' || status.kind === 'menyimpang'
+  return (
+    <DeckCard outline={status.kind === 'menyimpang' ? 'warn' : undefined} id={`preset-${p.id}`} className="scroll-mt-24">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <CoinAvatar coin={p.symbol} size={44} />
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              {p.readonly ? (
-                <Lock className="h-3.5 w-3.5 shrink-0 text-lab" aria-label="Terkunci: setting bot live, tidak bisa diubah atau dihapus" />
-              ) : (
-                <Bookmark className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-              )}
-              <span className="num truncate font-semibold">{p.name}</span>
+            <div className="flex items-center gap-2">
+              {p.readonly && <Lock className="h-4 w-4 shrink-0 text-lab" aria-label="Terkunci: setting bot live" />}
+              <h3 className="font-display text-lg font-semibold leading-snug tracking-tight [overflow-wrap:anywhere]">{p.name}</h3>
             </div>
-            <div className="truncate text-3xs font-normal text-muted-foreground">
+            <div className="truncate text-[13px] text-muted-foreground">
               {strategyLabel(p.template_id, templates)} · {formatTimeframe(p.timeframe)}
               {p.live_reference && ' · setting bot live'}
             </div>
           </div>
-        ),
-      },
-      {
-        key: 'status',
-        header: <Term k="preset_status" short />,
-        mobileLabel: 'Status',
-        mobile: 'badge',
-        cell: ({ status }) => (
-          <div className="flex flex-col items-start gap-1">
-            <PresetStatusPill status={status} />
-            {status.progress && (
-              <span className="num hidden text-3xs text-muted-foreground sm:inline">
-                {status.progress.n}/{status.progress.of} transaksi
+        </div>
+        <PresetStatusPill status={status} />
+      </div>
+
+      <div className="mt-5 grid grid-cols-3 gap-4">
+        <BigNumber
+          label="Hasil uji"
+          value={h?.net_return_pct === null || h?.net_return_pct === undefined ? '—' : <CountUp value={h.net_return_pct} format={(v) => formatPct(v, { digits: 1, signed: true })} />}
+          tone={signTone(h?.net_return_pct)}
+          size="sm"
+        />
+        <BigNumber
+          label="Drawdown"
+          value={h?.max_dd_pct === null || h?.max_dd_pct === undefined ? '—' : formatPct(-Math.abs(h.max_dd_pct), { digits: 1 })}
+          tone={h?.max_dd_pct ? 'bearish' : undefined}
+          size="sm"
+        />
+        <BigNumber label="Transaksi" value={h?.trades === null || h?.trades === undefined ? '—' : formatCount(h.trades)} size="sm" />
+      </div>
+
+      <div className="mt-5 min-h-[44px]">
+        {status.progress ? (
+          <div className="space-y-2">
+            <div className="flex justify-between text-[13px]">
+              <span className="text-muted-foreground">Transaksi paper</span>
+              <span className="font-semibold tabular-nums">
+                {status.progress.n}/{status.progress.of}
               </span>
-            )}
-            {status.paperStopped && <span className="hidden text-3xs text-warn sm:inline">paper otomatis mati</span>}
+            </div>
+            <Meter value={status.progress.n} max={status.progress.of} tone={status.kind === 'menyimpang' ? 'warn' : 'lab'} label={`${status.progress.n} dari ${status.progress.of} transaksi paper`} />
           </div>
-        ),
-      },
-      {
-        key: 'net',
-        header: 'Hasil uji',
-        mobile: 'field',
-        align: 'right',
-        cell: ({ p }) => (
-          <span className={cn('num', signClass(p.holdout?.net_return_pct))}>
-            {p.holdout ? formatPct(p.holdout.net_return_pct, { digits: 1, signed: true }) : '—'}
-          </span>
-        ),
-      },
-      {
-        key: 'dd',
-        header: <Term k="max_drawdown" short />,
-        mobileLabel: 'Turun terdalam',
-        mobile: 'field',
-        align: 'right',
-        cell: ({ p }) => (
-          <span className="num">{p.holdout?.max_dd_pct === null || p.holdout?.max_dd_pct === undefined ? '—' : formatPct(-Math.abs(p.holdout.max_dd_pct), { digits: 1 })}</span>
-        ),
-      },
-      {
-        key: 'trades',
-        header: 'Transaksi uji',
-        mobileLabel: 'Transaksi',
-        mobile: 'field',
-        align: 'right',
-        cell: ({ p }) => <span className="num">{p.holdout?.trades === null || p.holdout?.trades === undefined ? '—' : formatCount(p.holdout.trades)}</span>,
-      },
-      {
-        key: 'pf',
-        header: <Term k="profit_factor" short />,
-        mobile: 'hidden',
-        align: 'right',
-        cell: ({ p }) => <span className="num">{p.holdout?.profit_factor === null || p.holdout?.profit_factor === undefined ? '—' : formatNumber(p.holdout.profit_factor)}</span>,
-      },
-      {
-        key: 'tries',
-        header: 'Percobaan',
-        mobile: 'hidden',
-        cell: ({ p }) =>
-          p.snooping ? (
-            <span className={cn('num inline-flex items-center gap-1 text-2xs', manyAttempts(p) ? 'text-warn' : 'text-muted-foreground')}>
-              {manyAttempts(p) && <TriangleAlert className="h-3 w-3" aria-label="Sudah banyak dicoba" />}
-              {p.snooping.runs} uji · {p.snooping.timeframes} TF
-            </span>
-          ) : (
-            <span className="text-2xs text-muted-foreground">—</span>
-          ),
-      },
-      {
-        key: 'actions',
-        header: <span className="sr-only">Aksi</span>,
-        mobile: 'hidden',
-        align: 'right',
-        cell: ({ p, status }) => (
-          <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-            {status.kind === 'paper' || status.kind === 'menyimpang' ? (
-              <Button asChild size="sm" variant="outline" className="h-7 gap-1 text-xs">
-                <Link href={arenaHref(p.id)}>Lihat paper</Link>
-              </Button>
-            ) : (
-              <Button size="sm" className="h-7 gap-1 text-xs" onClick={() => onAction({ kind: 'paper', preset: p })}>
-                <PlayCircle className="h-3.5 w-3.5" aria-hidden="true" /> Mulai paper
-              </Button>
-            )}
-            <Button asChild size="sm" variant="ghost" className="h-7 gap-1 text-xs">
-              <Link href={`/lab?preset=${encodeURIComponent(String(p.id))}`}>
-                <FlaskConical className="h-3.5 w-3.5" aria-hidden="true" /> Uji
-              </Link>
-            </Button>
-          </div>
-        ),
-      },
-    ],
-    [templates, onAction],
+        ) : (
+          <p className="text-[13px] text-muted-foreground">
+            {status.paperStopped ? 'Paper otomatis mati.' : status.kind === 'gagal' ? 'Gagal uji jujur saat disimpan.' : !h ? 'Belum punya rapor uji.' : 'Belum dijalankan di paper.'}
+          </p>
+        )}
+      </div>
+
+      <div className="mt-5 flex flex-wrap items-center gap-2 border-t pt-4">
+        {running ? (
+          <Button asChild size="sm" className="rounded-full">
+            <Link href={arenaHref(p.id)}>
+              <PlayCircle aria-hidden="true" /> Lihat paper
+            </Link>
+          </Button>
+        ) : (
+          <Button size="sm" className="rounded-full" variant={status.kind === 'gagal' ? 'outline' : 'default'} onClick={() => onAction({ kind: 'paper', preset: p })}>
+            <PlayCircle aria-hidden="true" /> Mulai paper
+          </Button>
+        )}
+        <Button asChild size="sm" variant="outline" className="rounded-full">
+          <Link href={`/lab?preset=${encodeURIComponent(String(p.id))}`}>
+            <FlaskConical aria-hidden="true" /> Uji ulang
+          </Link>
+        </Button>
+        <Button size="sm" variant="ghost" className="ml-auto rounded-full" onClick={onDetail} aria-label={`Detail dan aksi lain ${p.name}`}>
+          <MoreHorizontal aria-hidden="true" /> Detail
+        </Button>
+      </div>
+    </DeckCard>
   )
 }
 
 // ── page ───────────────────────────────────────────────────────────────────
-
-function answerOf(rows: Row[]): { tone: AnswerTone; text: string } {
-  const n = (k: PresetStatus['kind']) => rows.filter((r) => r.status.kind === k).length
-  const paper = n('paper') + n('menyimpang')
-  const parts = [
-    `${rows.length} preset`,
-    paper ? `${paper} berjalan di paper${n('menyimpang') ? ` (${n('menyimpang')} menyimpang)` : ''}` : 'belum ada yang berjalan di paper',
-    `${n('lolos')} lolos uji menunggu dijalankan`,
-    `${n('gagal')} gagal`,
-    `${n('belum_diuji')} belum diuji`,
-  ]
-  const tone: AnswerTone = n('menyimpang') ? 'perlu_dicek' : 'info'
-  const next = n('lolos') ? ' Langkah berikutnya: pilih preset yang lolos lalu tekan Mulai paper.' : ''
-  return { tone, text: `${parts.join(', ')}.${next}` }
-}
 
 export function PresetsView() {
   const q = useLabPresets()
@@ -428,15 +383,17 @@ export function PresetsView() {
   const arenaQ = useArenaReport()
   const [dialog, setDialog] = useState<Dialog>(null)
   const [openId, setOpenId] = useState<string | null>(null)
+  const [filter, setFilter] = useState<Filter>('semua')
   const templates = templatesQ.data
   const reviewN = arenaQ.data?.review_min_trades ?? REVIEW_MIN_TRADES
   const rows: Row[] = useMemo(
-    () => (q.data ?? []).map((p) => ({ p, status: presetStatus(p, arenaQ.data?.rows, reviewN) })),
+    () =>
+      (q.data ?? [])
+        .map((p) => ({ p, status: presetStatus(p, arenaQ.data?.rows, reviewN) }))
+        .sort((x, y) => ORDER.indexOf(x.status.kind) - ORDER.indexOf(y.status.kind) || x.p.symbol.localeCompare(y.p.symbol) || x.p.name.localeCompare(y.p.name)),
     [q.data, arenaQ.data, reviewN],
   )
   const onAction = useMemo(() => (d: NonNullable<Dialog>) => setDialog(d), [])
-  const cols = useColumns(templates, onAction)
-  const coins = Array.from(new Set(rows.map((r) => r.p.symbol)))
   const open = rows.find((r) => String(r.p.id) === openId) ?? null
   const defaults = (p: LabPreset) => templateDefaults(templates?.find((t) => t.id === p.template_id))
 
@@ -446,70 +403,84 @@ export function PresetsView() {
     return (
       <NextStep
         title="Belum ada preset"
-        description="Preset dibuat dari hasil uji yang sudah selesai: buka satu hasil lalu pilih Simpan sebagai preset."
+        description="Buka satu hasil uji yang selesai, lalu pilih Simpan sebagai preset."
         action={{ label: 'Buka Hasil uji', href: '/lab/hasil', icon: FlaskConical }}
       />
     )
   }
-  const a = answerOf(rows)
+  const n = (k: PresetStatus['kind']) => rows.filter((r) => r.status.kind === k).length
+  const paper = n('paper') + n('menyimpang')
+  const shown = rows.filter((r) => FILTERS.find((f) => f.value === filter)!.match(r.status.kind))
+  const heroTone: Tone = n('menyimpang') ? 'warn' : paper ? 'lab' : 'info'
+  const answer = paper
+    ? `${paper} preset berjalan di paper${n('menyimpang') ? `, ${n('menyimpang')} menyimpang` : ''}. ${n('lolos') ? `${n('lolos')} lolos uji siap kamu jalankan.` : 'Tidak ada preset lolos yang menunggu.'}`
+    : n('lolos')
+      ? `Belum ada yang di paper. ${n('lolos')} preset lolos uji siap kamu jalankan.`
+      : 'Belum ada yang di paper, dan belum ada preset yang lolos uji.'
 
   return (
-    <div className="space-y-5">
-      <AnswerCard
-        tone={a.tone}
-        title="Preset kamu"
-        answer={a.text}
-        evidenceHref={arenaQ.data?.rows.length ? '/lab/arena' : undefined}
-        evidenceLabel="Buka Paper berjalan"
-        footer={
-          arenaQ.isError ? (
-            <span className="text-warn">Status paper tidak tersedia: Paper berjalan tidak bisa dimuat.</span>
-          ) : (
-            <span>Status &quot;Lolos/Gagal&quot; adalah rapor saat preset disimpan. Paper dinilai setelah {reviewN} transaksi.</span>
+    <div className="space-y-8">
+      <div className="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
+        <DeckCard hero fill icon={Layers} iconTone={heroTone} eyebrow={`${rows.length} preset`} className="col-span-2 lg:row-span-2">
+          <p className="text-xl font-semibold leading-snug tracking-tight sm:text-2xl">{answer}</p>
+          <div className="mt-auto space-y-3 pt-6">
+            <p className="text-[15px] text-muted-foreground">Lolos/Gagal = rapor saat disimpan. Paper dinilai setelah {reviewN} transaksi.</p>
+            {arenaQ.data?.rows.length ? <CardLink href="/lab/arena">Buka Paper berjalan</CardLink> : null}
+            {arenaQ.isError && <p className="text-[13px] text-warn">Status paper tidak tersedia saat ini.</p>}
+          </div>
+        </DeckCard>
+        <DeckCard icon={PlayCircle} iconTone="lab" title="Di paper">
+          <BigNumber label="Preset" value={<CountUp value={paper} format={(v) => formatCount(Math.round(v))} />} size="lg" hint={n('menyimpang') ? `${n('menyimpang')} menyimpang` : 'semua sesuai sejauh ini'} />
+        </DeckCard>
+        <DeckCard icon={Bookmark} iconTone="bullish" title="Lolos, belum jalan">
+          <BigNumber label="Preset" value={<CountUp value={n('lolos')} format={(v) => formatCount(Math.round(v))} />} tone={n('lolos') ? 'bullish' : undefined} size="lg" hint="siap Mulai paper" />
+        </DeckCard>
+        <DeckCard icon={CircleDashed} iconTone="muted" title="Belum diuji">
+          <BigNumber label="Preset" value={formatCount(n('belum_diuji'))} size="lg" hint="tanpa rapor uji" />
+        </DeckCard>
+        <DeckCard icon={XCircle} iconTone="bearish" title="Gagal">
+          <BigNumber label="Preset" value={formatCount(n('gagal'))} tone={n('gagal') ? 'bearish' : undefined} size="lg" hint="gagal uji jujur" />
+        </DeckCard>
+      </div>
+
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Saring preset">
+        {FILTERS.map((f) => {
+          const count = rows.filter((r) => f.match(r.status.kind)).length
+          const active = filter === f.value
+          return (
+            <button
+              key={f.value}
+              type="button"
+              aria-pressed={active}
+              onClick={() => setFilter(f.value)}
+              className={cn(
+                'inline-flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-colors',
+                active ? 'border-info/50 bg-info/12 text-info' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+              )}
+            >
+              {f.label}
+              <span className="tabular-nums opacity-70">{count}</span>
+            </button>
           )
-        }
-      />
+        })}
+      </div>
 
-      {coins.map((c) => {
-        const list = rows.filter((r) => r.p.symbol === c)
-        const order = sortTimeframes(Array.from(new Set(list.map((r) => r.p.timeframe))))
-        list.sort((x, y) => order.indexOf(x.p.timeframe) - order.indexOf(y.p.timeframe) || Number(y.p.live_reference) - Number(x.p.live_reference))
-        return (
-          <Section
-            key={c}
-            id={`coin-${c}`}
-            title={<span className="num">{coinOf(c)}</span>}
-            icon={<Bookmark className="h-4 w-4 text-lab" aria-hidden="true" />}
-            description={`${list.length} preset · ${order.map(formatTimeframe).join(', ')}`}
-          >
-            <ResponsiveTable
-              rows={list}
-              columns={cols}
-              rowKey={(r) => String(r.p.id)}
-              onRowClick={(r) => setOpenId(String(r.p.id))}
-              rowLabel={(r) => `Detail dan aksi ${r.p.name}`}
-              caption={`Preset ${coinOf(c)}`}
-            />
-          </Section>
-        )
-      })}
+      {shown.length === 0 ? (
+        <p className="rounded-3xl border border-dashed p-8 text-center text-[15px] text-muted-foreground">Tidak ada preset dengan status ini.</p>
+      ) : (
+        <div className="grid gap-5 lg:grid-cols-2">
+          {shown.map((row) => (
+            <PresetCard key={String(row.p.id)} row={row} templates={templates} onDetail={() => setOpenId(String(row.p.id))} onAction={onAction} />
+          ))}
+        </div>
+      )}
 
-      <details className="rounded-xl border bg-card px-4 py-3 text-sm sm:px-5">
-        <summary className="cursor-pointer select-none font-semibold tracking-tight">Tentang preset</summary>
-        <ul className="mt-3 list-disc space-y-1.5 pl-5 text-xs leading-relaxed text-muted-foreground">
-          <li>
-            Satu preset = satu strategi dengan parameter tetap untuk satu koin dan timeframe. Namanya <span className="num">{'{TF}-{KOIN}-{Label}'}</span>, mis.{' '}
-            <span className="num">4H-ETH-Basic</span>.
-          </li>
-          <li>
-            <span className="num">4H-ETH-Basic</span> adalah setting bot live ETH 4H. Preset ini terkunci: tidak bisa diubah atau dihapus. Jangan berharap setting itu
-            cocok di koin atau timeframe lain.
-          </li>
-          <li>Simpan preset dari hasil uji yang sudah selesai. Rapor Lolos/Gagal di sini adalah rapor saat preset disimpan.</li>
-          <li>
-            &quot;Mulai paper&quot; membuat akun simulasi 10,000 USDT dengan ukuran posisi seperti uji, lalu menjalankan sinyal preset di sana. Tidak ada order
-            sungguhan.
-          </li>
+      <details className="rounded-3xl border bg-card px-6 py-4">
+        <summary className="cursor-pointer select-none text-[17px] font-semibold tracking-tight">Tentang preset</summary>
+        <ul className="mt-3 list-disc space-y-2 pl-5 text-[15px] leading-relaxed text-muted-foreground">
+          <li>Satu preset = satu strategi dengan parameter tetap untuk satu koin dan timeframe, mis. 4H-ETH-Basic.</li>
+          <li>4H-ETH-Basic adalah setting bot live ETH 4H: terkunci, tidak bisa diubah atau dihapus.</li>
+          <li>&quot;Mulai paper&quot; membuat akun simulasi 10,000 USDT dengan ukuran posisi seperti uji. Tidak ada order sungguhan.</li>
         </ul>
       </details>
 

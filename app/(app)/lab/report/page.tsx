@@ -16,7 +16,7 @@ export default function WeeklyReportPage() {
     <PageContainer>
       <LabHeader
         title="Laporan mingguan"
-        subtitle="Apa yang terjadi minggu ini, dimulai dari tiga hal terpenting. Satu minggu = Senin 07:00 WIB sampai Senin berikutnya."
+        subtitle="Apa yang terjadi minggu ini, mulai dari tiga hal terpenting."
         help={{
           apaIni:
             'Rangkuman satu minggu dari data nyata: paper, bot live, kualitas eksekusi, rekam jejak sinyal, aktivitas Lab dan kesehatan sistem.',

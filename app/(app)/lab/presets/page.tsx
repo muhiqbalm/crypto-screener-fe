@@ -12,7 +12,7 @@ export default function LabPresetsPage() {
     <PageContainer width="wide">
       <LabHeader
         title="Preset"
-        subtitle="Setting strategi yang tersimpan, satu per koin dan timeframe. Dari sini kamu menjalankannya di paper atau memantau sinyalnya."
+        subtitle="Setting strategi tersimpan: jalankan di paper atau pantau sinyalnya."
         help={{
           apaIni: 'Preset adalah setting strategi yang disimpan dari hasil uji. Statusnya menunjukkan rapor saat disimpan atau keadaan paper-nya sekarang.',
           caraPakai: [

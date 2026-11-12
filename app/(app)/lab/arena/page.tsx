@@ -20,7 +20,7 @@ export default function ArenaPage() {
     <PageContainer width="wide">
       <LabHeader
         title="Paper berjalan"
-        subtitle="Preset yang sedang dijalankan di akun simulasi: hasilnya, progres ke 30 transaksi, dan apakah masih sesuai hasil uji."
+        subtitle="Preset di akun simulasi: hasil, progres ke 30 transaksi, dan kecocokan dengan uji."
         status={<StatusPill kind="paper" />}
         help={PAPER_HELP}
       />

@@ -414,6 +414,9 @@ export function labPaperMock(method: string, seg: string[], qs: URLSearchParams,
     if (seg[1] === 'summary') return ok(ledgerSummary(qs))
     if (seg[1] === 'signals') return ok(ledgerSignals(qs))
   }
+  // Universal (archive): no live data in mock mode, so the page shows its honest empty states
+  if (method === 'GET' && seg[0] === 'universal' && seg[1] === 'watches' && seg.length === 2) return ok([])
+  if (method === 'GET' && seg[0] === 'universal' && seg[1] === 'watches' && seg[3] === 'rebalances') return ok([])
   if (method === 'GET' && seg[0] === 'report') {
     if (seg[1] === 'weeks') return ok(reportWeeks())
     if (seg[1] === 'weekly') return ok(weekly(qs.get('week')))
