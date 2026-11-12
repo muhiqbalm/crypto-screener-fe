@@ -132,7 +132,8 @@ export function DeckCard({
   )
   const frame = cn(
     'group relative block h-full w-full min-w-0 rounded-3xl p-5 text-left text-card-foreground break-inside-avoid print:shadow-none sm:p-6',
-    hero ? 'ring-gradient glass overflow-hidden' : 'border bg-card',
+    // print: the gradient mask and backdrop blur do not survive the print pipeline → plain card
+    hero ? 'ring-gradient glass overflow-hidden print:border print:bg-card print:[backdrop-filter:none] print:[-webkit-backdrop-filter:none] print:before:hidden' : 'border bg-card',
     outline && !hero && { bullish: 'border-bullish/50', bearish: 'border-bearish/50', warn: 'border-warn/60', info: 'border-info/50', lab: 'border-lab/50', brand: 'border-brand/50', muted: '' }[outline],
     highlighted && 'ring-2 ring-brand/70 ring-offset-2 ring-offset-background',
     onClick && 'lift cursor-pointer hover:border-brand/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
