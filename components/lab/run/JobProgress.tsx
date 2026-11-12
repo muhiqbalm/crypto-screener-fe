@@ -12,24 +12,24 @@ export function JobProgress({ job, status }: { job: LabJob | undefined; status: 
   const done = p?.done ?? 0
   const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : null
   return (
-    <div className="space-y-2 rounded-xl border border-info/30 bg-info/[0.07] p-4" role="status">
-      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-        <span className="flex items-center gap-2 font-medium">
-          <Loader2 className="h-4 w-4 animate-spin text-info" />
+    <div className="flex flex-col justify-center gap-3 rounded-3xl border border-info/30 bg-info/[0.07] p-6" role="status">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-base">
+        <span className="flex items-center gap-2 font-semibold">
+          <Loader2 className="h-5 w-5 animate-spin text-info motion-reduce:animate-none" />
           {status === 'queued' ? 'Menunggu antrian…' : `${stageLabel(p?.stage)}…`}
         </span>
-        <span className="font-mono text-xs text-muted-foreground">
+        <span className="num text-sm text-muted-foreground">
           {p?.trials_total ? `percobaan ${p.trials_done ?? 0}/${p.trials_total}` : total > 0 ? `${done}/${total}` : ''}
         </span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct ?? undefined}>
+      <div className="h-3 w-full overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct ?? undefined}>
         <div
           className={cn('h-full rounded-full bg-info transition-all', pct === null && 'w-1/3 animate-pulse')}
           style={pct !== null ? { width: `${pct}%` } : undefined}
         />
       </div>
       <JobEta job={job} status={status} />
-      <p className="text-2xs text-muted-foreground">Halaman ini memperbarui diri. Boleh ditinggal; hasilnya tersimpan di Hasil uji.</p>
+      <p className="text-sm text-muted-foreground">Boleh ditinggal; hasilnya tersimpan di Hasil uji.</p>
     </div>
   )
 }
@@ -55,7 +55,7 @@ function JobEta({ job, status }: { job: LabJob | undefined; status: string }) {
     status === 'running' && typeof job?.elapsed_s === 'number' && typeof job?.timeout_s === 'number' && job.elapsed_s > job.timeout_s * 0.8
   if (!line) return null
   return (
-    <p className={cn('num text-2xs', overrun ? 'text-warn' : 'text-muted-foreground')}>
+    <p className={cn('num text-sm', overrun ? 'text-warn' : 'text-muted-foreground')}>
       {line}
       {overrun && ' — mendekati batas waktu, job akan dihentikan otomatis kalau lewat.'}
     </p>

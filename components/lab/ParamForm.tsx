@@ -40,7 +40,7 @@ export function isChanged(spec: LabParamSpec, value: ParamFormValue | undefined)
 
 export function ChangedBadge({ count, className }: { count?: number; className?: string }) {
   return (
-    <span className={cn('inline-flex items-center rounded-full bg-warn/15 px-1.5 py-px text-3xs font-semibold text-warn', className)}>
+    <span className={cn('inline-flex items-center rounded-full bg-warn/15 px-2.5 py-0.5 text-[13px] font-semibold text-warn', className)}>
       {count !== undefined ? `${count} diubah` : 'diubah'}
     </span>
   )
@@ -56,11 +56,11 @@ export function ParamSummary({ template, values, onChange }: Omit<ParamFormProps
   return (
     <div className="flex flex-wrap items-center gap-2">
       {changed === 0 ? (
-        <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-2xs font-medium text-muted-foreground">
+        <span className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-[13px] font-medium text-muted-foreground">
           {live ? `Sama dengan ${LIVE_PRESET_NAME} (setting live)` : 'Default strategi (setting riset)'}
         </span>
       ) : (
-        <ChangedBadge count={changed} className="px-2 py-0.5 text-2xs" />
+        <ChangedBadge count={changed} className="px-3 py-1" />
       )}
       <Button
         type="button"
@@ -68,9 +68,9 @@ export function ParamSummary({ template, values, onChange }: Omit<ParamFormProps
         size="sm"
         onClick={() => onChange(initialParamValues(template))}
         disabled={changed === 0}
-        className="h-7 gap-1.5 px-2 text-xs"
+        className="h-9 gap-1.5 rounded-full px-3 text-sm"
       >
-        <RotateCcw className="h-3.5 w-3.5" />
+        <RotateCcw className="h-4 w-4" />
         {live ? 'Reset ke setting live' : 'Reset ke default'}
       </Button>
     </div>
@@ -83,10 +83,13 @@ export function MainParams({ template, values, errors, onChange }: ParamFormProp
   if (main.length === 0) return null
   const set = (key: string, v: ParamFormValue) => onChange({ ...values, [key]: v })
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {main.map((p) =>
         p.type === 'int' || p.type === 'float' ? (
-          <ParamSlider key={p.key} spec={p} value={values[p.key]} error={errors[p.key]} onChange={(v) => set(p.key, v)} />
+          <div key={p.key} className="space-y-2">
+            <label htmlFor={`param-${p.key}`} className="text-[15px] font-medium">{paramLabel(p)}</label>
+            <ParamSlider spec={p} value={values[p.key]} error={errors[p.key]} onChange={(v) => set(p.key, v)} />
+          </div>
         ) : (
           <ParamField key={p.key} spec={p} value={values[p.key]} error={errors[p.key]} onChange={(v) => set(p.key, v)} />
         ),
@@ -124,26 +127,26 @@ export function AdvancedParams({
   )
   const groups = groupParams(listed)
   if (groups.length === 0) {
-    return <p className="rounded-lg border border-dashed px-3 py-4 text-center text-xs text-muted-foreground">Tidak ada parameter yang cocok.</p>
+    return <p className="rounded-2xl border border-dashed px-4 py-6 text-center text-[15px] text-muted-foreground">Tidak ada parameter yang cocok.</p>
   }
   const forceOpen = query.trim() !== '' || onlyChanged
   return (
-    <div className="divide-y divide-border/60 overflow-hidden rounded-lg border border-border">
+    <div className="divide-y divide-border/60 overflow-hidden rounded-2xl border border-border">
       {groups.map((g) => {
         const changed = g.params.filter((p) => isChanged(p, values[p.key])).length
         const hasError = g.params.some((p) => errors[p.key])
         return (
           <details key={`${g.group}|${forceOpen}`} className="group" open={forceOpen || hasError || undefined}>
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 text-sm hover:bg-accent/40 [&::-webkit-details-marker]:hidden">
+            <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-5 py-3 text-base hover:bg-accent/40 [&::-webkit-details-marker]:hidden">
               <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="font-medium">{groupLabel(g.group)}</span>
-                <span className="text-xs text-muted-foreground">{g.params.length} parameter</span>
+                <span className="font-semibold">{groupLabel(g.group)}</span>
+                <span className="text-sm text-muted-foreground">{g.params.length} parameter</span>
                 {changed > 0 && <ChangedBadge count={changed} />}
-                {hasError && <span className="text-2xs text-bearish">ada error</span>}
+                {hasError && <span className="text-sm text-bearish">ada error</span>}
               </span>
-              <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
+              <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
             </summary>
-            <div className="grid grid-cols-1 gap-3 bg-muted/10 px-3 pb-3 pt-1 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 bg-muted/10 px-5 pb-5 pt-2 sm:grid-cols-2 xl:grid-cols-3">
               {g.params.map((p) => (
                 <ParamField
                   key={p.key}
@@ -168,7 +171,7 @@ export function ParamForm(props: ParamFormProps) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-muted-foreground">{templateDefaultsCopy(props.template.id)}</p>
+        <p className="text-sm text-muted-foreground">{templateDefaultsCopy(props.template.id)}</p>
         <ParamSummary template={props.template} values={props.values} onChange={props.onChange} />
       </div>
       {main.length > 0 && <MainParams {...props} />}
@@ -188,15 +191,27 @@ function fmtDefault(spec: LabParamSpec): string {
 function ImportanceTag({ row }: { row: LabImportanceParam }) {
   if (row.label === LABEL_UNSTABLE) {
     return (
-      <span className="inline-flex items-center gap-0.5 rounded-full border border-warn/30 bg-warn/10 px-1.5 py-px text-3xs font-medium text-warn">
-        <AlertTriangle className="h-2.5 w-2.5" aria-hidden="true" />
+      <span className="inline-flex items-center gap-1 rounded-full border border-warn/30 bg-warn/10 px-2 py-0.5 text-[13px] font-medium text-warn">
+        <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
         berpengaruh, tidak stabil
       </span>
     )
   }
-  if (row.label === LABEL_NONE) return <span className="text-3xs text-muted-foreground">tidak berpengaruh (riset)</span>
+  if (row.label === LABEL_NONE) return <span className="text-[13px] text-muted-foreground">tidak berpengaruh (riset)</span>
   return null
 }
+
+const trim2 = (v: number) => (Number.isInteger(v) ? String(v) : String(Math.round(v * 100) / 100))
+
+/** Chunky range track + 24px thumb (design v2). The track colour comes from inline style. */
+const RANGE = cn(
+  'h-3 min-w-0 flex-1 cursor-pointer appearance-none rounded-full bg-muted',
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card',
+  '[&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full',
+  '[&::-webkit-slider-thumb]:border-4 [&::-webkit-slider-thumb]:border-card [&::-webkit-slider-thumb]:shadow-md',
+  '[&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-4',
+  '[&::-moz-range-thumb]:border-card [&::-moz-range-track]:bg-transparent',
+)
 
 export function ParamSlider({
   spec,
@@ -204,22 +219,31 @@ export function ParamSlider({
   error,
   onChange,
   idPrefix = 'param',
+  safe,
 }: {
   spec: LabParamSpec
   value: ParamFormValue | undefined
   error?: string
   onChange: (v: ParamFormValue) => void
   idPrefix?: string
+  /** Research "safe range" (plateau): drawn on the track, the legend says whether the value is inside. */
+  safe?: [number, number] | null
 }) {
   const id = `${idPrefix}-${spec.key}`
   const min = spec.min ?? 0
   const max = spec.max ?? Math.max(1, Number(spec.default) * 2)
   const step = spec.step ?? (spec.type === 'int' ? 1 : 0.1)
   const num = Number(value)
-  const sliderValue = Number.isFinite(num) ? Math.min(max, Math.max(min, num)) : Number(spec.default)
+  const valid = typeof value === 'string' ? value.trim() !== '' && Number.isFinite(num) : Number.isFinite(num)
+  const sliderValue = valid ? Math.min(max, Math.max(min, num)) : Number(spec.default)
+  const pos = (v: number) => Math.max(0, Math.min(100, ((v - min) / (max - min || 1)) * 100))
+  const inside = safe && valid ? num >= safe[0] && num <= safe[1] : null
+  const track = safe
+    ? `linear-gradient(to right, var(--color-muted) ${pos(safe[0])}%, color-mix(in oklab, var(--color-bullish) 55%, var(--color-muted)) ${pos(safe[0])}%, color-mix(in oklab, var(--color-bullish) 55%, var(--color-muted)) ${pos(safe[1])}%, var(--color-muted) ${pos(safe[1])}%)`
+    : undefined
   return (
-    <div className="space-y-1">
-      <div className="flex items-center gap-3">
+    <div className="space-y-2">
+      <div className="flex items-center gap-4">
         <input
           type="range"
           min={min}
@@ -228,7 +252,13 @@ export function ParamSlider({
           value={sliderValue}
           onChange={(e) => onChange(e.target.value)}
           aria-label={`${paramLabel(spec)} (geser)`}
-          className="h-1.5 min-w-0 flex-1 cursor-pointer accent-lab"
+          className={cn(
+            RANGE,
+            inside === false
+              ? '[&::-moz-range-thumb]:bg-warn [&::-webkit-slider-thumb]:bg-warn'
+              : '[&::-moz-range-thumb]:bg-foreground [&::-webkit-slider-thumb]:bg-foreground',
+          )}
+          style={track ? { background: track } : undefined}
         />
         <Input
           id={id}
@@ -241,13 +271,22 @@ export function ParamSlider({
           onChange={(e) => onChange(e.target.value)}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${id}-err` : undefined}
-          className={cn('h-8 w-20 shrink-0 px-2 text-right font-mono text-xs tabular-nums', error && 'border-bearish')}
+          className={cn('h-11 w-24 shrink-0 rounded-xl px-3 text-right font-mono text-base tabular-nums', error && 'border-bearish')}
         />
       </div>
       {error ? (
-        <p id={`${id}-err`} className="text-2xs text-bearish">{error}</p>
+        <p id={`${id}-err`} className="text-sm text-bearish">{error}</p>
+      ) : safe ? (
+        <div className="flex items-baseline justify-between gap-2 pr-28 text-[13px] text-muted-foreground">
+          <span className="num">{min}</span>
+          <span className={cn('text-center font-medium', inside === false ? 'text-warn' : 'text-bullish')}>
+            aman <span className="num">{trim2(safe[0])}–{trim2(safe[1])}</span>
+            {inside === false && ' · di luar'}
+          </span>
+          <span className="num">{max}</span>
+        </div>
       ) : (
-        <p className="num text-3xs text-muted-foreground">
+        <p className="num text-[13px] text-muted-foreground">
           default {fmtDefault(spec)} · batas {min}–{max}
         </p>
       )}
@@ -279,7 +318,7 @@ export function ParamField({
 
   if (bare && spec.type === 'bool') {
     return (
-      <div className="flex items-center gap-2 text-xs">
+      <div className="flex items-center gap-3 text-[15px]">
         <Switch id={id} checked={value === true} onCheckedChange={(c) => onChange(c)} aria-label={paramLabel(spec)} />
         <span className="text-muted-foreground">{value === true ? 'aktif' : 'mati'}</span>
       </div>
@@ -288,12 +327,12 @@ export function ParamField({
 
   if (spec.type === 'bool') {
     return (
-      <div className={cn('flex items-center justify-between gap-3 rounded-md border px-3 py-2', changed ? 'border-warn/40 bg-warn/5' : 'border-border')}>
-        <label htmlFor={id} className="min-w-0 text-xs font-medium">
+      <div className={cn('flex items-center justify-between gap-4 rounded-2xl border px-4 py-3', changed ? 'border-warn/40 bg-warn/5' : 'border-border')}>
+        <label htmlFor={id} className="min-w-0 text-[15px] font-medium">
           {paramLabel(spec)}
-          {changed && <span className="ml-1.5 align-middle"><ChangedBadge /></span>}
-          {tag && <span className="ml-1.5 align-middle"><ImportanceTag row={tag} /></span>}
-          {help && <span className="mt-0.5 block text-3xs font-normal leading-snug text-muted-foreground">{help}</span>}
+          {changed && <span className="ml-2 align-middle"><ChangedBadge /></span>}
+          {tag && <span className="ml-2 align-middle"><ImportanceTag row={tag} /></span>}
+          {help && <span className="mt-1 line-clamp-2 block text-[13px] font-normal leading-snug text-muted-foreground">{help}</span>}
         </label>
         <Switch id={id} checked={value === true} onCheckedChange={(c) => onChange(c)} />
       </div>
@@ -301,20 +340,20 @@ export function ParamField({
   }
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1.5">
       {bare ? (
-        <p className="num text-3xs text-muted-foreground">default {fmtDefault(spec)}</p>
+        <p className="num text-[13px] text-muted-foreground">default {fmtDefault(spec)}</p>
       ) : (
         <>
-          <label htmlFor={id} className="flex items-start justify-between gap-2 text-xs font-medium">
-            <span className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <label htmlFor={id} className="flex items-start justify-between gap-2 text-[15px] font-medium">
+            <span className="flex min-w-0 flex-wrap items-center gap-2">
               {paramLabel(spec)}
               {changed && <ChangedBadge />}
               {tag && <ImportanceTag row={tag} />}
             </span>
-            <span className="num shrink-0 text-3xs font-normal text-muted-foreground">default {fmtDefault(spec)}</span>
+            <span className="num shrink-0 pt-0.5 text-[13px] font-normal text-muted-foreground">default {fmtDefault(spec)}</span>
           </label>
-          {help && <p className="text-3xs leading-snug text-muted-foreground">{help}</p>}
+          {help && <p className="line-clamp-2 text-[13px] leading-snug text-muted-foreground">{help}</p>}
         </>
       )}
       {spec.type === 'choice' ? (
@@ -324,7 +363,7 @@ export function ParamField({
           onChange={(e) => onChange(e.target.value)}
           aria-invalid={Boolean(error)}
           className={cn(
-            'flex h-8 w-full rounded-md border border-input bg-transparent px-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            'flex h-11 w-full rounded-xl border border-input bg-transparent px-3 text-base shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
             error && 'border-bearish',
           )}
         >
@@ -344,10 +383,10 @@ export function ParamField({
           onChange={(e) => onChange(e.target.value)}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${id}-err` : undefined}
-          className={cn('h-8 font-mono text-xs tabular-nums', error && 'border-bearish')}
+          className={cn('h-11 rounded-xl px-3 font-mono text-base tabular-nums', error && 'border-bearish')}
         />
       )}
-      {error && <p id={`${id}-err`} className="text-2xs text-bearish">{error}</p>}
+      {error && <p id={`${id}-err`} className="text-sm text-bearish">{error}</p>}
     </div>
   )
 }

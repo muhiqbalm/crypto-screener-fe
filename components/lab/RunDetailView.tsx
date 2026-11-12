@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Ban, BookmarkPlus, CandlestickChart, Columns3, Eye, Loader2, PlayCircle, RefreshCw, Wand2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Ban, CandlestickChart, Columns3, Eye, Loader2, PlayCircle, RefreshCw, Wand2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -17,14 +17,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { AnswerCard, type AnswerTone } from '@/components/ui/answer-card'
-import { NextStep, type NextStepAction } from '@/components/ui/next-step'
 import { StatusPill } from '@/components/ui/status-pill'
 import { ErrorState } from '@/components/shell/states'
 import { describeError } from '@/components/shell/error-copy'
 import { LabHeader } from '@/components/lab/LabHeader'
-import { Section } from '@/components/lab/Section'
-import { ChecksList, HoldoutWarning } from '@/components/lab/HonestyReport'
+import { HoldoutAlert } from '@/components/lab/run/HoldoutAlert'
 import { CostDragSection } from '@/components/lab/CostDragSection'
 import { EquitySection } from '@/components/lab/run/EquitySection'
 import { JobProgress } from '@/components/lab/run/JobProgress'
@@ -35,9 +32,10 @@ import { SavePresetButton } from '@/components/lab/run/SavePresetButton'
 import { SensitivityTab } from '@/components/lab/run/SensitivityTab'
 import { TradesTab } from '@/components/lab/run/TradesTab'
 import { PresetPaperDialog } from '@/components/lab/run/PresetPaperDialog'
-import { MODE_COPY, errorCopy, verdictSentence, type SentenceTone } from '@/components/lab/run/copy'
-import { num } from '@/components/lab/run/format'
-import { formatNumber, formatPct, signClass } from '@/lib/utils/format'
+import { ReportChecklist } from '@/components/lab/run/ReportChecklist'
+import { VerdictHero } from '@/components/lab/run/VerdictHero'
+import { Panel } from '@/components/lab/run/v2-ui'
+import { MODE_COPY, errorCopy } from '@/components/lab/run/copy'
 import { formatAge, formatDate } from '@/lib/utils/time'
 import { notify } from '@/lib/utils/toast'
 import { cn } from '@/lib/utils/cn'
@@ -45,31 +43,20 @@ import { diffFromDefaults, isActiveStatus, isLiveTemplate, templateShort } from 
 import { compareHref } from '@/lib/lab/planning'
 import { useCancelLabJob, useLabJob, useLabRun, useLabTemplates } from '@/lib/queries/lab'
 import { useCreateLabWatch } from '@/lib/queries/lab-live'
-import type { LabRunDetail } from '@/lib/api/types/lab'
 
-const TONE: Record<SentenceTone, AnswerTone> = { pass: 'baik', fail: 'buruk', error: 'buruk', running: 'menunggu', none: 'info' }
-const TITLE: Record<SentenceTone, string> = { pass: 'Lolos', fail: 'Gagal', error: 'Error', running: 'Sedang diuji', none: 'Tanpa rapor' }
-
-function answerMetrics(run: LabRunDetail) {
-  const ho = run.oos_metrics as Record<string, unknown> | null
-  const src = ho ?? (run.mode === 'backtest' ? (run.metrics as Record<string, unknown>) : null)
-  if (!src || run.status !== 'done') return undefined
-  const where = ho ? 'di data baru' : 'seluruh periode'
-  const m = src as LabRunDetail['metrics']
-  const net = num(m, 'net_return_pct')
-  const pf = num(m, 'profit_factor')
-  const dd = num(m, 'max_dd_pct')
-  const trades = num(m, 'trades')
-  return [
-    { label: `Hasil bersih ${where}`, value: formatPct(net, { signed: true }), valueClassName: signClass(net) },
-    { label: 'PF', value: pf === null ? (trades ? '∞' : '—') : formatNumber(pf), hint: trades !== null ? `${formatNumber(trades, { digits: 0 })} trade` : undefined },
-    { label: 'Turun terdalam', value: dd === null ? '—' : formatPct(-Math.abs(dd)), valueClassName: dd === null ? undefined : 'text-bearish' },
-  ]
+interface Step {
+  title: string
+  line: string
+  label: string
+  href?: string
+  onClick?: () => void
+  icon: typeof ArrowRight
 }
 
 /**
- * Run detail: one verdict sentence first, then the next step, then the evidence (equity, report,
- * costs, trades). Pieces live in components/lab/run/*.
+ * Run detail, design v2: a bento of the verdict hero (Lolos / Gagal + 3 big KPIs) and one big
+ * next-step button, then the big equity chart, the report as tick / cross rows and the
+ * training-vs-new-data panel. Pieces live in components/lab/run/*.
  */
 export function RunDetailView({ id }: { id: string }) {
   const router = useRouter()
@@ -84,12 +71,14 @@ export function RunDetailView({ id }: { id: string }) {
 
   if (isPending) {
     return (
-      <div className="space-y-4" aria-busy="true">
+      <div className="space-y-6" aria-busy="true">
         <Skeleton className="h-5 w-28" />
-        <Skeleton className="h-10 w-64" />
-        <Skeleton className="h-36 w-full rounded-xl" />
-        <Skeleton className="h-20 w-full rounded-xl" />
-        <Skeleton className="h-80 w-full rounded-xl" />
+        <Skeleton className="h-12 w-72" />
+        <div className="grid gap-6 lg:grid-cols-3">
+          <Skeleton className="h-72 rounded-3xl lg:col-span-2" />
+          <Skeleton className="h-72 rounded-3xl" />
+        </div>
+        <Skeleton className="h-96 w-full rounded-3xl" />
       </div>
     )
   }
@@ -113,7 +102,6 @@ export function RunDetailView({ id }: { id: string }) {
   const template = templatesQ.data?.find((t) => t.id === run.template_id)
   const strategy = templateShort(run.template_id, template?.name)
   const changed = diffFromDefaults(template, run.params)
-  const sentence = verdictSentence(run)
   const usedParams = run.mode === 'optimize' && run.best_params ? run.best_params : run.params
   const rerunHref = `/lab?from=${encodeURIComponent(String(run.id))}${run.mode === 'optimize' && run.best_params ? '&use=best' : ''}`
   const chartHref = `/chart?run=${encodeURIComponent(String(run.id))}`
@@ -132,111 +120,116 @@ export function RunDetailView({ id }: { id: string }) {
     )
   }
 
-  // One primary next step per outcome (audit §2.12).
-  let next: { description: string; action: NextStepAction; secondary?: NextStepAction } | null = null
+  // One primary next step per outcome.
+  let next: Step | null = null
   if (done && run.verdict === 'PASS') {
-    next = {
-      description: 'Lolos di data baru. Simpan setting ini sebagai preset dan jalankan paper (simulasi) untuk melihat hasilnya di pasar sekarang.',
-      action: { label: 'Simpan sebagai preset & mulai paper', onClick: () => setPaperOpen(true), icon: PlayCircle },
-      secondary: { label: 'Lihat di Chart', href: chartHref, icon: CandlestickChart },
-    }
+    next = { title: 'Mulai paper', line: 'Simpan setting ini, lalu jalankan di akun simulasi.', label: 'Simpan sebagai preset & mulai paper', onClick: () => setPaperOpen(true), icon: PlayCircle }
   } else if (done && run.verdict === 'FAIL') {
-    next = {
-      description: 'Gagal di data baru. Jangan dipakai untuk paper atau uang asli; ubah setting atau coba strategi lain, lalu uji lagi.',
-      action: { label: 'Ubah setting', href: rerunHref, icon: Wand2 },
-      secondary: { label: 'Lihat di Chart', href: chartHref, icon: CandlestickChart },
-    }
+    next = { title: 'Ubah setting', line: 'Jangan dipakai untuk paper atau uang asli.', label: 'Ubah setting', href: rerunHref, icon: Wand2 }
   } else if (done && run.mode === 'backtest') {
-    next = {
-      description: 'Uji cepat bukan bukti. Uji jujur menilai setting yang sama di data baru yang dikunci.',
-      action: { label: 'Uji jujur sekarang', href: `/lab?from=${encodeURIComponent(String(run.id))}`, icon: Wand2 },
-      secondary: { label: 'Lihat di Chart', href: chartHref, icon: CandlestickChart },
-    }
+    next = { title: 'Uji jujur', line: 'Uji cepat bukan bukti. Uji jujur memakai data baru yang dikunci.', label: 'Uji jujur sekarang', href: `/lab?from=${encodeURIComponent(String(run.id))}`, icon: Wand2 }
   } else if (run.status === 'error' || run.status === 'cancelled' || done) {
-    next = {
-      description: run.status === 'error' ? (err?.hint ?? 'Ubah setting lalu coba lagi.') : 'Ubah setting lalu jalankan lagi.',
-      action: { label: 'Ubah setting & coba lagi', href: rerunHref, icon: Wand2 },
-    }
+    next = { title: 'Coba lagi', line: err?.hint ?? 'Ubah setting lalu jalankan lagi.', label: 'Ubah setting & coba lagi', href: rerunHref, icon: Wand2 }
   }
 
   const periodText = `${run.start ? formatDate(run.start) : 'awal data'} s/d ${run.end ? formatDate(run.end) : 'terbaru'}`
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 sm:space-y-8">
       <BackLink />
 
       <LabHeader
         title={`${strategy} · ${run.symbol} ${run.timeframe}`}
-        subtitle={`${MODE_COPY[run.mode]} · uji #${run.id} · ${periodText} · fee ${run.costs?.commission_pct ?? '—'}% · slippage ${run.costs?.slippage_pct ?? '—'}% · funding ${run.costs?.funding ? 'dihitung' : 'tidak'} · ${formatAge(run.created_at)}`}
+        subtitle={`${MODE_COPY[run.mode]} · uji #${run.id} · ${periodText} · ${formatAge(run.created_at)}`}
         status={<StatusPill kind="riset" />}
         actions={
           <>
             <Button variant="ghost" size="sm" onClick={() => refetch()} disabled={isFetching} aria-label="Muat ulang">
-              <RefreshCw className={cn('h-3.5 w-3.5', isFetching && 'animate-spin')} />
+              <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
             </Button>
             {active && run.job_id !== null && run.job_id !== undefined && (
-              <Button variant="outline" size="sm" className="gap-1.5 text-bearish" disabled={cancel.isPending} onClick={() => setCancelOpen(true)}>
-                <Ban className="h-3.5 w-3.5" />
+              <Button variant="outline" className="gap-1.5 rounded-full text-bearish" disabled={cancel.isPending} onClick={() => setCancelOpen(true)}>
+                <Ban className="h-4 w-4" />
                 Batalkan
               </Button>
             )}
-            {done && run.mode !== 'backtest' && (
-              <Button asChild variant="outline" size="sm" className="gap-1.5">
-                <Link href={compareHref([String(run.id)])}>
-                  <Columns3 className="h-3.5 w-3.5" />
-                  Bandingkan
-                </Link>
-              </Button>
-            )}
-            {done && (
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={watchSignals} disabled={createWatch.isPending} title="Hitung sinyal setting ini tiap candle tutup, tanpa order">
-                {createWatch.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
-                Pantau sinyal
-              </Button>
-            )}
-            {done && run.template_id !== 'universal_v0' && <SavePresetButton run={run} />}
           </>
         }
       />
 
-      <AnswerCard
-        tone={TONE[sentence.tone]}
-        title={TITLE[sentence.tone]}
-        answer={sentence.text}
-        metrics={answerMetrics(run)}
-        evidenceHref={done && (run.checks?.length ?? 0) > 0 ? '#rapor' : undefined}
-        evidenceLabel="Lihat rapor"
-        status={<span className="text-2xs text-muted-foreground">{MODE_COPY[run.mode]}{run.preset ? ` · dari preset ${run.preset.name}` : ''}</span>}
-        footer={
-          (run.saved_as ?? []).length > 0 ? (
-            <span className="text-2xs text-muted-foreground">
-              Sudah disimpan sebagai <span className="num font-medium text-foreground">{(run.saved_as ?? []).join(', ')}</span>
-            </span>
-          ) : undefined
-        }
-      />
-
-      {next && <NextStep description={next.description} action={next.action} secondary={next.secondary} />}
-
-      {active && <JobProgress job={jobQ.data} status={run.status} />}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <VerdictHero run={run} strategyName={template?.name} className="lg:col-span-2" />
+        {next ? (
+          <Panel className="flex flex-col" bodyClassName="flex flex-1 flex-col pt-5 sm:pt-6">
+            <p className="eyebrow text-xs">Langkah berikutnya</p>
+            <p className="mt-2 text-2xl font-bold tracking-tight">{next.title}</p>
+            <p className="mt-1 text-base text-muted-foreground">{next.line}</p>
+            <div className="mt-auto space-y-3 pt-6">
+              {next.href ? (
+                <Button asChild size="lg" className="h-12 w-full gap-2 rounded-full text-base font-semibold">
+                  <Link href={next.href}>
+                    <next.icon className="h-5 w-5" aria-hidden="true" />
+                    {next.label}
+                  </Link>
+                </Button>
+              ) : (
+                <Button size="lg" onClick={next.onClick} className="h-12 w-full gap-2 rounded-full text-base font-semibold">
+                  <next.icon className="h-5 w-5" aria-hidden="true" />
+                  {next.label}
+                </Button>
+              )}
+              {done && (
+                <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm">
+                  <Link href={chartHref} className="inline-flex items-center gap-1.5 font-medium text-info hover:underline">
+                    <CandlestickChart className="h-4 w-4" aria-hidden="true" />
+                    Lihat di Chart
+                  </Link>
+                  {run.mode !== 'backtest' && (
+                    <Link href={compareHref([String(run.id)])} className="inline-flex items-center gap-1.5 font-medium text-info hover:underline">
+                      <Columns3 className="h-4 w-4" aria-hidden="true" />
+                      Bandingkan
+                    </Link>
+                  )}
+                  <button type="button" onClick={watchSignals} disabled={createWatch.isPending} className="inline-flex cursor-pointer items-center gap-1.5 font-medium text-info hover:underline disabled:opacity-50">
+                    {createWatch.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+                    Pantau sinyal
+                  </button>
+                </div>
+              )}
+              {done && run.template_id !== 'universal_v0' && (
+                <div className="flex justify-center">
+                  {run.verdict === 'FAIL' ? (
+                    <button type="button" onClick={() => setPaperOpen(true)} className="cursor-pointer text-[13px] text-muted-foreground underline-offset-4 hover:underline">
+                      Tetap simpan sebagai preset &amp; mulai paper
+                    </button>
+                  ) : (
+                    <SavePresetButton run={run} />
+                  )}
+                </div>
+              )}
+            </div>
+          </Panel>
+        ) : (
+          active && <JobProgress job={jobQ.data} status={run.status} />
+        )}
+      </div>
 
       {err && (
-        <details className="rounded-xl border border-bearish/30 bg-bearish/[0.05] px-4 py-3 text-sm">
-          <summary className="cursor-pointer text-xs font-medium text-bearish">{err.text} Detail teknis</summary>
-          <p className="mt-2 break-words font-mono text-2xs text-muted-foreground">{run.error || 'Server tidak mengirim pesan error.'}</p>
+        <details className="rounded-3xl border border-bearish/30 bg-bearish/[0.05] px-5 py-4">
+          <summary className="cursor-pointer text-sm font-medium text-bearish">Detail teknis error</summary>
+          <p className="mt-2 break-words font-mono text-[13px] text-muted-foreground">{run.error || 'Server tidak mengirim pesan error.'}</p>
         </details>
       )}
 
-      <HoldoutWarning touches={run.holdout_touches} />
-
-      {done && <KpiTiles run={run} />}
+      <HoldoutAlert touches={run.holdout_touches} />
 
       <EquitySection run={run} enabled={done} />
 
-      {done && (run.checks?.length ?? 0) > 0 && (
-        <Section id="rapor" className="scroll-mt-20" title="Rapor uji" description="Semua syarat harus terpenuhi supaya Lolos. Data kosong dihitung Gagal.">
-          <ChecksList checks={run.checks} />
-        </Section>
+      {done && (
+        <div className="grid gap-6 lg:grid-cols-3">
+          {(run.checks?.length ?? 0) > 0 && <ReportChecklist checks={run.checks} className="lg:col-span-2" />}
+          <KpiTiles run={run} className={(run.checks?.length ?? 0) > 0 ? undefined : 'lg:col-span-3'} />
+        </div>
       )}
 
       {done && <CostDragSection run={run} />}
@@ -244,9 +237,9 @@ export function RunDetailView({ id }: { id: string }) {
       {done && run.mode === 'optimize' && <OptimizeSection run={run} template={template} />}
 
       {done && (
-        <Section>
+        <Panel>
           <Tabs defaultValue="trades">
-            <TabsList className="mb-3">
+            <TabsList className="mb-4">
               <TabsTrigger value="trades">Trade</TabsTrigger>
               <TabsTrigger value="params">Parameter{changed.length > 0 ? ` (${changed.length})` : ''}</TabsTrigger>
               <TabsTrigger value="sens">Ketahanan</TabsTrigger>
@@ -258,24 +251,14 @@ export function RunDetailView({ id }: { id: string }) {
               <ParamDiffTable
                 rows={changed}
                 live={isLiveTemplate(run.template_id)}
-                emptyText={isLiveTemplate(run.template_id) ? 'Uji ini memakai setting default = 4H-ETH-Basic (setting live), tidak ada yang diubah.' : 'Uji ini memakai setting default strategi, tidak ada yang diubah.'}
+                emptyText={isLiveTemplate(run.template_id) ? 'Setting default = 4H-ETH-Basic (setting live), tidak ada yang diubah.' : 'Setting default strategi, tidak ada yang diubah.'}
               />
             </TabsContent>
             <TabsContent value="sens">
               <SensitivityTab run={run} template={template} />
             </TabsContent>
           </Tabs>
-        </Section>
-      )}
-
-      {(run.saved_as ?? []).length === 0 && done && run.verdict === 'FAIL' && (
-        <p className="flex items-center gap-1.5 text-2xs text-muted-foreground">
-          <BookmarkPlus className="h-3.5 w-3.5" aria-hidden="true" />
-          Tetap ingin mempaper setting yang Gagal?{' '}
-          <button type="button" onClick={() => setPaperOpen(true)} className="cursor-pointer font-medium text-info hover:underline">
-            Simpan sebagai preset &amp; mulai paper
-          </button>
-        </p>
+        </Panel>
       )}
 
       {done && <PresetPaperDialog run={run} template={template} open={paperOpen} onOpenChange={setPaperOpen} />}
@@ -285,7 +268,7 @@ export function RunDetailView({ id }: { id: string }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Batalkan uji #{run.id}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Uji yang sedang berjalan dihentikan dalam beberapa detik dan tidak menghasilkan rapor. Kunci data baru (holdout) tidak berubah.
+              Uji dihentikan dalam beberapa detik dan tidak menghasilkan rapor. Kunci data baru (holdout) tidak berubah.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -311,8 +294,8 @@ export function RunDetailView({ id }: { id: string }) {
 
 function BackLink() {
   return (
-    <Link href="/lab/hasil" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
-      <ArrowLeft className="h-3.5 w-3.5" />
+    <Link href="/lab/hasil" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+      <ArrowLeft className="h-4 w-4" />
       Kembali ke Hasil uji
     </Link>
   )

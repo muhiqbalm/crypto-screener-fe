@@ -40,7 +40,7 @@ export function SymbolPicker({ symbols, value, onChange, invalid }: SymbolPicker
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          'flex h-9 w-full items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 text-sm font-mono shadow-sm hover:bg-accent cursor-pointer',
+          'flex h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-input bg-transparent px-4 font-mono text-base shadow-sm hover:bg-accent',
           invalid && 'border-bearish',
         )}
       >

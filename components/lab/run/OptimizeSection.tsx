@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Sparkles, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Section } from '@/components/lab/Section'
+import { Panel } from './v2-ui'
 import { formatNumber, formatPct, signClass } from '@/lib/utils/format'
 import { cn } from '@/lib/utils/cn'
 import { diffFromDefaults, isLiveTemplate, paramLabel } from '@/lib/lab/form'
@@ -55,39 +55,42 @@ export function OptimizeSection({ run, template }: { run: LabRunDetail; template
   const ranges = safeRanges(run, template, (k) => ({ text: plateauText(imp.get(k)), inside: insidePlateau(imp.get(k), run.best_params?.[k]) }))
   const ok = trials.filter((t) => !t.error).length
   return (
-    <Section
+    <Panel
       title="Hasil Cari setting terbaik"
-      icon={<Sparkles className="h-4 w-4 text-lab" />}
-      description={[
-        run.n_trials ? `${formatNumber(run.trials_done ?? 0, { digits: 0 })}/${formatNumber(run.n_trials, { digits: 0 })} percobaan` : null,
-        run.search?.params?.length ? `${run.search.params.length} parameter dicari` : null,
-        'juara dipilih di data latih (Sharpe × bagian waktu yang untung), tidak pernah di data baru',
-      ]
-        .filter(Boolean)
-        .join(' · ')}
+      icon={Sparkles}
+      aside={
+        <span className="num text-[13px]">
+          {[
+            run.n_trials ? `${formatNumber(run.trials_done ?? 0, { digits: 0 })}/${formatNumber(run.n_trials, { digits: 0 })} percobaan` : null,
+            run.search?.params?.length ? `${run.search.params.length} parameter dicari` : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+        </span>
+      }
     >
       <div className="space-y-5">
         <div className="space-y-2">
-          <h3 className="text-xs font-semibold">Rentang aman, bukan satu angka</h3>
+          <h3 className="text-base font-semibold">Rentang aman, bukan satu angka</h3>
           {ranges.length === 0 ? (
             <p className="text-sm text-muted-foreground">Server tidak mengirim parameter yang dicari.</p>
           ) : (
             <div className="overflow-x-auto rounded-lg border border-border">
-              <table className="w-full min-w-[480px] text-sm">
+              <table className="w-full min-w-[480px] text-[15px]">
                 <thead className="border-b border-border bg-muted/30">
                   <tr>
                     {['Parameter', 'Terbaik', `${ok} teratas`, 'Stabil di riset'].map((h, i) => (
-                      <th key={h} className={cn('px-3 py-2 text-2xs font-medium uppercase tracking-wide text-muted-foreground', i === 0 ? 'text-left' : 'text-right')}>{h}</th>
+                      <th key={h} className={cn('px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground', i === 0 ? 'text-left' : 'text-right')}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">
                   {ranges.map((r) => (
-                    <tr key={r.key}>
-                      <td className="px-3 py-2 text-xs">{r.label}</td>
-                      <td className="num px-3 py-2 text-right text-xs font-semibold">{r.best}</td>
-                      <td className="num px-3 py-2 text-right text-xs">{r.spread ?? '—'}</td>
-                      <td className="num px-3 py-2 text-right text-xs">
+                    <tr key={r.key} className="h-[52px]">
+                      <td className="px-4 py-2">{r.label}</td>
+                      <td className="num px-4 py-2 text-right font-semibold">{r.best}</td>
+                      <td className="num px-4 py-2 text-right">{r.spread ?? '—'}</td>
+                      <td className="num px-4 py-2 text-right">
                         {r.plateau ?? <span className="text-muted-foreground">tidak tersedia</span>}
                         {r.inside === false && <span className="block text-3xs text-warn">terbaik di luar rentang</span>}
                       </td>
@@ -97,18 +100,16 @@ export function OptimizeSection({ run, template }: { run: LabRunDetail; template
               </table>
             </div>
           )}
-          <p className="text-2xs text-muted-foreground">
-            Kalau kombinasi teratas tersebar jauh, nilai terbaik kemungkinan kebetulan. Lebih aman memakai nilai di tengah rentang yang sama-sama bagus
-            {ranges.some((r) => r.plateau) ? ' dan, bila ada, di dalam rentang stabil riset' : ''}. Rapor di atas sudah menguji setting terbaik ini sekali di data
-            baru; menguji ulang berarti memakai data baru yang sama lagi.
+          <p className="text-[13px] text-muted-foreground">
+            Juara dipilih di data latih. Kalau kombinasi teratas tersebar jauh, nilai terbaik kemungkinan kebetulan; pakai nilai di tengah rentang.
           </p>
         </div>
 
         <div className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-xs font-semibold">Setting terbaik vs default</h3>
+            <h3 className="text-base font-semibold">Setting terbaik vs default</h3>
             {run.best_params && (
-              <Button asChild size="sm" variant="outline" className="h-7 text-xs">
+              <Button asChild size="sm" variant="outline" className="rounded-full">
                 <Link href={`/lab?from=${encodeURIComponent(String(run.id))}&use=best`}>Ubah setting terbaik</Link>
               </Button>
             )}
@@ -118,7 +119,7 @@ export function OptimizeSection({ run, template }: { run: LabRunDetail; template
 
         {trials.length > 0 && (
           <div className="space-y-2">
-            <h3 className="flex items-center gap-1.5 text-xs font-semibold"><Trophy className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />{trials.length} kombinasi teratas</h3>
+            <h3 className="flex items-center gap-2 text-base font-semibold"><Trophy className="h-4 w-4 text-muted-foreground" aria-hidden="true" />{trials.length} kombinasi teratas</h3>
             <div className="overflow-x-auto rounded-lg border border-border">
               <table className="w-full min-w-[640px] text-sm">
                 <thead className="border-b border-border bg-muted/30">
@@ -164,10 +165,10 @@ export function OptimizeSection({ run, template }: { run: LabRunDetail; template
                 </tbody>
               </table>
             </div>
-            <p className="text-2xs text-muted-foreground">Angka di tabel ini dari data latih (uji maju bertahap), bukan data baru.</p>
+            <p className="text-[13px] text-muted-foreground">Angka dari data latih (uji maju bertahap), bukan data baru.</p>
           </div>
         )}
       </div>
-    </Section>
+    </Panel>
   )
 }

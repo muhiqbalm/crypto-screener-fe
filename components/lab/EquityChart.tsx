@@ -49,7 +49,16 @@ export function splitSegments(points: LabEquityPoint[]): SegmentSeries[] {
   return out
 }
 
-export function EquityChart({ points, holdoutStart }: { points: LabEquityPoint[]; holdoutStart?: string | null }) {
+export function EquityChart({
+  points,
+  holdoutStart,
+  heightClass = 'h-[260px] sm:h-[360px]',
+}: {
+  points: LabEquityPoint[]
+  holdoutStart?: string | null
+  /** Tailwind height classes of the chart box (run detail uses a bigger chart). */
+  heightClass?: string
+}) {
   const ref = useRef<HTMLDivElement>(null)
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme !== 'light'
@@ -110,7 +119,7 @@ export function EquityChart({ points, holdoutStart }: { points: LabEquityPoint[]
           </li>
         ))}
       </ul>
-      <div ref={ref} className="h-[260px] w-full sm:h-[360px]" role="img" aria-label="Kurva equity per segmen" />
+      <div ref={ref} className={`${heightClass} w-full`} role="img" aria-label="Kurva equity per segmen" />
     </div>
   )
 }

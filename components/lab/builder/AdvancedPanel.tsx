@@ -15,10 +15,10 @@ import type { LabImportanceParam } from '@/lib/api/types/lab-uji'
 
 function Block({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-2 border-t border-border/60 pt-4">
+    <div className="space-y-3 border-t border-border/60 pt-6">
       <div>
-        <h3 className="text-xs font-semibold">{title}</h3>
-        {description && <p className="text-2xs text-muted-foreground">{description}</p>}
+        <h3 className="text-lg font-semibold">{title}</h3>
+        {description && <p className="line-clamp-2 text-sm text-muted-foreground">{description}</p>}
       </div>
       {children}
     </div>
@@ -59,44 +59,48 @@ export const AdvancedPanel = forwardRef<HTMLElement, {
   } = props
   const costError = Boolean(errors.commission_pct || errors.slippage_pct)
   return (
-    <section ref={ref} aria-label="Lanjutan" className="scroll-mt-20 rounded-xl border border-border bg-card text-card-foreground shadow-sm">
+    <section ref={ref} aria-label="Lanjutan" className="scroll-mt-20 rounded-3xl border border-border bg-card text-card-foreground">
       <button
         type="button"
         aria-expanded={open}
         aria-controls="lab-advanced"
         onClick={() => onOpenChange(!open)}
-        className="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left sm:px-5"
+        className="flex w-full cursor-pointer items-center justify-between gap-4 rounded-3xl px-5 py-5 text-left hover:bg-accent/30 sm:px-8"
       >
-        <span className="min-w-0">
-          <span className="flex flex-wrap items-center gap-2 text-sm font-semibold">
-            <SlidersHorizontal className="h-4 w-4 text-lab" aria-hidden="true" />
-            Lanjutan
-            {hiddenChanged > 0 && (
-              <span className="rounded-full bg-warn/15 px-1.5 py-px text-3xs font-semibold text-warn">{hiddenChanged} diubah</span>
-            )}
-            {costError && <span className="text-2xs font-normal text-bearish">biaya belum valid</span>}
+        <span className="flex min-w-0 items-center gap-4">
+          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-lab/15 text-lab" aria-hidden="true">
+            <SlidersHorizontal className="h-5 w-5" />
           </span>
-          <span className="block text-2xs text-muted-foreground">
-            {hiddenKeys.size} parameter lain · biaya · pengaturan Cari setting terbaik · uji cepat
+          <span className="min-w-0">
+            <span className="flex flex-wrap items-center gap-2 text-xl font-semibold tracking-tight">
+              Lanjutan
+              {hiddenChanged > 0 && (
+                <span className="rounded-full bg-warn/15 px-2.5 py-0.5 text-[13px] font-semibold text-warn">{hiddenChanged} diubah</span>
+              )}
+              {costError && <span className="text-sm font-normal text-bearish">biaya belum valid</span>}
+            </span>
+            <span className="line-clamp-1 text-[15px] text-muted-foreground">
+              {hiddenKeys.size} parameter lain · biaya · Cari setting terbaik · uji cepat
+            </span>
           </span>
         </span>
-        <ChevronDown className={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform', open && 'rotate-180')} aria-hidden="true" />
+        <ChevronDown className={cn('h-5 w-5 shrink-0 text-muted-foreground transition-transform', open && 'rotate-180')} aria-hidden="true" />
       </button>
       {open && (
-        <div id="lab-advanced" className="space-y-4 px-4 pb-5 sm:px-5">
-          <div className="space-y-2">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div id="lab-advanced" className="space-y-6 px-5 pb-6 sm:px-8 sm:pb-8">
+          <div className="space-y-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <div className="relative min-w-0 flex-1">
-                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                 <Input
                   value={query}
                   onChange={(e) => onQuery(e.target.value)}
                   placeholder="Cari parameter, mis. stop, EMA, volume"
                   aria-label="Cari parameter"
-                  className="h-8 pl-8 text-xs"
+                  className="h-11 rounded-xl pl-10 text-base"
                 />
               </div>
-              <Chip active={onlyChanged} onClick={() => onOnlyChanged(!onlyChanged)} className="h-8 shrink-0">
+              <Chip active={onlyChanged} onClick={() => onOnlyChanged(!onlyChanged)} className="h-11 shrink-0 px-4 text-sm">
                 Yang diubah saja{hiddenChanged > 0 ? ` (${hiddenChanged})` : ''}
               </Chip>
             </div>
@@ -121,9 +125,9 @@ export const AdvancedPanel = forwardRef<HTMLElement, {
             <OptimizePanel template={template} value={optimize} errors={errors} onChange={onOptimize} importance={importance} importantKeys={importantKeys} />
           </Block>
 
-          <Block title="Uji cepat (tanpa rapor)" description="Menjalankan strategi di seluruh data lama tanpa data baru (holdout). Untuk coba-coba, bukan bukti.">
-            <Button type="button" variant="outline" size="sm" onClick={onQuickTest} disabled={disabled} className="gap-1.5">
-              {quickPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+          <Block title="Uji cepat (tanpa rapor)" description="Seluruh data, tanpa data baru yang dikunci. Untuk coba-coba, bukan bukti.">
+            <Button type="button" variant="outline" onClick={onQuickTest} disabled={disabled} className="h-11 gap-2 rounded-full px-5 text-[15px]">
+              {quickPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
               Jalankan uji cepat
             </Button>
           </Block>

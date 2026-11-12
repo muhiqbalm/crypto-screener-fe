@@ -154,3 +154,27 @@ export function verdictSentence(run: Pick<LabRunDetail, 'status' | 'verdict' | '
   }
   return { tone: 'none', text: 'Uji selesai, tapi server tidak mengirim rapor.' }
 }
+
+export interface VerdictHeadline {
+  tone: SentenceTone
+  /** The big word of the hero: "Lolos", "Gagal", "Uji cepat"… */
+  word: string
+  /** One line under it. Numbers live in the KPIs, so they are not repeated here. */
+  line: string
+}
+
+/** Hero headline for the run detail (design v2): big word + one line. */
+export function verdictHeadline(run: Pick<LabRunDetail, 'status' | 'verdict' | 'mode' | 'checks' | 'error'>): VerdictHeadline {
+  if (run.status === 'queued') return { tone: 'running', word: 'Menunggu antrian', line: 'Rapor muncul setelah uji selesai.' }
+  if (run.status === 'running') return { tone: 'running', word: 'Sedang diuji', line: 'Rapor muncul setelah uji selesai.' }
+  if (run.status === 'cancelled') return { tone: 'none', word: 'Dibatalkan', line: 'Uji berhenti sebelum selesai, jadi tidak ada rapor.' }
+  if (run.status === 'error') return { tone: 'error', word: 'Error', line: errorCopy(run.error).text }
+  if (run.verdict === 'PASS') return { tone: 'pass', word: 'Lolos', line: 'Untung di data baru setelah biaya, dan semua syarat rapor terpenuhi.' }
+  if (run.verdict === 'FAIL') {
+    const failed = (run.checks ?? []).filter((c: LabCheck) => !c.passed)
+    const first = failed[0] ? checkReason(failed[0]) : 'Minimal satu syarat rapor tidak terpenuhi'
+    return { tone: 'fail', word: 'Gagal', line: `${first}${failed.length > 1 ? ` (+${failed.length - 1} syarat lain)` : ''}.` }
+  }
+  if (run.mode === 'backtest') return { tone: 'none', word: 'Uji cepat', line: 'Tanpa rapor, jadi belum bukti. Uji jujur memberi rapor Lolos/Gagal.' }
+  return { tone: 'none', word: 'Tanpa rapor', line: 'Server tidak mengirim rapor untuk uji ini.' }
+}
