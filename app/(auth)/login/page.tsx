@@ -25,8 +25,9 @@ export default function LoginPage() {
           <LoginForm />
         </Suspense>
 
-        <p className="mt-6 flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
-          <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+        <p className="mt-6 text-center text-xs text-muted-foreground">
+          {/* inline, so the icon stays next to the text when it wraps */}
+          <Lock className="mr-1.5 inline h-3.5 w-3.5 align-[-2px]" aria-hidden="true" />
           Terminal privat — hanya untuk anggota tim yang diundang.
         </p>
       </div>

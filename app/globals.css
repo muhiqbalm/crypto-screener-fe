@@ -102,6 +102,14 @@
   }
 }
 
+/* Card padding (components/ui/card.tsx): 20px on phones, 24px from 640px.
+   A variable rather than sm: classes, so a card's own p-0 / pt-6 / pb-2
+   still wins at every width. */
+:root { --card-pad: 1.25rem; }
+@media (min-width: 40rem) {
+  :root { --card-pad: 1.5rem; }
+}
+
 /* ============================================================
    Light theme (menu: Tema terang). Every accent darkened for
    >= 4.5:1 on white.
