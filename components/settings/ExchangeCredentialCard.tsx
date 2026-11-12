@@ -101,12 +101,12 @@ export function ExchangeCredentialCard({ exchange, existing }: ExchangeCredentia
   const isPending = upsert.isPending || remove.isPending
 
   return (
-    <Card>
+    <Card className="rounded-3xl">
       <CardHeader className="pb-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <KeyRound className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-            <CardTitle className="text-base">{label}</CardTitle>
+            <CardTitle className="text-[17px]">{label}</CardTitle>
             {existing ? (
               <Badge variant="bullish" size="sm">
                 <CheckCircle2 aria-hidden="true" />
@@ -118,9 +118,9 @@ export function ExchangeCredentialCard({ exchange, existing }: ExchangeCredentia
               </Badge>
             )}
           </div>
-          {existing && !isEditing && <span className="text-2xs text-muted-foreground">Disimpan {formatTime(existing.created_at, { time: false })}</span>}
+          {existing && !isEditing && <span className="text-[13px] text-muted-foreground">Disimpan {formatTime(existing.created_at, { time: false })}</span>}
         </div>
-        <CardDescription className="text-xs">
+        <CardDescription className="text-[14px]">
           {exchange === 'okx' ? 'Butuh API key, secret, dan passphrase API OKX.' : 'Butuh API key dan secret dengan izin futures.'}
         </CardDescription>
       </CardHeader>
@@ -128,7 +128,7 @@ export function ExchangeCredentialCard({ exchange, existing }: ExchangeCredentia
       {isEditing ? (
         <CardContent className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor={`${exchange}-api-key`} className="text-xs">
+            <Label htmlFor={`${exchange}-api-key`} className="text-[14px]">
               API key
             </Label>
             <Input
@@ -143,14 +143,14 @@ export function ExchangeCredentialCard({ exchange, existing }: ExchangeCredentia
               className="font-mono text-sm"
             />
             {errors.api_key && (
-              <p className="text-xs text-bearish" role="alert">
+              <p className="text-[14px] text-bearish" role="alert">
                 {errors.api_key}
               </p>
             )}
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor={`${exchange}-secret`} className="text-xs">
+            <Label htmlFor={`${exchange}-secret`} className="text-[14px]">
               Secret
             </Label>
             <div className="relative">
@@ -176,7 +176,7 @@ export function ExchangeCredentialCard({ exchange, existing }: ExchangeCredentia
               </button>
             </div>
             {errors.secret && (
-              <p className="text-xs text-bearish" role="alert">
+              <p className="text-[14px] text-bearish" role="alert">
                 {errors.secret}
               </p>
             )}
@@ -184,7 +184,7 @@ export function ExchangeCredentialCard({ exchange, existing }: ExchangeCredentia
 
           {exchange === 'okx' && (
             <div className="space-y-1.5">
-              <Label htmlFor="okx-api-passphrase" className="text-xs">
+              <Label htmlFor="okx-api-passphrase" className="text-[14px]">
                 <Term k="okx_passphrase" />
               </Label>
               <div className="relative">
@@ -210,7 +210,7 @@ export function ExchangeCredentialCard({ exchange, existing }: ExchangeCredentia
                 </button>
               </div>
               {errors.api_passphrase && (
-                <p className="text-xs text-bearish" role="alert">
+                <p className="text-[14px] text-bearish" role="alert">
                   {errors.api_passphrase}
                 </p>
               )}
@@ -270,7 +270,7 @@ export function ExchangeCredentialCard({ exchange, existing }: ExchangeCredentia
         pending={upsert.isPending}
         onConfirm={save}
       >
-        <p className="text-xs text-muted-foreground">Key disimpan terenkripsi; secret tidak pernah ditampilkan lagi.</p>
+        <p className="text-[14px] text-muted-foreground">Key disimpan terenkripsi; secret tidak pernah ditampilkan lagi.</p>
       </ConfirmLive>
     </Card>
   )

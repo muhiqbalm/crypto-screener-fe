@@ -40,7 +40,7 @@ function SegmentControl<T extends string>({
 }) {
   return (
     <div className="space-y-1.5">
-      <Label id={id} className="text-xs">
+      <Label id={id} className="text-[14px]">
         {label}
       </Label>
       <div className="flex overflow-hidden rounded-lg border border-input" role="group" aria-labelledby={id}>
@@ -52,7 +52,7 @@ function SegmentControl<T extends string>({
             disabled={disabled}
             aria-pressed={value === opt.value}
             className={cn(
-              'flex-1 cursor-pointer py-1.5 text-xs font-medium transition-colors duration-150',
+              'flex-1 cursor-pointer py-1.5 text-[14px] font-medium transition-colors duration-150',
               'disabled:pointer-events-none disabled:opacity-50',
               value === opt.value
                 ? colorize
@@ -130,7 +130,7 @@ export function TestWebhookCard() {
   const noConfig = !webhookConfig?.passphrase
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden rounded-3xl">
       <CardHeader className="pb-3 pt-4">
         <button
           type="button"
@@ -141,8 +141,8 @@ export function TestWebhookCard() {
         >
           <span className="flex items-center gap-2">
             <FlaskConical className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-            <CardTitle className="text-base">Pratinjau isi alert</CardTitle>
-            <span className="rounded-full border border-info/35 bg-info/10 px-2 py-0.5 text-3xs font-semibold text-info">tidak dikirim</span>
+            <CardTitle className="text-[17px]">Pratinjau isi alert</CardTitle>
+            <span className="rounded-full border border-info/35 bg-info/10 px-2 py-0.5 text-[13px] font-semibold text-info">tidak dikirim</span>
           </span>
           {isExpanded ? (
             <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -154,7 +154,7 @@ export function TestWebhookCard() {
 
       {isExpanded && (
         <CardContent id="test-webhook-body" className="space-y-5 pt-0">
-          <div role="note" className="flex gap-2.5 rounded-lg border border-info/40 bg-info/10 px-3 py-2.5 text-xs text-foreground">
+          <div role="note" className="flex gap-2.5 rounded-lg border border-info/40 bg-info/10 px-3 py-2.5 text-[14px] text-foreground">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" aria-hidden="true" />
             <p>
               <span className="font-semibold">Hanya pratinjau.</span> Kartu ini menyusun dan mengecek isi alert di browser. Tidak ada yang
@@ -163,7 +163,7 @@ export function TestWebhookCard() {
           </div>
 
           {noConfig && (
-            <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
+            <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-[14px] text-muted-foreground">
               Aktifkan webhook dulu untuk memakai pratinjau ini.
             </div>
           )}
@@ -207,7 +207,7 @@ export function TestWebhookCard() {
 
           <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
             <div className="space-y-1.5">
-              <Label htmlFor="test-symbol" className="text-xs">
+              <Label htmlFor="test-symbol" className="text-[14px]">
                 Koin
               </Label>
               <Input
@@ -215,12 +215,12 @@ export function TestWebhookCard() {
                 value={form.symbol}
                 onChange={(e) => setField('symbol', e.target.value.toUpperCase())}
                 placeholder="BTC/USDT:USDT"
-                className={cn('font-mono text-xs', symbolError && 'border-bearish focus-visible:ring-bearish/30')}
+                className={cn('font-mono text-[14px]', symbolError && 'border-bearish focus-visible:ring-bearish/30')}
                 disabled={noConfig}
                 aria-invalid={!!symbolError}
               />
               {symbolError && (
-                <p className="text-2xs text-bearish" role="alert">
+                <p className="text-[13px] text-bearish" role="alert">
                   {symbolError}
                 </p>
               )}
@@ -237,7 +237,7 @@ export function TestWebhookCard() {
               disabled={noConfig}
             />
             <div className="space-y-1.5">
-              <Label htmlFor="test-size-value" className="text-xs">
+              <Label htmlFor="test-size-value" className="text-[14px]">
                 Ukuran {form.size_type === 'percent' ? '(%)' : '(USD)'}
               </Label>
               <Input
@@ -248,18 +248,18 @@ export function TestWebhookCard() {
                 step={form.size_type === 'percent' ? 1 : 0.01}
                 value={form.size_value}
                 onChange={(e) => setField('size_value', parseFloat(e.target.value) || 0)}
-                className={cn('font-mono text-xs', sizeError && 'border-bearish')}
+                className={cn('font-mono text-[14px]', sizeError && 'border-bearish')}
                 disabled={noConfig}
                 aria-invalid={!!sizeError}
               />
               {sizeError && (
-                <p className="text-2xs text-bearish" role="alert">
+                <p className="text-[13px] text-bearish" role="alert">
                   {sizeError}
                 </p>
               )}
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="test-leverage" className="text-xs">
+              <Label htmlFor="test-leverage" className="text-[14px]">
                 Leverage
               </Label>
               <Input
@@ -274,18 +274,18 @@ export function TestWebhookCard() {
                   setField('leverage', isNaN(v) ? null : v)
                 }}
                 placeholder="opsional"
-                className="font-mono text-xs"
+                className="font-mono text-[14px]"
                 disabled={noConfig}
               />
             </div>
           </div>
 
           <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2">
-            <span className="text-2xs text-muted-foreground">Kata sandi webhook:</span>
-            <span className="font-mono text-xs tracking-widest text-muted-foreground">
+            <span className="text-[13px] text-muted-foreground">Kata sandi webhook:</span>
+            <span className="font-mono text-[14px] tracking-widest text-muted-foreground">
               {webhookConfig?.passphrase ? '••••••••••••' : <span className="italic tracking-normal">belum aktif</span>}
             </span>
-            <span className="ml-auto text-2xs text-muted-foreground">disamarkan di pratinjau</span>
+            <span className="ml-auto text-[13px] text-muted-foreground">disamarkan di pratinjau</span>
           </div>
 
           <Button onClick={handlePreview} disabled={noConfig} className="w-full gap-2">
@@ -295,10 +295,10 @@ export function TestWebhookCard() {
 
           {preview && (
             <div className="overflow-hidden rounded-lg border border-info/30">
-              <p className="border-b border-info/20 bg-info/[0.06] px-4 py-2 text-xs font-medium text-info">
+              <p className="border-b border-info/20 bg-info/[0.06] px-4 py-2 text-[14px] font-medium text-info">
                 Pratinjau, tidak dikirim. Server belum melihat isi ini.
               </p>
-              <pre className="overflow-x-auto px-4 py-3 font-mono text-2xs leading-relaxed">{JSON.stringify(preview, null, 2)}</pre>
+              <pre className="overflow-x-auto px-4 py-3 font-mono text-[13px] leading-relaxed">{JSON.stringify(preview, null, 2)}</pre>
             </div>
           )}
         </CardContent>

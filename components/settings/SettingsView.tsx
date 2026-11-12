@@ -44,7 +44,7 @@ export function SettingsView() {
         eyebrow="Akun"
         eyebrowIcon={UserCog}
         title="Akun & koneksi"
-        description="API key exchange, webhook TradingView, profil dan notifikasi Telegram untuk akunmu."
+        description="API key, webhook, profil dan Telegram akunmu."
         help={{
           apaIni:
             'Koneksi akunmu ke exchange dan ke TradingView. API key dan kata sandi webhook dipakai bot live untuk order sungguhan, jadi setiap perubahan di sini meminta konfirmasi.',

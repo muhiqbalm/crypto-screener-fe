@@ -1,85 +1,93 @@
-import { Gauge } from 'lucide-react'
-import { Section } from '@/components/lab/Section'
+import { Gauge as GaugeIcon } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { FNG_GAUGE_ZONES, Gauge } from '@/components/ui/gauge'
+import { HeroCard } from '@/components/ui/hero-card'
+import { IconChip } from '@/components/ui/icon-title'
 import { Term } from '@/components/ui/term'
+import { TONE_SOFT, type Tone } from '@/components/ui/tone'
 import { cn } from '@/lib/utils/cn'
 import { FNG_ZONES, clampFng, fngZone, type FngTone } from '@/lib/intel/fng'
 
-const ACTIVE: Record<FngTone, string> = {
-  warn: 'bg-warn/70',
-  info: 'bg-info/60',
-  muted: 'bg-muted-foreground/45',
-}
-const PILL: Record<FngTone, string> = {
-  warn: 'border-warn/40 bg-warn/10 text-warn',
-  info: 'border-info/35 bg-info/10 text-info',
-  muted: 'border-border bg-muted/60 text-muted-foreground',
-}
+/** Context, not direction: extremes are "worth a look" (warn), fear / greed info, neutral muted. */
+const ZONE_TONE: Record<FngTone, Tone> = { warn: 'warn', info: 'info', muted: 'muted' }
 
 /**
- * Fear & Greed on an honest 5-zone scale. Context, not direction: no up/down colours,
- * the zone is always written out, and the marker shows where the value sits.
+ * Fear & Greed as the hero of Sentimen & berita: a zoned half gauge with a needle, the number big
+ * under it, one short sentence and the five zones (the active one marked, never colour alone).
  */
 export function FearGreedCard({
   value,
   classification,
+  sentence,
+  footer,
   className,
 }: {
   value: number | null | undefined
   classification?: string | null
+  /** One short answer line next to the gauge. */
+  sentence?: React.ReactNode
+  footer?: React.ReactNode
   className?: string
 }) {
   const zone = fngZone(value, classification)
   const has = value !== null && value !== undefined && Number.isFinite(value)
   const v = has ? Math.round(clampFng(value as number)) : null
   return (
-    <Section
-      className={className}
-      icon={<Gauge className="h-4 w-4 text-muted-foreground" aria-hidden="true" />}
-      title={<Term k="fear_greed" />}
-      description="Sumber: alternative.me. Hanya konteks, bukan sinyal beli atau jual."
-    >
+    <HeroCard glow={zone ? ZONE_TONE[zone.tone] : 'info'} className={cn('flex flex-col', className)} aria-label="Indeks takut–serakah">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <IconChip icon={GaugeIcon} tone="info" />
+          <h2 className="text-lg font-bold">
+            <Term k="fear_greed" />
+          </h2>
+        </div>
+        {zone && (
+          <Badge variant={ZONE_TONE[zone.tone]} className="px-3.5 py-1 text-sm">
+            {zone.label}
+          </Badge>
+        )}
+      </div>
+
       {v === null || !zone ? (
-        <p className="py-4 text-sm text-muted-foreground">Indeks takut–serakah tidak tersedia saat ini.</p>
+        <p className="flex-1 py-10 text-center text-base text-muted-foreground">Indeks takut–serakah tidak tersedia saat ini.</p>
       ) : (
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span className="num text-3xl font-bold">{v}</span>
-            <span className="text-xs text-muted-foreground">dari 100</span>
-            <span className={cn('rounded-full border px-2 py-0.5 text-xs font-semibold', PILL[zone.tone])}>{zone.label}</span>
-          </div>
-          <div className="relative pt-3" role="img" aria-label={`Skala takut–serakah: ${v} dari 100, zona ${zone.label}`}>
-            <span
-              className="absolute top-0 h-0 w-0 -translate-x-1/2 border-x-[5px] border-t-[7px] border-x-transparent border-t-foreground"
-              style={{ left: `${v}%` }}
-              aria-hidden="true"
-            />
-            {/* One continuous scale: the marker is the value, the zone word comes from the source. */}
-            <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted">
-              <span className={cn('absolute inset-y-0 left-0 rounded-full', ACTIVE[zone.tone])} style={{ width: `${v}%` }} />
-              {[25, 50, 75].map((t) => (
-                <span key={t} className="absolute inset-y-0 w-px bg-background/80" style={{ left: `${t}%` }} aria-hidden="true" />
+        <div className="flex flex-1 flex-col items-center gap-6 py-4 md:flex-row md:gap-10">
+          <Gauge
+            value={v}
+            zones={FNG_GAUGE_ZONES}
+            size={280}
+            thickness={20}
+            label={`Takut–serakah ${v} dari 100, zona ${zone.label}`}
+            center={
+              <div className="flex flex-col items-center">
+                <span className="num display text-6xl font-extrabold leading-none">{v}</span>
+                <span className="mt-1 text-sm text-muted-foreground">dari 100</span>
+              </div>
+            }
+          />
+          <div className="min-w-0 flex-1 space-y-4">
+            {sentence && <p className="display text-2xl font-bold leading-snug">{sentence}</p>}
+            <ol className="flex flex-wrap gap-2" aria-label="Lima zona, dari takut ke serakah">
+              {FNG_ZONES.map((z) => (
+                <li
+                  key={z.key}
+                  aria-current={z.key === zone.key ? 'true' : undefined}
+                  className={cn(
+                    'rounded-full border px-3 py-1 text-2xs',
+                    z.key === zone.key ? cn('border-transparent font-bold', TONE_SOFT[ZONE_TONE[z.tone]]) : 'text-muted-foreground',
+                  )}
+                >
+                  {z.label}
+                </li>
               ))}
-            </div>
-            <div className="num mt-1 flex justify-between text-3xs text-muted-foreground" aria-hidden="true">
-              <span>0</span>
-              <span>50</span>
-              <span>100</span>
-            </div>
+            </ol>
           </div>
-          <ol className="grid grid-cols-5 gap-1 text-center text-3xs leading-tight text-muted-foreground" aria-label="Lima zona, dari takut ke serakah">
-            {FNG_ZONES.map((z) => (
-              <li
-                key={z.key}
-                className={cn('rounded px-0.5 py-0.5', z.key === zone.key && cn('border font-semibold', PILL[z.tone]))}
-                aria-current={z.key === zone.key ? 'true' : undefined}
-              >
-                {z.label}
-              </li>
-            ))}
-          </ol>
-          {classification && <p className="text-3xs text-muted-foreground">Label dari sumber: {classification}.</p>}
         </div>
       )}
-    </Section>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3 text-2xs text-muted-foreground">
+        <span>Sumber alternative.me · hanya konteks{classification ? ` · label sumber: ${classification}` : ''}</span>
+        {footer}
+      </div>
+    </HeroCard>
   )
 }

@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { ArrowRight, Wallet } from 'lucide-react'
-import { Section } from '@/components/lab/Section'
-import { Button } from '@/components/ui/button'
+import { Panel } from '@/components/ui/hero-card'
+import { IconChip } from '@/components/ui/icon-title'
 import { StatusPill } from '@/components/ui/status-pill'
+import { cn } from '@/lib/utils/cn'
 
 /**
  * Link to Saldo & posisi. Deliberately no balance numbers here: those come straight from the
@@ -10,24 +11,22 @@ import { StatusPill } from '@/components/ui/status-pill'
  */
 export function BalanceLinkCard({ className }: { className?: string }) {
   return (
-    <Section
-      className={className}
-      icon={<Wallet className="h-4 w-4 text-muted-foreground" aria-hidden="true" />}
-      title="Saldo & posisi"
-      description="Uang asli di exchange."
-      action={<StatusPill kind="live" size="xs" />}
-    >
-      <div className="flex h-full flex-col justify-between gap-3">
-        <p className="text-xs text-muted-foreground">
-          Saldo, posisi terbuka, dan riwayat posisi dibaca langsung dari akun exchange di halaman tersendiri, supaya halaman ini
-          tidak memanggil exchange terus-menerus.
-        </p>
-        <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
-          <Link href="/balance">
-            Buka Saldo & posisi <ArrowRight aria-hidden="true" />
-          </Link>
-        </Button>
+    <Panel as="div" className={cn('flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between', className)}>
+      <div className="flex items-center gap-3">
+        <IconChip icon={Wallet} tone="info" />
+        <div>
+          <p className="flex items-center gap-2 text-lg font-bold">
+            Saldo & posisi <StatusPill kind="live" size="xs" />
+          </p>
+          <p className="text-xs text-muted-foreground">Uang asli dan posisi terbuka, langsung dari exchange.</p>
+        </div>
       </div>
-    </Section>
+      <Link
+        href="/balance"
+        className="lift inline-flex items-center justify-center gap-1.5 rounded-full border bg-muted/40 px-5 py-2.5 text-sm font-semibold hover:bg-muted"
+      >
+        Buka Saldo & posisi <ArrowRight className="h-4 w-4" aria-hidden="true" />
+      </Link>
+    </Panel>
   )
 }

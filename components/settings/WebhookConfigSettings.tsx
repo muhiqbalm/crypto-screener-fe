@@ -33,7 +33,7 @@ function copyToClipboard(text: string, what: string) {
 }
 
 const Title = () => (
-  <CardTitle className="text-base">
+  <CardTitle className="text-[17px]">
     <Term k="webhook" />
   </CardTitle>
 )
@@ -58,7 +58,7 @@ export function WebhookConfigSettings() {
   // ── Pending ──────────────────────────────────────────────────────────────
   if (isPending) {
     return (
-      <Card>
+      <Card className="rounded-3xl">
         <CardHeader>
           <Title />
         </CardHeader>
@@ -74,7 +74,7 @@ export function WebhookConfigSettings() {
   const noConfig = error instanceof ApiError && error.kind === 'not_found'
   if (noConfig) {
     return (
-      <Card>
+      <Card className="rounded-3xl">
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <Title />
@@ -113,7 +113,7 @@ export function WebhookConfigSettings() {
   // ── Other error ───────────────────────────────────────────────────────────
   if (error || !data) {
     return (
-      <Card>
+      <Card className="rounded-3xl">
         <CardHeader>
           <Title />
         </CardHeader>
@@ -166,20 +166,20 @@ export function WebhookConfigSettings() {
   }
 
   return (
-    <Card>
+    <Card className="rounded-3xl">
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Title />
           {data.is_active ? <StatusPill kind="sehat" label="Otomasi aktif" /> : <StatusPill kind="menunggu" label="Tidak aktif" />}
         </div>
-        <CardDescription className="text-xs">Dibuat {formatTime(data.created_at)}</CardDescription>
+        <CardDescription className="text-[14px]">Dibuat {formatTime(data.created_at)}</CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-4">
         <div className="space-y-1.5">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Alamat webhook (URL)</p>
+          <p className="text-[14px] font-medium uppercase tracking-wide text-muted-foreground">Alamat webhook (URL)</p>
           <div className="flex items-center gap-2">
-            <div className="min-w-0 flex-1 break-all rounded-md border border-input bg-muted/40 px-3 py-2 font-mono text-xs select-all">{WEBHOOK_URL}</div>
+            <div className="min-w-0 flex-1 break-all rounded-md border border-input bg-muted/40 px-3 py-2 font-mono text-[14px] select-all">{WEBHOOK_URL}</div>
             <Button variant="outline" size="icon" onClick={() => copyToClipboard(WEBHOOK_URL, 'Alamat webhook')} className="shrink-0" aria-label="Salin alamat webhook">
               <Copy className="h-4 w-4" aria-hidden="true" />
             </Button>
@@ -188,7 +188,7 @@ export function WebhookConfigSettings() {
 
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <p className="text-[14px] font-medium uppercase tracking-wide text-muted-foreground">
               <Term k="webhook_passphrase" />
             </p>
             <button
@@ -198,7 +198,7 @@ export function WebhookConfigSettings() {
                 setNewPassphrase('')
                 setPassphraseError('')
               }}
-              className="flex cursor-pointer items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+              className="flex cursor-pointer items-center gap-1 text-[14px] text-muted-foreground transition-colors hover:text-foreground"
             >
               <RefreshCw className="h-3 w-3" aria-hidden="true" />
               Ganti kata sandi webhook
@@ -221,16 +221,16 @@ export function WebhookConfigSettings() {
                   disabled={isSavingPassphrase}
                   autoComplete="off"
                 />
-                <Button variant="outline" size="sm" onClick={() => setNewPassphrase(generatePassphrase())} className="shrink-0 text-xs" disabled={isSavingPassphrase}>
+                <Button variant="outline" size="sm" onClick={() => setNewPassphrase(generatePassphrase())} className="shrink-0 text-[14px]" disabled={isSavingPassphrase}>
                   Buat acak
                 </Button>
               </div>
               {passphraseError && (
-                <p className="text-xs text-bearish" role="alert">
+                <p className="text-[14px] text-bearish" role="alert">
                   {passphraseError}
                 </p>
               )}
-              <p className="text-2xs text-muted-foreground">Setelah diganti, semua alert TradingView yang memakai kata sandi lama langsung ditolak.</p>
+              <p className="text-[13px] text-muted-foreground">Setelah diganti, semua alert TradingView yang memakai kata sandi lama langsung ditolak.</p>
               <div className="flex gap-2">
                 <Button size="sm" onClick={requestSavePassphrase} disabled={isSavingPassphrase}>
                   {isSavingPassphrase && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />}

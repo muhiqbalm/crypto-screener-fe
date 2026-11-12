@@ -15,6 +15,8 @@ import { maskPassphrase } from '@/lib/utils/mask'
 import { notify } from '@/lib/utils/toast'
 import { formatTime } from '@/lib/utils/time'
 import { ApiError } from '@/lib/api/errors'
+import { LiveDot } from '@/components/ui/live-dot'
+import { IconChip } from '@/components/ui/icon-title'
 
 const WEBHOOK_URL =
   (process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000') +
@@ -55,10 +57,10 @@ function FieldRow({
 }) {
   return (
     <div className="space-y-1.5">
-      <p className="text-2xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="text-[13px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
       <div className="flex items-center gap-2">
         <div
-          className={`min-w-0 flex-1 break-all rounded-lg border border-input bg-muted/30 px-3 py-2 font-mono text-sm select-all ${
+          className={`min-w-0 flex-1 break-all rounded-xl border border-input bg-muted/30 px-4 py-2.5 font-mono text-[15px] select-all ${
             masked ? 'tracking-widest' : ''
           }`}
         >
@@ -72,10 +74,10 @@ function FieldRow({
 
 function Header({ status, action }: { status: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 pb-3 pt-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <Webhook className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-        <CardTitle className="text-base">
+    <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 px-6 pb-3 pt-6">
+      <div className="flex flex-wrap items-center gap-3">
+        <IconChip icon={Webhook} tone="brand" />
+        <CardTitle className="text-[17px]">
           <Term k="webhook" />
         </CardTitle>
         {status}
@@ -98,7 +100,7 @@ export function WebhookConfigCard() {
   // ── Pending ──────────────────────────────────────────────────────────────
   if (isPending) {
     return (
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden rounded-3xl">
         <CardHeader className="pb-3 pt-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -129,12 +131,13 @@ export function WebhookConfigCard() {
 
     if (apiError?.kind === 'not_found') {
       return (
-        <Card className="overflow-hidden">
-          <Header status={<StatusPill kind="menunggu" label="Tidak aktif" />} />
+        <Card className="overflow-hidden rounded-3xl">
+          <Header status={<StatusPill kind="live" size="xs" />} />
           <CardContent className="space-y-4">
             <div className="space-y-1">
-              <p className="text-sm font-medium">Webhook tidak aktif (belum dibuat atau sedang dijeda)</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[24px] font-bold leading-tight text-muted-foreground">Tidak aktif</p>
+              <p className="text-[15px] font-medium">Webhook tidak aktif (belum dibuat atau sedang dijeda)</p>
+              <p className="text-[14px] text-muted-foreground">
                 Server tidak membedakan keduanya. Selama tidak aktif, semua alert TradingView ke akun ini ditolak dan tidak ada order
                 yang dibuat.
               </p>
@@ -155,7 +158,7 @@ export function WebhookConfigCard() {
                 )
               }
               trigger={
-                <Button size="sm" className="gap-1.5" disabled={automationToggle.isPending}>
+                <Button className="gap-1.5 rounded-full" disabled={automationToggle.isPending}>
                   {automationToggle.isPending ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                   ) : (
@@ -171,7 +174,7 @@ export function WebhookConfigCard() {
     }
 
     return (
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden rounded-3xl">
         <Header status={null} />
         <CardContent>
           <ErrorState compact error={error} onRetry={() => refetch()} message="Status webhook belum bisa dimuat." />
@@ -203,10 +206,10 @@ export function WebhookConfigCard() {
   const copy = isActive ? DEACTIVATE_COPY : ACTIVATE_COPY
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden rounded-3xl">
       <div className={`h-0.5 w-full ${isActive ? 'bg-bullish' : 'bg-muted'}`} aria-hidden="true" />
       <Header
-        status={isActive ? <StatusPill kind="sehat" label="Otomasi aktif" /> : <StatusPill kind="menunggu" label="Tidak aktif" />}
+        status={<StatusPill kind="live" size="xs" />}
         action={
           <ConfirmLive
             title={copy.title}
@@ -216,7 +219,7 @@ export function WebhookConfigCard() {
             pending={automationToggle.isPending}
             onConfirm={() => runToggle(!isActive)}
             trigger={
-              <Button variant="outline" size="sm" className="shrink-0 gap-1.5" disabled={automationToggle.isPending}>
+              <Button variant="outline" size="sm" className="shrink-0 gap-1.5 rounded-full" disabled={automationToggle.isPending}>
                 {automationToggle.isPending ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                 ) : isActive ? (
@@ -231,8 +234,14 @@ export function WebhookConfigCard() {
         }
       />
 
-      <CardContent className="space-y-4">
-        <p className="text-xs text-muted-foreground">
+      <CardContent className="space-y-5 px-6 pb-6">
+        <div className="flex items-center gap-3">
+          <LiveDot tone={isActive ? 'bullish' : 'muted'} pulse={isActive} size="lg" />
+          <p className={`display text-3xl font-extrabold leading-none ${isActive ? 'text-bullish' : 'text-muted-foreground'}`}>
+            {isActive ? 'Aktif' : 'Tidak aktif'}
+          </p>
+        </div>
+        <p className="text-[14px] text-muted-foreground">
           {isActive
             ? 'Alert TradingView yang membawa kata sandi ini diproses menjadi order sungguhan di exchange.'
             : 'Selama tidak aktif, semua alert TradingView ke akun ini ditolak.'}
@@ -283,7 +292,7 @@ export function WebhookConfigCard() {
             </>
           }
         />
-        <p className="text-2xs text-muted-foreground">Ganti kata sandi webhook di Akun & koneksi.</p>
+        <p className="text-[13px] text-muted-foreground">Ganti kata sandi webhook di Akun & koneksi.</p>
       </CardContent>
     </Card>
   )

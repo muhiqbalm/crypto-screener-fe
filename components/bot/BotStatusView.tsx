@@ -3,23 +3,20 @@
 import { useEffect, useRef, useState } from 'react'
 import { Activity, RefreshCw } from 'lucide-react'
 import { PageContainer, PageHeader } from '@/components/shell/page'
-import { AnswerCard } from '@/components/ui/answer-card'
 import { Button } from '@/components/ui/button'
-import { Freshness } from '@/components/ui/freshness'
 import { StatusPill } from '@/components/ui/status-pill'
 import { useNow } from '@/components/ui/use-now'
 import { LiveCheckView, LIVECHECK_RANGES } from '@/components/lab/livecheck/LiveCheckView'
 import { ExecutionQuality } from '@/components/lab/shadow/ExecutionQuality'
-import { BOT_ANSWER_TONE, LIVECHECK_STALE_MS, VERDICT_BARS, botVerdict } from '@/lib/bot/status'
+import { LIVECHECK_STALE_MS, VERDICT_BARS, botVerdict } from '@/lib/bot/status'
 import type { StatusFilter } from '@/lib/lab/livecheck'
 import { useLiveCheck } from '@/lib/queries/livecheck'
 import { useBotStatus } from '@/lib/queries/bot'
 import { useShadowReport } from '@/lib/queries/shadow'
 import { cn } from '@/lib/utils/cn'
 import { BalanceLinkCard } from './BalanceLinkCard'
+import { BotHero, splitSignals } from './BotHero'
 import { WebhookStatusCard } from './WebhookStatusCard'
-
-const TONE_TEXT = { ok: 'text-bullish', warn: 'text-warn', bad: 'text-bearish', wait: 'text-muted-foreground' } as const
 
 /**
  * Sections load at different speeds, so the browser's own jump to #cek / #eksekusi lands too
@@ -78,7 +75,7 @@ export function BotStatusView() {
         eyebrowIcon={Activity}
         title="Status bot"
         status={<StatusPill kind="live" />}
-        description="Apakah bot live melakukan apa yang dikatakan strategi, dan apakah jalur alert ke bot sehat."
+        description="Apakah bot live mengikuti strategi, dan apakah jalur alert sehat."
         help={{
           apaIni:
             'Satu tempat untuk mengecek bot live (strategi 4H-ETH-Basic di akun Rosyade): sinyal strategi dibanding yang benar-benar dieksekusi, status webhook, dan kualitas eksekusi. Halaman ini hanya membaca; tidak ada order yang dikirim.',
@@ -97,26 +94,11 @@ export function BotStatusView() {
         }
       />
 
-      <AnswerCard
-        tone={BOT_ANSWER_TONE[v.tone]}
-        title="Bot live aman?"
-        answer={v.sentence}
-        status={<StatusPill kind="live" size="xs" />}
-        metrics={v.facts.map((f) => ({
-          label: f.label,
-          value: f.value,
-          hint: f.hint,
-          valueClassName: cn('text-sm', f.tone ? TONE_TEXT[f.tone] : undefined),
-        }))}
-        evidenceHref="#cek"
-        evidenceLabel={v.focus === 'masalah' ? 'Lihat baris bermasalah' : 'Lihat bukti'}
-        footer={<Freshness dataLabel="Cek terakhir" dataAt={finished ?? undefined} timeframe="4h" stale={stale} />}
-      />
-
-      <div className="grid items-start gap-4 lg:grid-cols-3">
-        <WebhookStatusCard q={bot} className="lg:col-span-2" />
-        <BalanceLinkCard />
+      <div className="grid gap-6 lg:grid-cols-3">
+        <BotHero v={v} split={splitSignals(live7.data)} updatedAt={finished ?? undefined} stale={stale} className="lg:col-span-2" />
+        <WebhookStatusCard q={bot} />
       </div>
+      <BalanceLinkCard />
 
       <LiveCheckView
         id="cek"

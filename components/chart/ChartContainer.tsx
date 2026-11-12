@@ -18,6 +18,7 @@ import {
 import { StrategyOverlayPanel } from './StrategyOverlayPanel'
 import { PaperTradePanel, EMPTY_DRAFT, type PaperDraft } from './PaperTradePanel'
 import { formatPct, formatPrice } from '@/lib/utils/format'
+import { CoinAvatar } from '@/components/ui/coin-avatar'
 import { cn } from '@/lib/utils/cn'
 import { api } from '@/lib/api/client'
 import { sameId } from '@/lib/api/types/lab'
@@ -88,9 +89,9 @@ function SegBtn({
       aria-pressed={active}
       aria-label={label}
       className={cn(
-        'h-7 shrink-0 rounded-md px-3 text-xs font-medium transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        'h-10 shrink-0 rounded-full px-4 text-[15px] font-semibold transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         active
-          ? 'bg-background text-foreground shadow-sm'
+          ? 'bg-info text-background shadow-sm'
           : 'text-muted-foreground hover:text-foreground',
       )}
     >
@@ -111,14 +112,14 @@ function ChangeChip({ value, label, title }: { value: number | null; label: stri
     <span className="inline-flex items-baseline gap-1 whitespace-nowrap" title={title}>
       <span
         className={cn(
-          'inline-flex items-center gap-0.5 font-mono text-sm tabular-nums',
+          'inline-flex items-center gap-1 num text-[17px] font-semibold',
           up ? 'text-bullish' : down ? 'text-bearish' : 'text-muted-foreground',
         )}
       >
-        {up ? <TrendingUp className="h-3.5 w-3.5" aria-hidden="true" /> : down ? <TrendingDown className="h-3.5 w-3.5" aria-hidden="true" /> : null}
+        {up ? <TrendingUp className="h-4 w-4" aria-hidden="true" /> : down ? <TrendingDown className="h-4 w-4" aria-hidden="true" /> : null}
         {formatPct(value, { digits: 2, signed: true })}
       </span>
-      <span className="text-3xs text-muted-foreground">{label}</span>
+      <span className="text-[13px] text-muted-foreground">{label}</span>
     </span>
   )
 }
@@ -138,7 +139,7 @@ function PriceTicker({
 
   return (
     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-      <span className="font-mono text-xl font-bold tabular-nums">
+      <span className="num text-[34px] font-bold leading-none tracking-tight">
         {formatPrice(lastCandle.close)}
       </span>
       <ChangeChip
@@ -327,7 +328,7 @@ export function ChartContainer() {
   return (
     <div className="flex flex-col gap-4">
       {overlay && (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-lab/30 bg-lab/10 px-4 py-2 text-xs text-lab">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-lab/30 bg-lab/10 px-4 py-2 text-[14px] text-lab">
           <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1">
             <Badge variant="lab" size="xs" className="gap-1">
               <FlaskConical aria-hidden="true" /> PAPER
@@ -346,7 +347,7 @@ export function ChartContainer() {
         </div>
       )}
       {(watchId || runId) && !overlay && isAdmin && (watchesQ.isError || runQ.isError || (watchId && watchesQ.isSuccess)) && (
-        <div role="alert" className="rounded-lg border border-warn/30 bg-warn/10 px-4 py-2 text-xs text-warn">
+        <div role="alert" className="rounded-lg border border-warn/30 bg-warn/10 px-4 py-2 text-[14px] text-warn">
           {watchId ? `Pantauan ${watchId} tidak ditemukan.` : `Uji ${runId} tidak bisa dimuat.`}{' '}
           <Link href="/chart" className="underline">Kembali ke chart biasa</Link>
         </div>
@@ -355,7 +356,7 @@ export function ChartContainer() {
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Symbol selector */}
-        <div role="group" aria-label="Pilih koin" className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-lg border bg-muted/40 p-0.5">
+        <div role="group" aria-label="Pilih koin" className="flex max-w-full items-center gap-1 overflow-x-auto rounded-full border bg-muted/40 p-1">
           {symbolOptions.map(s => (
             <SegBtn
               key={s.value}
@@ -369,7 +370,7 @@ export function ChartContainer() {
         </div>
 
         {/* Interval selector */}
-        <div role="group" aria-label="Pilih timeframe" className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-lg border bg-muted/40 p-0.5">
+        <div role="group" aria-label="Pilih timeframe" className="flex max-w-full items-center gap-1 overflow-x-auto rounded-full border bg-muted/40 p-1">
           {intervalOptions.map(i => (
             <SegBtn
               key={i.value}
@@ -386,17 +387,18 @@ export function ChartContainer() {
 
       <div className={cn('grid items-start gap-4', showSidePanel && 'lg:grid-cols-[minmax(0,1fr)_340px]')}>
         {/* Chart card */}
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden rounded-3xl">
           {/* Card header — price + status */}
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-5">
             <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
               <div>
-                <p className="text-xs font-medium text-muted-foreground">
+                <p className="flex items-center gap-2 text-[17px] font-bold">
+                  <CoinAvatar symbol={symbol} size="sm" />
                   {symbolMeta?.label ?? symbol}
                   {source && (
                     <span
                       className={cn(
-                        'ml-2 rounded px-1.5 py-0.5 font-mono text-3xs',
+                        'ml-2 rounded px-1.5 py-0.5 font-mono text-[13px]',
                         source === 'spot' ? 'bg-warn/15 text-warn' : 'bg-muted text-muted-foreground',
                       )}
                     >
@@ -412,7 +414,7 @@ export function ChartContainer() {
                 />
               </div>
               {lastCandle && (
-                <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground font-mono">
+                <div className="hidden sm:flex items-center gap-5 text-[15px] text-muted-foreground num">
                   <span>O <span className="text-foreground">{formatPrice(lastCandle.open)}</span></span>
                   <span>H <span className="text-bullish">{formatPrice(lastCandle.high)}</span></span>
                   <span>L <span className="text-bearish">{formatPrice(lastCandle.low)}</span></span>
@@ -427,7 +429,7 @@ export function ChartContainer() {
               <Badge
                 variant="outline"
                 className={cn(
-                  'gap-1.5 text-3xs px-2 py-0.5',
+                  'gap-1.5 text-[13px] px-2 py-0.5',
                   wsLive
                     ? 'border-info/30 bg-info/10 text-info'
                     : 'text-muted-foreground',
@@ -444,7 +446,7 @@ export function ChartContainer() {
                 size="sm"
                 onClick={handleReload}
                 disabled={isLoading}
-                className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                className="h-7 gap-1.5 text-[14px] text-muted-foreground hover:text-foreground"
                 aria-label="Muat ulang data chart"
               >
                 <RefreshCw className={cn('h-3 w-3', isLoading && 'animate-spin')} aria-hidden="true" />
@@ -454,7 +456,7 @@ export function ChartContainer() {
 
           {/* Chart area */}
           <CardContent className="p-0">
-            <div className="relative h-[360px] w-full sm:h-[480px]">
+            <div className="relative h-[400px] w-full sm:h-[560px]">
               {isLoading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-card z-10">
                   <div className="flex flex-col items-center gap-3">
@@ -488,7 +490,7 @@ export function ChartContainer() {
                 />
               )}
             </div>
-            <p className="border-t border-border px-4 py-1.5 text-3xs text-muted-foreground">
+            <p className="border-t border-border px-4 py-1.5 text-[13px] text-muted-foreground">
               Waktu di chart: WIB (UTC+7). Persen dibanding harga tutup candle sebelumnya; &quot;24 jam&quot; dibanding sekitar 24 jam lalu.
             </p>
           </CardContent>

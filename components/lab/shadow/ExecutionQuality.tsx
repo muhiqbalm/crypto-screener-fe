@@ -1,17 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { AlertTriangle, Gauge } from 'lucide-react'
+import { AlertTriangle, Radio, Scale, Timer } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Segmented } from '@/components/ui/segmented'
 import { StatTile } from '@/components/ui/stat-tile'
+import { KpiTile } from '@/components/ui/kpi'
+import { SectionHeading } from '@/components/shell/page'
 import { StatusPill } from '@/components/ui/status-pill'
 import { DirectionBadge } from '@/components/ui/direction-badge'
 import { ResponsiveTable, type ResponsiveColumn } from '@/components/ui/responsive-table'
 import { Term } from '@/components/ui/term'
 import { Freshness } from '@/components/ui/freshness'
 import { ErrorState, EmptyState, LoadingState } from '@/components/shell/states'
-import { Section } from '@/components/lab/Section'
 import { formatCount, formatPrice, signClass } from '@/lib/utils/format'
 import { formatTime } from '@/lib/utils/time'
 import { cn } from '@/lib/utils/cn'
@@ -31,7 +32,7 @@ import {
 import { useShadowReport } from '@/lib/queries/shadow'
 import type { ShadowCell, ShadowReport, ShadowSignal } from '@/lib/api/types/shadow'
 
-const th = 'px-3 py-2 text-2xs font-medium uppercase tracking-wide text-muted-foreground'
+const th = 'px-3 py-2 text-[13px] font-medium uppercase tracking-wide text-muted-foreground'
 
 /** Cost bps (+ = paid more): negative is good, so the colour is inverted. */
 function costClass(v: number | null | undefined) {
@@ -42,8 +43,8 @@ function SampleWarning({ r }: { r: ShadowReport }) {
   const n = r.actual.n_counted
   if (n >= r.thresholds.min_n_ok || n === 0) return null
   return (
-    <div className="flex gap-2 rounded-lg border border-warn/30 bg-warn/[0.06] p-3 text-xs text-muted-foreground">
-      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warn" aria-hidden="true" />
+    <div className="flex gap-2.5 rounded-2xl border border-warn/30 bg-warn/[0.06] p-4 text-[14px] text-muted-foreground">
+      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warn" aria-hidden="true" />
       <p>
         <b className="text-warn">{n < r.thresholds.min_n_any ? `Baru ${n} sinyal live: anekdot, belum bukti.` : `Baru ${n} sinyal: sampel kecil.`}</b>{' '}
         Butuh minimal {r.thresholds.min_n_any} sinyal untuk melihat arah, idealnya {r.thresholds.min_n_ok}+ di berbagai kondisi pasar,
@@ -57,9 +58,9 @@ function SignalLabel({ s }: { s: ShadowSignal }) {
   return (
     <div className="space-y-0.5">
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="font-mono text-xs font-semibold">{s.symbol.replace(/USDT$/, '')}</span>
+        <span className="font-mono text-[14px] font-semibold">{s.symbol.replace(/USDT$/, '')}</span>
         <DirectionBadge direction={s.side} size="xs" />
-        <span className="text-2xs text-muted-foreground">{s.action === 'open' ? 'Buka' : 'Tutup'}</span>
+        <span className="text-[13px] text-muted-foreground">{s.action === 'open' ? 'Buka' : 'Tutup'}</span>
       </div>
       <div className="flex flex-wrap gap-1">
         {s.off_close ? <Badge variant="warn" size="xs">di luar close candle</Badge> : null}
@@ -74,9 +75,9 @@ const closeCol: ResponsiveColumn<ShadowSignal> = {
   header: 'Close candle (WIB)',
   mobile: 'title',
   cell: (s) => (
-    <div className="num whitespace-nowrap text-xs">
+    <div className="num whitespace-nowrap text-[14px]">
       {formatTime(s.bar_close_ts, { zone: false })}
-      <div className="text-3xs text-muted-foreground">candle {s.tf.toUpperCase()}</div>
+      <div className="text-[13px] text-muted-foreground">candle {s.tf.toUpperCase()}</div>
     </div>
   ),
 }
@@ -92,9 +93,9 @@ const ACTUAL_COLUMNS: ResponsiveColumn<ShadowSignal>[] = [
     mobile: 'field',
     mobileLabel: 'Harga close',
     cell: (s) => (
-      <div className="num text-xs">
+      <div className="num text-[14px]">
         {formatPrice(s.bar_close_px)}
-        <div className="text-3xs text-muted-foreground">jeda {duration(s.latency_s)}</div>
+        <div className="text-[13px] text-muted-foreground">jeda {duration(s.latency_s)}</div>
       </div>
     ),
   },
@@ -106,14 +107,14 @@ const ACTUAL_COLUMNS: ResponsiveColumn<ShadowSignal>[] = [
     mobileLabel: 'Fill market',
     cell: (s) =>
       s.fill_price ? (
-        <div className="num text-xs">
+        <div className="num text-[14px]">
           {formatPrice(s.fill_price)}
-          <div className={cn('text-3xs', costClass(s.slippage_bps))}>slip {bps(s.slippage_bps)}</div>
+          <div className={cn('text-[13px]', costClass(s.slippage_bps))}>slip {bps(s.slippage_bps)}</div>
         </div>
       ) : (
-        <div className="num text-xs">
+        <div className="num text-[14px]">
           <span className="text-muted-foreground">tanpa fill</span>
-          <div className={cn('text-3xs', costClass(s.drift_bps))}>perkiraan {bps(s.drift_bps)}</div>
+          <div className={cn('text-[13px]', costClass(s.drift_bps))}>perkiraan {bps(s.drift_bps)}</div>
         </div>
       ),
   },
@@ -128,7 +129,7 @@ function simColumns(k: number, ttl: number): ResponsiveColumn<ShadowSignal>[] {
       header: 'Harga limit',
       align: 'right',
       mobile: 'field',
-      cell: (s) => <span className="num text-xs">{formatPrice(pickResult(s, k, ttl)?.limit_px)}</span>,
+      cell: (s) => <span className="num text-[14px]">{formatPrice(pickResult(s, k, ttl)?.limit_px)}</span>,
     },
     {
       key: 'hasil',
@@ -142,11 +143,11 @@ function simColumns(k: number, ttl: number): ResponsiveColumn<ShadowSignal>[] {
             <Badge variant={oc.tone} size="sm">
               {oc.label}
             </Badge>
-            {res.outcome === 'filled' && <span className="num text-3xs text-muted-foreground">dalam {duration(res.time_to_fill_s)}</span>}
-            {res.data_basis === 'klines_1m' && <span className="text-3xs text-warn">perkiraan dari candle 1 menit</span>}
+            {res.outcome === 'filled' && <span className="num text-[13px] text-muted-foreground">dalam {duration(res.time_to_fill_s)}</span>}
+            {res.data_basis === 'klines_1m' && <span className="text-[13px] text-warn">perkiraan dari candle 1 menit</span>}
           </div>
         ) : (
-          <span className="text-3xs text-muted-foreground">{s.status === 'error' ? (s.error ?? 'gagal dinilai') : 'menunggu'}</span>
+          <span className="text-[13px] text-muted-foreground">{s.status === 'error' ? (s.error ?? 'gagal dinilai') : 'menunggu'}</span>
         )
       },
     },
@@ -158,9 +159,9 @@ function simColumns(k: number, ttl: number): ResponsiveColumn<ShadowSignal>[] {
       cell: (s) => {
         const res = pickResult(s, k, ttl)
         return (
-          <div className={cn('num text-xs font-semibold', signClass(res?.saving_bps))}>
+          <div className={cn('num text-[14px] font-semibold', signClass(res?.saving_bps))}>
             {bps(res?.saving_bps)}
-            {res?.ref_basis === 'proxy' && <div className="text-3xs font-normal text-muted-foreground">vs perkiraan</div>}
+            {res?.ref_basis === 'proxy' && <div className="text-[13px] font-normal text-muted-foreground">vs perkiraan</div>}
           </div>
         )
       },
@@ -176,9 +177,9 @@ function simColumns(k: number, ttl: number): ResponsiveColumn<ShadowSignal>[] {
       cell: (s) => {
         const res = pickResult(s, k, ttl)
         return res ? (
-          <div className="num text-xs">
+          <div className="num text-[14px]">
             <span className={costClass(res.runaway_end_bps)}>{bps(res.runaway_end_bps)}</span>
-            <div className="text-3xs text-muted-foreground">maks {bps(res.runaway_max_bps)}</div>
+            <div className="text-[13px] text-muted-foreground">maks {bps(res.runaway_max_bps)}</div>
           </div>
         ) : (
           '—'
@@ -207,9 +208,9 @@ function Grid({ r, k, ttl, onPick }: { r: ShadowReport; k: number; ttl: number; 
         <tbody className="divide-y divide-border/50">
           {ks.map((kk) => (
             <tr key={kk}>
-              <td className="px-3 py-2 text-xs font-medium">
+              <td className="px-3 py-2 text-[14px] font-medium">
                 {kLabel(kk)}
-                {kk < 0 && <div className="text-3xs text-muted-foreground">sisi agresif, sering ditolak post-only</div>}
+                {kk < 0 && <div className="text-[13px] text-muted-foreground">sisi agresif, sering ditolak post-only</div>}
               </td>
               {ttls_min.map((t) => {
                 const c = pickCell(r.grid, kk, t)
@@ -221,15 +222,15 @@ function Grid({ r, k, ttl, onPick }: { r: ShadowReport; k: number; ttl: number; 
                       onClick={() => onPick(kk, t)}
                       aria-pressed={active}
                       aria-label={c ? `${kLabel(kk)}, tunggu ${ttlLabel(t)}: ${c.filled} terisi, ${c.missed} tidak terisi, ${c.postonly} ditolak post-only` : undefined}
-                      className={cn('num w-full rounded-md px-2 py-1 text-right text-xs hover:bg-accent/50', active && 'bg-brand/10 ring-1 ring-brand/40')}
+                      className={cn('num w-full rounded-md px-2 py-1 text-right text-[14px] hover:bg-accent/50', active && 'bg-brand/10 ring-1 ring-brand/40')}
                     >
                       {c && c.n ? (
                         <>
                           <div className="font-semibold">{hitPct(c.fill_rate)}</div>
-                          <div className={cn('text-3xs', signClass(c.mean_saving_bps))}>{bps(c.mean_saving_bps)}</div>
+                          <div className={cn('text-[13px]', signClass(c.mean_saving_bps))}>{bps(c.mean_saving_bps)}</div>
                         </>
                       ) : (
-                        <span className="text-3xs text-muted-foreground">—</span>
+                        <span className="text-[13px] text-muted-foreground">—</span>
                       )}
                     </button>
                   </td>
@@ -248,8 +249,8 @@ function LimitSimulation({ r }: { r: ShadowReport }) {
   const choice = pick ?? defaultChoice(r.settings.ks, r.settings.ttls_min)
   const cell: ShadowCell | undefined = pickCell(r.grid, choice.k, choice.ttl)
   return (
-    <details className="rounded-lg border border-border/60 px-3 py-2">
-      <summary className="cursor-pointer select-none text-xs font-medium">
+    <details className="rounded-2xl border border-border/60 px-4 py-3">
+      <summary className="cursor-pointer select-none text-[14px] font-medium">
         <Term k="limit_sim" noTip /> (lanjutan): kalau entry memakai order limit, berapa yang terisi dan berapa hemat?
       </summary>
       <div className="mt-3 space-y-4">
@@ -294,7 +295,7 @@ function LimitSimulation({ r }: { r: ShadowReport }) {
           rowKey={(s) => s.id}
           caption={`Limit bayangan per sinyal, ${kLabel(choice.k).toLowerCase()}, tunggu ${ttlLabel(choice.ttl)}`}
         />
-        <ul className="list-disc space-y-1 pl-4 text-2xs leading-relaxed text-muted-foreground">
+        <ul className="list-disc space-y-1 pl-4 text-[13px] leading-relaxed text-muted-foreground">
           <li>
             <b>Hanya pengukuran.</b> Bot live tetap memakai market order; limit di sini tidak pernah dikirim ke exchange. Data pasar
             publik Binance USDT perpetual (transaksi dan candle 1 menit).
@@ -327,56 +328,59 @@ export function ExecutionQuality({ id = 'eksekusi' }: { id?: string }) {
   const q = useShadowReport()
   const r = q.data
   return (
-    <Section
-      id={id}
-      className="scroll-mt-20"
-      icon={<Gauge className="h-4 w-4 text-muted-foreground" aria-hidden="true" />}
-      title="Kualitas eksekusi"
-      description="Seberapa jauh harga eksekusi bot dari harga close candle sinyal, dan berapa lama alert sampai."
-      action={<StatusPill kind="live" size="xs" />}
-    >
+    <section id={id} className="scroll-mt-20 space-y-5" aria-labelledby={`${id}-title`}>
+      <SectionHeading
+        title={
+          <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span id={`${id}-title`}>Kualitas eksekusi</span>
+            <StatusPill kind="live" size="sm" />
+          </span>
+        }
+        description="Selisih harga eksekusi bot dari close candle, dan jeda alert."
+      />
       {q.isPending ? (
         <LoadingState rows={4} />
       ) : q.error || !r ? (
         <ErrorState error={q.error ?? undefined} onRetry={() => q.refetch()} message="Kualitas eksekusi belum bisa dimuat." />
       ) : (
-        <div className="space-y-4">
-          <p className="text-sm font-medium leading-snug">{executionAnswer(r)}</p>
-          <Freshness updatedAt={r.last_cycle?.finished ?? undefined} timeframe="4h" nextDelayMin={10} />
-          <SampleWarning r={r} />
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <StatTile
+        <div className="space-y-5">
+          <div className="grid gap-5 sm:grid-cols-3">
+            <KpiTile
+              icon={Radio}
               label="Sinyal live"
-              value={formatCount(r.actual.n_counted)}
-              hint={`${r.actual.n_open} buka · ${r.actual.n_close} tutup${r.actual.n_off_close ? ` · ${r.actual.n_off_close} di luar close (tidak dihitung)` : ''}`}
+              value={r.actual.n_counted}
+              format={(n) => formatCount(Math.round(n))}
+              hint={`${r.actual.n_open} buka · ${r.actual.n_close} tutup${r.actual.n_off_close ? ` · ${r.actual.n_off_close} di luar close` : ''}`}
             />
-            <StatTile
+            <KpiTile
+              icon={Scale}
               label={<Term k="slippage_bps" short noTip />}
-              value={r.actual.n_with_fill ? bps(r.actual.mean_slippage_bps) : 'Belum ada fill'}
-              valueClassName={costClass(r.actual.mean_slippage_bps)}
-              hint={r.actual.n_with_fill ? `${r.actual.n_with_fill} fill vs close candle` : `Perkiraan dari harga pasar ${bps(r.actual.mean_drift_bps)}`}
+              value={r.actual.n_with_fill ? bps(r.actual.mean_slippage_bps) : '—'}
+              tone={r.actual.n_with_fill && r.actual.mean_slippage_bps ? (r.actual.mean_slippage_bps > 0 ? 'bearish' : 'bullish') : 'brand'}
+              toneValue
+              hint={r.actual.n_with_fill ? `rata-rata ${r.actual.n_with_fill} fill · + = lebih mahal` : `belum ada fill · perkiraan ${bps(r.actual.mean_drift_bps)}`}
             />
-            <StatTile
-              className="col-span-2 sm:col-span-1"
+            <KpiTile
+              icon={Timer}
               label={<Term k="alert_latency" noTip />}
               value={duration(r.actual.median_latency_s)}
-              hint={r.actual.latency_upper_bound ? 'Median · batas atas (dicatat setelah order)' : 'Median · candle tutup → alert diterima'}
+              hint={r.actual.latency_upper_bound ? 'median · batas atas' : 'median · candle tutup → alert'}
             />
           </div>
+          <p className="text-[15px] leading-relaxed text-muted-foreground">{executionAnswer(r)}</p>
+          <SampleWarning r={r} />
           {r.signals.length === 0 ? (
             <EmptyState
               title="Belum ada sinyal live"
               description="Begitu webhook TradingView masuk, worker Lab mencatatnya beberapa menit kemudian dan menilai limit bayangan setelah jendelanya lewat."
             />
           ) : (
-            <div className="space-y-2">
-              <h3 className="text-xs font-semibold">Eksekusi per sinyal (market order)</h3>
-              <ResponsiveTable rows={r.signals} columns={ACTUAL_COLUMNS} rowKey={(s) => s.id} caption="Eksekusi tiap sinyal live" />
-            </div>
+            <ResponsiveTable rows={r.signals} columns={ACTUAL_COLUMNS} rowKey={(s) => s.id} caption="Eksekusi tiap sinyal live (market order)" />
           )}
+          <Freshness updatedAt={r.last_cycle?.finished ?? undefined} timeframe="4h" nextDelayMin={10} />
           <LimitSimulation r={r} />
         </div>
       )}
-    </Section>
+    </section>
   )
 }

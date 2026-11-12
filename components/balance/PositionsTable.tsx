@@ -6,6 +6,7 @@ import { Activity, History, RefreshCw } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { CoinAvatar } from '@/components/ui/coin-avatar'
 import { InfoTip } from '@/components/ui/info-tip'
 import { ResponsiveTable, type ResponsiveColumn } from '@/components/ui/responsive-table'
 import { Segmented } from '@/components/ui/segmented'
@@ -16,7 +17,7 @@ import { ExchangeLabel } from '@/components/trading/ExchangeLabel'
 import { SideBadge } from '@/components/trading/SideBadge'
 import { EmptyState, ErrorState } from '@/components/shell/states'
 import { useOpenPositions, usePositionsHistory } from '@/lib/queries/positions'
-import { formatPercent, formatPrice, formatQty, formatUsdSigned } from '@/lib/utils/format'
+import { coinOf, formatPercent, formatPrice, formatQty, formatUsdSigned } from '@/lib/utils/format'
 import { formatAge, formatTime } from '@/lib/utils/time'
 import { ApiError } from '@/lib/api/errors'
 import type { ClosedPositionResponse, OpenPositionResponse } from '@/lib/api/types/credentials'
@@ -28,12 +29,25 @@ function num(v: number | null | undefined, formatter: (n: number) => string): st
 }
 
 function PnlCell({ value, pct }: { value: number | null; pct?: number | null }) {
-  if (value == null) return <span className="font-mono text-xs text-muted-foreground">{DASH}</span>
+  if (value == null) return <span className="font-mono text-[14px] text-muted-foreground">{DASH}</span>
   const colorClass = value > 0 ? 'text-bullish' : value < 0 ? 'text-bearish' : 'text-foreground'
   return (
     <div className={`text-right ${colorClass}`}>
-      <p className="font-mono text-xs font-semibold tabular-nums">{formatUsdSigned(value)}</p>
-      {pct != null && <p className="font-mono text-2xs tabular-nums opacity-75">{formatPercent(pct)}</p>}
+      <p className="num text-[15px] font-semibold">{formatUsdSigned(value)}</p>
+      {pct != null && <p className="font-mono text-[13px] tabular-nums opacity-75">{formatPercent(pct)}</p>}
+    </div>
+  )
+}
+
+/** Coin + exchange in one cell (avatar, coin, exchange under it); the raw symbol stays in the tooltip. */
+function CoinCell({ symbol, exchange }: { symbol: string; exchange: string }) {
+  return (
+    <div className="flex min-w-0 items-center gap-2.5" title={symbol}>
+      <CoinAvatar symbol={symbol} size="sm" />
+      <div className="min-w-0 leading-tight">
+        <p className="text-base font-bold">{coinOf(symbol)}</p>
+        <ExchangeLabel exchange={exchange} className="text-2xs text-muted-foreground" />
+      </div>
     </div>
   )
 }
@@ -56,8 +70,7 @@ function LoadError({ error, onRetry }: { error: unknown; onRetry: () => void }) 
 }
 
 const OPEN_COLUMNS: ResponsiveColumn<OpenPositionResponse>[] = [
-  { key: 'koin', header: 'Koin', mobile: 'title', cell: (p) => <span className="font-mono text-sm font-semibold">{p.symbol}</span> },
-  { key: 'exchange', header: 'Exchange', mobile: 'hidden', cell: (p) => <ExchangeLabel exchange={p.exchange} /> },
+  { key: 'koin', header: 'Koin', mobile: 'title', cell: (p) => <CoinCell symbol={p.symbol} exchange={p.exchange} /> },
   { key: 'arah', header: 'Arah', mobile: 'badge', cell: (p) => <SideBadge side={p.side} /> },
   {
     key: 'upnl',
@@ -67,16 +80,16 @@ const OPEN_COLUMNS: ResponsiveColumn<OpenPositionResponse>[] = [
     mobile: 'field',
     cell: (p) => <PnlCell value={p.unrealized_pnl} pct={p.unrealized_pnl_pct} />,
   },
-  { key: 'entry', header: 'Entry', align: 'right', mobile: 'field', cell: (p) => <span className="num text-xs">{formatPrice(p.entry_price)}</span> },
+  { key: 'entry', header: 'Entry', align: 'right', mobile: 'field', cell: (p) => <span className="num text-[14px]">{formatPrice(p.entry_price)}</span> },
   {
     key: 'mark',
     header: <Term k="mark_price" short noTip />,
     mobileLabel: 'Harga acuan',
     align: 'right',
     mobile: 'field',
-    cell: (p) => <span className="num text-xs">{num(p.mark_price, formatPrice)}</span>,
+    cell: (p) => <span className="num text-[14px]">{num(p.mark_price, formatPrice)}</span>,
   },
-  { key: 'jumlah', header: 'Jumlah', align: 'right', mobile: 'hidden', cell: (p) => <span className="num text-xs">{formatQty(p.quantity)}</span> },
+  { key: 'jumlah', header: 'Jumlah', align: 'right', mobile: 'hidden', cell: (p) => <span className="num text-[14px]">{formatQty(p.quantity)}</span> },
   {
     key: 'lev',
     header: 'Leverage',
@@ -97,7 +110,7 @@ const OPEN_COLUMNS: ResponsiveColumn<OpenPositionResponse>[] = [
     mobileLabel: 'Harga likuidasi',
     align: 'right',
     mobile: 'hidden',
-    cell: (p) => <span className="num text-xs">{num(p.liquidation_price, formatPrice)}</span>,
+    cell: (p) => <span className="num text-[14px]">{num(p.liquidation_price, formatPrice)}</span>,
   },
 ]
 
@@ -106,8 +119,7 @@ function pnlOf(p: ClosedPositionResponse): number {
 }
 
 const HISTORY_COLUMNS: ResponsiveColumn<ClosedPositionResponse>[] = [
-  { key: 'koin', header: 'Koin', mobile: 'title', cell: (p) => <span className="font-mono text-sm font-semibold">{p.symbol}</span> },
-  { key: 'exchange', header: 'Exchange', mobile: 'hidden', cell: (p) => <ExchangeLabel exchange={p.exchange} /> },
+  { key: 'koin', header: 'Koin', mobile: 'title', cell: (p) => <CoinCell symbol={p.symbol} exchange={p.exchange} /> },
   { key: 'arah', header: 'Arah', mobile: 'badge', cell: (p) => <SideBadge side={p.side} /> },
   {
     key: 'pnl',
@@ -117,11 +129,11 @@ const HISTORY_COLUMNS: ResponsiveColumn<ClosedPositionResponse>[] = [
     mobile: 'field',
     cell: (p) => <PnlCell value={pnlOf(p)} />,
   },
-  { key: 'entry', header: 'Entry', align: 'right', mobile: 'field', cell: (p) => <span className="num text-xs">{formatPrice(p.entry_price)}</span> },
-  { key: 'exit', header: 'Exit', align: 'right', mobile: 'field', cell: (p) => <span className="num text-xs">{formatPrice(p.exit_price)}</span> },
-  { key: 'jumlah', header: 'Jumlah', align: 'right', mobile: 'hidden', cell: (p) => <span className="num text-xs">{formatQty(p.quantity)}</span> },
-  { key: 'buka', header: 'Dibuka (WIB)', mobile: 'hidden', cell: (p) => <span className="num whitespace-nowrap text-xs text-muted-foreground">{formatTime(p.opened_at, { zone: false })}</span> },
-  { key: 'tutup', header: 'Ditutup (WIB)', mobile: 'hidden', cell: (p) => <span className="num whitespace-nowrap text-xs text-muted-foreground">{formatTime(p.closed_at, { zone: false })}</span> },
+  { key: 'entry', header: 'Entry', align: 'right', mobile: 'field', cell: (p) => <span className="num text-[14px]">{formatPrice(p.entry_price)}</span> },
+  { key: 'exit', header: 'Exit', align: 'right', mobile: 'field', cell: (p) => <span className="num text-[14px]">{formatPrice(p.exit_price)}</span> },
+  { key: 'jumlah', header: 'Jumlah', align: 'right', mobile: 'hidden', cell: (p) => <span className="num text-[14px]">{formatQty(p.quantity)}</span> },
+  { key: 'buka', header: 'Dibuka (WIB)', mobile: 'hidden', cell: (p) => <span className="num whitespace-nowrap text-[14px] text-muted-foreground">{formatTime(p.opened_at, { zone: false })}</span> },
+  { key: 'tutup', header: 'Ditutup (WIB)', mobile: 'hidden', cell: (p) => <span className="num whitespace-nowrap text-[14px] text-muted-foreground">{formatTime(p.closed_at, { zone: false })}</span> },
 ]
 
 function SectionTitle({
@@ -147,17 +159,17 @@ function SectionTitle({
         <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted">{icon}</div>
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold">{title}</h3>
+            <h3 className="text-[17px] font-semibold">{title}</h3>
             {count !== null && (
               <Badge variant="muted" size="xs">
                 {count}
               </Badge>
             )}
           </div>
-          <p className="text-2xs text-muted-foreground">{sub}</p>
+          <p className="text-[13px] text-muted-foreground">{sub}</p>
         </div>
       </div>
-      <Button variant="ghost" size="sm" onClick={onRefresh} disabled={busy} className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground" aria-label={label}>
+      <Button variant="ghost" size="sm" onClick={onRefresh} disabled={busy} className="h-7 gap-1.5 text-[14px] text-muted-foreground hover:text-foreground" aria-label={label}>
         <RefreshCw className={`h-3 w-3 ${busy ? 'animate-spin' : ''}`} aria-hidden="true" />
         {busy ? 'Memuat…' : 'Muat ulang'}
       </Button>
@@ -197,7 +209,7 @@ function OpenPositions() {
             empty={<EmptyState icon={<Activity className="h-8 w-8" aria-hidden="true" />} title="Tidak ada posisi terbuka" />}
           />
           {rows.length > 0 && (
-            <p className="flex items-center gap-1 text-2xs text-muted-foreground">
+            <p className="flex items-center gap-1 text-[13px] text-muted-foreground">
               Persen untung/rugi berjalan dibanding nilai posisi saat masuk (entry × jumlah), tanpa leverage.
               <InfoTip title="Untung/rugi berjalan">
                 Angka dolar dari exchange di harga acuan (mark). Persennya dihitung server: untung/rugi ÷ (harga entry × jumlah).
@@ -238,7 +250,7 @@ function PositionHistory() {
             empty={<EmptyState icon={<History className="h-8 w-8" aria-hidden="true" />} title="Belum ada posisi yang ditutup" />}
           />
           {rows.length > 0 && (
-            <p className="text-2xs text-muted-foreground">
+            <p className="text-[13px] text-muted-foreground">
               Untung/rugi tertutup adalah perkiraan dari harga masuk dan keluar, belum termasuk fee dan funding, jadi bisa beda dengan angka di
               exchange.
             </p>
@@ -253,10 +265,10 @@ function PositionHistory() {
 export function PositionsTable() {
   const [tab, setTab] = useState<'open' | 'history'>('open')
   return (
-    <Card>
-      <CardHeader className="pb-4">
+    <Card className="rounded-3xl">
+      <CardHeader className="px-6 pb-4 pt-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <CardTitle className="flex items-center gap-2 text-base">
+          <CardTitle className="flex items-center gap-2 text-[20px]">
             Posisi <StatusPill kind="live" size="xs" />
           </CardTitle>
           <Segmented
@@ -270,7 +282,7 @@ export function PositionsTable() {
           />
         </div>
       </CardHeader>
-      <CardContent className="pt-0">{tab === 'open' ? <OpenPositions /> : <PositionHistory />}</CardContent>
+      <CardContent className="px-6 pb-6 pt-0">{tab === 'open' ? <OpenPositions /> : <PositionHistory />}</CardContent>
     </Card>
   )
 }

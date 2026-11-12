@@ -3,119 +3,100 @@
 import Link from 'next/link'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { ArrowRight, KeyRound, Webhook } from 'lucide-react'
-import { Section } from '@/components/lab/Section'
-import { StatusPill } from '@/components/ui/status-pill'
-import { Term } from '@/components/ui/term'
-import { EmptyState, ErrorState, LoadingState } from '@/components/shell/states'
-import { formatAge, formatTime } from '@/lib/utils/time'
+import { ErrorState, LoadingState } from '@/components/shell/states'
+import { formatTime } from '@/lib/utils/time'
 import { alertStatusLabel, alertStatusTone } from '@/lib/bot/status'
-import { cn } from '@/lib/utils/cn'
-import type { BotAccount, BotAlert, BotStatus } from '@/lib/api/types/bot'
+import type { BotAccount, BotStatus } from '@/lib/api/types/bot'
+import { Badge } from '@/components/ui/badge'
+import { Panel } from '@/components/ui/hero-card'
+import { IconChip } from '@/components/ui/icon-title'
+import { LiveDot } from '@/components/ui/live-dot'
+import { TONE_TEXT } from '@/components/ui/tone'
 
-const ALERT_TONE_CLASS = { ok: 'text-bullish', warn: 'text-warn', bad: 'text-bearish', wait: 'text-muted-foreground' } as const
+const ALERT_TONE = { ok: 'bullish', warn: 'warn', bad: 'bearish', wait: 'muted' } as const
 
-function alertText(a: BotAlert): string {
+function alertText(a: NonNullable<BotAccount['last_alert']>): string {
   const verb = a.action === 'open' ? 'Buka' : a.action === 'close' ? 'Tutup' : 'Alert'
   return `${verb} ${a.side ? a.side.toUpperCase() : ''} ${a.symbol.replace(/USDT$/, '')}`.replace(/\s+/g, ' ').trim()
 }
 
-function AccountRow({ a, windowDays }: { a: BotAccount; windowDays: number }) {
+/** One account = one big status tile: name, Aktif / Tidak aktif, key, last alert. */
+function AccountTile({ a }: { a: BotAccount }) {
   const live = a.webhook_active && a.account_active
+  const tone = !a.account_active ? 'bearish' : a.webhook_active ? 'bullish' : 'muted'
+  const word = !a.account_active ? 'Akun nonaktif' : a.webhook_active ? 'Aktif' : 'Tidak aktif'
   return (
-    <li className="space-y-1.5 py-3 first:pt-0 last:pb-0">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="font-semibold">{a.label}</span>
-        {!a.account_active ? (
-          <StatusPill kind="bermasalah" label="Akun nonaktif" />
-        ) : a.webhook_active ? (
-          <StatusPill kind="sehat" label="Webhook aktif" />
-        ) : (
-          <StatusPill kind="menunggu" label="Webhook tidak aktif" />
-        )}
+    <Panel as="article" className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <IconChip icon={Webhook} tone={live ? 'bullish' : 'muted'} />
+          <div className="min-w-0">
+            <h3 className="truncate text-lg font-bold leading-tight">{a.label}</h3>
+            <p className="text-2xs text-muted-foreground">Webhook</p>
+          </div>
+        </div>
+        <LiveDot tone={live ? 'bullish' : 'muted'} pulse={live} size="lg" />
       </div>
-      <p className="text-xs text-muted-foreground">
-        {!a.account_active
-          ? 'Akun ini dinonaktifkan, jadi semua alert ke akun ini ditolak.'
-          : a.webhook_active
-            ? `Aktif sejak ${formatTime(a.webhook_since, { time: false })}.`
-            : 'Alert TradingView ke akun ini ditolak sampai webhook diaktifkan lagi.'}{' '}
+      <p className={`display text-3xl font-extrabold leading-none ${TONE_TEXT[tone]}`}>{word}</p>
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1">
-          <KeyRound className="h-3 w-3" aria-hidden="true" />
-          {a.exchanges.length ? `API key: ${a.exchanges.map((x) => x.charAt(0).toUpperCase() + x.slice(1)).join(', ')}` : 'API key exchange belum ada'}
+          <KeyRound className="h-3.5 w-3.5" aria-hidden="true" />
+          {a.exchanges.length ? a.exchanges.map((x) => x.charAt(0).toUpperCase() + x.slice(1)).join(', ') : 'Belum ada API key'}
         </span>
+        {a.webhook_since && live && <span>sejak {formatTime(a.webhook_since, { time: false })}</span>}
       </p>
       {a.last_alert ? (
-        <p className="text-xs">
-          <span className="text-muted-foreground">Alert terakhir diproses: </span>
-          <span className="num">{formatTime(a.last_alert.at)}</span> · {alertText(a.last_alert)} ·{' '}
-          <span className={cn('font-medium', ALERT_TONE_CLASS[alertStatusTone(a.last_alert.status)])}>
-            {alertStatusLabel(a.last_alert.status)}
-          </span>
-        </p>
+        <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-3 text-xs">
+          <span className="text-muted-foreground">Alert terakhir</span>
+          <span className="num font-semibold">{formatTime(a.last_alert.at)}</span>
+          <span className="text-muted-foreground">{alertText(a.last_alert)}</span>
+          <Badge variant={ALERT_TONE[alertStatusTone(a.last_alert.status)]}>{alertStatusLabel(a.last_alert.status)}</Badge>
+        </div>
       ) : (
-        <p className="text-xs text-muted-foreground">Belum ada alert yang diproses bot untuk akun ini.</p>
+        <p className="border-t border-border/60 pt-3 text-xs text-muted-foreground">Belum ada alert yang diproses.</p>
       )}
-      {(a.alerts_window > 0 || live) && (
-        <p className="num text-2xs text-muted-foreground">
-          {windowDays} hari terakhir: {a.alerts_window} alert · {a.failed_window} gagal · {a.rejected_window} ditolak
-        </p>
-      )}
-    </li>
+    </Panel>
   )
 }
 
 /**
- * Read-only webhook state per bot account (GET /lab/bot/status). Never shows, fetches or
- * copies the webhook passphrase; settings live on /webhook.
+ * Read-only webhook state per bot account (GET /lab/bot/status) as big status tiles.
+ * Never shows, fetches or copies the webhook passphrase; settings live on /webhook.
  */
 export function WebhookStatusCard({ q, className }: { q: UseQueryResult<BotStatus>; className?: string }) {
   const s = q.data
-  return (
-    <Section
-      className={className}
-      icon={<Webhook className="h-4 w-4 text-muted-foreground" aria-hidden="true" />}
-      title={<Term k="webhook" />}
-      description={
-        s?.generated_at ? <>Hanya baca · diperbarui {formatAge(s.generated_at)}</> : 'Hanya baca: status per akun bot.'
-      }
-      action={<StatusPill kind="live" size="xs" />}
-    >
-      {q.isPending ? (
-        <LoadingState rows={2} />
-      ) : q.isError || !s ? (
+  if (q.isPending) return <Panel as="div" className={className}><LoadingState rows={3} /></Panel>
+  if (q.isError || !s) {
+    return (
+      <Panel as="div" className={className}>
         <ErrorState compact error={q.error} message="Status webhook belum bisa dimuat." onRetry={() => q.refetch()} />
-      ) : !s.available ? (
-        <EmptyState
-          title="Status webhook tidak tersedia"
-          description={`Database bot tidak bisa dibaca (${s.reason ?? 'alasan tidak diketahui'}). Tidak ada angka yang ditebak.`}
-        />
-      ) : s.accounts.length === 0 ? (
-        <EmptyState
-          title="Belum ada akun dengan webhook"
-          description="Tidak ada akun yang pernah membuat webhook, jadi alert TradingView belum bisa sampai ke bot."
-        />
-      ) : (
-        <div className="space-y-3">
-          <ul className="divide-y divide-border/60 text-sm">
-            {s.accounts.map((a) => (
-              <AccountRow key={a.label} a={a} windowDays={s.window_days} />
-            ))}
-          </ul>
-          <div className="space-y-1 border-t pt-3 text-2xs text-muted-foreground">
-            <p>
-              Kata sandi webhook tidak ditampilkan di halaman ini.{' '}
-              <Link href="/webhook" className="inline-flex items-center gap-0.5 font-medium text-info hover:underline">
-                Atur webhook akunmu <ArrowRight className="h-3 w-3" aria-hidden="true" />
-              </Link>
-            </p>
-            <p>
-              Dibaca dari catatan bot. Alert yang ditolak sebelum sampai ke bot (misalnya kata sandi salah) tidak tercatat di
-              sini; lihat Cek bot live di bawah.
-              {s.reason ? ` Catatan: ${s.reason}.` : ''}
-            </p>
-          </div>
+      </Panel>
+    )
+  }
+  if (!s.available || s.accounts.length === 0) {
+    return (
+      <Panel as="div" className={className}>
+        <div className="flex items-center gap-3">
+          <IconChip icon={Webhook} tone="muted" />
+          <p className="text-lg font-bold">{!s.available ? 'Status webhook tidak tersedia' : 'Belum ada akun dengan webhook'}</p>
         </div>
-      )}
-    </Section>
+        <p className="mt-3 text-xs text-muted-foreground">
+          {!s.available ? `Database bot tidak bisa dibaca (${s.reason ?? 'alasan tidak diketahui'}).` : 'Alert TradingView belum bisa sampai ke bot.'}
+        </p>
+      </Panel>
+    )
+  }
+  return (
+    <div className={`flex flex-col gap-5 ${className ?? ''}`}>
+      {s.accounts.map((a) => (
+        <AccountTile key={a.label} a={a} />
+      ))}
+      <p className="px-1 text-2xs text-muted-foreground">
+        Kata sandi webhook tidak ditampilkan di sini.{' '}
+        <Link href="/webhook" className="inline-flex items-center gap-0.5 font-semibold text-info hover:underline">
+          Atur webhook <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+        </Link>
+      </p>
+    </div>
   )
 }

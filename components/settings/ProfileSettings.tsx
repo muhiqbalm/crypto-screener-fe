@@ -16,7 +16,7 @@ export function ProfileSettings() {
 
   if (isPending) {
     return (
-      <Card>
+      <Card className="rounded-3xl">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <Skeleton className="h-4 w-4 rounded" />
@@ -102,16 +102,16 @@ function ProfileForm({ user }: { user: NonNullable<ReturnType<typeof useMe>['dat
 
   return (
     <div className="space-y-4">
-      <Card>
+      <Card className="rounded-3xl">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <User className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-            <CardTitle className="text-base">Profil & Telegram</CardTitle>
+            <CardTitle className="text-[17px]">Profil & Telegram</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="profile-email" className="text-xs">
+            <Label htmlFor="profile-email" className="text-[14px]">
               Email
             </Label>
             <Input
@@ -123,13 +123,13 @@ function ProfileForm({ user }: { user: NonNullable<ReturnType<typeof useMe>['dat
               className="cursor-not-allowed bg-muted/40 text-muted-foreground"
               aria-describedby="profile-email-hint"
             />
-            <p id="profile-email-hint" className="text-2xs text-muted-foreground">
+            <p id="profile-email-hint" className="text-[13px] text-muted-foreground">
               Email tidak bisa diubah.
             </p>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="profile-name" className="text-xs">
+            <Label htmlFor="profile-name" className="text-[14px]">
               Nama tampilan
             </Label>
             <Input
@@ -146,14 +146,14 @@ function ProfileForm({ user }: { user: NonNullable<ReturnType<typeof useMe>['dat
               aria-describedby={nameError ? 'profile-name-error' : undefined}
             />
             {nameError && (
-              <p id="profile-name-error" className="text-2xs text-bearish" role="alert">
+              <p id="profile-name-error" className="text-[13px] text-bearish" role="alert">
                 {nameError}
               </p>
             )}
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="profile-telegram" className="text-xs">
+            <Label htmlFor="profile-telegram" className="text-[14px]">
               Chat ID Telegram (pribadi atau grup)
               <span className="ml-1.5 font-normal text-muted-foreground">(opsional)</span>
             </Label>
@@ -167,7 +167,7 @@ function ProfileForm({ user }: { user: NonNullable<ReturnType<typeof useMe>['dat
               className="font-mono"
               aria-describedby="profile-telegram-hint"
             />
-            <div id="profile-telegram-hint" className="space-y-1 text-2xs text-muted-foreground">
+            <div id="profile-telegram-hint" className="space-y-1 text-[13px] text-muted-foreground">
               <p>Notifikasi eksekusi bot live (order, gagal, untung/rugi) dikirim ke chat ini. Kosongkan untuk memakai grup bawaan tim.</p>
               <ul className="list-disc space-y-0.5 pl-4">
                 <li>ID grup diawali tanda minus, mis. <span className="font-mono font-semibold text-foreground">-5231848624</span>.</li>
@@ -189,7 +189,7 @@ function ProfileForm({ user }: { user: NonNullable<ReturnType<typeof useMe>['dat
                   setTelegramChatId(user.telegram_chat_id ?? '')
                   setNameError('')
                 }}
-                className="cursor-pointer text-xs text-muted-foreground transition-colors hover:text-foreground"
+                className="cursor-pointer text-[14px] text-muted-foreground transition-colors hover:text-foreground"
               >
                 Batalkan perubahan
               </button>
@@ -198,16 +198,16 @@ function ProfileForm({ user }: { user: NonNullable<ReturnType<typeof useMe>['dat
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="rounded-3xl">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <KeyRound className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-            <CardTitle className="text-base">Ganti password login</CardTitle>
+            <CardTitle className="text-[17px]">Ganti password login</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="profile-password" className="text-xs">
+            <Label htmlFor="profile-password" className="text-[14px]">
               Password baru
             </Label>
             <div className="relative">
@@ -237,7 +237,7 @@ function ProfileForm({ user }: { user: NonNullable<ReturnType<typeof useMe>['dat
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="profile-confirm-password" className="text-xs">
+            <Label htmlFor="profile-confirm-password" className="text-[14px]">
               Ulangi password baru
             </Label>
             <Input
@@ -255,7 +255,7 @@ function ProfileForm({ user }: { user: NonNullable<ReturnType<typeof useMe>['dat
               aria-describedby={passwordError ? 'profile-password-error' : undefined}
             />
             {passwordError && (
-              <p id="profile-password-error" className="text-2xs text-bearish" role="alert">
+              <p id="profile-password-error" className="text-[13px] text-bearish" role="alert">
                 {passwordError}
               </p>
             )}

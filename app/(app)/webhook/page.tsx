@@ -16,7 +16,7 @@ export default function WebhookPage() {
         eyebrowIcon={Webhook}
         title="Webhook"
         status={<StatusPill kind="live" />}
-        description="Jalur alert TradingView ke bot di akunmu: nyalakan atau jeda, salin alamat dan isi alert, lalu pantau alert yang masuk."
+        description="Jalur alert TradingView ke bot di akunmu."
         help={{
           apaIni:
             'Webhook adalah alamat yang menerima alert TradingView dan meneruskannya menjadi order sungguhan di exchange akunmu. Halaman ini mengatur webhook milik akun yang sedang login.',

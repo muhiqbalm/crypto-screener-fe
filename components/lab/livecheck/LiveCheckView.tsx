@@ -1,10 +1,9 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { AlertTriangle, Info, ScanSearch } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Clock, Info, TriangleAlert, XCircle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Segmented } from '@/components/ui/segmented'
-import { StatTile } from '@/components/ui/stat-tile'
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
 import { ResponsiveTable, type ResponsiveColumn } from '@/components/ui/responsive-table'
 import { DirectionBadge } from '@/components/ui/direction-badge'
@@ -12,7 +11,10 @@ import { Freshness } from '@/components/ui/freshness'
 import { InfoTip } from '@/components/ui/info-tip'
 import { useNow } from '@/components/ui/use-now'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shell/states'
-import { Chip, Section } from '@/components/lab/Section'
+import { Chip } from '@/components/lab/Section'
+import { KpiTile } from '@/components/ui/kpi'
+import { Panel } from '@/components/ui/hero-card'
+import { SectionHeading } from '@/components/shell/page'
 import { formatPrice } from '@/lib/utils/format'
 import { formatAge, formatTime } from '@/lib/utils/time'
 import { cn } from '@/lib/utils/cn'
@@ -68,22 +70,24 @@ function StatusBadge({ s }: { s: LiveCheckStatus }) {
   )
 }
 
+/** Four tiles in the same groups and colours as the strip legend (and the /bot donut). */
 function Tiles({ r }: { r: LiveCheckReport }) {
   const c = r.summary.counts
-  const days = Math.round(r.window.bars / 6)
+  const failed = (c.gagal ?? 0) + (c.tidak_terkirim ?? 0)
+  const waiting = (c.menunggu ?? 0) + (c.tanpa_log ?? 0)
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-      <StatTile label="Sinyal strategi" value={r.summary.expected} hint={`${r.preset} · ${days} hari`} />
-      <StatTile label="Cocok" value={c.cocok} valueClassName="text-bullish" hint={c.harga_beda ? `+${c.harga_beda} harga beda` : 'Tereksekusi sesuai sinyal'} />
-      <StatTile label="Gagal / ditolak" value={c.gagal} valueClassName={c.gagal ? 'text-bearish' : ''} hint="Terkirim, tidak tereksekusi" />
-      <StatTile label="Tidak terkirim" value={c.tidak_terkirim} valueClassName={c.tidak_terkirim ? 'text-bearish' : ''} hint="Ada sinyal, tak ada kiriman" />
-      <StatTile label="Tak terduga" value={c.tak_terduga} valueClassName={c.tak_terduga ? 'text-info' : ''} hint="Kiriman tanpa sinyal strategi" />
-      <StatTile
-        label="Perlu dicek"
-        value={r.summary.perlu_dicek}
-        valueClassName={r.summary.perlu_dicek ? 'text-warn' : ''}
-        hint={`${c.tanpa_log} tanpa log · ${c.menunggu} menunggu`}
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-5">
+      <KpiTile icon={CheckCircle2} label="Cocok" value={c.cocok ?? 0} tone="bullish" toneValue={Boolean(c.cocok)} hint={`dari ${r.summary.expected} sinyal`} />
+      <KpiTile icon={TriangleAlert} label="Harga beda" value={c.harga_beda ?? 0} tone="warn" toneValue={Boolean(c.harga_beda)} hint="harga fill jauh" />
+      <KpiTile
+        icon={XCircle}
+        label="Gagal"
+        value={failed}
+        tone="bearish"
+        toneValue={failed > 0}
+        hint={c.tak_terduga ? `+${c.tak_terduga} tak terduga` : 'atau tak terkirim'}
       />
+      <KpiTile icon={Clock} label="Menunggu" value={waiting} tone="muted" hint={c.tanpa_log ? `${c.tanpa_log} tanpa log` : 'belum dinilai'} />
     </div>
   )
 }
@@ -91,10 +95,10 @@ function Tiles({ r }: { r: LiveCheckReport }) {
 function Timeline({ cells, onPick }: { cells: BarCell[]; onPick: (open: string) => void }) {
   if (!cells.length) return null
   // Fixed-size cells that wrap, so 90 days stays readable on a phone instead of 1 px slivers.
-  const size = cells.length <= 60 ? 'h-6 w-3' : cells.length <= 200 ? 'h-5 w-2' : 'h-4 w-1.5'
+  const size = cells.length <= 60 ? 'h-10 w-4 sm:w-5' : cells.length <= 200 ? 'h-7 w-2.5' : 'h-5 w-1.5'
   return (
     <div className="space-y-1.5">
-      <div className="flex flex-wrap gap-[3px] rounded-md border border-border/60 bg-muted/20 p-1.5" role="list" aria-label="Timeline candle 4H, terlama di kiri">
+      <div className="flex flex-wrap gap-1 rounded-2xl border border-border/60 bg-muted/20 p-2" role="list" aria-label="Timeline candle 4H, terlama di kiri">
         {cells.map((c) => {
           const tone = c.status ? STATUS_COPY[c.status].tone : null
           const label = `${formatTime(c.open)} · ${c.status ? STATUS_COPY[c.status].label : 'tidak ada sinyal atau kiriman'}${c.perlu ? ' · perlu dicek' : ''}`
@@ -113,21 +117,21 @@ function Timeline({ cells, onPick }: { cells: BarCell[]; onPick: (open: string) 
           )
         })}
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-3xs text-muted-foreground">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[13px] text-muted-foreground">
         <span className="num">
           {formatTime(cells[0].open)} → {formatTime(cells[cells.length - 1].open)}
         </span>
         <span>Tiap kotak = 1 candle 4H · ketuk kotak berwarna untuk detail</span>
       </div>
-      <ul className="flex flex-wrap gap-x-3 gap-y-1 text-3xs text-muted-foreground" aria-label="Arti warna">
+      <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] text-muted-foreground" aria-label="Arti warna">
         {LEGEND.map((l) => (
           <li key={l.label} className="inline-flex items-center gap-1">
-            <span className={cn('h-2.5 w-2.5 rounded-[2px]', CELL_BG[l.tone])} aria-hidden="true" />
+            <span className={cn('h-3 w-3 rounded-[3px]', CELL_BG[l.tone])} aria-hidden="true" />
             {l.label}
           </li>
         ))}
         <li className="inline-flex items-center gap-1">
-          <span className="h-2.5 w-2.5 rounded-[2px] ring-1 ring-inset ring-warn" aria-hidden="true" />
+          <span className="h-3 w-3 rounded-[3px] ring-1 ring-inset ring-warn" aria-hidden="true" />
           Garis kuning = perlu dicek
         </li>
       </ul>
@@ -147,9 +151,9 @@ function Filters({ r, value, onChange }: { r: LiveCheckReport; value: StatusFilt
   return (
     <div className="flex flex-wrap gap-1.5" role="group" aria-label="Saring status">
       {items.map((it) => (
-        <Chip key={it.v} active={value === it.v} onClick={() => onChange(it.v)} className="h-7 px-2.5">
+        <Chip key={it.v} active={value === it.v} onClick={() => onChange(it.v)} className="h-9 px-4 text-[14px]">
           {it.label}
-          <span className="num text-3xs opacity-70">{it.n}</span>
+          <span className="num text-[13px] opacity-70">{it.n}</span>
         </Chip>
       ))}
     </div>
@@ -163,13 +167,13 @@ function SignalCell({ r }: { r: LiveCheckRow }) {
       {r.side ? (
         <div className="flex flex-wrap items-center gap-1.5">
           <DirectionBadge direction={r.side} size="xs" />
-          <span className="text-2xs text-muted-foreground">{r.action === 'open' ? 'Buka' : 'Tutup'}</span>
+          <span className="text-[14px] text-muted-foreground">{r.action === 'open' ? 'Buka' : 'Tutup'}</span>
         </div>
       ) : (
-        <span className="text-2xs text-muted-foreground">arah tidak diketahui</span>
+        <span className="text-[14px] text-muted-foreground">arah tidak diketahui</span>
       )}
       {e?.exit_reason && (
-        <div className="text-3xs text-muted-foreground">
+        <div className="text-[13px] text-muted-foreground">
           {exitReasonLabel(e.exit_reason)}
           {e.alert === 'intrabar' ? ' · di tengah candle' : ''}
         </div>
@@ -184,9 +188,9 @@ const COLUMNS: ResponsiveColumn<LiveCheckRow>[] = [
     header: 'Candle (WIB)',
     mobile: 'title',
     cell: (r) => (
-      <div className="num whitespace-nowrap text-xs">
+      <div className="num whitespace-nowrap text-[15px] font-semibold">
         {formatTime(r.bar_close_ts, { zone: false })}
-        <div className="text-3xs font-normal text-muted-foreground">close candle 4H</div>
+        <div className="text-[13px] font-normal text-muted-foreground">close candle 4H</div>
       </div>
     ),
   },
@@ -205,7 +209,7 @@ const COLUMNS: ResponsiveColumn<LiveCheckRow>[] = [
             </Badge>
           )}
         </div>
-        {r.causes.length > 0 && <div className="text-3xs text-muted-foreground">{r.causes.map((c) => CAUSE_LABEL[c] ?? c).join(' · ')}</div>}
+        {r.causes.length > 0 && <div className="text-[13px] text-muted-foreground">{r.causes.map((c) => CAUSE_LABEL[c] ?? c).join(' · ')}</div>}
       </div>
     ),
   },
@@ -216,7 +220,7 @@ const COLUMNS: ResponsiveColumn<LiveCheckRow>[] = [
     mobile: 'hidden',
     className: 'hidden md:table-cell',
     headerClassName: 'hidden md:table-cell',
-    cell: (r) => <span className="num text-xs">{r.expected ? formatPrice(r.expected.price) : '—'}</span>,
+    cell: (r) => <span className="num text-[14px]">{r.expected ? formatPrice(r.expected.price) : '—'}</span>,
   },
   {
     key: 'kiriman',
@@ -226,9 +230,9 @@ const COLUMNS: ResponsiveColumn<LiveCheckRow>[] = [
     headerClassName: 'hidden lg:table-cell',
     cell: (r) =>
       r.delivery ? (
-        <div className="num whitespace-nowrap text-xs">
+        <div className="num whitespace-nowrap text-[14px]">
           {formatTime(epochIso(r.delivery.arrival), { date: false })}
-          <div className="text-3xs text-muted-foreground">{httpLabel(r.delivery.nginx_status, r.delivery.app_status, r.delivery.app_ms)}</div>
+          <div className="text-[13px] text-muted-foreground">{httpLabel(r.delivery.nginx_status, r.delivery.app_status, r.delivery.app_ms)}</div>
         </div>
       ) : (
         <span className="text-muted-foreground">—</span>
@@ -243,9 +247,9 @@ const COLUMNS: ResponsiveColumn<LiveCheckRow>[] = [
     headerClassName: 'hidden lg:table-cell',
     cell: (r) =>
       r.delivery?.fill_price ? (
-        <div className="num text-xs">
+        <div className="num text-[14px]">
           {formatPrice(r.delivery.fill_price)}
-          {r.price_diff_bps !== null && <div className="text-3xs text-muted-foreground">{bps(r.price_diff_bps, 0)}</div>}
+          {r.price_diff_bps !== null && <div className="text-[13px] text-muted-foreground">{bps(r.price_diff_bps, 0)}</div>}
         </div>
       ) : (
         <span className="text-muted-foreground">—</span>
@@ -256,13 +260,13 @@ const COLUMNS: ResponsiveColumn<LiveCheckRow>[] = [
     header: 'Keterangan',
     mobile: 'field',
     className: 'max-w-[340px]',
-    cell: (r) => <span className="line-clamp-2 text-2xs text-muted-foreground">{r.reason ?? '—'}</span>,
+    cell: (r) => <span className="line-clamp-2 text-[14px] text-muted-foreground">{r.reason ?? '—'}</span>,
   },
 ]
 
 function Field({ k, children }: { k: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[120px_1fr] gap-2 py-1 text-xs">
+    <div className="grid grid-cols-[130px_1fr] gap-2 py-1.5 text-[14px]">
       <div className="text-muted-foreground">{k}</div>
       <div className="min-w-0 break-words">{children}</div>
     </div>
@@ -281,7 +285,7 @@ function Detail({ r, causes, onClose }: { r: LiveCheckRow | null; causes: Record
               <SheetTitle className="text-sm font-semibold">
                 Candle 4H {formatTime(r.bar_open_ts, { zone: false })} → {formatTime(r.bar_close_ts, { date: false })}
               </SheetTitle>
-              <SheetDescription className="mt-1 text-xs text-muted-foreground">{STATUS_COPY[r.status].hint}</SheetDescription>
+              <SheetDescription className="mt-1 text-[14px] text-muted-foreground">{STATUS_COPY[r.status].hint}</SheetDescription>
               <div className="mt-2 flex flex-wrap gap-1">
                 <StatusBadge s={r.status} />
                 {r.perlu_dicek && (
@@ -291,11 +295,11 @@ function Detail({ r, causes, onClose }: { r: LiveCheckRow | null; causes: Record
                 )}
               </div>
             </div>
-            {r.reason && <p className="rounded-md border border-border/60 bg-muted/30 p-2.5 text-xs">{r.reason}</p>}
+            {r.reason && <p className="rounded-xl border border-border/60 bg-muted/30 p-3 text-[14px]">{r.reason}</p>}
             {r.causes.length > 0 && (
               <div>
                 <h4 className="eyebrow mb-1">Kemungkinan penyebab Lab beda dengan TradingView</h4>
-                <ul className="list-disc space-y-1 pl-4 text-2xs text-muted-foreground">
+                <ul className="list-disc space-y-1 pl-4 text-[13px] text-muted-foreground">
                   {r.causes.map((c) => (
                     <li key={c}>
                       <b className="text-foreground">{CAUSE_LABEL[c] ?? c}:</b> {causes[c] ?? ''}
@@ -317,7 +321,7 @@ function Detail({ r, causes, onClose }: { r: LiveCheckRow | null; causes: Record
                   <Field k="Varian">{(e.variants ?? []).join(', ') || '—'}</Field>
                 </div>
               ) : (
-                <p className="text-xs text-muted-foreground">Lab tidak menghitung sinyal di candle ini.</p>
+                <p className="text-[14px] text-muted-foreground">Lab tidak menghitung sinyal di candle ini.</p>
               )}
             </div>
             <div>
@@ -340,7 +344,7 @@ function Detail({ r, causes, onClose }: { r: LiveCheckRow | null; causes: Record
                   {d.trade_logs.length > 0 && (
                     <Field k="Catatan bot">
                       {d.trade_logs.map((t, i) => (
-                        <div key={i} className="num text-2xs">
+                        <div key={i} className="num text-[13px]">
                           {formatTime(epochIso(t.ts), { date: false, seconds: true })} · {signalLabel(t.action, t.side)} · {t.status ?? '?'}
                           {t.fill_price ? ` · ${formatPrice(t.fill_price)}` : ''}
                         </div>
@@ -349,7 +353,7 @@ function Detail({ r, causes, onClose }: { r: LiveCheckRow | null; causes: Record
                   )}
                 </div>
               ) : (
-                <p className="text-xs text-muted-foreground">Tidak ada kiriman yang tercatat untuk candle ini.</p>
+                <p className="text-[14px] text-muted-foreground">Tidak ada kiriman yang tercatat untuk candle ini.</p>
               )}
             </div>
           </div>
@@ -362,8 +366,8 @@ function Detail({ r, causes, onClose }: { r: LiveCheckRow | null; causes: Record
 function Notes({ r }: { r: LiveCheckReport }) {
   const lc = r.last_cycle
   return (
-    <details className="group rounded-lg border border-border/60 px-3 py-2 text-2xs leading-relaxed text-muted-foreground">
-      <summary className="cursor-pointer select-none font-medium text-foreground">Cara membaca dan sumber data</summary>
+    <details className="group rounded-2xl border border-border/60 px-4 py-3 text-[13px] leading-relaxed text-muted-foreground">
+      <summary className="cursor-pointer select-none text-[14px] font-medium text-foreground">Cara membaca dan sumber data</summary>
       <div className="mt-2 space-y-3">
         <div className="flex gap-2 rounded-lg border border-info/30 bg-info/[0.06] p-3">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-info" aria-hidden="true" />
@@ -449,31 +453,29 @@ export function LiveCheckView({ bars: barsProp, onBarsChange, filter: filterProp
   }
 
   return (
-    <Section
-      id={id}
-      className="scroll-mt-20"
-      icon={<ScanSearch className="h-4 w-4 text-muted-foreground" aria-hidden="true" />}
-      title={
-        <span className="inline-flex items-center gap-1">
-          Cek bot live: sinyal strategi vs eksekusi
-          <InfoTip title="Cek bot live">
-            Untuk tiap candle 4H: sinyal {r?.preset ?? '4H-ETH-Basic'} yang dihitung Lab, kiriman TradingView ke webhook, dan hasil
-            eksekusinya di akun bot. Hanya membaca, tidak pernah mengirim order.
-          </InfoTip>
-        </span>
-      }
-      description={<>Sinyal {r?.preset ?? '4H-ETH-Basic'} dibanding kiriman ke bot live (akun Rosyade).</>}
-      action={<Segmented aria-label="Rentang waktu" size="xs" value={bars} onChange={setBars} options={LIVECHECK_RANGES} />}
-    >
+    <section id={id} className="scroll-mt-20 space-y-5" aria-labelledby={id ? `${id}-title` : undefined}>
+      <SectionHeading
+        title={
+          <span className="inline-flex items-center gap-1.5">
+            <span id={id ? `${id}-title` : undefined}>Cek bot live</span>
+            <InfoTip title="Cek bot live">
+              Untuk tiap candle 4H: sinyal {r?.preset ?? '4H-ETH-Basic'} yang dihitung Lab, kiriman TradingView ke webhook, dan hasil
+              eksekusinya di akun bot. Hanya membaca, tidak pernah mengirim order.
+            </InfoTip>
+          </span>
+        }
+        description={<>Sinyal {r?.preset ?? '4H-ETH-Basic'} vs kiriman ke bot live (akun Rosyade).</>}
+        actions={<Segmented aria-label="Rentang waktu" size="sm" value={bars} onChange={setBars} options={LIVECHECK_RANGES} />}
+      />
       {q.isPending ? (
         <LoadingState rows={4} />
       ) : q.error || !r ? (
         <ErrorState error={q.error ?? undefined} onRetry={() => q.refetch()} message="Cek bot live belum bisa dimuat." />
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {!r.last_cycle && (
-            <div className="flex gap-2 rounded-lg border border-warn/30 bg-warn/[0.06] p-3 text-xs text-muted-foreground">
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warn" aria-hidden="true" />
+            <div className="flex gap-2 rounded-2xl border border-warn/30 bg-warn/[0.06] p-4 text-[14px] text-muted-foreground">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warn" aria-hidden="true" />
               <p>Worker Lab belum pernah menjalankan cek ini. Biasanya jalan beberapa menit setelah candle 4H berikutnya tutup.</p>
             </div>
           )}
@@ -485,8 +487,10 @@ export function LiveCheckView({ bars: barsProp, onBarsChange, filter: filterProp
             stale={stale}
           />
           <Tiles r={r} />
-          <Timeline cells={cells} onPick={pickBar} />
-          <div className="space-y-3">
+          <Panel as="div">
+            <Timeline cells={cells} onPick={pickBar} />
+          </Panel>
+          <div className="space-y-4">
             <Filters r={r} value={filter} onChange={setFilter} />
             <ResponsiveTable
               rows={rows}
@@ -511,6 +515,6 @@ export function LiveCheckView({ bars: barsProp, onBarsChange, filter: filterProp
         </div>
       )}
       <Detail r={selected} causes={r?.causes ?? {}} onClose={() => setOpenId(null)} />
-    </Section>
+    </section>
   )
 }
