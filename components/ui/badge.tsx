@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils/cn";
  * `bg-x/10 text-x border-x/30` strings so every status chip looks the same.
  */
 const badgeVariants = cva(
-  "inline-flex items-center gap-1 whitespace-nowrap rounded-md border px-2 py-0.5 text-xs font-semibold transition-colors duration-200 [&_svg]:size-3 [&_svg]:shrink-0",
+  "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors duration-200 [&_svg]:size-3.5 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -30,8 +30,8 @@ const badgeVariants = cva(
       },
       size: {
         default: "",
-        sm: "px-1.5 py-0 text-2xs",
-        xs: "px-1 py-0 text-3xs font-mono tracking-wide",
+        sm: "px-2 py-0.5 text-2xs",
+        xs: "px-1.5 py-0 text-3xs tracking-wide",
       },
     },
     defaultVariants: {

@@ -61,14 +61,14 @@ export function DirectionBadge({ direction, label, size = 'sm', plain, className
   return (
     <span
       className={cn(
-        'inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap font-mono font-bold tracking-wide',
-        !plain && 'rounded-md border',
-        size === 'xs' && 'text-3xs [&_svg]:size-2.5',
-        size === 'xs' && !plain && 'px-1 py-px',
-        size === 'sm' && 'text-2xs [&_svg]:size-3',
-        size === 'sm' && !plain && 'px-1.5 py-0.5',
-        size === 'md' && 'text-xs [&_svg]:size-3.5',
-        size === 'md' && !plain && 'px-2 py-1',
+        'inline-flex shrink-0 items-center gap-1 whitespace-nowrap font-bold tracking-wide',
+        !plain && 'rounded-full border',
+        size === 'xs' && 'text-3xs [&_svg]:size-3',
+        size === 'xs' && !plain && 'h-5 px-2',
+        size === 'sm' && 'text-2xs [&_svg]:size-3.5',
+        size === 'sm' && !plain && 'h-7 px-2.5',
+        size === 'md' && 'text-sm [&_svg]:size-4',
+        size === 'md' && !plain && 'h-8 px-3',
         plain ? s.className.split(' ').filter((c) => c.startsWith('text-')).join(' ') : s.className,
         className,
       )}

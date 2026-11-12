@@ -58,10 +58,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-sidebar flex-col border-r bg-sidebar lg:flex">
-        <div className="flex h-topbar items-center px-4">
+        <div className="flex h-topbar items-center px-5">
           <Brand />
         </div>
-        <div className="flex-1 overflow-y-auto px-2 pb-6 pt-3">
+        <div className="flex-1 overflow-y-auto px-3 pb-8 pt-4">
           <SidebarNav isAdmin={isAdmin} adminCheck={adminCheck} onRetryAdmin={retry} />
         </div>
       </aside>
@@ -87,11 +87,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </Sheet>
 
       <div className="lg:pl-sidebar">
-        <header className="sticky top-0 z-20 flex h-topbar items-center gap-3 border-b bg-background/85 px-3 backdrop-blur-md sm:px-6 lg:px-8">
+        <header className="sticky top-0 z-20 flex h-topbar items-center gap-3 border-b bg-background/80 px-3 backdrop-blur-md sm:px-6 lg:px-8">
           <button
             type="button"
             onClick={() => setMobileOpen(true)}
-            className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
+            className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
             aria-label="Buka menu navigasi"
             aria-expanded={mobileOpen}
           >

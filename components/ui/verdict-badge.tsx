@@ -61,8 +61,8 @@ export function VerdictBadge({ verdict, size = 'sm', emptyLabel = '—', classNa
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 whitespace-nowrap rounded-full border font-semibold leading-4',
-        size === 'md' ? 'px-2.5 py-1 text-xs [&_svg]:size-3.5' : 'px-2 py-0.5 text-2xs [&_svg]:size-3',
+        'inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border font-bold leading-4',
+        size === 'md' ? 'h-8 px-3.5 text-sm [&_svg]:size-4' : 'h-7 px-3 text-2xs [&_svg]:size-3.5',
         s.className,
         className,
       )}
