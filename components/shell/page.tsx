@@ -1,5 +1,8 @@
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
+import { PageHelp, type PageHelpContent } from '@/components/shell/PageHelp'
+
+export type { PageHelpContent }
 
 /**
  * Page layout primitives. Every route renders:
@@ -11,7 +14,8 @@ import { cn } from '@/lib/utils/cn'
  *
  * so width, gutters, vertical rhythm and heading styles are identical
  * everywhere. Server-safe (no hooks): usable from server pages and client
- * views alike. Route tabs live in ./PageTabs (client). See DESIGN.md.
+ * views alike (the help fold is a small client island). Sub-tabs: ./HubTabs.
+ * See DESIGN.md.
  */
 
 const WIDTHS = {
@@ -52,19 +56,29 @@ export function PageHeader({
   eyebrow,
   eyebrowIcon: EyebrowIcon,
   tone = 'brand',
+  status,
+  help,
+  helpId,
   actions,
   children,
   className,
 }: {
   title: React.ReactNode
+  /** One sentence under the title. Keep it short; long explanations go in `help`. */
   description?: React.ReactNode
-  /** Small section label above the title, e.g. "Strategy Lab". */
+  /** Small section label above the title, e.g. "Pasar" or "Strategi". */
   eyebrow?: string
   eyebrowIcon?: LucideIcon
   tone?: Tone
-  /** Right-aligned controls (refresh, badges, primary action). */
+  /** Pills next to the title: <StatusPill kind="live" />, PAPER, ARSIP… */
+  status?: React.ReactNode
+  /** "Apa ini? · Cara pakai" fold (closed by default, remembered per page). */
+  help?: PageHelpContent
+  /** Storage key for the help fold. Default: the pathname. */
+  helpId?: string
+  /** Right-aligned controls (refresh, primary action). */
   actions?: React.ReactNode
-  /** Rendered under the title row — typically <PageTabs>. */
+  /** Rendered under the title row, typically <HubTabs>. */
   children?: React.ReactNode
   className?: string
 }) {
@@ -78,10 +92,14 @@ export function PageHeader({
               {eyebrow}
             </div>
           )}
-          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-[1.75rem] sm:leading-9">{title}</h1>
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-[1.75rem] sm:leading-9">{title}</h1>
+            {status && <div className="flex flex-wrap items-center gap-1.5">{status}</div>}
+          </div>
           {description && (
             <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">{description}</p>
           )}
+          {help && <PageHelp help={help} helpId={helpId} className="pt-0.5" />}
         </div>
         {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
       </div>

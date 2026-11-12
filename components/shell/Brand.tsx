@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils/cn'
 
 /** BMTM logo mark + wordmark. `compact` hides the wordmark subtitle. */
 export function Brand({
-  href = '/screener',
+  href = '/beranda',
   size = 'md',
   className,
 }: {

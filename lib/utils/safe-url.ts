@@ -8,7 +8,7 @@
  * allowed — rejects "//evil.com", "/\\evil.com", "https://…", "javascript:…"
  * and anything containing control characters. Falls back to `fallback`.
  */
-export function safeNextPath(raw: string | null | undefined, fallback = '/screener'): string {
+export function safeNextPath(raw: string | null | undefined, fallback = '/beranda'): string {
   if (!raw) return fallback
   if (raw.length > 512) return fallback
   if (/[\u0000-\u001f\u007f]/.test(raw)) return fallback
