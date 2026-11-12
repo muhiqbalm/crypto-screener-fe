@@ -451,6 +451,7 @@ export function LiveCheckView({ bars: barsProp, onBarsChange, filter: filterProp
   return (
     <Section
       id={id}
+      className="scroll-mt-20"
       icon={<ScanSearch className="h-4 w-4 text-muted-foreground" aria-hidden="true" />}
       title={
         <span className="inline-flex items-center gap-1">

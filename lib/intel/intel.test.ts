@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { IntelNewsResponse, IntelWhalesResponse, NewsItem } from '@/lib/api/types/intel'
 import { coinTag, filterNews, headlineTone, newsAnswer, toneCounts } from './news'
-import { flowSide, leanOf, liveRatios, whaleAnswer, windowPhrase } from './whales'
+import { coinPath, flowSide, leanOf, liveRatios, whaleAnswer, windowPhrase } from './whales'
 
 const ratio = (symbol: string, longPct: number) => ({ symbol, longPct, shortPct: 100 - longPct, lsRatio: null, updated: 'live' })
 
@@ -44,6 +44,8 @@ describe('whales', () => {
     expect(flowSide(105, 100)).toBe('seimbang')
     expect(flowSide(200, 100)).toBe('beli')
     expect(flowSide(null, 100)).toBeNull()
+    expect(coinPath('BTCUSDT')).toBe('/koin/BTC')
+    expect(coinPath('doge')).toBe('/koin/DOGE')
   })
 })
 
