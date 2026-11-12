@@ -1,8 +1,8 @@
 import { CryptoNewsView } from '@/components/news/CryptoNewsView'
 
 export const metadata = {
-  title: 'Berita & Sentimen',
-  description: 'Headline CoinTelegraph dengan tag sentimen dan indeks Fear & Greed.',
+  title: 'Sentimen & berita',
+  description: 'Indeks takut–serakah dan judul berita kripto terbaru dengan nada judul dari kata kunci.',
 }
 
 export default function NewsPage() {

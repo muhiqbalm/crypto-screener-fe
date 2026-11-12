@@ -16,6 +16,7 @@ import {
 import type { OverlayMarker, OverlayPriceLine } from '@/lib/lab/overlay'
 import { useTheme } from 'next-themes'
 import { getChartTheme } from '@/lib/chart-theme'
+import { axisPrice, chartTickLabel, chartTimeLabel, toChartTime } from '@/lib/chart/candles'
 
 // ---------------------------------------------------------------------------
 // REST: fetch historical klines from Binance
@@ -105,7 +106,7 @@ export async function fetchChartKlines(
 
 interface TradingChartProps {
   symbol: string      // e.g. "BTCUSDT"
-  interval: string    // e.g. "1m"
+  interval: string    // e.g. "4h"
   klines: Kline[]
   /** Called when a new live tick arrives so the parent can update state */
   onTick?: (candle: Kline) => void
@@ -121,6 +122,11 @@ interface TradingChartProps {
 // Component
 // ---------------------------------------------------------------------------
 
+/**
+ * Candles are stored in real UTC seconds. The chart library prints whatever it is given as
+ * UTC, so every time handed to it (history, websocket updates, markers) is shifted to WIB
+ * with toChartTime(); the axis and crosshair then read as WIB wall-clock time.
+ */
 export function TradingChart({
   symbol,
   interval,
@@ -136,6 +142,11 @@ export function TradingChart({
   const wsRef        = useRef<WebSocket | null>(null)
   const connectWsRef = useRef<() => void>(() => {})
   const priceLineRefs = useRef<IPriceLine[]>([])
+  // Read by the crosshair formatter (daily candles show the date only).
+  const dailyRef = useRef(interval === '1d')
+  useEffect(() => {
+    dailyRef.current = interval === '1d'
+  }, [interval])
 
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme !== 'light'
@@ -167,7 +178,13 @@ export function TradingChart({
       timeScale: {
         borderColor: colors.border,
         timeVisible: true,
-        secondsVisible: interval === '1s',
+        secondsVisible: false,
+        tickMarkFormatter: (time: Time, tickMarkType: number) => chartTickLabel(Number(time), tickMarkType),
+      },
+      localization: {
+        timeFormatter: (time: Time) => `${chartTimeLabel(Number(time), dailyRef.current)} WIB`,
+        // Exchange style on the price axis too: 67,420.50 / 2.3457 / 0.00001234.
+        priceFormatter: axisPrice,
       },
       handleScroll: true,
       handleScale: true,
@@ -203,7 +220,6 @@ export function TradingChart({
       seriesRef.current = null
       priceLineRefs.current = []
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDark])   // recreate chart when theme changes
 
   // ── Load historical data ──
@@ -212,7 +228,7 @@ export function TradingChart({
   useEffect(() => {
     if (!seriesRef.current || klines.length === 0) return
     const data: CandlestickData<Time>[] = klines.map((k) => ({
-      time:  k.time as Time,
+      time:  toChartTime(k.time) as Time,
       open:  k.open,
       high:  k.high,
       low:   k.low,
@@ -227,7 +243,7 @@ export function TradingChart({
     const series = seriesRef.current
     if (!series) return
     const m: SeriesMarker<Time>[] = (markers ?? []).map((x) => ({
-      time: x.time as Time,
+      time: toChartTime(x.time) as Time,
       position: x.position,
       color: x.color,
       shape: x.shape,
@@ -287,7 +303,7 @@ export function TradingChart({
           close: parseFloat(k.c),
         }
         seriesRef.current?.update({
-          time:  candle.time as Time,
+          time:  toChartTime(candle.time) as Time,
           open:  candle.open,
           high:  candle.high,
           low:   candle.low,

@@ -1,8 +1,8 @@
 import { WhaleRadarView } from '@/components/whales/WhaleRadarView'
 
 export const metadata = {
-  title: 'Whale Radar',
-  description: 'Rasio long/short top trader Binance Futures dan transaksi perpetual besar.',
+  title: 'Arus besar (whale)',
+  description: 'Ke mana trader besar Binance Futures condong, dan transaksi besar terbaru.',
 }
 
 export default function WhalesPage() {

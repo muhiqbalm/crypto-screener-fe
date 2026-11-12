@@ -1,11 +1,10 @@
 /** Pure helpers for the "Kualitas eksekusi" section (no React). */
 import type { ShadowCell, ShadowOutcome, ShadowResult, ShadowSignal } from '@/lib/api/types/shadow'
+import { formatBps } from '@/lib/utils/format'
 
-/** Signed basis points, e.g. "+3.2 bps". */
+/** Signed basis points in the app style: "+3.2 bps", "−0.4 bps", "0.0 bps". */
 export function bps(v: number | null | undefined, digits = 1): string {
-  if (v === null || v === undefined || !Number.isFinite(v)) return '—'
-  const s = v > 0 ? '+' : v < 0 ? '-' : ''
-  return `${s}${Math.abs(v).toFixed(digits)} bps`
+  return formatBps(v, { digits, signed: true })
 }
 
 /** Seconds as "7 dtk", "4 mnt 10 dtk", "1 jam 5 mnt". */
@@ -33,14 +32,14 @@ export function ttlLabel(m: number): string {
   return m < 60 ? `${m} mnt` : `${m / 60} jam`
 }
 
-export const OUTCOME_COPY: Record<ShadowOutcome, { label: string; tone: 'bullish' | 'muted' | 'warn' }> = {
-  filled: { label: 'Terisi', tone: 'bullish' },
+export const OUTCOME_COPY: Record<ShadowOutcome, { label: string; tone: 'info' | 'muted' | 'warn' }> = {
+  filled: { label: 'Terisi', tone: 'info' },
   missed: { label: 'Tidak terisi', tone: 'muted' },
   postonly: { label: 'Ditolak post-only', tone: 'warn' },
 }
 
 export function actionLabel(s: Pick<ShadowSignal, 'action' | 'side'>): string {
-  return `${s.action === 'open' ? 'Open' : 'Close'} ${s.side === 'long' ? 'Long' : 'Short'}`
+  return `${s.action === 'open' ? 'Buka' : 'Tutup'} ${s.side === 'long' ? 'LONG' : 'SHORT'}`
 }
 
 export function pickResult(s: ShadowSignal, k: number, ttl: number): ShadowResult | undefined {

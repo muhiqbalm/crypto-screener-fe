@@ -21,6 +21,10 @@ export async function getMock(method: string, path: string, body?: unknown): Pro
   const bot = (await import('./bot')).botMock(method, path)
   if (bot) return bot.value
 
+  // Market pages + Status bot sections (intel, live-check, shadow); see lib/mocks/pasar-bot.ts
+  const pasarBot = (await import('./pasar-bot')).pasarBotMock(method, path)
+  if (pasarBot) return pasarBot.value
+
   if (path.startsWith('/api/v1/lab/')) {
     const koin = await (await import('./outlook')).getOutlookMock(method, path)
     if (koin !== undefined) return koin

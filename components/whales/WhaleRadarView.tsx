@@ -1,403 +1,293 @@
 'use client'
 
-import { PageContainer, PageHeader } from '@/components/shell/page'
 import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import Link from 'next/link'
+import { ArrowDownRight, ArrowUpRight, Radar, RefreshCw, Search, Users } from 'lucide-react'
+import { PageContainer, PageHeader } from '@/components/shell/page'
+import { EmptyState, ErrorState } from '@/components/shell/states'
+import { Section } from '@/components/lab/Section'
+import { AnswerCard } from '@/components/ui/answer-card'
 import { Button } from '@/components/ui/button'
+import { DirectionBadge } from '@/components/ui/direction-badge'
+import { Freshness } from '@/components/ui/freshness'
 import { Input } from '@/components/ui/input'
+import { ResponsiveTable, type ResponsiveColumn } from '@/components/ui/responsive-table'
+import { Segmented } from '@/components/ui/segmented'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ErrorPanel } from '@/components/shell/ErrorPanel'
+import { Term } from '@/components/ui/term'
 import { useIntelWhales } from '@/lib/queries/intel'
+import { formatNumber, formatUsdCompact } from '@/lib/utils/format'
+import { formatAge, formatTime } from '@/lib/utils/time'
 import { cn } from '@/lib/utils/cn'
-import { ApiError } from '@/lib/api/errors'
-import type { TopTraderRatio, WhaleTrade } from '@/lib/api/types/intel'
+import { coinHref } from '@/lib/nav'
 import {
-  ArrowDownRight,
-  ArrowUpRight,
-  Search,
-  RefreshCw,
-  TrendingUp,
-  Layers,
-  CircleDollarSign,
-  Radar,
-  Activity,
-} from 'lucide-react'
+  LEAN_LABEL,
+  averageLong,
+  isTakerBuy,
+  leanOf,
+  liveRatios,
+  liveTrades,
+  whaleAnswer,
+  windowPhrase,
+} from '@/lib/intel/whales'
+import type { TopTraderRatio, WhaleTrade } from '@/lib/api/types/intel'
 
-/**
- * Zero Static Mocking: only live values from /api/v1/intel/whales are shown.
- * The backend returns null + lists `unavailableFields` for anything it cannot
- * source (whaleVolume24h / whaleVolumeChange / exchangeNetFlow have no source
- * and are never rendered). The filters below are defensive guards against
- * older backend builds that still sent static placeholder rows.
- */
-function liveRatios(ratios: TopTraderRatio[] | undefined): TopTraderRatio[] {
-  return (ratios ?? []).filter((r) => r.updated !== 'Cached')
-}
-
-function liveTrades(trades: WhaleTrade[] | undefined): WhaleTrade[] {
-  return (trades ?? []).filter((t) => t.id.startsWith('tx-fapi-'))
-}
-
-function formatUsdCompact(v: number | null | undefined, signed = false): string {
-  if (v === null || v === undefined || !Number.isFinite(v)) return '—'
-  const sign = v < 0 ? '-' : signed && v > 0 ? '+' : ''
-  const a = Math.abs(v)
-  if (a >= 1e9) return `${sign}$${(a / 1e9).toFixed(2)}B`
-  if (a >= 1e6) return `${sign}$${(a / 1e6).toFixed(2)}M`
-  if (a >= 1e3) return `${sign}$${(a / 1e3).toFixed(1)}K`
-  return `${sign}$${a.toFixed(0)}`
-}
-
-function formatWindow(seconds: number | null | undefined): string | null {
-  if (seconds === null || seconds === undefined || !Number.isFinite(seconds)) return null
-  if (seconds < 120) return `${Math.round(seconds)}s`
-  return `${Math.round(seconds / 60)}m`
-}
-
-// `side` is authoritative; legacy payloads only had type ("outflow" = taker buy).
-function isTakerBuy(tx: WhaleTrade): boolean {
-  return tx.side ? tx.side === 'BUY' : tx.type === 'outflow'
-}
-
-const STANCE_CLASS: Record<string, string> = {
-  bullish: 'text-bullish',
-  bearish: 'text-bearish',
-  neutral: 'text-muted-foreground',
-}
-
-// Fields with no data source at all; not worth flagging on every snapshot.
+/** Fields with no data source at all (never sent as numbers); not worth flagging. */
 const NEVER_SOURCED = new Set(['whaleVolume24h', 'whaleVolumeChange', 'exchangeNetFlow'])
+const MISSING_LABEL: Record<string, string> = {
+  topTraderRatios: 'posisi trader besar',
+  topTraderBias: 'posisi trader besar',
+  smartMoneyStance: 'posisi trader besar',
+  whaleTransactions: 'transaksi besar',
+  largeTradeNetUsd: 'selisih beli − jual',
+}
 
+type SideFilter = 'semua' | 'beli' | 'jual'
+
+function leanDirection(longPct: number): 'long' | 'short' | 'netral' {
+  const l = leanOf(longPct)
+  return l === 'long' ? 'long' : l === 'short' ? 'short' : 'netral'
+}
+
+function RatioCard({ r }: { r: TopTraderRatio }) {
+  const coin = r.symbol.replace(/USDT$/, '')
+  const lean = leanOf(r.longPct)
+  const ratio = r.lsRatio ?? (r.shortPct ? r.longPct / r.shortPct : null)
+  return (
+    <div className="space-y-2.5 rounded-xl border bg-background/60 p-3.5">
+      <div className="flex items-center justify-between gap-2">
+        <Link href={coinHref(r.symbol)} className="font-mono text-sm font-bold hover:underline">
+          {coin}
+        </Link>
+        <DirectionBadge direction={leanDirection(r.longPct)} label={lean ? LEAN_LABEL[lean] : '—'} size="xs" />
+      </div>
+      <div className="num flex justify-between text-xs">
+        <span>
+          Long <b className="text-bullish">{formatNumber(r.longPct, { digits: 1 })}%</b>
+        </span>
+        <span>
+          Short <b className="text-bearish">{formatNumber(r.shortPct, { digits: 1 })}%</b>
+        </span>
+      </div>
+      <div
+        className="flex h-2 w-full overflow-hidden rounded-full bg-bearish/30"
+        role="img"
+        aria-label={`${coin}: ${formatNumber(r.longPct, { digits: 1 })}% long, ${formatNumber(r.shortPct, { digits: 1 })}% short`}
+      >
+        <div className="h-full bg-bullish" style={{ width: `${Math.min(100, Math.max(0, r.longPct))}%` }} />
+      </div>
+      <div className="num flex items-center justify-between border-t border-border/40 pt-1.5 text-2xs text-muted-foreground">
+        <span>
+          <Term k="long_short_ratio" short noTip /> {ratio === null ? '—' : formatNumber(ratio, { digits: 2 })}
+        </span>
+        <span>{typeof r.timestamp === 'number' ? formatTime(r.timestamp, { date: false }) : 'waktu tidak tersedia'}</span>
+      </div>
+    </div>
+  )
+}
+
+const TRADE_COLUMNS: ResponsiveColumn<WhaleTrade>[] = [
+  {
+    key: 'waktu',
+    header: 'Waktu',
+    mobile: 'field',
+    cell: (t) =>
+      typeof t.tradeTime === 'number' ? (
+        <div className="num whitespace-nowrap text-xs">
+          {formatTime(t.tradeTime, { date: false, seconds: true })}
+          <div className="text-3xs text-muted-foreground">{formatAge(t.tradeTime, { seconds: true })}</div>
+        </div>
+      ) : (
+        <span className="text-xs text-muted-foreground">waktu tidak tersedia</span>
+      ),
+  },
+  {
+    key: 'koin',
+    header: 'Koin',
+    mobile: 'title',
+    cell: (t) => (
+      <Link href={coinHref(t.symbol)} className="rounded-md border bg-muted/60 px-2 py-0.5 font-mono text-2xs font-semibold hover:underline">
+        {t.symbol}
+      </Link>
+    ),
+  },
+  { key: 'jumlah', header: 'Jumlah', mobile: 'field', cell: (t) => <span className="num whitespace-nowrap text-xs text-muted-foreground">{t.amount}</span> },
+  {
+    key: 'nilai',
+    header: 'Nilai',
+    align: 'right',
+    mobile: 'field',
+    cell: (t) => <span className="num whitespace-nowrap text-xs font-bold">{typeof t.usdValueRaw === 'number' ? formatUsdCompact(t.usdValueRaw) : t.usdValue}</span>,
+  },
+  {
+    key: 'sisi',
+    header: 'Sisi',
+    align: 'right',
+    mobile: 'badge',
+    cell: (t) =>
+      isTakerBuy(t) ? (
+        <span className="inline-flex items-center gap-1 rounded-md border border-bullish/30 bg-bullish/10 px-2 py-0.5 text-2xs font-semibold text-bullish">
+          <ArrowUpRight className="h-3 w-3" aria-hidden="true" /> Beli
+        </span>
+      ) : (
+        <span className="inline-flex items-center gap-1 rounded-md border border-bearish/30 bg-bearish/10 px-2 py-0.5 text-2xs font-semibold text-bearish">
+          <ArrowDownRight className="h-3 w-3" aria-hidden="true" /> Jual
+        </span>
+      ),
+  },
+]
+
+/** /whales "Arus besar (whale)": where the biggest traders lean, and the latest large taker trades. */
 export function WhaleRadarView() {
   const { data: intel, isPending, error, isFetching, refetch } = useIntelWhales()
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterType, setFilterType] = useState<'all' | 'buy' | 'sell'>('all')
+  const [search, setSearch] = useState('')
+  const [side, setSide] = useState<SideFilter>('semua')
 
   const ratios = liveRatios(intel?.topTraderRatios)
-  const transactions = liveTrades(intel?.whaleTransactions)
-
+  const trades = liveTrades(intel?.whaleTransactions)
   const status = intel?.status ?? null
-  const missing = (intel?.unavailableFields ?? []).filter((f) => !NEVER_SOURCED.has(f))
-  const windowLabel = formatWindow(intel?.largeTradeWindowSeconds)
+  const missing = [...new Set((intel?.unavailableFields ?? []).filter((f) => !NEVER_SOURCED.has(f)).map((f) => MISSING_LABEL[f] ?? f))]
   const minUsd = intel?.largeTradeMinUsd ?? null
-  const minUsdLabel = minUsd !== null ? formatUsdCompact(minUsd) : '$50K'
-  const netUsd = intel?.largeTradeNetUsd ?? null
-  const stanceCode = intel?.smartMoneyStanceCode ?? null
-  const snapshotTime =
-    typeof intel?.cachedAt === 'number'
-      ? new Date(intel.cachedAt * 1000).toLocaleTimeString()
-      : null
+  const minLabel = minUsd !== null ? formatUsdCompact(minUsd) : 'tidak diketahui'
+  const win = windowPhrase(intel?.largeTradeWindowSeconds)
+  const answer = whaleAnswer(intel)
+  const avg = averageLong(ratios)
+  const coins = [...new Set(trades.map((t) => t.symbol))]
+  const cachedAt = typeof intel?.cachedAt === 'number' ? intel.cachedAt : undefined
 
-  const term = searchTerm.toLowerCase()
-  const filteredTxs = transactions.filter((tx) => {
-    const matchesSearch =
-      tx.symbol.toLowerCase().includes(term) || tx.amount.toLowerCase().includes(term)
-    const matchesType =
-      filterType === 'all' || (filterType === 'buy' ? isTakerBuy(tx) : !isTakerBuy(tx))
-    return matchesSearch && matchesType
-  })
+  const term = search.trim().toLowerCase()
+  const shown = trades.filter(
+    (t) =>
+      (side === 'semua' || (side === 'beli' ? isTakerBuy(t) : !isTakerBuy(t))) &&
+      (!term || t.symbol.toLowerCase().includes(term) || t.amount.toLowerCase().includes(term)),
+  )
 
   return (
     <PageContainer>
       <PageHeader
         eyebrow="Pasar"
         eyebrowIcon={Radar}
-        title="Whale Radar"
-        description={`Rasio long/short top trader Binance Futures dan transaksi besar BTC / ETH / SOL perpetual (≥ ${minUsdLabel}) dari aggregated trades terbaru.`}
+        title="Arus besar (whale)"
+        description="Ke mana trader besar condong, dan transaksi besar terbaru di Binance Futures."
+        help={{
+          apaIni:
+            'Dua sinyal konteks dari Binance Futures: arah mayoritas posisi akun-akun terbesar (trader besar), dan transaksi besar yang langsung mengambil harga pasar. Bukan perintah beli atau jual.',
+          caraPakai: [
+            'Baca kalimat di kartu paling atas.',
+            'Condong long/short dihitung sama untuk tiap koin dan rata-ratanya: di atas 55% long = condong long, di bawah 45% = condong short.',
+            'Transaksi besar hanya mencakup beberapa menit terakhir; lihat jendela waktunya.',
+          ],
+          istilah: ['top_trader', 'whale_trades', 'net_flow', 'long_short_ratio'],
+        }}
         actions={
-          <>
-            {snapshotTime && (
-              <Badge variant="muted" className="num font-normal">
-                Snapshot {snapshotTime}
-              </Badge>
-            )}
-            <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
-              <RefreshCw className={isFetching ? 'animate-spin' : ''} aria-hidden="true" />
-              Muat ulang
-            </Button>
-          </>
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+            <RefreshCw className={cn(isFetching && 'animate-spin')} aria-hidden="true" />
+            Muat ulang
+          </Button>
         }
       />
 
       {isPending ? (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-28 w-full rounded-xl" />
-            ))}
-          </div>
+        <div className="space-y-4" aria-busy="true">
+          <Skeleton className="h-36 w-full rounded-xl" />
           <Skeleton className="h-48 w-full rounded-xl" />
         </div>
       ) : error ? (
-        <ErrorPanel
-          kind={error instanceof ApiError ? error.kind : 'server'}
-          onRetry={() => refetch()}
-          messageOverride="Whale radar data is unavailable right now."
-        />
+        <ErrorState error={error} onRetry={() => refetch()} message="Data arus besar belum bisa dimuat." />
       ) : status === 'unavailable' ? (
-        <ErrorPanel
-          kind="server"
+        <ErrorState
+          title="Data Binance sedang tidak bisa diambil"
+          message="Tidak ada angka yang ditampilkan daripada angka lama atau karangan."
           onRetry={() => refetch()}
-          messageOverride="Binance whale data is unavailable right now (upstream fetch failed). No numbers are shown rather than stale or invented ones."
         />
       ) : (
         <>
+          <AnswerCard
+            tone="info"
+            title="Trader besar condong ke mana?"
+            answer={answer.sentence}
+            metrics={[
+              {
+                label: <Term k="top_trader" noTip />,
+                value: answer.lean && avg !== null ? `${LEAN_LABEL[answer.lean]} · ${formatNumber(avg, { digits: 0 })}% long` : 'tidak tersedia',
+                valueClassName: answer.lean === 'long' ? 'text-bullish' : answer.lean === 'short' ? 'text-bearish' : undefined,
+              },
+              { label: 'Beli besar', value: formatUsdCompact(intel?.largeTradeBuyUsd), hint: win ? `${win} terakhir` : undefined },
+              { label: 'Jual besar', value: formatUsdCompact(intel?.largeTradeSellUsd), hint: win ? `${win} terakhir` : undefined },
+            ]}
+            footer={<Freshness updatedAt={cachedAt} />}
+          />
+
           {status === 'partial' && (
-            <div
-              role="status"
-              className="rounded-lg border border-warn/40 bg-warn/10 px-4 py-2.5 text-xs text-warn"
-            >
-              Partial snapshot — unavailable: {missing.length > 0 ? missing.join(', ') : 'some sources'}.
-            </div>
+            <p role="status" className="rounded-lg border border-warn/40 bg-warn/10 px-4 py-2.5 text-xs text-warn">
+              Sebagian data tidak tersedia: {missing.length ? missing.join(', ') : 'sebagian sumber'}. Bagian itu ditulis &quot;tidak tersedia&quot;.
+            </p>
           )}
 
-          {/* Overview Stat Cards — all values come from live data in this response */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard
-              title="Large Taker Buys"
-              icon={<CircleDollarSign className="h-4 w-4 text-bullish" />}
-              value={formatUsdCompact(intel?.largeTradeBuyUsd)}
-              valueClass="text-bullish"
-              caption={windowLabel ? `Trades ≥ ${minUsdLabel}, last ${windowLabel}` : `Trades ≥ ${minUsdLabel}`}
-            />
-            <StatCard
-              title="Large Taker Sells"
-              icon={<Layers className="h-4 w-4 text-bearish" />}
-              value={formatUsdCompact(intel?.largeTradeSellUsd)}
-              valueClass="text-bearish"
-              caption={windowLabel ? `Trades ≥ ${minUsdLabel}, last ${windowLabel}` : `Trades ≥ ${minUsdLabel}`}
-            />
-            <StatCard
-              title="Large Trade Net Flow"
-              icon={<Activity className="h-4 w-4 text-info" />}
-              value={formatUsdCompact(netUsd, true)}
-              valueClass={
-                netUsd === null ? undefined : netUsd >= 0 ? 'text-bullish' : 'text-bearish'
-              }
-              caption="Taker buys minus taker sells (BTC/ETH/SOL perps)"
-            />
-            <StatCard
-              title="Top Trader Stance"
-              icon={<TrendingUp className="h-4 w-4 text-bullish" />}
-              value={intel?.smartMoneyStance ?? '—'}
-              valueClass={`text-base ${stanceCode ? STANCE_CLASS[stanceCode] : 'text-muted-foreground'}`}
-              caption={
-                intel?.topTraderBias
-                  ? `${intel.topTraderBias} avg across ${ratios.length} symbol${ratios.length === 1 ? '' : 's'}`
-                  : 'No live ratio data'
-              }
-            />
-          </div>
-
-          {/* Binance Top Trader Long/Short Ratio Matrix */}
-          <Card className="border-border bg-card/70 backdrop-blur-md shadow-md overflow-hidden">
-            <CardHeader className="p-5 sm:p-6 pb-4 border-b border-border">
-              <CardTitle className="text-lg font-bold tracking-tight text-foreground">
-                Binance Top Trader Long / Short Ratio
-              </CardTitle>
-              <p className="text-xs text-muted-foreground mt-1">
-                Binance Futures topLongShortPositionRatio (5m period).
-              </p>
-            </CardHeader>
-            <CardContent className="p-5 sm:p-6">
-              {ratios.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  Live long/short ratio data is unavailable right now.
-                </p>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {ratios.map((item) => {
-                    const isBullish = item.longPct >= 50
-                    return (
-                      <div
-                        key={item.symbol}
-                        className="p-4 rounded-xl border border-border bg-background/60 space-y-3"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono font-bold text-sm text-foreground tracking-wide">{item.symbol}</span>
-                          <Badge
-                            className={`text-3xs font-mono font-semibold px-2 py-0.5 ${
-                              isBullish
-                                ? 'bg-bullish/15 text-bullish border border-bullish/30'
-                                : 'bg-bearish/15 text-bearish border border-bearish/30'
-                            }`}
-                          >
-                            {isBullish ? 'Long Skew' : 'Short Skew'}
-                          </Badge>
-                        </div>
-
-                        <div className="flex justify-between text-xs font-mono font-medium">
-                          <span className="text-bullish">Long: {item.longPct}%</span>
-                          <span className="text-bearish">Short: {item.shortPct}%</span>
-                        </div>
-
-                        <div className="w-full h-2 bg-bearish/30 rounded-full overflow-hidden flex">
-                          <div
-                            className="bg-bullish h-full transition-all duration-500 rounded-l-full"
-                            style={{ width: `${item.longPct}%` }}
-                          />
-                        </div>
-
-                        <div className="flex justify-between items-center text-2xs text-muted-foreground font-mono pt-1 border-t border-border/30">
-                          <span>
-                            L/S Ratio:{' '}
-                            <strong className="text-foreground">
-                              {item.lsRatio ?? (item.shortPct ? (item.longPct / item.shortPct).toFixed(2) : '—')}
-                            </strong>
-                          </span>
-                          <span>
-                            {typeof item.timestamp === 'number'
-                              ? new Date(item.timestamp).toLocaleTimeString()
-                              : item.updated}
-                          </span>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Large trade stream */}
-          <Card className="border-border bg-card/70 backdrop-blur-md shadow-md overflow-hidden">
-            <CardHeader className="p-5 sm:p-6 pb-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <CardTitle className="text-lg font-bold tracking-tight text-foreground">
-                  Large Perpetual Trades
-                </CardTitle>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Binance USDT-M BTC / ETH / SOL perpetual aggregated trades with notional ≥ {minUsdLabel}.
-                </p>
+          <Section
+            icon={<Users className="h-4 w-4 text-muted-foreground" aria-hidden="true" />}
+            title={<Term k="top_trader" />}
+            description="Persentase posisi long vs short di akun-akun terbesar Binance Futures, per koin (data 5 menit)."
+          >
+            {ratios.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">Posisi trader besar tidak tersedia saat ini.</p>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {ratios.map((r) => (
+                  <RatioCard key={r.symbol} r={r} />
+                ))}
               </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="relative w-full sm:w-52">
-                  <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    placeholder="Search token…"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-8 h-9 text-xs bg-background/60 border-border focus-visible:ring-1"
+            )}
+          </Section>
+
+          <Section
+            icon={<Radar className="h-4 w-4 text-muted-foreground" aria-hidden="true" />}
+            title={<Term k="whale_trades" />}
+            description={
+              <>
+                Transaksi ≥ {minLabel} yang langsung mengambil harga pasar, dari 500 transaksi terakhir per koin
+                {coins.length ? ` (${coins.join(', ')})` : ''}
+                {win ? `, mencakup ${win} terakhir` : ''}.
+              </>
+            }
+            action={
+              <Segmented
+                aria-label="Saring sisi transaksi"
+                size="xs"
+                value={side}
+                onChange={(v) => setSide(v as SideFilter)}
+                options={[
+                  { value: 'semua', label: 'Semua' },
+                  { value: 'beli', label: 'Beli' },
+                  { value: 'jual', label: 'Jual' },
+                ]}
+              />
+            }
+          >
+            <div className="space-y-3">
+              <div className="relative sm:w-56">
+                <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                <Input aria-label="Cari koin" placeholder="Cari koin…" value={search} onChange={(e) => setSearch(e.target.value)} className="h-9 pl-8 text-xs" />
+              </div>
+              <ResponsiveTable
+                rows={shown}
+                columns={TRADE_COLUMNS}
+                rowKey={(t) => t.id}
+                caption="Transaksi besar terbaru"
+                empty={
+                  <EmptyState
+                    title={trades.length ? 'Tidak ada transaksi yang cocok' : `Tidak ada transaksi ≥ ${minLabel} saat ini`}
+                    description={trades.length ? 'Ubah saringan atau pencarian.' : 'Dalam jendela terakhir tidak ada transaksi sebesar itu.'}
                   />
-                </div>
-                <div className="flex items-center gap-1 border border-border rounded-lg p-1 bg-background/60">
-                  {(
-                    [
-                      ['all', 'All'],
-                      ['buy', 'Taker Buy'],
-                      ['sell', 'Taker Sell'],
-                    ] as const
-                  ).map(([key, label]) => (
-                    <Button
-                      key={key}
-                      variant={filterType === key ? 'secondary' : 'ghost'}
-                      size="sm"
-                      onClick={() => setFilterType(key)}
-                      className="h-7 text-xs px-3 font-medium cursor-pointer"
-                    >
-                      {label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              {transactions.length === 0 ? (
-                <p className="py-10 text-center text-sm text-muted-foreground">
-                  No trades ≥ {minUsdLabel} in the latest Binance snapshot.
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="border-b border-border bg-muted/20 text-muted-foreground text-2xs font-mono uppercase text-left">
-                        <th className="py-3 px-5 font-semibold">Time</th>
-                        <th className="py-3 px-5 font-semibold">Asset</th>
-                        <th className="py-3 px-5 font-semibold">Size</th>
-                        <th className="py-3 px-5 font-semibold text-right">Notional</th>
-                        <th className="py-3 px-5 font-semibold text-right">Taker Side</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border/40">
-                      {filteredTxs.map((tx) => (
-                        <tr key={tx.id} className="hover:bg-muted/30 transition-colors">
-                          <td
-                            className="py-3.5 px-5 font-mono text-muted-foreground whitespace-nowrap"
-                            title={typeof tx.tradeTime === 'number' ? new Date(tx.tradeTime).toLocaleString() : undefined}
-                          >
-                            {tx.timestamp ?? '—'}
-                          </td>
-                          <td className="py-3.5 px-5 font-mono">
-                            <span className="px-2 py-0.5 rounded-md bg-muted/70 text-2xs font-semibold border border-border">
-                              {tx.symbol}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-5 font-mono text-muted-foreground whitespace-nowrap">{tx.amount}</td>
-                          <td className="py-3.5 px-5 font-mono text-right font-bold text-foreground whitespace-nowrap">
-                            {tx.usdValue}
-                          </td>
-                          <td className="py-3.5 px-5 text-right whitespace-nowrap">
-                            {isTakerBuy(tx) ? (
-                              <Badge className="bg-bullish/15 text-bullish border border-bullish/30 text-2xs gap-1 font-mono py-1 px-2.5">
-                                <ArrowUpRight className="h-3 w-3" /> Buy
-                              </Badge>
-                            ) : (
-                              <Badge className="bg-bearish/15 text-bearish border border-bearish/30 text-2xs gap-1 font-mono py-1 px-2.5">
-                                <ArrowDownRight className="h-3 w-3" /> Sell
-                              </Badge>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                      {filteredTxs.length === 0 && (
-                        <tr>
-                          <td colSpan={5} className="py-8 text-center text-muted-foreground">
-                            No trades match your filter.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                }
+              />
+              <p className="text-3xs text-muted-foreground">
+                Beli/jual = sisi yang mengambil harga pasar (taker). Sumber: Binance USDT perpetual, diambil server tiap ±60 detik.
+              </p>
+            </div>
+          </Section>
         </>
       )}
     </PageContainer>
-  )
-}
-
-function StatCard({
-  title,
-  icon,
-  value,
-  caption,
-  valueClass,
-}: {
-  title: string
-  icon: React.ReactNode
-  value: string
-  caption: string
-  valueClass?: string
-}) {
-  return (
-    <Card className="border-border bg-gradient-to-b from-card/90 to-card/40 backdrop-blur-md shadow-sm">
-      <CardHeader className="flex flex-row items-center justify-between p-5 pb-2">
-        <CardTitle className="text-xs font-mono font-medium uppercase tracking-wider text-muted-foreground">
-          {title}
-        </CardTitle>
-        <div className="h-8 w-8 rounded-lg bg-muted/40 border border-border flex items-center justify-center">
-          {icon}
-        </div>
-      </CardHeader>
-      <CardContent className="p-5 pt-1">
-        <div className={cn('text-2xl font-bold font-mono tracking-tight text-foreground', valueClass)}>
-          {value}
-        </div>
-        <p className="text-xs text-muted-foreground mt-1.5 leading-tight">{caption}</p>
-      </CardContent>
-    </Card>
   )
 }

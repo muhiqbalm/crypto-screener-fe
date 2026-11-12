@@ -130,7 +130,7 @@ export function PaperTradePanel(p: Props) {
     <Card className="border-warn/30">
       <CardHeader className="space-y-2 pb-2">
         <CardTitle className="flex items-center justify-between gap-2 text-sm font-semibold tracking-tight">
-          <span>Paper Trade</span>
+          <span>Paper trade (simulasi)</span>
           <Link href="/journal" className="inline-flex items-center gap-1 text-3xs font-semibold normal-case text-info hover:underline">
             <FileText className="h-3 w-3" /> Jurnal
           </Link>
@@ -161,13 +161,13 @@ export function PaperTradePanel(p: Props) {
             >
               {(p.accounts.data ?? []).map((a) => (
                 <option key={String(a.id)} value={String(a.id)} className="bg-popover">
-                  {a.name} · equity {formatUsd(a.equity)}
+                  {a.name} · ekuitas {formatUsd(a.equity)}
                 </option>
               ))}
             </select>
             {account && (
               <p className="font-mono text-3xs text-muted-foreground">
-                Risk {account.risk_pct ?? '—'}% · leverage maks {account.leverage_max ?? '—'}x
+                Risiko {account.risk_pct ?? '—'}% per trade · leverage maks {account.leverage_max ?? '—'}x
               </p>
             )}
           </div>
@@ -223,7 +223,7 @@ export function PaperTradePanel(p: Props) {
                   })
                 }
               >
-                Isi dari posisi strategi ({p.strategyPosition.side})
+                Isi dari posisi simulasi strategi ({p.strategyPosition.side.toUpperCase()})
               </button>
             )}
             <p className="text-3xs text-muted-foreground">Garis SL/TP draft tampil di chart (oranye putus-putus). Ubah lewat input.</p>
@@ -233,8 +233,8 @@ export function PaperTradePanel(p: Props) {
               {size ? (
                 <div className="space-y-0.5 font-mono">
                   <div className="flex justify-between"><span className="text-muted-foreground">Risiko</span><span>{formatUsd(size.riskAmount)}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Qty (perkiraan)</span><span>{formatScore(size.qty, 4)}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Notional</span><span>{formatUsd(size.notional)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Jumlah (perkiraan)</span><span>{formatScore(size.qty, 4)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Nilai posisi</span><span>{formatUsd(size.notional)}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Leverage efektif</span><span>{formatScore(size.leverage, 2)}x</span></div>
                   {size.capped && <p className="pt-1 font-sans text-warn">Ukuran dipotong oleh leverage maks akun.</p>}
                 </div>
@@ -252,7 +252,7 @@ export function PaperTradePanel(p: Props) {
               <summary className="cursor-pointer text-muted-foreground">Opsi lanjutan</summary>
               <div className="mt-2 space-y-2">
                 <div className="space-y-1">
-                  <label htmlFor="paper-qty" className="font-medium">Qty manual (opsional)</label>
+                  <label htmlFor="paper-qty" className="font-medium">Jumlah manual (opsional)</label>
                   <Input id="paper-qty" type="number" inputMode="decimal" step="any" value={draft.qty} onChange={(e) => set({ qty: e.target.value })} className={cn('h-8 font-mono text-xs', errors.qty && 'border-bearish')} />
                 </div>
                 <div className="space-y-1">
@@ -292,8 +292,8 @@ export function PaperTradePanel(p: Props) {
             {p.watchId && (
               <div className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2">
                 <label htmlFor="autopaper" className="text-2xs">
-                  <span className="font-medium">Auto-follow strategi</span>
-                  <span className="block text-3xs text-muted-foreground">Sinyal watch ini otomatis dicatat sebagai PAPER di akun ini.</span>
+                  <span className="font-medium">Paper otomatis</span>
+                  <span className="block text-3xs text-muted-foreground">Sinyal pantauan ini otomatis dicatat sebagai PAPER di akun ini.</span>
                 </label>
                 <Switch
                   id="autopaper"
@@ -303,8 +303,8 @@ export function PaperTradePanel(p: Props) {
                     autopaper.mutate(
                       { watchId: p.watchId!, accountId: account.id, enabled },
                       {
-                        onSuccess: () => notify.info(enabled ? 'Auto-follow PAPER aktif' : 'Auto-follow PAPER mati'),
-                        onError: () => notify.error('Gagal mengubah auto-follow'),
+                        onSuccess: () => notify.info(enabled ? 'Paper otomatis aktif' : 'Paper otomatis mati'),
+                        onError: () => notify.error('Gagal mengubah paper otomatis'),
                       },
                     )
                   }

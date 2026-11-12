@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { TrendingUp, TrendingDown, RefreshCw, WifiOff, X } from 'lucide-react'
+import { TrendingUp, TrendingDown, RefreshCw, WifiOff, X, FlaskConical } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -17,7 +17,7 @@ import {
 } from './TradingChart'
 import { StrategyOverlayPanel } from './StrategyOverlayPanel'
 import { PaperTradePanel, EMPTY_DRAFT, type PaperDraft } from './PaperTradePanel'
-import { formatPrice } from '@/lib/utils/format'
+import { formatPct, formatPrice } from '@/lib/utils/format'
 import { cn } from '@/lib/utils/cn'
 import { api } from '@/lib/api/client'
 import { sameId } from '@/lib/api/types/lab'
@@ -27,6 +27,18 @@ import { OVERLAY_COLORS, positionLines, tradesToMarkers, type OverlayPriceLine }
 import { openPaperPositions } from '@/lib/lab/paper'
 import { useJournal, usePaperAccounts } from '@/lib/queries/paper'
 import { useSession } from '@/lib/utils/use-session'
+import { change24h, pctChange, previousClose } from '@/lib/chart/candles'
+import {
+  CHART_TFS,
+  DEFAULT_SYMBOL,
+  DEFAULT_TF,
+  TF_LABEL,
+  TF_SECONDS,
+  chartSearch,
+  parseSymbol,
+  parseTf,
+  tfLong,
+} from '@/lib/chart/params'
 
 // ---------------------------------------------------------------------------
 // Config
@@ -44,15 +56,11 @@ const SYMBOLS = [
   { value: 'HYPEUSDT', label: 'HYPE' },
 ]
 
-const INTERVALS = [
-  { value: '1m',  label: '1m' },
-  { value: '5m',  label: '5m' },
-  { value: '15m', label: '15m' },
-  { value: '30m', label: '30m' },
-  { value: '1h',  label: '1h' },
-  { value: '4h',  label: '4h' },
-  { value: '1d',  label: '1D' },
-]
+const INTERVALS: { value: string; label: string; long: string }[] = CHART_TFS.map((tf) => ({
+  value: tf,
+  label: TF_LABEL[tf].short,
+  long: TF_LABEL[tf].long,
+}))
 
 // ---------------------------------------------------------------------------
 // Segment button
@@ -62,11 +70,14 @@ function SegBtn({
   active,
   onClick,
   disabled,
+  label,
   children,
 }: {
   active: boolean
   onClick: () => void
   disabled?: boolean
+  /** Full name for screen readers, e.g. "4 jam". */
+  label?: string
   children: React.ReactNode
 }) {
   return (
@@ -75,6 +86,7 @@ function SegBtn({
       onClick={onClick}
       disabled={disabled}
       aria-pressed={active}
+      aria-label={label}
       className={cn(
         'h-7 shrink-0 rounded-md px-3 text-xs font-medium transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         active
@@ -91,36 +103,50 @@ function SegBtn({
 // Price ticker strip
 // ---------------------------------------------------------------------------
 
+function ChangeChip({ value, label, title }: { value: number | null; label: string; title: string }) {
+  if (value === null) return null
+  const up = value > 0
+  const down = value < 0
+  return (
+    <span className="inline-flex items-baseline gap-1 whitespace-nowrap" title={title}>
+      <span
+        className={cn(
+          'inline-flex items-center gap-0.5 font-mono text-sm tabular-nums',
+          up ? 'text-bullish' : down ? 'text-bearish' : 'text-muted-foreground',
+        )}
+      >
+        {up ? <TrendingUp className="h-3.5 w-3.5" aria-hidden="true" /> : down ? <TrendingDown className="h-3.5 w-3.5" aria-hidden="true" /> : null}
+        {formatPct(value, { digits: 2, signed: true })}
+      </span>
+      <span className="text-3xs text-muted-foreground">{label}</span>
+    </span>
+  )
+}
+
 function PriceTicker({
   lastCandle,
-  prevClose,
+  vsPrev,
+  vs24h,
+  tfText,
 }: {
   lastCandle: Kline | null
-  prevClose: number | null
+  vsPrev: number | null
+  vs24h: number | null
+  tfText: string
 }) {
   if (!lastCandle) return <Skeleton className="h-8 w-48" />
 
-  const change = prevClose ? lastCandle.close - prevClose : 0
-  const changePct = prevClose ? (change / prevClose) * 100 : 0
-  const isUp = change >= 0
-
   return (
-    <div className="flex items-baseline gap-3">
+    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
       <span className="font-mono text-xl font-bold tabular-nums">
         {formatPrice(lastCandle.close)}
       </span>
-      <span
-        className={cn(
-          'flex items-center gap-0.5 font-mono text-sm tabular-nums',
-          isUp ? 'text-bullish' : 'text-bearish',
-        )}
-      >
-        {isUp
-          ? <TrendingUp className="h-3.5 w-3.5" aria-hidden="true" />
-          : <TrendingDown className="h-3.5 w-3.5" aria-hidden="true" />
-        }
-        {isUp ? '+' : ''}{changePct.toFixed(2)}%
-      </span>
+      <ChangeChip
+        value={vsPrev}
+        label={`vs candle ${tfText} sebelumnya`}
+        title="Harga sekarang dibanding harga tutup candle sebelumnya"
+      />
+      <ChangeChip value={vs24h} label="24 jam" title="Harga sekarang dibanding harga tutup candle sekitar 24 jam lalu" />
     </div>
   )
 }
@@ -152,18 +178,37 @@ export function ChartContainer() {
   const runTradesQ = useLabRunTrades(runId ?? '', isAdmin && Boolean(runId) && runQ.data?.status === 'done')
 
   const watch = watchId ? watchesQ.data?.find((w) => sameId(w.id, watchId)) ?? null : null
-  const overlay = watch
-    ? { kind: 'watch' as const, symbol: watch.symbol, timeframe: watch.timeframe }
-    : runQ.data
-      ? { kind: 'run' as const, symbol: runQ.data.symbol, timeframe: runQ.data.timeframe }
-      : null
+  const runData = runQ.data
+  const overlay = useMemo(
+    () =>
+      watch
+        ? { kind: 'watch' as const, symbol: watch.symbol, timeframe: watch.timeframe }
+        : runData
+          ? { kind: 'run' as const, symbol: runData.symbol, timeframe: runData.timeframe }
+          : null,
+    [watch, runData],
+  )
 
-  // ?symbol=SOLUSDT deep link (e.g. from the screener drawer); validated.
-  const symbolParam = search.get('symbol')?.toUpperCase() ?? ''
-  const [pickedSymbol,   setSymbol]    = useState(/^[A-Z0-9]{2,20}USDT$/.test(symbolParam) ? symbolParam : 'BTCUSDT')
-  const [pickedInterval, setInterval]  = useState('1m')
+  // The URL is the state: ?symbol=SOLUSDT (or SOL) and ?tf=4h, both validated. Default BTC 4h,
+  // the timeframe the team's strategies run on. A strategy overlay (?watch / ?run) wins.
+  const symbolParam = search.get('symbol')
+  const tfParam = search.get('tf')
+  const pickedSymbol = useMemo(() => parseSymbol(symbolParam) ?? DEFAULT_SYMBOL, [symbolParam])
+  const pickedInterval = useMemo<string>(() => parseTf(tfParam) ?? DEFAULT_TF, [tfParam])
   const symbol = overlay?.symbol ?? pickedSymbol
   const interval = overlay?.timeframe ?? pickedInterval
+
+  // Native history updates keep useSearchParams in sync without a navigation (Next.js docs:
+  // "Native History API"), so the chart does not remount when you switch coin or timeframe.
+  const query = search.toString()
+  const setParam = useCallback(
+    (patch: Record<string, string | null>) => {
+      window.history.replaceState(null, '', `${window.location.pathname}${chartSearch(query, patch)}`)
+    },
+    [query],
+  )
+  const pickSymbol = (v: string) => setParam({ symbol: v })
+  const pickInterval = (v: string) => setParam({ tf: v })
 
   const [reloadKey, setReloadKey] = useState(0)
   const loadKey = `${symbol}|${interval}|${reloadKey}`
@@ -218,7 +263,9 @@ export function ChartContainer() {
 
   const wsLive = tick?.key === loadKey
   const lastCandle = wsLive ? tick.candle : (klines[klines.length - 1] ?? null)
-  const prevClose = klines.length >= 2 ? klines[klines.length - 2].close : null
+  const tfStep = TF_SECONDS[parseTf(interval) ?? DEFAULT_TF]
+  const vsPrev = lastCandle ? pctChange(previousClose(klines, lastCandle.time), lastCandle.close) : null
+  const vs24h = interval === '1d' ? null : change24h(klines, lastCandle, tfStep)
 
   // ── Overlay data ─────────────────────────────────────────────────────────
   const barTimes = useMemo(() => klines.map((k) => k.time), [klines])
@@ -256,7 +303,7 @@ export function ChartContainer() {
   const draft = draftState.symbol === symbol ? draftState.draft : EMPTY_DRAFT
 
   const priceLines: OverlayPriceLine[] = useMemo(() => {
-    const lines: OverlayPriceLine[] = watchId ? positionLines('watch', watchStateQ.data?.position, 'Strategi ') : []
+    const lines: OverlayPriceLine[] = watchId ? positionLines('watch', watchStateQ.data?.position, 'Simulasi ') : []
     for (const pos of paperPositions) lines.push(...positionLines(`paper-${pos.id}`, pos, 'PAPER '))
     const sl = Number(draft.sl)
     const tp = Number(draft.tp)
@@ -272,7 +319,7 @@ export function ChartContainer() {
     : [...SYMBOLS, { value: symbol, label: symbol.replace(/USDT$/, '') }]
   const intervalOptions = INTERVALS.some((i) => i.value === interval)
     ? INTERVALS
-    : [...INTERVALS, { value: interval, label: interval }]
+    : [...INTERVALS, { value: interval, label: interval, long: tfLong(interval) }]
   const symbolMeta = symbolOptions.find(s => s.value === symbol)
   const overlayLocked = Boolean(overlay)
   const showSidePanel = isAdmin
@@ -281,21 +328,26 @@ export function ChartContainer() {
     <div className="flex flex-col gap-4">
       {overlay && (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-lab/30 bg-lab/10 px-4 py-2 text-xs text-lab">
-          <span>
-            Mode overlay strategi:{' '}
-            <span className="font-mono font-bold">
-              {overlay.kind === 'watch' ? `watch ${watchId}` : `run ${runId}`} · {overlay.symbol} {overlay.timeframe}
+          <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1">
+            <Badge variant="lab" size="xs" className="gap-1">
+              <FlaskConical aria-hidden="true" /> PAPER
+            </Badge>
+            <span>
+              Simulasi strategi di chart:{' '}
+              <span className="font-mono font-bold">
+                {overlay.kind === 'watch' ? `pantauan ${watchId}` : `uji ${runId}`} · {overlay.symbol} {tfLong(overlay.timeframe)}
+              </span>
+              . Koin dan timeframe mengikuti strategi ini. Bukan posisi bot live.
             </span>
-            . Symbol &amp; timeframe dikunci ke strategi.
           </span>
           <Link href="/chart" className="inline-flex items-center gap-1 font-semibold hover:underline">
-            <X className="h-3.5 w-3.5" /> Tutup overlay
+            <X className="h-3.5 w-3.5" aria-hidden="true" /> Tutup simulasi
           </Link>
         </div>
       )}
       {(watchId || runId) && !overlay && isAdmin && (watchesQ.isError || runQ.isError || (watchId && watchesQ.isSuccess)) && (
         <div role="alert" className="rounded-lg border border-warn/30 bg-warn/10 px-4 py-2 text-xs text-warn">
-          {watchId ? `Watch ${watchId} tidak ditemukan.` : `Run ${runId} tidak bisa dimuat.`}{' '}
+          {watchId ? `Pantauan ${watchId} tidak ditemukan.` : `Uji ${runId} tidak bisa dimuat.`}{' '}
           <Link href="/chart" className="underline">Kembali ke chart biasa</Link>
         </div>
       )}
@@ -309,7 +361,7 @@ export function ChartContainer() {
               key={s.value}
               active={symbol === s.value}
               disabled={overlayLocked}
-              onClick={() => setSymbol(s.value)}
+              onClick={() => pickSymbol(s.value)}
             >
               {s.label}
             </SegBtn>
@@ -323,7 +375,8 @@ export function ChartContainer() {
               key={i.value}
               active={interval === i.value}
               disabled={overlayLocked}
-              onClick={() => setInterval(i.value)}
+              label={i.long}
+              onClick={() => pickInterval(i.value)}
             >
               {i.label}
             </SegBtn>
@@ -335,8 +388,8 @@ export function ChartContainer() {
         {/* Chart card */}
         <Card className="overflow-hidden">
           {/* Card header — price + status */}
-          <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
               <div>
                 <p className="text-xs font-medium text-muted-foreground">
                   {symbolMeta?.label ?? symbol}
@@ -353,7 +406,9 @@ export function ChartContainer() {
                 </p>
                 <PriceTicker
                   lastCandle={lastCandle}
-                  prevClose={prevClose}
+                  vsPrev={vsPrev}
+                  vs24h={vs24h}
+                  tfText={tfLong(interval)}
                 />
               </div>
               {lastCandle && (
@@ -367,19 +422,20 @@ export function ChartContainer() {
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Live indicator: only "Live" once a websocket tick has actually arrived */}
+              {/* Feed state: "Tersambung" only once a websocket tick has actually arrived.
+                  Not called "Live": LIVE in this app means real money. */}
               <Badge
                 variant="outline"
                 className={cn(
                   'gap-1.5 text-3xs px-2 py-0.5',
                   wsLive
-                    ? 'border-bullish/30 bg-bullish/10 text-bullish'
+                    ? 'border-info/30 bg-info/10 text-info'
                     : 'text-muted-foreground',
                 )}
               >
                 {wsLive
-                  ? <><span className="h-1.5 w-1.5 rounded-full bg-bullish animate-pulse" aria-hidden="true" />Live</>
-                  : <><WifiOff className="h-3 w-3" aria-hidden="true" />{isLoading ? 'Memuat' : 'Menunggu tick'}</>
+                  ? <><span className="h-1.5 w-1.5 rounded-full bg-info animate-pulse" aria-hidden="true" />Tersambung</>
+                  : <><WifiOff className="h-3 w-3" aria-hidden="true" />{isLoading ? 'Memuat' : 'Menunggu data'}</>
                 }
               </Badge>
 
@@ -432,6 +488,9 @@ export function ChartContainer() {
                 />
               )}
             </div>
+            <p className="border-t border-border px-4 py-1.5 text-3xs text-muted-foreground">
+              Waktu di chart: WIB (UTC+7). Persen dibanding harga tutup candle sebelumnya; &quot;24 jam&quot; dibanding sekitar 24 jam lalu.
+            </p>
           </CardContent>
         </Card>
 

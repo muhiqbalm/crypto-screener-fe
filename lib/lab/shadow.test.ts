@@ -5,7 +5,7 @@ import type { ShadowCell } from '@/lib/api/types/shadow'
 describe('shadow formatting', () => {
   it('formats bps and durations', () => {
     expect(bps(3.21)).toBe('+3.2 bps')
-    expect(bps(-0.04, 2)).toBe('-0.04 bps')
+    expect(bps(-0.04, 2)).toBe('−0.04 bps')
     expect(bps(0)).toBe('0.0 bps')
     expect(bps(null)).toBe('—')
     expect(duration(7)).toBe('7 dtk')
@@ -20,7 +20,7 @@ describe('shadow formatting', () => {
     expect(kLabel(-0.1)).toBe('−0.1×ATR')
     expect(ttlLabel(15)).toBe('15 mnt')
     expect(ttlLabel(240)).toBe('4 jam')
-    expect(actionLabel({ action: 'close', side: 'short' })).toBe('Close Short')
+    expect(actionLabel({ action: 'close', side: 'short' })).toBe('Tutup SHORT')
   })
 
   it('picks defaults and grid cells', () => {
