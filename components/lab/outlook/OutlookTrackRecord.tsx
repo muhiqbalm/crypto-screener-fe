@@ -1,9 +1,8 @@
 'use client'
 
-import { History, RefreshCw } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Section } from '@/components/lab/Section'
 import { StatusBadge } from '@/components/lab/outlook/OutlookBadges'
 import { useCalibrateOutlook, useOutlookTrackRecord } from '@/lib/queries/outlook'
 import { coinLabel, formatProb, formatR, formatWib } from '@/lib/lab/outlook'
@@ -29,7 +28,7 @@ function StatsRow({ label, s }: { label: React.ReactNode; s: CalibStats | undefi
   return (
     <tr>
       <td className="px-2 py-1.5 text-left">{label}</td>
-      <td className={td}>{s.n_pos.toLocaleString('id-ID')}</td>
+      <td className={td}>{s.n_pos.toLocaleString('en-US')}</td>
       <td className={td}>{formatProb(s.p_tp)}</td>
       <td className={td}>{formatProb(s.p_sl)}</td>
       <td className={td}>{formatProb(s.p_batal)}</td>
@@ -69,17 +68,19 @@ export function OutlookTrackRecord({ data }: { data: OutlookResponse }) {
   const fase = cal?.fase_split
   const recent = (tr.data?.recent ?? []).slice(0, 15)
   return (
-    <Section
-      title="Rekam jejak Outlook"
-      icon={<History className="h-4 w-4" aria-hidden="true" />}
-      description="Setiap panggilan dinilai setelah kejadian: masuk di close 4H, SL & TP terpasang, keluar saat strategi menutup posisi, atau setelah 7 hari. R bersih setelah biaya."
-      action={
-        <Button variant="outline" size="sm" onClick={onCalibrate} disabled={busy || calibrate.isPending} className="h-8 gap-1.5 text-xs">
-          <RefreshCw className={cn('h-3.5 w-3.5', busy && 'animate-spin')} />
-          {busy ? 'Kalibrasi berjalan…' : 'Hitung ulang kalibrasi'}
-        </Button>
-      }
-    >
+    <div>
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+        <p className="max-w-2xl text-xs text-muted-foreground">
+          Setiap panggilan dinilai setelah kejadian: masuk di close 4H, SL &amp; TP terpasang, keluar saat strategi menutup
+          posisi, atau setelah 7 hari. R bersih setelah biaya.
+        </p>
+        {data.can_refresh && (
+          <Button variant="outline" size="sm" onClick={onCalibrate} disabled={busy || calibrate.isPending} className="h-8 gap-1.5 text-xs">
+            <RefreshCw className={cn('h-3.5 w-3.5', busy && 'animate-spin')} />
+            {busy ? 'Kalibrasi berjalan…' : 'Hitung ulang kalibrasi'}
+          </Button>
+        )}
+      </div>
       <div className="grid gap-5 lg:grid-cols-2">
         <div>
           <h3 className="mb-1 text-xs font-semibold">Live (panggilan yang tersimpan)</h3>
@@ -135,7 +136,7 @@ export function OutlookTrackRecord({ data }: { data: OutlookResponse }) {
           ) : (
             <>
               <p className="mb-2 text-2xs text-muted-foreground">
-                {cal.counts.cases.toLocaleString('id-ID')} panggilan dari {cal.counts.positions.toLocaleString('id-ID')} posisi di {cal.counts.coins} koin
+                {cal.counts.cases.toLocaleString('en-US')} panggilan dari {cal.counts.positions.toLocaleString('en-US')} posisi di {cal.counts.coins} koin
                 ({formatWib(cal.counts.first)} – {formatWib(cal.counts.last)}), dihitung {relativeTime(cal.computed_at)}.
               </p>
               <div className="overflow-x-auto">
@@ -207,6 +208,6 @@ export function OutlookTrackRecord({ data }: { data: OutlookResponse }) {
           )}
         </div>
       </div>
-    </Section>
+    </div>
   )
 }

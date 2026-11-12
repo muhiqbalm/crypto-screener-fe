@@ -231,3 +231,97 @@ export function formatWib(iso: string | null | undefined): string {
 export function coinLabel(symbol: string): string {
   return symbol.replace(/USDT$/, '')
 }
+
+// ── Peluang koin (/koin) helpers ─────────────────────────────────────────
+
+export type KoinView = 'outlook' | 'terkuat' | 'faktor'
+export const KOIN_VIEWS: { value: KoinView; label: string }[] = [
+  { value: 'outlook', label: 'Outlook' },
+  { value: 'terkuat', label: 'Terkuat' },
+  { value: 'faktor', label: 'Tabel faktor' },
+]
+
+/** ?view= -> tab (anything unknown falls back to the default Outlook view). */
+export function parseView(v: string | string[] | undefined | null): KoinView {
+  const s = Array.isArray(v) ? v[0] : v
+  return s === 'terkuat' || s === 'faktor' ? s : 'outlook'
+}
+
+export function koinHref(symbol: string): string {
+  return `/koin/${encodeURIComponent(coinLabel(symbol.toUpperCase()))}`
+}
+
+/** "ETH" / "eth" / "ETHUSDT" -> "ETHUSDT". */
+export function symbolFromParam(raw: string): string {
+  const s = decodeURIComponent(raw).toUpperCase().replace('/USDT:USDT', 'USDT').replace('/', '')
+  return s.endsWith('USDT') ? s : `${s}USDT`
+}
+
+/** Which strategy drives the call, in one plain sentence. */
+export function driverText(r: OutlookRow): string {
+  const st = r.strategy
+  const p = st?.preset
+  const tf = (st?.timeframe ?? '4h').toUpperCase()
+  if (p?.verdict === 'PASS') return `Ikut preset ${p.name} (lolos uji, ${tf}).`
+  if (p?.live_reference) return `Ikut ${p.name}: setting yang dipakai bot live, belum diuji ulang di Lab.`
+  if (p) return `Ikut preset ${p.name} (${p.verdict === 'FAIL' ? 'gagal uji' : 'belum diuji'}).`
+  return 'Setting bawaan Rosyade 4H — belum diuji untuk koin ini.'
+}
+
+/** When the live bot runs a different strategy on this coin: "Bot live memakai X (SHORT)". */
+export function liveNote(r: OutlookRow): string | null {
+  const live = (r.strategies ?? []).find((s) => s.live_reference)
+  if (!live || live.primary) return null
+  const pos = live.error ? 'tidak terhitung' : live.side ? live.side.toUpperCase() : 'tanpa posisi'
+  return `Bot live memakai ${live.name} (${pos}), bukan strategi di atas — arahnya bisa berbeda.`
+}
+
+/** Context factors pointing with the call: { k, n } over the available 1D/1H/BTC factors. */
+export function kDariN(r: OutlookRow): { k: number; n: number } | null {
+  const side = r.strategy?.side
+  if (!side) return null
+  const sign = side === 'long' ? 1 : -1
+  const mtf = (r.factors ?? []).filter((f) => f.group === 'mtf' && f.available)
+  return { k: mtf.filter((f) => f.direction * sign > 0).length, n: mtf.length }
+}
+
+/** Keyakinan + fase in one short label: "Sedang · sinyal baru". */
+export function callLabel(r: OutlookRow): string {
+  const k = r.bias?.keyakinan
+  const f = faseOf(r)
+  return [k ? `Keyakinan ${k}` : null, f ? FASE_TEXT[f].toLowerCase() : null].filter(Boolean).join(' · ')
+}
+
+export const INPUTS_KEY = 'bmtm.koin.inputs'
+
+/** Validates a stored JSON string; anything odd falls back to the defaults. */
+export function parseInputs(raw: string | null | undefined): OutlookInputs {
+  if (!raw) return DEFAULT_INPUTS
+  try {
+    const v = JSON.parse(raw) as Partial<OutlookInputs>
+    const capital = typeof v.capital === 'number' && v.capital >= 1 && v.capital <= 1e9 ? v.capital : DEFAULT_INPUTS.capital
+    const leverage = typeof v.leverage === 'number' && v.leverage >= 1 && v.leverage <= 20 ? v.leverage : DEFAULT_INPUTS.leverage
+    const sizing = v.sizing === 'risk' ? 'risk' : 'notional'
+    const risk_pct = typeof v.risk_pct === 'number' && v.risk_pct > 0 && v.risk_pct <= 10 ? v.risk_pct : DEFAULT_INPUTS.risk_pct
+    return { capital, leverage, sizing, risk_pct }
+  } catch {
+    return DEFAULT_INPUTS
+  }
+}
+
+/** Capital inputs remembered per viewer (localStorage, never required). */
+export function loadInputs(): OutlookInputs {
+  try {
+    return parseInputs(typeof window !== 'undefined' ? window.localStorage.getItem(INPUTS_KEY) : null)
+  } catch {
+    return DEFAULT_INPUTS
+  }
+}
+
+export function saveInputs(i: OutlookInputs): void {
+  try {
+    window.localStorage.setItem(INPUTS_KEY, JSON.stringify(i))
+  } catch {
+    // private mode / blocked storage: the default capital still works
+  }
+}

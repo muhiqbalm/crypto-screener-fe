@@ -126,3 +126,54 @@ describe('outlook helpers', () => {
     )
   })
 })
+
+describe('peluang koin helpers', () => {
+  it('parses the view and the coin route param', async () => {
+    const { parseView, symbolFromParam, koinHref } = await import('./outlook')
+    expect(parseView(undefined)).toBe('outlook')
+    expect(parseView('terkuat')).toBe('terkuat')
+    expect(parseView(['faktor'])).toBe('faktor')
+    expect(parseView('x')).toBe('outlook')
+    expect(symbolFromParam('eth')).toBe('ETHUSDT')
+    expect(symbolFromParam('1000PEPEUSDT')).toBe('1000PEPEUSDT')
+    expect(koinHref('ETHUSDT')).toBe('/koin/ETH')
+  })
+
+  it('names the preset that drives the call and the live-bot difference', async () => {
+    const { driverText, liveNote, kDariN } = await import('./outlook')
+    const pass = { strategy: { side: 'short', timeframe: '4h', preset: { name: '4H-ETH-v2_1x', verdict: 'PASS' } } } as unknown as OutlookRow
+    expect(driverText(pass)).toBe('Ikut preset 4H-ETH-v2_1x (lolos uji, 4H).')
+    const def = { strategy: { side: null, preset: null } } as unknown as OutlookRow
+    expect(driverText(def)).toContain('Setting bawaan Rosyade 4H')
+    const live = { strategy: { preset: { name: '4H-ETH-Basic', verdict: null, live_reference: true } } } as unknown as OutlookRow
+    expect(driverText(live)).toContain('dipakai bot live')
+    const withLive = {
+      strategies: [
+        { name: '4H-ETH-v2_1x', primary: true, side: 'short' },
+        { name: '4H-ETH-Basic', primary: false, live_reference: true, side: null },
+      ],
+    } as unknown as OutlookRow
+    expect(liveNote(withLive)).toBe('Bot live memakai 4H-ETH-Basic (tanpa posisi), bukan strategi di atas — arahnya bisa berbeda.')
+    expect(liveNote({ strategies: [{ name: 'x', primary: true, live_reference: true }] } as unknown as OutlookRow)).toBeNull()
+    const factors = [
+      { group: 'mtf', available: true, direction: -1 },
+      { group: 'mtf', available: true, direction: 1 },
+      { group: 'mtf', available: false, direction: 0 },
+      { group: 'konteks', available: true, direction: -1 },
+    ]
+    expect(kDariN({ strategy: { side: 'short' }, factors } as unknown as OutlookRow)).toEqual({ k: 1, n: 2 })
+    expect(kDariN({ strategy: { side: null }, factors } as unknown as OutlookRow)).toBeNull()
+  })
+
+  it('remembers capital inputs and rejects garbage', async () => {
+    const { loadInputs, saveInputs, DEFAULT_INPUTS } = await import('./outlook')
+    window.localStorage.removeItem('bmtm.koin.inputs')
+    expect(loadInputs()).toEqual(DEFAULT_INPUTS)
+    saveInputs({ capital: 2500, leverage: 2, sizing: 'risk', risk_pct: 0.5 })
+    expect(loadInputs()).toEqual({ capital: 2500, leverage: 2, sizing: 'risk', risk_pct: 0.5 })
+    window.localStorage.setItem('bmtm.koin.inputs', '{"capital": -1, "leverage": 99}')
+    expect(loadInputs()).toEqual(DEFAULT_INPUTS)
+    window.localStorage.setItem('bmtm.koin.inputs', 'not json')
+    expect(loadInputs()).toEqual(DEFAULT_INPUTS)
+  })
+})

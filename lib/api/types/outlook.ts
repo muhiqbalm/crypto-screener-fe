@@ -182,6 +182,8 @@ export interface OutlookStrategyRow {
   timeframe: string
   verdict: LabVerdict | null
   evidence?: 'lolos_uji' | 'gagal_uji' | 'belum_diuji'
+  /** the strategy the live bot runs on this coin (4H-ETH-Basic for ETH) */
+  live_reference?: boolean
   primary: boolean
   side?: OutlookSide | null
   entry_at?: string | null
@@ -451,7 +453,10 @@ export interface OutlookResponse {
   schema_version?: number
   calibrate?: OutlookJob | null
   counts?: OutlookCounts
-  positions_available?: { paper: boolean; live: boolean }
+  /** null for non-admin viewers (open positions are admin-only) */
+  positions_available?: { paper: boolean; live: boolean } | null
+  /** true for Lab admins: may trigger "Hitung ulang" / kalibrasi */
+  can_refresh?: boolean
   ranking?: string[]
   calibration?: CalibrationBrief | null
   track_record?: { since: string | null; first_call: string | null; groups: Record<string, TrackGroup> }
@@ -510,6 +515,8 @@ export interface OutlookDetail extends OutlookRow {
   /** v2 */
   calls?: OutlookCall[]
   coin_calibration_all?: Record<string, CalibStats> | null
+  can_refresh?: boolean
+  positions_available?: { paper: boolean; live: boolean } | null
 }
 
 export interface RegimeCurrent extends RegimeBrief {

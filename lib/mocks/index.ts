@@ -10,6 +10,8 @@ export async function getMock(method: string, path: string, body?: unknown): Pro
   await Promise.resolve()
 
   if (path.startsWith('/api/v1/lab/')) {
+    const koin = await (await import('./outlook')).getOutlookMock(method, path)
+    if (koin !== undefined) return koin
     const { getLabMock } = await import('./lab')
     return getLabMock(method, path, body)
   }
