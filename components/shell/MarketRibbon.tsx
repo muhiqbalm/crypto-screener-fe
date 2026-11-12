@@ -113,7 +113,7 @@ export function MarketRibbon({ compact, className }: MarketRibbonProps) {
       )}
       <p className="sr-only">{sentence}</p>
       <ul
-        className="-mx-3 flex snap-x gap-2 overflow-x-auto px-3 pb-1 [scrollbar-width:thin] sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-6"
+        className="relative -mx-3 flex snap-x gap-2 overflow-x-auto px-3 pb-1 [scrollbar-width:thin] sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-6"
         aria-label="Indikator pasar"
       >
         <Chip

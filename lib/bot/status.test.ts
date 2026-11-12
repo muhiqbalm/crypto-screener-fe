@@ -71,7 +71,8 @@ describe('botVerdict', () => {
     }))
     expect(v.tone).toBe('ok')
     expect(v.sentence).toBe('Ya, aman: 2 dari 2 sinyal strategi 7 hari terakhir dieksekusi bot sesuai rencana. 1 sinyal terbaru masih menunggu hasil.')
-    expect(v.facts.map((f) => f.value)).toEqual(['2 dari 2 sesuai', 'aktif (Rosyade)', 'T(11-12T04:00) · berhasil'])
+    expect(v.facts.map((f) => f.value)).toEqual(['2 dari 2 sesuai', 'aktif (Rosyade)', 'T(11-12T04:00)'])
+    expect(v.facts[2].hint).toBe('berhasil')
     expect(v.focus).toBe('semua')
   })
 
@@ -178,7 +179,7 @@ describe('defaults for other pages (Beranda)', () => {
     })
     expect(v.tone).toBe('bad')
     expect(v.sentence).toContain('(12 Nov 04:00 WIB)')
-    expect(v.facts[2].value).toBe('12 Nov 11:00 WIB · berhasil')
+    expect(v.facts[2]).toEqual({ label: 'Alert terakhir', value: '12 Nov 11:00 WIB', hint: 'berhasil', tone: 'ok' })
   })
 
   it('maps tones onto AnswerCard and StatusPill', () => {

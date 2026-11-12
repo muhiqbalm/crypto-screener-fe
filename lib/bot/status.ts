@@ -37,6 +37,8 @@ export const LIVECHECK_STALE_MS = 6 * 3600 * 1000
 export interface BotFact {
   label: string
   value: string
+  /** Small line under the value (e.g. the alert's outcome). */
+  hint?: string
   tone?: BotTone
 }
 
@@ -132,7 +134,7 @@ function lastAlertFact(bot: BotStatus | null | undefined, fmt: (iso: string) => 
   if (!bot?.available) return null
   const a = bot.last_alert
   if (!a) return { label: 'Alert terakhir', value: 'belum ada yang diproses bot', tone: 'wait' }
-  return { label: 'Alert terakhir', value: `${fmt(a.at)} · ${alertStatusLabel(a.status)}`, tone: alertStatusTone(a.status) }
+  return { label: 'Alert terakhir', value: fmt(a.at), hint: alertStatusLabel(a.status), tone: alertStatusTone(a.status) }
 }
 
 export function botVerdict(input: VerdictInput): BotVerdict {
