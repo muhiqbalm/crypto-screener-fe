@@ -14,6 +14,7 @@ import { PresetSelect } from '@/components/lab/PresetSelect'
 import { RuntimeEstimate } from '@/components/lab/RuntimeEstimate'
 import { Chip, Section } from '@/components/lab/Section'
 import { ImportantParams } from '@/components/lab/builder/ImportantParams'
+import { useDebounced } from '@/components/lab/builder/useDebounced'
 import { ScanSymbolPicker } from '@/components/lab/scan/ScanSymbolPicker'
 import { MODE_COPY } from '@/components/lab/run/copy'
 import { notify } from '@/lib/utils/toast'
@@ -90,11 +91,14 @@ export function ScanBuilder({ onCreated }: { onCreated: (id: LabId) => void }) {
   const effTrials: number = nTrials ?? Math.min(...(tfs.length ? tfs : ['4h']).map((tf) => tfDefault(tf, defaults).nTrials))
   const starts = period === 'auto' ? Object.fromEntries(tfs.map((tf) => [tf, tfDefault(tf, defaults).start])) : undefined
   const fixedStart = period === 'auto' ? undefined : presetRange(period)?.start
-  const estimateQ = useLabEstimate(
+  // One debounced estimate request per real change (clicking many coins does not fire one each).
+  const estimateBody = useDebounced(
     template && selected.length && tfs.length
       ? { template_id: template.id, mode, symbols: selected, timeframes: tfs, starts, start: fixedStart, n_trials: mode === 'optimize' ? effTrials : undefined, scan: true }
       : null,
+    600,
   )
+  const estimateQ = useLabEstimate(estimateBody)
   const bestQ = useBestPresets(template?.id ?? null, selected, tfs, source === 'best')
 
   if (template && (params === null || templateId !== template.id)) {
