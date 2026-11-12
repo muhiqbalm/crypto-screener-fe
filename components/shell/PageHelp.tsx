@@ -67,13 +67,13 @@ export function PageHelp({ help, helpId, className }: { help: PageHelpContent; h
         onClick={toggle}
         aria-expanded={open}
         aria-controls={panelId}
-        className="inline-flex cursor-pointer items-center gap-1.5 rounded-md text-xs font-medium text-info hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="inline-flex cursor-pointer items-center gap-1.5 rounded-full text-sm font-semibold text-info hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
         Apa ini? · Cara pakai
         <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', open && 'rotate-180')} aria-hidden="true" />
       </button>
-      <div id={panelId} hidden={!open} className="max-w-3xl space-y-3 rounded-lg border bg-muted/30 p-3 text-sm sm:p-4">
+      <div id={panelId} hidden={!open} className="max-w-3xl space-y-4 rounded-2xl border bg-muted/40 p-4 text-base sm:p-5">
         <div className="space-y-1">
           <p className="eyebrow">Apa ini?</p>
           <div className="leading-relaxed text-foreground">{help.apaIni}</div>
@@ -94,8 +94,8 @@ export function PageHelp({ help, helpId, className }: { help: PageHelpContent; h
             <dl className="grid gap-x-4 gap-y-1.5 sm:grid-cols-2">
               {terms.map(({ k, e }) => (
                 <div key={k} className="min-w-0">
-                  <dt className="text-xs font-semibold text-foreground">{e!.label}</dt>
-                  {e!.tip && <dd className="text-xs text-muted-foreground">{e!.tip}</dd>}
+                  <dt className="text-sm font-semibold text-foreground">{e!.label}</dt>
+                  {e!.tip && <dd className="text-sm text-muted-foreground">{e!.tip}</dd>}
                 </div>
               ))}
             </dl>

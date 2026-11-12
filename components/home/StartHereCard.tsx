@@ -56,37 +56,37 @@ export function StartHereCard({ isAdmin }: { isAdmin: boolean }) {
   }
 
   return (
-    <section aria-labelledby="mulai-title" className="relative rounded-xl border border-brand/30 bg-brand/[0.05] p-4 sm:p-5">
+    <section aria-labelledby="mulai-title" className="relative rounded-3xl border border-brand/30 bg-brand/[0.06] p-5 sm:p-6">
       <button
         type="button"
         onClick={close}
         aria-label="Tutup kartu Mulai di sini"
-        className="absolute right-2 top-2 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="absolute right-3 top-3 inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <X className="h-4 w-4" aria-hidden="true" />
       </button>
-      <h2 id="mulai-title" className="pr-10 text-sm font-semibold">
+      <h2 id="mulai-title" className="display pr-12 text-lg font-bold">
         Mulai di sini
       </h2>
-      <p className="mt-0.5 pr-10 text-xs text-muted-foreground">Empat hal yang biasa dicek tiap hari. Kartu ini bisa ditutup.</p>
-      <ol className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      <p className="mt-0.5 pr-12 text-sm text-muted-foreground">Empat hal yang dicek tiap hari.</p>
+      <ol className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {tasks(isAdmin).map((t, i) => (
-          <li key={t.href}>
+          <li key={t.href} className="min-w-0">
             <Link
               href={t.href}
-              className="group flex h-full items-start gap-2.5 rounded-lg border bg-card p-3 transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="lift group flex h-full items-center gap-3 rounded-2xl border bg-card p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <span className="num flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand/15 text-2xs font-bold text-brand">
-                {i + 1}
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand/15 text-brand">
+                <t.Icon className="h-5 w-5" aria-hidden="true" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-1.5 text-sm font-medium">
-                  <t.Icon className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                <span className="block text-base font-bold">
+                  <span className="num mr-1.5 text-brand">{i + 1}.</span>
                   {t.title}
                 </span>
-                <span className="mt-0.5 block text-2xs text-muted-foreground">{t.text}</span>
+                <span className="mt-0.5 block truncate text-sm text-muted-foreground">{t.text}</span>
               </span>
-              <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+              <ArrowRight className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
             </Link>
           </li>
         ))}

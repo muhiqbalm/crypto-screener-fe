@@ -14,9 +14,12 @@ import { AttentionList } from '@/components/home/AttentionList'
 import { WatchCoinsCard } from '@/components/home/WatchCoinsCard'
 import { BotLiveCard, type BotVerdictView } from '@/components/home/BotLiveCard'
 import { PaperReportCard } from '@/components/home/PaperReportCard'
+import { BestCoinCard } from '@/components/home/BestCoinCard'
 import {
   assistantSummary,
   attentionItems,
+  bestCoin,
+  liveDonut,
   lastSnapshotWeek,
   paperSummary,
   pickWatchCoins,
@@ -130,21 +133,19 @@ export function BerandaView() {
   const updatedAt = Math.max(outlook.dataUpdatedAt, screener.dataUpdatedAt, live.dataUpdatedAt, arena.dataUpdatedAt) || undefined
   const today = now !== null ? `${WEEKDAYS_ID[wibParts(new Date(now)).weekday]}, ${formatDate(now)}` : null
 
+  const best = bestCoin(watch)
+  const screenerTop = fallback ? (fallback.coins[0] ?? null) : undefined
+
   return (
-    <PageContainer>
+    <PageContainer width="wide">
       <PageHeader
         title="Hari ini"
-        description={
-          <>
-            {today && <span className="font-medium text-foreground">{today} · </span>}
-            Pasar, koin, bot, dan paper dalam satu layar.
-          </>
-        }
+        description={today ?? 'Ringkasan pasar, bot, dan paper.'}
         help={{ ...HELP, istilah: [...HELP.istilah] }}
         helpId="beranda"
         actions={
-          <div className="flex flex-col items-start gap-1 md:items-end">
-            <Button variant="outline" size="sm" onClick={() => void qc.refetchQueries({ type: 'active' })} disabled={fetching > 0}>
+          <div className="flex flex-col items-start gap-1.5 md:items-end">
+            <Button variant="outline" onClick={() => void qc.refetchQueries({ type: 'active' })} disabled={fetching > 0}>
               {fetching > 0 ? <Loader2 className="animate-spin" aria-hidden="true" /> : <RefreshCw aria-hidden="true" />}
               Muat ulang
             </Button>
@@ -157,64 +158,67 @@ export function BerandaView() {
 
       <MarketRibbon />
 
-      {isAdmin && (
-        <AttentionList items={attention} loading={(live.isPending && botStatus.isPending) || arena.isPending || outlook.isPending} />
-      )}
+      {/* Bento: Bot live · Peluang terbaik (hero, 2 columns) · Paper.
+          Phones: one column in the same order. */}
+      <div className="grid grid-cols-1 gap-5 md:grid-flow-dense md:grid-cols-2 lg:gap-6 xl:grid-cols-7">
+        <BotLiveCard
+          admin={isAdmin}
+          verdict={verdict}
+          donut={isAdmin ? liveDonut(live.data) : null}
+          loading={isAdmin && live.isPending && botStatus.isPending}
+          error={null}
+          onRetry={() => {
+            void live.refetch()
+            void botStatus.refetch()
+          }}
+          webhooks={ownWebhook.data ? [{ label: 'Webhook kamu', state: ownWebhook.data.state }] : []}
+          webhookLoading={member && ownWebhook.isPending}
+          webhookError={member && ownWebhook.isError}
+        />
+        <BestCoinCard
+          best={best}
+          loading={!known || outlook.isPending || (Boolean(fallback) && screener.isPending)}
+          error={outlook.isError && !outlookNoAccess ? outlook.error : null}
+          onRetry={() => void outlook.refetch()}
+          screenerTop={screenerTop}
+        />
+        <PaperReportCard
+          admin={isAdmin}
+          paper={paper}
+          paperLoading={isAdmin && arena.isPending}
+          paperError={arena.isError}
+          report={weekly.data ? { range: weekRange(week), lines: reportLines(weekly.data) } : null}
+          reportLoading={known && (weeks.isPending || (Boolean(week) && weekly.isPending))}
+          reportUnavailable={reportUnavailable}
+          notifications={unreadNotifications(notifs.data?.items)}
+        />
+      </div>
 
-      {/* Phones: one column in the audit order (koin → bot → paper → asisten).
-          Desktop: koin + asisten left, bot + paper right. */}
-      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-12 lg:items-start lg:gap-6">
-        <div className="contents lg:col-span-7 lg:flex lg:flex-col lg:gap-6">
-          <div className="order-1 lg:order-none">
-            <WatchCoinsCard
-              watch={watch}
-              loading={!known || outlook.isPending}
-              error={outlook.isError && !outlookNoAccess ? outlook.error : null}
-              onRetry={() => void outlook.refetch()}
-              fallback={fallback}
-            />
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-5 lg:gap-6">
+        {isAdmin && (
+          <div className="lg:col-span-2">
+            <AttentionList items={attention} loading={(live.isPending && botStatus.isPending) || arena.isPending || outlook.isPending} />
           </div>
-          {isAdmin && (
-            <div className="order-4 lg:order-none">
-              <AssistantSlot
-                context={{ kind: 'beranda', label: 'ringkasan hari ini' }}
-                items={assistantSummary({ market, watch, bot, paper })}
-                loading={outlook.isPending && live.isPending}
-                emptyText="Belum ada data untuk diringkas."
-              />
-            </div>
-          )}
-        </div>
-        <div className="contents lg:col-span-5 lg:flex lg:flex-col lg:gap-6">
-          <div className="order-2 lg:order-none">
-            <BotLiveCard
-              admin={isAdmin}
-              verdict={verdict}
-              loading={isAdmin && live.isPending && botStatus.isPending}
-              error={null}
-              onRetry={() => {
-                void live.refetch()
-                void botStatus.refetch()
-              }}
-              webhooks={ownWebhook.data ? [{ label: 'Webhook kamu', state: ownWebhook.data.state }] : []}
-              webhookLoading={member && ownWebhook.isPending}
-              webhookError={member && ownWebhook.isError}
-            />
-          </div>
-          <div className="order-3 lg:order-none">
-            <PaperReportCard
-              admin={isAdmin}
-              paper={paper}
-              paperLoading={isAdmin && arena.isPending}
-              paperError={arena.isError}
-              report={weekly.data ? { range: weekRange(week), lines: reportLines(weekly.data) } : null}
-              reportLoading={known && (weeks.isPending || (Boolean(week) && weekly.isPending))}
-              reportUnavailable={reportUnavailable}
-              notifications={unreadNotifications(notifs.data?.items)}
-            />
-          </div>
+        )}
+        <div className={isAdmin ? 'lg:col-span-3' : 'lg:col-span-5'}>
+          <WatchCoinsCard
+            watch={watch}
+            loading={!known || outlook.isPending}
+            error={outlook.isError && !outlookNoAccess ? outlook.error : null}
+            onRetry={() => void outlook.refetch()}
+            fallback={fallback}
+          />
         </div>
       </div>
+
+      {isAdmin && (
+        <AssistantSlot
+          context={{ kind: 'beranda', label: 'ringkasan hari ini' }}
+          items={assistantSummary({ market, watch, bot, paper })}
+          loading={outlook.isPending && live.isPending}
+          emptyText="Belum ada data untuk diringkas."
+        />
+      )}
     </PageContainer>
   )
 }
