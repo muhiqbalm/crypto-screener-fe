@@ -15,12 +15,12 @@ export function Fold({ title, children, defaultOpen = false, className }: {
   className?: string
 }) {
   return (
-    <details open={defaultOpen} className={cn('group rounded-xl border bg-card', className)}>
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-semibold sm:px-5 [&::-webkit-details-marker]:hidden">
+    <details open={defaultOpen} className={cn('group rounded-3xl border bg-card', className)}>
+      <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-base font-semibold sm:px-6 [&::-webkit-details-marker]:hidden">
         <span className="min-w-0">{title}</span>
-        <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
+        <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
       </summary>
-      <div className="border-t px-4 pb-4 pt-3 sm:px-5">{children}</div>
+      <div className="border-t px-5 pb-5 pt-4 text-[15px] sm:px-6">{children}</div>
     </details>
   )
 }

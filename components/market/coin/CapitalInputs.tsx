@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Segmented } from '@/components/ui/segmented'
+import { InfoTip } from '@/components/ui/info-tip'
 import { parseBounded, saveInputs } from '@/lib/lab/outlook'
 import { cn } from '@/lib/utils/cn'
 import type { OutlookInputs, Sizing } from '@/lib/api/types/outlook'
@@ -38,17 +39,17 @@ export function CapitalInputs({ initial, onChange }: { initial: OutlookInputs; o
   return (
     <div className="flex flex-wrap items-end gap-3">
       <div className="space-y-1">
-        <Label htmlFor="koin-capital" className="text-xs">Modal (USDT)</Label>
+        <Label htmlFor="koin-capital" className="text-[13px]">Modal (USDT)</Label>
         <Input id="koin-capital" inputMode="decimal" value={capital} onChange={(e) => setCapital(e.target.value)}
-          aria-invalid={cap === null} className={cn('h-8 w-28 font-mono text-sm', cap === null && 'border-bearish')} />
+          aria-invalid={cap === null} className={cn('h-10 w-32 rounded-xl font-mono text-[15px]', cap === null && 'border-bearish')} />
       </div>
       <div className="space-y-1">
-        <Label htmlFor="koin-lev" className="text-xs">Leverage</Label>
+        <Label htmlFor="koin-lev" className="text-[13px]">Leverage</Label>
         <Input id="koin-lev" inputMode="decimal" value={leverage} onChange={(e) => setLeverage(e.target.value)}
-          aria-invalid={lev === null} className={cn('h-8 w-16 font-mono text-sm', lev === null && 'border-bearish')} />
+          aria-invalid={lev === null} className={cn('h-10 w-20 rounded-xl font-mono text-[15px]', lev === null && 'border-bearish')} />
       </div>
       <div className="space-y-1">
-        <span className="block text-xs font-medium">Ukuran posisi</span>
+        <span className="block text-[13px] font-medium">Ukuran posisi</span>
         <Segmented<Sizing>
           aria-label="Ukuran posisi"
           value={sizing}
@@ -61,15 +62,18 @@ export function CapitalInputs({ initial, onChange }: { initial: OutlookInputs; o
       </div>
       {sizing === 'risk' && (
         <div className="space-y-1">
-          <Label htmlFor="koin-risk" className="text-xs">Siap hilang di SL (% modal)</Label>
+          <Label htmlFor="koin-risk" className="text-[13px]">Siap hilang di SL (% modal)</Label>
           <Input id="koin-risk" inputMode="decimal" value={riskPct} onChange={(e) => setRiskPct(e.target.value)}
-            aria-invalid={risk === null} className={cn('h-8 w-16 font-mono text-sm', risk === null && 'border-bearish')} />
+            aria-invalid={risk === null} className={cn('h-10 w-20 rounded-xl font-mono text-[15px]', risk === null && 'border-bearish')} />
         </div>
       )}
-      <p className="basis-full text-2xs text-muted-foreground">
-        Dari modal = posisi sebesar modal × leverage. Dari risiko = posisi diatur supaya rugi di SL sebesar persen modal itu.
-        Default 1× (riset Lab: 2× terlalu berisiko). Disimpan di perangkat ini; tidak ada order yang dikirim.
-        {!valid && <span className="text-bearish"> Isi modal 1–1,000,000,000 dan leverage 1–20.</span>}
+      <p className="basis-full text-[13px] text-muted-foreground">
+        Disimpan di perangkat ini, tidak ada order yang dikirim.
+        <InfoTip label="Ukuran posisi">
+          Dari modal = posisi sebesar modal × leverage. Dari risiko = posisi diatur supaya rugi di SL sebesar persen modal itu.
+          Default 1× (riset Lab: 2× terlalu berisiko).
+        </InfoTip>
+        {!valid && <span className="block text-bearish">Isi modal 1–1,000,000,000 dan leverage 1–20.</span>}
       </p>
     </div>
   )

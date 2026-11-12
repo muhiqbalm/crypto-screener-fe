@@ -22,7 +22,7 @@ export default async function KoinSymbolPage({ params }: { params: Promise<{ sim
   const { symbol, slug } = canonical(raw)
   if (decodeURIComponent(raw) !== slug) redirect(`/koin/${encodeURIComponent(slug)}`)
   return (
-    <PageContainer>
+    <PageContainer width="wide">
       <CoinPage symbol={symbol} />
     </PageContainer>
   )
