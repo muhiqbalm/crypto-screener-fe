@@ -5,26 +5,39 @@ import { usePathname } from 'next/navigation'
 import { Menu } from 'lucide-react'
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
 import { Brand } from '@/components/shell/Brand'
-import { ApiStatus } from '@/components/shell/ApiStatus'
-import { SidebarNav } from '@/components/shell/SidebarNav'
-import { UserMenu } from '@/components/shell/UserMenu'
-import { NotificationBell } from '@/components/shell/NotificationBell'
+import { SidebarNav, type AdminCheck } from '@/components/shell/SidebarNav'
+import { UserHub } from '@/components/shell/UserHub'
 import { useSession } from '@/lib/utils/use-session'
 import { useLabMe } from '@/lib/queries/lab'
+import { ApiError } from '@/lib/api/errors'
+
+/** Admin flag + whether the check itself failed (network/server ≠ "not admin"). */
+export function useAdminCheck(): { isAdmin: boolean; adminCheck: AdminCheck; retry: () => void } {
+  const session = useSession()
+  const q = useLabMe(Boolean(session?.accessToken))
+  const forbidden = q.error instanceof ApiError && q.error.kind === 'auth'
+  const adminCheck: AdminCheck = q.isPending
+    ? 'loading'
+    : q.isError
+      ? forbidden
+        ? 'member'
+        : 'error'
+      : q.data?.is_admin
+        ? 'admin'
+        : 'member'
+  return { isAdmin: adminCheck === 'admin', adminCheck, retry: () => void q.refetch() }
+}
 
 /**
  * Authenticated app frame:
- *  - lg+: fixed left sidebar (brand, grouped nav, API status) + slim top bar
- *  - < lg: top bar with a menu button that opens the same nav in a drawer
+ *  - lg+: fixed left sidebar (logo → Beranda, menu) + slim top bar with the User Hub
+ *  - < lg: top bar with a menu button that opens the same menu (with hints) in a drawer
  * Pages render inside <main id="main">; use <PageContainer> for width/padding.
+ * Admin-only items are a UI hint; the backend enforces access.
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const session = useSession()
   const pathname = usePathname()
-  // Lab/Journal links are an admin-only UI hint (backend enforces access).
-  // Any error (403, network, endpoint missing) hides them.
-  const { data: labMe, isError } = useLabMe(Boolean(session?.accessToken))
-  const isAdmin = !isError && labMe?.is_admin === true
+  const { isAdmin, adminCheck, retry } = useAdminCheck()
 
   const [mobileOpen, setMobileOpen] = useState(false)
   // Close the drawer on navigation (state adjustment during render).
@@ -48,27 +61,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="flex h-topbar items-center px-4">
           <Brand />
         </div>
-        <div className="flex-1 overflow-y-auto px-2 py-4">
-          <SidebarNav isAdmin={isAdmin} />
-        </div>
-        <div className="border-t p-3">
-          <ApiStatus className="w-full justify-center" />
+        <div className="flex-1 overflow-y-auto px-2 pb-6 pt-3">
+          <SidebarNav isAdmin={isAdmin} adminCheck={adminCheck} onRetryAdmin={retry} />
         </div>
       </aside>
 
       {/* Mobile drawer */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="w-72 max-w-[85vw] bg-sidebar">
+        <SheetContent side="left" className="w-80 max-w-[88vw] bg-sidebar">
           <SheetTitle className="sr-only">Navigasi</SheetTitle>
           <SheetDescription className="sr-only">Menu halaman BMTM MoonTrade</SheetDescription>
           <div className="flex h-topbar items-center px-4">
             <Brand />
           </div>
-          <div className="flex-1 overflow-y-auto px-2 py-4">
-            <SidebarNav isAdmin={isAdmin} onNavigate={() => setMobileOpen(false)} />
-          </div>
-          <div className="border-t p-3">
-            <ApiStatus className="w-full justify-center" />
+          <div className="flex-1 overflow-y-auto px-2 pb-6 pt-3">
+            <SidebarNav
+              isAdmin={isAdmin}
+              adminCheck={adminCheck}
+              onRetryAdmin={retry}
+              onNavigate={() => setMobileOpen(false)}
+              showHints
+            />
           </div>
         </SheetContent>
       </Sheet>
@@ -78,17 +91,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <button
             type="button"
             onClick={() => setMobileOpen(true)}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden cursor-pointer"
+            className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
             aria-label="Buka menu navigasi"
             aria-expanded={mobileOpen}
           >
             <Menu className="h-5 w-5" aria-hidden="true" />
           </button>
           <Brand className="lg:hidden" />
-          <div className="ml-auto flex items-center gap-3">
-            <ApiStatus className="hidden md:inline-flex lg:hidden xl:inline-flex" />
-            {isAdmin && <NotificationBell />}
-            <UserMenu />
+          <div className="ml-auto flex items-center">
+            <UserHub isAdmin={isAdmin} />
           </div>
         </header>
         <main id="main" tabIndex={-1} className="outline-none">

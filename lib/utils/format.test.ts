@@ -99,7 +99,7 @@ describe('formatPrice', () => {
     expect(formatPrice(12.3456)).toBe('$12.3456')
     expect(formatPrice(145.1234)).toBe('$145.123')
     expect(formatPrice(145.1)).toBe('$145.10')
-    expect(formatPrice(-3.5)).toBe('-$3.50')
+    expect(formatPrice(-3.5)).toBe('−$3.50')
   })
 })
 
@@ -111,7 +111,7 @@ describe('formatUsd / formatUsdSigned', () => {
   })
   it('signs amounts', () => {
     expect(formatUsdSigned(12.3)).toBe('+$12.30')
-    expect(formatUsdSigned(-4)).toBe('-$4.00')
+    expect(formatUsdSigned(-4)).toBe('−$4.00')
     expect(formatUsdSigned(0)).toBe('$0.00')
   })
 })
@@ -161,12 +161,13 @@ describe('formatPercent', () => {
     expect(formatPercent(1.234)).toBe('+1.23%')
   })
 
-  it('adds "-" prefix for negative values', () => {
-    expect(formatPercent(-0.5)).toBe('-0.50%')
+  it('adds "−" (minus sign) prefix for negative values', () => {
+    expect(formatPercent(-0.5)).toBe('−0.50%')
   })
 
-  it('adds "+" prefix for zero', () => {
-    expect(formatPercent(0)).toBe('+0.00%')
+  it('never signs zero', () => {
+    expect(formatPercent(0)).toBe('0.00%')
+    expect(formatPercent(-0.001)).toBe('0.00%')
   })
 
   it('respects custom fractionDigits', () => {
@@ -217,7 +218,7 @@ describe('formatVolume', () => {
   })
 
   it('handles negative values', () => {
-    expect(formatVolume(-1_000_000)).toBe('-$1.00M')
+    expect(formatVolume(-1_000_000)).toBe('−$1.00M')
   })
 })
 
@@ -241,8 +242,8 @@ describe('formatFunding', () => {
     expect(formatFunding(0.01)).toBe('+0.0100%')
   })
 
-  it('formats negative funding rate (already in percent) with "-" prefix', () => {
-    expect(formatFunding(-0.01)).toBe('-0.0100%')
+  it('formats negative funding rate (already in percent) with "−" prefix', () => {
+    expect(formatFunding(-0.01)).toBe('−0.0100%')
   })
 
   it('does not scale the value by 100', () => {
@@ -303,14 +304,12 @@ describe('formatTimestamp', () => {
     expect(formatTimestamp('not-a-date')).toBe(DASH)
   })
 
-  it('formats a valid ISO timestamp as YYYY-MM-DD HH:mm:ss', () => {
-    const result = formatTimestamp('2025-01-15T12:00:00Z')
-    // Should match YYYY-MM-DD HH:mm:ss pattern
-    expect(result).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
+  it('formats in WIB with Indonesian month, year and seconds (independent of the machine TZ)', () => {
+    expect(formatTimestamp('2025-01-15T12:00:00Z')).toBe('15 Jan 2025 19:00:00 WIB')
+    expect(formatTimestamp('2025-06-01T20:30:45Z')).toBe('2 Jun 2025 03:30:45 WIB')
   })
 
-  it('produces a string with exactly 19 characters', () => {
-    const result = formatTimestamp('2025-06-01T08:30:45Z')
-    expect(result).toHaveLength(19)
+  it('treats a timestamp without zone as UTC (backend convention)', () => {
+    expect(formatTimestamp('2025-06-01 08:30:45')).toBe('1 Jun 2025 15:30:45 WIB')
   })
 })

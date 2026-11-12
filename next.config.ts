@@ -63,6 +63,21 @@ const securityHeaders = [
   },
 ];
 
+// Old URLs → new pages (docs/riset-2026-11-12/02-audit-ux.md §3.4).
+// 307 (permanent: false) for the first 2 weeks so a rollback is easy; switch
+// to 308 afterwards. Next passes the request's query string through and merges
+// it with the destination's own query (`/screener?symbol=ETH` →
+// `/koin?view=faktor&symbol=ETH`). Redirects run before the filesystem, so the
+// old pages may stay in the tree until their owners delete them.
+// `/` → `/beranda` lives in app/page.tsx; the post-login default in
+// lib/utils/safe-url.ts.
+export const LEGACY_REDIRECTS = [
+  { source: "/screener", destination: "/koin?view=faktor", permanent: false },
+  { source: "/lab/outlook", destination: "/koin", permanent: false },
+  { source: "/lab/strength", destination: "/koin?view=terkuat", permanent: false },
+  { source: "/lab/live-check", destination: "/bot", permanent: false },
+] as const;
+
 const nextConfig: NextConfig = {
   ...(process.env.NEXT_OUTPUT_STANDALONE === "1"
     ? { output: "standalone" as const }
@@ -70,6 +85,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
+  },
+  async redirects() {
+    return LEGACY_REDIRECTS.map((r) => ({ ...r }));
   },
 };
 

@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils/cn'
-import { relativeTime } from '@/lib/lab/form'
+import { formatAge } from '@/lib/utils/time'
 import { NOTIF_TYPE_LABEL, safeNotificationLink, unreadBadge } from '@/lib/lab/report'
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from '@/lib/queries/report'
 import type { LabNotification, NotificationType } from '@/lib/api/types/report'
@@ -20,9 +20,9 @@ import type { LabNotification, NotificationType } from '@/lib/api/types/report'
 /**
  * In-web notifications for Lab admins (job finished, paper preset trades, Signal Ledger
  * verdict changes, deploys, weekly report). Polls every 60 s, paused while the tab is hidden.
- * Rendered only for admins; any API error just hides the count.
+ * Rendered only for admins (inside the User Hub capsule); any API error just hides the count.
  */
-export function NotificationBell() {
+export function NotificationBell({ className }: { className?: string } = {}) {
   const router = useRouter()
   const { data, isError, isLoading } = useNotifications()
   const markOne = useMarkNotificationRead()
@@ -39,10 +39,13 @@ export function NotificationBell() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="relative inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+        className={cn(
+          'relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          className,
+        )}
         aria-label={unread ? `Notifikasi, ${unread} belum dibaca` : 'Notifikasi'}
       >
-        <Bell className="h-5 w-5" aria-hidden="true" />
+        <Bell className="h-[18px] w-[18px]" aria-hidden="true" />
         {unread && (
           <span className="num absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-bearish px-1 text-3xs font-bold text-bearish-foreground">
             {unread}
@@ -85,7 +88,7 @@ export function NotificationBell() {
                   <Badge variant="muted" size="xs">
                     {NOTIF_TYPE_LABEL[n.type as NotificationType] ?? n.type}
                   </Badge>
-                  <span className="ml-auto shrink-0 text-3xs text-muted-foreground">{relativeTime(n.created_at)}</span>
+                  <span className="ml-auto shrink-0 text-3xs text-muted-foreground">{formatAge(n.created_at)}</span>
                 </div>
                 <span className={cn('w-full text-xs', n.read ? 'text-muted-foreground' : 'font-semibold')}>{n.title}</span>
                 {n.body && <span className="line-clamp-2 w-full text-2xs text-muted-foreground">{n.body}</span>}

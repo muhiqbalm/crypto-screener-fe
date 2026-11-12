@@ -14,7 +14,7 @@ export default function NotFound() {
         <p className="max-w-sm text-sm text-muted-foreground">Alamat ini tidak ada atau sudah dipindah.</p>
       </div>
       <Button asChild variant="outline">
-        <Link href="/screener">Ke Screener</Link>
+        <Link href="/beranda">Ke Beranda</Link>
       </Button>
     </main>
   )
