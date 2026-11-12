@@ -6,6 +6,7 @@ import { outlookApi } from '@/lib/api/outlook'
 import { liveCheckApi } from '@/lib/api/livecheck'
 import { arenaApi } from '@/lib/api/arena'
 import { notificationsApi, reportApi } from '@/lib/api/report'
+import { botApi } from '@/lib/api/bot'
 import { DEFAULT_INPUTS } from '@/lib/lab/outlook'
 
 /**
@@ -18,7 +19,7 @@ import { DEFAULT_INPUTS } from '@/lib/lab/outlook'
  * Query keys match the pages' own hooks so caches are shared.
  */
 export const HOME_REFRESH_MS = 5 * 60_000
-/** 42 candles × 4 h = the last 7 days. */
+/** 42 candles × 4 h = the last 7 days (= VERDICT_BARS in lib/bot/status.ts). */
 export const HOME_LIVECHECK_BARS = 42
 
 export function isNoAccess(err: unknown): boolean {
@@ -46,6 +47,11 @@ export function useHomeOutlook(enabled: boolean) {
     queryFn: ({ signal }) => outlookApi.getOutlook(DEFAULT_INPUTS, signal),
     ...calm(enabled),
   })
+}
+
+/** Bot webhook / last alert (admin). Same key as useBotStatus (lib/queries/bot.ts), calmer refresh. */
+export function useHomeBotStatus(enabled: boolean) {
+  return useQuery({ queryKey: ['lab', 'bot-status'] as const, queryFn: ({ signal }) => botApi.getStatus(signal), ...calm(enabled) })
 }
 
 export function useHomeLiveCheck(enabled: boolean) {

@@ -120,7 +120,7 @@ export const NAV_CLUSTERS: NavCluster[] = [
       },
       {
         id: 'strategi',
-        label: 'Strategi · simulasi & riset',
+        label: 'Strategi · simulasi',
         mode: 'paper',
         items: [
           {
@@ -255,9 +255,3 @@ export function hubForPath(pathname: string): HubId | null {
   }
   return null
 }
-
-/**
- * @deprecated Kept for old imports. The Lab tab strip is gone; use
- * `navForRole` for the menu and `HUB_TABS` + `<HubTabs>` for sub-tabs.
- */
-export const LAB_NAV: NavItem[] = NAV_CLUSTERS[1].sections[1].items

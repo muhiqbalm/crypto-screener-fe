@@ -5,7 +5,6 @@
  * explicit "tidak tersedia".
  */
 import type { OutlookResponse, OutlookRow, Keyakinan } from '@/lib/api/types/outlook'
-import type { LiveCheckReport, LiveCheckRow, LiveCheckStatus } from '@/lib/api/types/livecheck'
 import type { ArenaReport } from '@/lib/api/types/arena'
 import type { LabNotification, ReportWeek, WeeklyReport } from '@/lib/api/types/report'
 import type { AssetSummary, ScreenerResponse } from '@/lib/api/types/screener'
@@ -184,39 +183,6 @@ export function topScreenerCoins(data: ScreenerResponse | undefined, limit = 3):
   }))
 }
 
-// ── Live bot (7 days) ───────────────────────────────────────────────────────
-
-export interface BotWeek {
-  total: number
-  /** Executed as the strategy said (incl. price differences). */
-  executed: number
-  priceDiff: number
-  failed: number
-  notSent: number
-  noLog: number
-  perluDicek: number
-  tone: 'sehat' | 'perlu_dicek' | 'bermasalah' | 'menunggu'
-  sentence: string
-}
-
-export function botWeek(r: LiveCheckReport | undefined): BotWeek | null {
-  if (!r) return null
-  const c = r.summary?.counts ?? ({} as Partial<Record<LiveCheckStatus, number>>)
-  const n = (k: LiveCheckStatus) => c[k] ?? 0
-  const executed = n('cocok') + n('harga_beda')
-  const failed = n('gagal')
-  const notSent = n('tidak_terkirim')
-  const noLog = n('tanpa_log')
-  const total = executed + failed + notSent + noLog
-  const perluDicek = r.summary?.perlu_dicek ?? 0
-  const tone: BotWeek['tone'] = failed + notSent > 0 ? 'bermasalah' : perluDicek > 0 ? 'perlu_dicek' : total === 0 ? 'menunggu' : 'sehat'
-  const sentence =
-    total === 0
-      ? 'Belum ada sinyal strategi dalam 7 hari terakhir.'
-      : `${executed} dari ${total} sinyal 7 hari terakhir tereksekusi sesuai strategi${n('harga_beda') ? ` (${n('harga_beda')} dengan harga beda)` : ''}.`
-  return { total, executed, priceDiff: n('harga_beda'), failed, notSent, noLog, perluDicek, tone, sentence }
-}
-
 // ── Perlu perhatian ─────────────────────────────────────────────────────────
 
 export type AttentionLevel = 'kritis' | 'penting' | 'info'
@@ -229,27 +195,22 @@ export interface AttentionItem {
   linkLabel: string
 }
 
-const BOT_PROBLEM: Partial<Record<LiveCheckStatus, string>> = {
-  tidak_terkirim: 'tidak terkirim ke bot',
-  gagal: 'terkirim tapi gagal / ditolak',
-  harga_beda: 'tereksekusi dengan harga beda',
-  tak_terduga: 'ada kiriman tanpa sinyal Lab',
-  tanpa_log: 'tidak punya data log',
-}
-
-function rowTime(r: LiveCheckRow, now?: number): string {
-  return formatTime(r.bar_close_ts, { now })
+/** The bot verdict's lead ("Belum aman: …", "Perlu dicek: …") is dropped: the row's level says it. */
+export function stripVerdictLead(sentence: string): string {
+  const t = sentence.replace(/^(Belum aman|Perlu dicek|Menunggu data|Ya, aman):\s*/, '')
+  return t.charAt(0).toUpperCase() + t.slice(1)
 }
 
 /**
- * 0–3 rows, most serious first: live-bot problems, paper presets that drift
- * from their test, strategies that just entered a position. A source that
- * failed to load becomes an "info" row (never silently "all good").
+ * 0–3 rows, most serious first: the live bot (the same verdict as /bot and
+ * the Bot live card), paper presets that drift from their test, strategies
+ * that just entered a position. A bot status that cannot be loaded is a
+ * "penting" row (botVerdict says so), never a silent "all good".
  */
 export function attentionItems(
   input: {
-    live?: LiveCheckReport
-    liveError?: boolean
+    /** botVerdict(...) from lib/bot/status.ts. */
+    bot?: { tone: 'ok' | 'warn' | 'bad' | 'wait'; sentence: string } | null
     arena?: ArenaReport
     outlook?: OutlookResponse
   },
@@ -258,24 +219,14 @@ export function attentionItems(
   const limit = opts.limit ?? 3
   const out: AttentionItem[] = []
 
-  if (input.liveError) {
-    out.push({ id: 'bot-error', level: 'info', text: 'Status bot live tidak bisa dimuat.', href: '/bot', linkLabel: 'Status bot' })
-  } else if (input.live) {
-    const rows = (input.live.rows ?? []).filter((r) => r.perlu_dicek)
-    rows.sort((a, b) => String(b.bar_close_ts).localeCompare(String(a.bar_close_ts)))
-    const first = rows[0]
-    if (first) {
-      const what = BOT_PROBLEM[first.status] ?? 'perlu dicek'
-      const sig = [first.action === 'open' ? 'buka' : first.action === 'close' ? 'tutup' : null, first.side?.toUpperCase()].filter(Boolean).join(' ')
-      const more = rows.length > 1 ? ` (+${rows.length - 1} lainnya)` : ''
-      out.push({
-        id: 'bot',
-        level: first.status === 'tidak_terkirim' || first.status === 'gagal' ? 'kritis' : 'penting',
-        text: `Sinyal ${sig ? `${sig} ` : ''}${rowTime(first, opts.now)} ${what}${more}.`,
-        href: '/bot',
-        linkLabel: 'Status bot',
-      })
-    }
+  if (input.bot && (input.bot.tone === 'bad' || input.bot.tone === 'warn')) {
+    out.push({
+      id: 'bot',
+      level: input.bot.tone === 'bad' ? 'kritis' : 'penting',
+      text: stripVerdictLead(input.bot.sentence),
+      href: '/bot',
+      linkLabel: 'Status bot',
+    })
   }
 
   const drifting = (input.arena?.rows ?? []).filter((r) => r.drift?.status === 'menyimpang')
@@ -393,7 +344,8 @@ export interface SummaryItem {
 export function assistantSummary(p: {
   market?: string | null
   watch?: WatchList | null
-  bot?: BotWeek | null
+  /** The "bot aman?" sentence (botVerdict in lib/bot/status.ts, same words as /bot). */
+  bot?: { sentence: string } | null
   paper?: PaperSummary | null
 }): SummaryItem[] {
   const items: SummaryItem[] = []
@@ -409,7 +361,7 @@ export function assistantSummary(p: {
   } else if (p.watch) {
     items.push({ text: 'Tidak ada koin dengan arah LONG/SHORT saat ini; strategi menunggu sinyal.', href: '/koin' })
   }
-  if (p.bot) items.push({ text: `Bot live: ${p.bot.sentence}`, href: '/bot' })
+  if (p.bot) items.push({ text: p.bot.sentence, href: '/bot' })
   if (p.paper && p.paper.presets > 0) {
     items.push({
       text: `Paper: ${p.paper.presets} preset berjalan, ${p.paper.ready} siap dinilai, ${p.paper.drifting} menyimpang.`,

@@ -5,7 +5,6 @@ import { ArrowRight, CircleOff, Webhook } from 'lucide-react'
 import { Section } from '@/components/lab/Section'
 import { StatusPill, type StatusKind } from '@/components/ui/status-pill'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Term } from '@/components/ui/term'
 import { ErrorState } from '@/components/shell/states'
 
 export interface BotVerdictView {
@@ -100,12 +99,7 @@ export function BotLiveCard({
                 ) : (
                   <CircleOff className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                 )}
-                <span className="text-muted-foreground">
-                  <Term k="webhook" short>
-                    {w.label}
-                  </Term>
-                  :
-                </span>
+                <span className="text-muted-foreground">{w.label}:</span>
                 <span className="font-semibold">{w.state === 'aktif' ? 'aktif' : 'tidak aktif'}</span>
                 <span className="w-full pl-6 text-2xs text-muted-foreground">
                   {w.state === 'aktif' ? 'Alert TradingView diteruskan ke bot.' : 'Semua alert (buka maupun tutup posisi) diabaikan.'}

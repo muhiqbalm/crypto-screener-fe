@@ -108,7 +108,7 @@ function liveCheck(bars: number) {
     side,
     reason: null,
     price_diff_bps: null,
-    expected: null,
+    expected: { action, side, alert: 'close', alert_at: null, price: null, exit_reason: null, variants: null, step: 0 },
     delivery: null,
     computed_at: iso(10 * 60_000),
   })
@@ -258,13 +258,23 @@ export function homeMock(method: string, fullPath: string): unknown {
   return undefined
 }
 
+/** Mock-mode QA switch: env NEXT_PUBLIC_MOCK_ROLE=member, or localStorage "bmtm:mock-role" = "member". */
+export function mockRoleIsMember(): boolean {
+  if (process.env.NEXT_PUBLIC_MOCK_ROLE === 'member') return true
+  try {
+    return typeof window !== 'undefined' && window.localStorage.getItem('bmtm:mock-role') === 'member'
+  } catch {
+    return false
+  }
+}
+
 /**
- * QA helper: NEXT_PUBLIC_MOCK_ROLE=member makes the mock backend treat the
- * user as a non-admin team member (GET /lab/me → is_admin false, admin-only
- * Lab endpoints → 403). Checked before every other mock.
+ * QA helper (mock mode only): as a non-admin team member, GET /lab/me says
+ * is_admin false and admin-only Lab endpoints answer 403. Checked before
+ * every other mock.
  */
 export function memberOverride(method: string, fullPath: string): { value: unknown } | { error: 403 } | undefined {
-  if (process.env.NEXT_PUBLIC_MOCK_ROLE !== 'member') return undefined
+  if (!mockRoleIsMember()) return undefined
   const [path] = fullPath.split('?')
   if (method === 'GET' && path === '/api/v1/lab/me') return { value: { is_admin: false } }
   if (path.startsWith('/api/v1/lab/') && path !== '/api/v1/lab/regime') return { error: 403 }

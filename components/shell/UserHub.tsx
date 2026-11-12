@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
 import { NotificationBell } from '@/components/shell/NotificationBell'
-import { useSystemStatus } from '@/components/shell/ApiStatus'
+import { useSystemStatus } from '@/components/shell/system-status'
 import { cn } from '@/lib/utils/cn'
 import { useSession } from '@/lib/utils/use-session'
 import { useLogout } from '@/lib/queries/auth'

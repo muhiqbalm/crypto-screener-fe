@@ -10,8 +10,8 @@ export async function getMock(method: string, path: string, body?: unknown): Pro
   // Resolve on next microtask to simulate async
   await Promise.resolve()
 
-  // QA: NEXT_PUBLIC_MOCK_ROLE=member → non-admin view (lib/mocks/home.ts).
-  if (process.env.NEXT_PUBLIC_MOCK_ROLE === 'member') {
+  // QA: non-admin view on demand (lib/mocks/home.ts mockRoleIsMember).
+  {
     const o = (await import('./home')).memberOverride(method, path)
     if (o && 'value' in o) return o.value
     if (o) throw new ApiError('auth', 403)

@@ -17,7 +17,6 @@ import { PaperReportCard } from '@/components/home/PaperReportCard'
 import {
   assistantSummary,
   attentionItems,
-  botWeek,
   lastSnapshotWeek,
   paperSummary,
   pickWatchCoins,
@@ -29,6 +28,7 @@ import {
 import {
   isNoAccess,
   useHomeArena,
+  useHomeBotStatus,
   useHomeLiveCheck,
   useHomeNotifications,
   useHomeOutlook,
@@ -42,6 +42,7 @@ import { useRibbonNews, useRibbonRegime, useRibbonWhales } from '@/lib/queries/m
 import { fearGreed, largeFlow, regimeWord, ribbonSentence, traderStance } from '@/components/shell/market-ribbon-logic'
 import { compositeKey, findTrack, TRACK_VERDICT } from '@/lib/screener/track-record'
 import { WEEKDAYS_ID, formatDate, wibParts } from '@/lib/utils/time'
+import { BOT_STATUS_KIND, botVerdict } from '@/lib/bot/status'
 
 const HELP = {
   apaIni:
@@ -75,6 +76,7 @@ export function BerandaView() {
   const ownWebhook = useHomeWebhookState(member)
   // Admin only
   const live = useHomeLiveCheck(isAdmin)
+  const botStatus = useHomeBotStatus(isAdmin)
   const arena = useHomeArena(isAdmin)
   const notifs = useHomeNotifications(isAdmin)
   // Ribbon data (shared cache) for the assistant's market sentence
@@ -83,12 +85,18 @@ export function BerandaView() {
   const whales = useRibbonWhales()
 
   const watch = outlook.data ? pickWatchCoins(outlook.data, { now: now ?? undefined }) : null
-  const bot = botWeek(live.data)
+  // One "bot aman?" answer for Beranda and /bot (W2b's lib/bot/status.ts).
+  const bot = isAdmin
+    ? botVerdict({
+        live: live.data ?? null,
+        liveError: live.isError,
+        bot: botStatus.data ?? null,
+        botError: botStatus.isError,
+        now,
+      })
+    : null
   const paper = paperSummary(arena.data)
-  const attention = attentionItems(
-    { live: live.data, liveError: live.isError && !isNoAccess(live.error), arena: arena.data, outlook: outlook.data },
-    { now: now ?? undefined },
-  )
+  const attention = attentionItems({ bot, arena: arena.data, outlook: outlook.data }, { now: now ?? undefined })
   const market = ribbonSentence({
     btc: regimeWord(regime.data?.btc),
     eth: regimeWord(regime.data?.eth),
@@ -110,9 +118,9 @@ export function BerandaView() {
 
   const verdict: BotVerdictView | null = bot
     ? {
-        tone: bot.tone,
+        tone: BOT_STATUS_KIND[bot.tone],
         sentence: bot.sentence,
-        details: live.data ? [`Preset ${live.data.preset} · ${live.data.window.bars} candle 4H terakhir`] : undefined,
+        details: bot.facts.map((f) => `${f.label}: ${f.value}`),
       }
     : null
 
@@ -149,7 +157,9 @@ export function BerandaView() {
 
       <MarketRibbon />
 
-      {isAdmin && <AttentionList items={attention} loading={live.isPending || arena.isPending || outlook.isPending} />}
+      {isAdmin && (
+        <AttentionList items={attention} loading={(live.isPending && botStatus.isPending) || arena.isPending || outlook.isPending} />
+      )}
 
       {/* Phones: one column in the audit order (koin → bot → paper → asisten).
           Desktop: koin + asisten left, bot + paper right. */}
@@ -170,6 +180,7 @@ export function BerandaView() {
                 context={{ kind: 'beranda', label: 'ringkasan hari ini' }}
                 items={assistantSummary({ market, watch, bot, paper })}
                 loading={outlook.isPending && live.isPending}
+                emptyText="Belum ada data untuk diringkas."
               />
             </div>
           )}
@@ -179,9 +190,12 @@ export function BerandaView() {
             <BotLiveCard
               admin={isAdmin}
               verdict={verdict}
-              loading={isAdmin && live.isPending}
-              error={live.isError && !isNoAccess(live.error) ? live.error : null}
-              onRetry={() => void live.refetch()}
+              loading={isAdmin && live.isPending && botStatus.isPending}
+              error={null}
+              onRetry={() => {
+                void live.refetch()
+                void botStatus.refetch()
+              }}
               webhooks={ownWebhook.data ? [{ label: 'Webhook kamu', state: ownWebhook.data.state }] : []}
               webhookLoading={member && ownWebhook.isPending}
               webhookError={member && ownWebhook.isError}
