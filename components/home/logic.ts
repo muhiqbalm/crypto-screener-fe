@@ -144,7 +144,8 @@ function toWatchCoin(r: RowV2, now?: number): WatchCoin | null {
  */
 export function bestCoin(w: WatchList | null): { coin: WatchCoin; basis: 'positif' | 'teratas' } | null {
   if (!w) return null
-  const positive = w.coins.find((c) => c.peluangPositive)
+  // With skor kualitas (letters present) "terbaik" = skor A or B, the same rule as Peluang koin.
+  const positive = w.coins.find((c) => (c.grade !== undefined ? c.grade === 'A' || c.grade === 'B' : c.peluangPositive))
   if (positive) return { coin: positive, basis: 'positif' }
   if (!w.ranked && w.coins[0]) return { coin: w.coins[0], basis: 'teratas' }
   return null

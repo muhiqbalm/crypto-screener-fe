@@ -147,6 +147,8 @@ function Decision({ d }: { d: OutlookDetail }) {
   const answer = side && d.plan?.saran ? d.plan.saran : (paras[0] ?? d.explanation.summary).replace(/^Keputusan: /, '')
   const cal = d.bias.calib?.stats
   const k = kDariN(d)
+  // the replay's verdict per factor is data, not a fixed sentence: name the ones it marks 'teruji'
+  const provenMtf = d.factors.filter((f) => f.group === 'mtf' && f.available && f.evidence === 'teruji_replay').map((f) => f.label)
   const p = d.peluang
   const note = liveNote(d)
   return (
@@ -167,7 +169,7 @@ function Decision({ d }: { d: OutlookDetail }) {
               sub={cal && cal.n_cases > 0 ? `rata-rata · ${formatCount(cal.n_pos)} posisi` : 'belum dikalibrasi'} />
             <BigStat label={<Term k="konteks_searah" />} size="xl"
               value={k ? <>{k.k}<span className="text-2xl font-semibold text-muted-foreground"> / {k.n}</span></> : '—'}
-              sub="belum terbukti menambah keunggulan" />
+              sub={provenMtf.length ? `${provenMtf.join(', ')} teruji di simulasi; lainnya belum` : 'belum terbukti menambah keunggulan'} />
           </div>
           {cal && cal.n_cases > 0 && <EvidenceBar className="mt-6" pTp={cal.p_tp} pSl={cal.p_sl} pBatal={cal.p_batal} showLegend />}
           {d.kualitas && <QualityRow q={d.kualitas} />}
