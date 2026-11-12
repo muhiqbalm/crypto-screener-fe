@@ -28,6 +28,7 @@ import { ChangeCell } from '@/components/screener/ChangeCell'
 import { SignalBadge } from '@/components/screener/SignalBadge'
 import { TierBadge } from '@/components/screener/TierBadge'
 import { TrackRecordHint } from '@/components/screener/TrackRecordHint'
+import { CoinAvatar } from '@/components/market/ui'
 import { compositeKey, tierKey } from '@/lib/screener/track-record'
 import { scoreFraction, scorePosition } from '@/lib/screener/factors'
 import { koinHref } from '@/lib/lab/outlook'
@@ -66,11 +67,14 @@ function buildColumns(positions: Map<string, Pos>): ColumnDef<AssetDetail>[] {
       header: 'Koin',
       enableSorting: false,
       cell: ({ row }) => (
-        <span className="flex flex-col">
-          <Link href={koinHref(row.original.symbol)} onClick={(e) => e.stopPropagation()} className="font-semibold tracking-wide hover:underline">
-            {coinOf(row.original.symbol)}
-          </Link>
-          <span className="font-mono text-[10px] tabular-nums text-muted-foreground sm:hidden">{formatPrice(row.original.price)}</span>
+        <span className="flex items-center gap-3">
+          <CoinAvatar symbol={row.original.symbol} size="sm" />
+          <span className="flex flex-col">
+            <Link href={koinHref(row.original.symbol)} onClick={(e) => e.stopPropagation()} className="text-sm font-semibold hover:underline">
+              {coinOf(row.original.symbol)}
+            </Link>
+            <span className="num text-2xs text-muted-foreground sm:hidden">{formatPrice(row.original.price)}</span>
+          </span>
         </span>
       ),
       filterFn: (row, _columnId, filterValue: string) => {
@@ -104,7 +108,7 @@ function buildColumns(positions: Map<string, Pos>): ColumnDef<AssetDetail>[] {
       accessorKey: 'funding_rate',
       header: 'Funding',
       enableSorting: false,
-      cell: ({ getValue }) => <span className="font-mono tabular-nums text-xs">{formatFunding(getValue<number | null>())}</span>,
+      cell: ({ getValue }) => <span className="num">{formatFunding(getValue<number | null>())}</span>,
     },
     {
       id: 'signal',
@@ -132,10 +136,10 @@ function buildColumns(positions: Map<string, Pos>): ColumnDef<AssetDetail>[] {
         const frac = scoreFraction(p)
         return p ? (
           <span className="inline-flex items-center gap-1.5" title={`Skor ${formatScore(row.original.composite_score, 4)}`}>
-            <span className="relative h-1.5 w-12 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+            <span className="relative h-2 w-14 overflow-hidden rounded-full bg-muted" aria-hidden="true">
               <span className="absolute inset-y-0 left-0 rounded-full bg-info" style={{ width: `${Math.round((frac ?? 0) * 100)}%` }} />
             </span>
-            <span className="font-mono text-xs tabular-nums">ke-{p.pos}<span className="text-muted-foreground">/{p.n}</span></span>
+            <span className="num text-sm">ke-{p.pos}<span className="text-muted-foreground">/{p.n}</span></span>
           </span>
         ) : <span className="text-muted-foreground">—</span>
       },
@@ -257,7 +261,7 @@ export function ScreenerTable({ data, filters, onSelectAsset }: ScreenerTablePro
   }
 
   return (
-    <Table>
+    <Table className="text-sm">
       <TableHeader>
         {table.getHeaderGroups().map((headerGroup) => (
           <TableRow key={headerGroup.id} className="hover:bg-transparent">

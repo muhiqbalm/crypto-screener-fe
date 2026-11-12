@@ -20,7 +20,7 @@ export default async function KoinPage({
         eyebrow="Pasar"
         eyebrowIcon={Compass}
         title="Peluang koin"
-        description="Koin mana yang layak dilihat sekarang: arah dari strategi, rencana entry/SL/TP, dan bukti dari panggilan serupa di masa lalu."
+        description="Arah strategi, rencana entry/SL/TP, dan bukti dari kasus serupa."
         help={{
           apaIni: 'Satu tempat untuk pertanyaan "koin mana?". Outlook memberi arah per koin dari strategi utamanya beserta buktinya; Terkuat memeringkat momentum; Tabel faktor menampilkan skor 5 faktor screener.',
           caraPakai: [

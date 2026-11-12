@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowDown, ArrowUp, RefreshCw, TrendingDown, TrendingUp } from 'lucide-react'
+import { ArrowDown, ArrowUp, RefreshCw, TrendingDown, TrendingUp, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorPanel } from '@/components/shell/ErrorPanel'
-import { Chip, EmptyState, Section } from '@/components/lab/Section'
+import { Chip, EmptyState } from '@/components/lab/Section'
+import { CoinAvatar, TitledPanel } from '@/components/market/ui'
 import { signClass } from '@/components/lab/LabBadges'
 import { Sparkline } from '@/components/market/Sparkline'
 import { InfoTip } from '@/components/ui/info-tip'
@@ -15,7 +16,7 @@ import { ApiError, apiErrorDetail } from '@/lib/api/errors'
 import { formatPercent, formatPrice, formatScore } from '@/lib/utils/format'
 import { notify } from '@/lib/utils/toast'
 import { cn } from '@/lib/utils/cn'
-import { koinHref } from '@/lib/lab/outlook'
+import { coinLabel, koinHref } from '@/lib/lab/outlook'
 import { useIsLabAdmin, useKoinStrength, useRefreshKoinStrength } from '@/lib/queries/outlook'
 import type { StrengthRow } from '@/lib/api/types/universal'
 
@@ -59,7 +60,8 @@ const COLS: { key: StrengthSortKey; label: string; hide?: string; right?: boolea
   { key: 'funding_7d_apr_pct', label: 'Funding 7 hari', hide: 'hidden xl:table-cell', right: true },
 ]
 
-const th = 'px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground'
+const th = 'eyebrow px-4 py-3'
+const td = 'px-4 py-3.5'
 
 export function StrengthTable() {
   const q = useKoinStrength()
@@ -87,28 +89,36 @@ export function StrengthTable() {
   const top = sortStrength(all.filter((r) => r.eligible), 'rank', false).slice(0, 3)
 
   return (
-    <Section
-      title="Terkuat: peringkat momentum"
-      description={
-        top.length
-          ? `Paling kuat sekarang: ${top.map((r) => r.symbol.replace(/USDT$/, '')).join(', ')} (dari ${eligible} koin dengan data cukup). Peringkat relatif, bukan sinyal beli.`
-          : 'Peringkat relatif momentum 7/30/90 hari, disesuaikan gejolak. Bukan sinyal beli.'
-      }
+    <TitledPanel
+      title="Terkuat"
+      icon={Trophy}
       action={admin ? (
-        <Button variant="outline" size="sm" onClick={onRefresh} disabled={busy || refresh.isPending} className="h-8 gap-1.5 text-xs">
-          <RefreshCw className={cn('h-3.5 w-3.5', busy && 'animate-spin')} />
+        <Button variant="outline" onClick={onRefresh} disabled={busy || refresh.isPending} className="h-9 gap-2 rounded-full px-4 text-sm">
+          <RefreshCw className={cn('h-4 w-4', busy && 'animate-spin')} />
           {busy ? 'Memperbarui…' : 'Perbarui sekarang'}
         </Button>
       ) : undefined}
     >
-      <Freshness className="mb-2" dataLabel="Data close 4H" dataAt={q.data?.last_bar_close ?? null} updatedAt={q.data?.computed_at} timeframe="4h" nextDelayMin={4} />
-      <div className="mb-3 flex flex-wrap gap-1.5" aria-label="Filter">
+      {top.length > 0 && (
+        <div className="mb-5 flex flex-wrap items-center gap-3">
+          <span className="text-sm text-muted-foreground">Paling kuat sekarang</span>
+          {top.map((r, i) => (
+            <Link key={r.symbol} href={koinHref(r.symbol)} className="inline-flex items-center gap-2 rounded-full border py-1 pl-1 pr-4 text-base font-semibold hover:bg-muted/50">
+              <CoinAvatar symbol={r.symbol} size="sm" />
+              <span className="num text-2xs text-muted-foreground">#{r.rank ?? i + 1}</span>{coinLabel(r.symbol)}
+            </Link>
+          ))}
+          <span className="text-2xs text-muted-foreground">dari {eligible} koin · bukan sinyal beli</span>
+        </div>
+      )}
+      <Freshness className="mb-3" dataLabel="Data close 4H" dataAt={q.data?.last_bar_close ?? null} updatedAt={q.data?.computed_at} timeframe="4h" nextDelayMin={4} />
+      <div className="mb-4 flex flex-wrap gap-2" aria-label="Filter">
         {([['all', 'Semua'], ['up', 'Tren naik'], ['down', 'Tren turun']] as const).map(([v, label]) => (
-          <Chip key={v} active={filter === v} onClick={() => setFilter(v)} className="h-7 px-2.5">{label}</Chip>
+          <Chip key={v} active={filter === v} onClick={() => setFilter(v)} className="h-9 px-4 text-sm">{label}</Chip>
         ))}
       </div>
       {q.isPending ? (
-        <div className="space-y-2" aria-busy="true">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
+        <div className="space-y-2" aria-busy="true">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-2xl" />)}</div>
       ) : q.error ? (
         <ErrorPanel kind={q.error instanceof ApiError ? q.error.kind : 'server'} onRetry={() => q.refetch()} messageOverride="Gagal memuat peringkat Terkuat." />
       ) : all.length === 0 ? (
@@ -117,14 +127,14 @@ export function StrengthTable() {
           description={busy ? 'Sedang dihitung pertama kali — halaman update otomatis.' : 'Data dihitung otomatis setelah setiap close candle 4 jam.'}
         />
       ) : (
-        <div className="-mx-4 overflow-x-auto sm:mx-0 sm:rounded-lg sm:border sm:border-border/60">
+        <div className="-mx-6 overflow-x-auto sm:mx-0 sm:rounded-2xl sm:border sm:border-border/60">
           <table className="w-full text-sm">
             <thead className="border-b border-border/60 bg-muted/30">
               <tr>
                 {COLS.map((c) => (
                   <th key={c.key} className={cn(th, c.right ? 'text-right' : 'text-left', c.hide)}
                     aria-sort={sort.key === c.key ? (sort.desc ? 'descending' : 'ascending') : 'none'}>
-                    <button type="button" onClick={() => toggle(c.key)} className="inline-flex items-center gap-1 uppercase hover:text-foreground">
+                    <button type="button" onClick={() => toggle(c.key)} className="inline-flex min-h-8 items-center gap-1 uppercase hover:text-foreground">
                       {c.label}
                       {sort.key === c.key && (sort.desc ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />)}
                     </button>
@@ -135,43 +145,48 @@ export function StrengthTable() {
             </thead>
             <tbody className="divide-y divide-border/50">
               {rows.map((r) => (
-                <tr key={r.symbol} className={cn(!r.eligible && 'opacity-60')}>
-                  <td className="px-3 py-2 font-mono text-xs font-bold tabular-nums">{r.rank ?? '—'}</td>
-                  <td className="px-3 py-2">
-                    <Link href={koinHref(r.symbol)} className="font-mono text-xs font-semibold hover:underline">{r.symbol.replace(/USDT$/, '')}</Link>
-                    <div className="font-mono text-[10px] text-muted-foreground">
-                      {formatPrice(r.price)}
-                      {!r.eligible && ' · data < 120 hari'}
-                    </div>
+                <tr key={r.symbol} className={cn('transition-colors hover:bg-muted/30', !r.eligible && 'opacity-60')}>
+                  <td className={cn(td, 'num text-sm font-bold text-muted-foreground')}>{r.rank ?? '—'}</td>
+                  <td className={td}>
+                    <Link href={koinHref(r.symbol)} className="flex items-center gap-3 hover:underline">
+                      <CoinAvatar symbol={r.symbol} size="sm" />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold">{coinLabel(r.symbol)}</span>
+                        <span className="num block text-2xs text-muted-foreground">
+                          {formatPrice(r.price)}
+                          {!r.eligible && ' · data < 120 hari'}
+                        </span>
+                      </span>
+                    </Link>
                   </td>
                   {(['ret_1d_pct', 'ret_7d_pct', 'ret_30d_pct', 'ret_90d_pct'] as const).map((k, i) => (
-                    <td key={k} className={cn('px-3 py-2 text-right font-mono text-xs tabular-nums', signClass(r[k]), COLS[i + 2].hide)}>{formatPercent(r[k], 1)}</td>
+                    <td key={k} className={cn(td, 'num text-right text-sm font-medium', signClass(r[k]), COLS[i + 2].hide)}>{formatPercent(r[k], 1)}</td>
                   ))}
-                  <td className="hidden px-3 py-2 text-right font-mono text-xs tabular-nums lg:table-cell">{r.vol_ann_pct === null ? '—' : `${formatScore(r.vol_ann_pct, 0)}%`}</td>
-                  <td className="px-3 py-2 text-right">
-                    <span className={cn('inline-flex items-center gap-1 font-mono text-xs', r.trend === 'up' ? 'text-bullish' : r.trend === 'down' ? 'text-bearish' : 'text-muted-foreground')}>
-                      {r.trend === 'up' ? <TrendingUp className="h-3.5 w-3.5" aria-label="naik" /> : r.trend === 'down' ? <TrendingDown className="h-3.5 w-3.5" aria-label="turun" /> : null}
+                  <td className={cn(td, 'num hidden text-right text-sm lg:table-cell')}>{r.vol_ann_pct === null ? '—' : `${formatScore(r.vol_ann_pct, 0)}%`}</td>
+                  <td className={cn(td, 'text-right')}>
+                    <span className={cn('num inline-flex items-center gap-1 text-sm font-medium', r.trend === 'up' ? 'text-bullish' : r.trend === 'down' ? 'text-bearish' : 'text-muted-foreground')}>
+                      {r.trend === 'up' ? <TrendingUp className="h-4 w-4" aria-label="naik" /> : r.trend === 'down' ? <TrendingDown className="h-4 w-4" aria-label="turun" /> : null}
                       {formatPercent(r.ema_dist_pct, 1)}
                     </span>
                   </td>
-                  <td className={cn('hidden px-3 py-2 text-right font-mono text-xs tabular-nums xl:table-cell', signClass(r.funding_7d_apr_pct === null ? null : -r.funding_7d_apr_pct))}>
+                  <td className={cn(td, 'num hidden text-right text-sm xl:table-cell', signClass(r.funding_7d_apr_pct === null ? null : -r.funding_7d_apr_pct))}>
                     {formatPercent(r.funding_7d_apr_pct, 1)}
                   </td>
-                  <td className="hidden px-3 py-2 text-right sm:table-cell"><Sparkline values={r.spark} /></td>
+                  <td className={cn(td, 'hidden text-right sm:table-cell')}><Sparkline values={r.spark} /></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
-      <div className="mt-3 flex items-start gap-1.5 text-[11px] leading-relaxed text-muted-foreground">
+      <div className="mt-4 flex items-start gap-1.5 text-2xs leading-relaxed text-muted-foreground">
         <InfoTip label="Cara membaca Terkuat">
           Skor = rata-rata momentum 7, 30 dan 90 hari yang disesuaikan gejolak harga. Tren = harga dibanding rata-rata
           harga 50 hari. Funding 7 hari ditulis per tahun (positif = long membayar). Koin dengan data kurang dari 120 hari
           tidak diberi peringkat.
         </InfoTip>
-        <span>Peringkat relatif antar koin, bukan sinyal beli. Klik nama koin untuk keputusan dan rencananya.</span>
+        <span>Momentum 7/30/90 hari, disesuaikan gejolak. Klik koin untuk rencananya.</span>
       </div>
-    </Section>
+    </TitledPanel>
   )
 }

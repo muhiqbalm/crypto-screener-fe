@@ -32,10 +32,10 @@ export function FactorTable() {
   if (isPending) {
     return (
       <div className="space-y-4" aria-busy="true">
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
+        <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-3xl" />)}
         </div>
-        {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+        {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-2xl" />)}
       </div>
     )
   }
@@ -52,12 +52,12 @@ export function FactorTable() {
 
   return (
     <TrackRecordProvider>
-      <div className="space-y-4">
+      <div className="space-y-8">
         {summary && <MarketOverviewCards summary={summary} />}
-        <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
-          <div className="flex flex-col gap-3 border-b px-4 py-3 md:flex-row md:items-end md:justify-between">
+        <div className="overflow-hidden rounded-3xl border bg-card">
+          <div className="flex flex-col gap-3 border-b px-5 py-4 sm:px-6 md:flex-row md:items-end md:justify-between">
             <ScreenerFilters filters={filters} onFiltersChange={setFilters} />
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
               {isStale && (
                 <Badge variant="warn" size="sm" title="Server menyajikan data terakhir karena pembaruan terbaru gagal atau terlambat">
                   data terlambat ({Math.round(dataAge ?? 0)} dtk)
@@ -76,8 +76,7 @@ export function FactorTable() {
           <TrackRecordFootnote />
         </div>
         <p className="text-2xs text-muted-foreground">
-          Sinyal screener adalah arah skor saat ini, bukan perintah beli atau jual. Keputusan per koin (arah strategi,
-          rencana, bukti) ada di halaman koin — klik nama koin.
+          Sinyal screener = arah skor saat ini, bukan perintah beli/jual. Klik koin untuk keputusan dan rencananya.
         </p>
       </div>
     </TrackRecordProvider>
