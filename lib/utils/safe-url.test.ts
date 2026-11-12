@@ -8,11 +8,11 @@ describe('safeNextPath', () => {
   })
   it('rejects open-redirect tricks', () => {
     for (const bad of ['//evil.com', '/\\evil.com', 'https://evil.com', 'javascript:alert(1)', 'evil.com', '/\u0000x', '/login', '/register']) {
-      expect(safeNextPath(bad)).toBe('/screener')
+      expect(safeNextPath(bad)).toBe('/beranda')
     }
   })
   it('falls back on empty', () => {
-    expect(safeNextPath(null)).toBe('/screener')
+    expect(safeNextPath(null)).toBe('/beranda')
     expect(safeNextPath('', '/x')).toBe('/x')
   })
 })
