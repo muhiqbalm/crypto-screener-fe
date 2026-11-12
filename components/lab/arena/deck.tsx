@@ -1,18 +1,24 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, type LucideIcon } from 'lucide-react'
+import { CoinAvatar as UiCoinAvatar } from '@/components/ui/coin-avatar'
+import { CountUp as UiCountUp } from '@/components/ui/count-up'
+import { ProgressBar } from '@/components/ui/progress-bar'
+import { Sparkline } from '@/components/ui/sparkline'
+import { TONE_VAR, signTone, type Tone } from '@/components/ui/tone'
 import { cn } from '@/lib/utils/cn'
 
 /**
  * "Deck" building blocks for the W3b pages (Preset, Paper berjalan, Jurnal, Rekam jejak,
- * Laporan): big cards, big numbers, bars, rings and sparklines in the style of
- * docs/bmtm-briefing.html (06-desain-v2.md §2–§4b). Local stand-ins until the shared
- * ui-v2 primitives exist; colours are the semantic tokens only.
+ * Laporan), in the style of docs/bmtm-briefing.html (06-desain-v2.md §2–§4b). Thin layer
+ * over the shared ui-v2 primitives (tone, CountUp, Sparkline, ProgressBar, CoinAvatar and the
+ * ring-gradient / glass / lift utilities) plus the few pieces those do not cover: a card with
+ * an icon header that can be one big button, big numbers, a ring, a rate bar, rank badges.
  */
 
-export type Tone = 'bullish' | 'bearish' | 'warn' | 'info' | 'lab' | 'brand' | 'muted'
+export type { Tone }
+export { signTone }
 
 const TEXT: Record<Tone, string> = {
   bullish: 'text-bullish',
@@ -41,15 +47,6 @@ const TINT: Record<Tone, string> = {
   brand: 'border-brand/35 bg-brand/12 text-brand',
   muted: 'border-border bg-muted/60 text-muted-foreground',
 }
-const FILL_SVG: Record<Tone, string> = {
-  bullish: 'fill-bullish',
-  bearish: 'fill-bearish',
-  warn: 'fill-warn',
-  info: 'fill-info',
-  lab: 'fill-lab',
-  brand: 'fill-brand',
-  muted: 'fill-muted-foreground',
-}
 const STROKE: Record<Tone, string> = {
   bullish: 'stroke-bullish',
   bearish: 'stroke-bearish',
@@ -61,7 +58,6 @@ const STROKE: Record<Tone, string> = {
 }
 
 export const toneText = (t: Tone) => TEXT[t]
-export const signTone = (v: number | null | undefined): Tone => (v === null || v === undefined || !Number.isFinite(v) || v === 0 ? 'muted' : v > 0 ? 'bullish' : 'bearish')
 
 // ── card ───────────────────────────────────────────────────────────────────
 
@@ -122,26 +118,25 @@ export function DeckCard({
     </div>
   )
   const inner = (
-    <div className={cn('relative h-full rounded-3xl p-5 sm:p-6', hero ? 'bg-card/90 backdrop-blur' : 'bg-card', bodyClassName)}>
+    <div className={cn('relative h-full', fill && 'flex flex-col')}>
       {hero && (
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute -top-10 right-6 h-40 w-40 rounded-full bg-info/20 blur-3xl print:hidden"
+          className="pointer-events-none absolute -right-16 -top-20 -z-10 h-56 w-56 rounded-full opacity-30 blur-3xl print:hidden"
+          style={{ background: TONE_VAR[iconTone === 'muted' ? 'brand' : iconTone] }}
         />
       )}
-      <div className={cn('relative', fill && 'flex h-full flex-col')}>
-        {head}
-        {children}
-      </div>
+      {head}
+      {children}
     </div>
   )
   const frame = cn(
-    'group relative block h-full w-full rounded-3xl text-left text-card-foreground break-inside-avoid print:shadow-none',
-    hero ? 'bg-gradient-to-br from-info/70 via-lab/50 to-brand/50 p-px shadow-[0_0_40px_-12px] shadow-info/40' : 'border bg-card shadow-sm',
+    'group relative block h-full w-full min-w-0 rounded-3xl p-5 text-left text-card-foreground break-inside-avoid print:shadow-none sm:p-6',
+    hero ? 'ring-gradient glass overflow-hidden' : 'border bg-card',
     outline && !hero && { bullish: 'border-bullish/50', bearish: 'border-bearish/50', warn: 'border-warn/60', info: 'border-info/50', lab: 'border-lab/50', brand: 'border-brand/50', muted: '' }[outline],
     highlighted && 'ring-2 ring-brand/70 ring-offset-2 ring-offset-background',
-    onClick &&
-      'cursor-pointer transition duration-200 hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transform-none motion-reduce:transition-none',
+    onClick && 'lift cursor-pointer hover:border-brand/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+    bodyClassName,
     className,
   )
   if (onClick) {
@@ -185,38 +180,9 @@ export function SectionHead({ icon: Icon, title, sub, action, id }: { icon?: Luc
 
 // ── numbers ────────────────────────────────────────────────────────────────
 
-function reducedMotion(): boolean {
-  try {
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  } catch {
-    return true
-  }
-}
-
-/**
- * Counts up to `value` once when first shown (prefers-reduced-motion: no animation).
- * `format` turns the in-between numbers into text, so signs and units stay right.
- */
-export function CountUp({ value, format, duration = 700 }: { value: number; format: (v: number) => string; duration?: number }) {
-  const [shown, setShown] = useState<number | null>(null)
-  const done = useRef(false)
-  useEffect(() => {
-    if (done.current || !Number.isFinite(value)) return
-    done.current = true
-    if (reducedMotion()) return
-    let raf = 0
-    const t0 = performance.now()
-    const tick = (t: number) => {
-      const p = Math.min(1, (t - t0) / duration)
-      const eased = 1 - Math.pow(1 - p, 3)
-      setShown(value * eased)
-      if (p < 1) raf = requestAnimationFrame(tick)
-      else setShown(null)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [value, duration])
-  return <>{format(shown ?? value)}</>
+/** Counts up once when shown (shared CountUp: respects prefers-reduced-motion). */
+export function CountUp({ value, format, duration }: { value: number; format: (v: number) => string; duration?: number }) {
+  return <UiCountUp value={value} format={format} duration={duration} />
 }
 
 const VALUE_SIZE = {
@@ -253,21 +219,9 @@ export function BigNumber({
 
 // ── bars, rings, sparklines ────────────────────────────────────────────────
 
-/** Thick progress bar (x/30 transaksi, rentang, skor). */
+/** Progress bar (x/30 transaksi, rentang, skor) — the shared ProgressBar without its label row. */
 export function Meter({ value, max, tone = 'lab', label, className }: { value: number; max: number; tone?: Tone; label?: string; className?: string }) {
-  const pct = max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0
-  return (
-    <div
-      className={cn('h-2.5 w-full overflow-hidden rounded-full bg-muted', className)}
-      role="progressbar"
-      aria-valuenow={value}
-      aria-valuemin={0}
-      aria-valuemax={max}
-      aria-label={label}
-    >
-      <div className={cn('h-full rounded-full transition-[width] duration-700 motion-reduce:transition-none', FILL[tone])} style={{ width: `${pct}%` }} />
-    </div>
-  )
+  return <ProgressBar value={value} max={max} tone={tone} size="lg" label={label ?? `${value} dari ${max}`} className={className} />
 }
 
 /** Progress ring with the count in the middle (x/30). */
@@ -296,21 +250,13 @@ export function Ring({ value, max, tone = 'lab', size = 72, label, children }: {
   )
 }
 
-/** Tiny line chart; colour follows the direction (first → last) unless a tone is given. */
+/** Tiny line chart (shared Sparkline); colour follows the direction unless a tone is given. */
 export function Spark({ values, tone, width = 120, height = 36, className, label }: { values: number[]; tone?: Tone; width?: number; height?: number; className?: string; label?: string }) {
-  const v = values.filter((x) => Number.isFinite(x))
-  if (v.length < 2) return <span className={cn('inline-block text-[13px] text-muted-foreground', className)}>—</span>
-  const lo = Math.min(...v)
-  const hi = Math.max(...v)
-  const span = hi - lo || 1
-  const pts = v.map((x, i) => [(i / (v.length - 1)) * (width - 2) + 1, height - 2 - ((x - lo) / span) * (height - 4)] as const)
-  const d = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
-  const t = tone ?? signTone(v[v.length - 1] - v[0])
+  if (values.filter((x) => Number.isFinite(x)).length < 2) return <span className={cn('inline-block text-[13px] text-muted-foreground', className)}>—</span>
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className={cn('overflow-visible', className)} role="img" aria-label={label ?? 'Grafik kecil'}>
-      <path d={`${d} L${width - 1},${height} L1,${height} Z`} className={cn('opacity-15', FILL_SVG[t])} />
-      <path d={d} fill="none" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" className={STROKE[t]} />
-    </svg>
+    <div className={cn('shrink-0', className)} style={{ width }}>
+      <Sparkline data={values} tone={tone ?? 'auto'} height={height} area label={label ?? 'Grafik kecil'} />
+    </div>
   )
 }
 
@@ -352,21 +298,7 @@ export function RankBadge({ rank }: { rank: number }) {
   )
 }
 
-const AVATAR_TONES: Tone[] = ['info', 'lab', 'brand', 'warn', 'bullish', 'bearish']
-
-/** Coin initials in a circle; the colour is fixed per coin (not a status). */
+/** Coin initials in a circle with a fixed colour per coin (shared CoinAvatar). */
 export function CoinAvatar({ coin, size = 40 }: { coin: string; size?: number }) {
-  const c = coin.replace(/USDT$/, '').replace(/[^A-Z0-9]/gi, '').toUpperCase() || '?'
-  let h = 0
-  for (const ch of c) h = (h * 31 + ch.charCodeAt(0)) >>> 0
-  const tone = AVATAR_TONES[h % AVATAR_TONES.length]
-  return (
-    <span
-      className={cn('font-display inline-flex shrink-0 items-center justify-center rounded-full border font-bold', TINT[tone])}
-      style={{ width: size, height: size, fontSize: size * (c.length > 3 ? 0.26 : 0.32) }}
-      aria-hidden="true"
-    >
-      {c.slice(0, 4)}
-    </span>
-  )
+  return <UiCoinAvatar symbol={coin} size={size >= 44 ? 'lg' : size >= 36 ? 'md' : 'sm'} />
 }
