@@ -16,9 +16,9 @@ import type { ArenaRow } from '@/lib/api/types/arena'
 function Stat({ label, value, hint, className }: { label: React.ReactNode; value: React.ReactNode; hint?: React.ReactNode; className?: string }) {
   return (
     <div className="min-w-0 rounded-lg border bg-card p-2.5">
-      <div className="text-3xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
       <div className={cn('num mt-0.5 text-sm font-semibold', className)}>{value}</div>
-      {hint && <div className="mt-0.5 text-3xs text-muted-foreground">{hint}</div>}
+      {hint && <div className="mt-0.5 text-[13px] text-muted-foreground">{hint}</div>}
     </div>
   )
 }
@@ -51,7 +51,7 @@ export function PaperDetailSheet({ row, reviewN, onClose }: { row: ArenaRow | nu
               <Stat label="Hasil" value={formatPct(s.return_pct, { digits: 2, signed: true })} className={signClass(s.return_pct)} hint={`Ekuitas ${formatUsd(s.equity)}`} />
               <Stat label={<Term k="max_drawdown" short noTip />} value={s.max_dd_pct === null ? 'tidak tersedia' : formatPct(-Math.abs(s.max_dd_pct), { digits: 1 })} />
               <div className="col-span-2 rounded-lg border bg-card p-2.5">
-                <div className="mb-1 text-3xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <div className="mb-1 text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
                   <Term k="paper_progress" />
                 </div>
                 <PaperProgress n={s.n_closed} of={reviewN} />
@@ -111,18 +111,18 @@ export function PaperDetailSheet({ row, reviewN, onClose }: { row: ArenaRow | nu
                           <span className="font-medium">{copy?.label ?? c.label}</span>
                           <DriftPill status={c.status} size="xs" />
                         </div>
-                        <p className="mt-0.5 text-3xs text-muted-foreground">{copy?.what}</p>
+                        <p className="mt-0.5 text-[13px] text-muted-foreground">{copy?.what}</p>
                         <dl className="mt-1.5 grid grid-cols-3 gap-2">
                           <div>
-                            <dt className="text-3xs text-muted-foreground">Paper</dt>
+                            <dt className="text-[13px] text-muted-foreground">Paper</dt>
                             <dd className="num">{v.observed}</dd>
                           </div>
                           <div>
-                            <dt className="text-3xs text-muted-foreground">Uji</dt>
+                            <dt className="text-[13px] text-muted-foreground">Uji</dt>
                             <dd className="num">{v.expected}</dd>
                           </div>
                           <div>
-                            <dt className="text-3xs text-muted-foreground">Rentang wajar</dt>
+                            <dt className="text-[13px] text-muted-foreground">Rentang wajar</dt>
                             <dd className="num">{v.range}</dd>
                           </div>
                         </dl>
@@ -132,7 +132,7 @@ export function PaperDetailSheet({ row, reviewN, onClose }: { row: ArenaRow | nu
                 </ul>
               )}
               {row.stats.n_closed_manual > 0 && (
-                <p className="text-3xs text-muted-foreground">
+                <p className="text-[13px] text-muted-foreground">
                   {row.stats.n_closed_manual} transaksi manual di akun ini tidak dihitung di cek (ekuitas tetap ikut).
                 </p>
               )}

@@ -138,7 +138,7 @@ function DeleteDialog({ preset, running, onClose }: { preset: LabPreset; running
 function Metric({ label, value, className }: { label: React.ReactNode; value: React.ReactNode; className?: string }) {
   return (
     <div className="min-w-0 rounded-lg border bg-card p-2.5">
-      <div className="text-3xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
       <div className={cn('num mt-0.5 text-sm font-semibold', className)}>{value}</div>
     </div>
   )
@@ -171,7 +171,7 @@ function PresetSheet({
                 <SheetTitle className="num text-lg font-bold">{p.name}</SheetTitle>
                 <PresetStatusPill status={st} />
                 {p.readonly && (
-                  <span className="inline-flex items-center gap-1 text-2xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1 text-[13px] text-muted-foreground">
                     <Lock className="h-3 w-3" aria-hidden="true" /> terkunci
                   </span>
                 )}
@@ -270,7 +270,7 @@ function PresetSheet({
               </section>
             )}
             {p.notes && <p className="text-xs text-muted-foreground">Catatan: {p.notes}</p>}
-            <p className="text-3xs text-muted-foreground">
+            <p className="text-[13px] text-muted-foreground">
               Dipakai di {p.usage.runs} uji dan {p.usage.watches} pantauan · disimpan {formatTime(p.created_at)}
             </p>
           </div>
