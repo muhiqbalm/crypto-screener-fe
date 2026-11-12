@@ -209,9 +209,9 @@ export function RunBuilder() {
   }
 
   const basisAside = (
-    <span className="inline-flex flex-wrap items-center justify-end gap-1">
-      <span>
-        Dasar: <span className="font-medium text-foreground">{importance.basis}</span>
+    <span className="inline-flex flex-wrap items-center justify-end gap-1.5">
+      <span className="rounded-full border border-border bg-muted/40 px-3 py-1 text-2xs">
+        Dasar: <span className="font-semibold text-foreground">{importance.basis}</span>
       </span>
       <InfoTip title="Dasar urutan parameter" label="Penjelasan dasar urutan parameter" align="end">
         <span className="block">{importance.basis_detail}</span>
@@ -222,17 +222,17 @@ export function RunBuilder() {
   )
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {fromId && (prefillQ.data || prefillQ.isError) && (
-        <div className={cn('flex items-start gap-2 rounded-lg border px-3 py-2 text-xs', prefillQ.isError ? 'border-warn/40 bg-warn/10 text-warn' : 'border-lab/30 bg-lab/10 text-lab')}>
-          <Wand2 className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        <div className={cn('flex items-start gap-3 rounded-2xl border px-5 py-3.5 text-sm', prefillQ.isError ? 'border-warn/40 bg-warn/10 text-warn' : 'border-lab/30 bg-lab/10 text-lab')}>
+          <Wand2 className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
           {prefillQ.isError
             ? `Uji #${fromId} tidak bisa dimuat, jadi form memakai default.`
             : `Diisi dari uji #${fromId}${use === 'best' ? ' (setting terbaik)' : use === 'trial' && rank !== null ? ` (kombinasi #${rank})` : ''}. Periksa, lalu klik Uji jujur.`}
         </div>
       )}
 
-      <Step n={1} title="Apa yang diuji" description="Strategi, koin, timeframe dan periode. Defaultnya sudah terisi.">
+      <Step n={1} title="Apa yang diuji" description="Strategi, koin, timeframe, periode. Default sudah terisi.">
         <StrategyStep
           templates={templates}
           template={template}
@@ -258,7 +258,7 @@ export function RunBuilder() {
           onPeriod={(p: Period) => update({ period: p, ...periodRange(p, form.timeframe, form, defaults) })}
           onDates={(d) => update(d)}
         />
-        {symbolInfo === undefined && <p className="pt-2 text-2xs text-warn">Koin {form.symbol} tidak ada di daftar server.</p>}
+        {symbolInfo === undefined && <p className="pt-3 text-sm text-warn">Koin {form.symbol} tidak ada di daftar server.</p>}
       </Step>
 
       <Step
@@ -266,23 +266,23 @@ export function RunBuilder() {
         title="Parameter penting"
         description={
           importance.source === 'template'
-            ? 'Belum diukur untuk timeframe ini, jadi yang tampil parameter utama strategi.'
-            : 'Hanya parameter yang terbukti mengubah hasil. Sisanya ada di Lanjutan.'
+            ? 'Belum diukur di timeframe ini. Ini parameter utama strategi.'
+            : 'Hanya yang terbukti mengubah hasil.'
         }
         aside={basisAside}
       >
         {importanceQ.isPending && importanceQ.fetchStatus !== 'idle' ? (
-          <div className="grid gap-3 md:grid-cols-2" aria-busy="true">
-            <Skeleton className="h-36 w-full rounded-lg" />
-            <Skeleton className="h-36 w-full rounded-lg" />
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-2" aria-busy="true">
+            <Skeleton className="h-52 w-full rounded-2xl" />
+            <Skeleton className="h-52 w-full rounded-2xl" />
           </div>
         ) : (
           <ImportantParams step={step} importance={importance} values={form.params} errors={errors} onChange={(params) => update({ params })} />
         )}
-        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs text-muted-foreground">
+        <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground">
           <span>{hiddenKeys.size} parameter lain ada di Lanjutan.</span>
           {hiddenChanged > 0 && (
-            <button type="button" onClick={openAdvancedChanged} className="cursor-pointer rounded-full bg-warn/15 px-2 py-0.5 font-semibold text-warn hover:underline">
+            <button type="button" onClick={openAdvancedChanged} className="cursor-pointer rounded-full bg-warn/15 px-3 py-1 text-2xs font-semibold text-warn hover:underline">
               {hiddenChanged} parameter lanjutan diubah · lihat
             </button>
           )}

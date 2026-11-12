@@ -16,6 +16,7 @@ export function RuntimeEstimate({
   scan = false,
   ack,
   onAck,
+  compact = false,
   className,
 }: {
   estimate: LabEstimate | null | undefined
@@ -23,12 +24,14 @@ export function RuntimeEstimate({
   scan?: boolean
   ack: boolean
   onAck: (v: boolean) => void
+  /** One line (time + queue) unless the job is long or near its timeout. */
+  compact?: boolean
   className?: string
 }) {
   if (!estimate) {
     return loading ? (
-      <p className={cn('flex items-center gap-1.5 text-2xs text-muted-foreground', className)}>
-        <Loader2 className="h-3 w-3 animate-spin" /> Menghitung perkiraan waktu…
+      <p className={cn('flex items-center gap-2 text-sm text-muted-foreground', className)}>
+        <Loader2 className="h-4 w-4 animate-spin" /> Menghitung perkiraan waktu…
       </p>
     ) : null
   }
@@ -39,10 +42,20 @@ export function RuntimeEstimate({
     ? `${formatDuration(e.wall_s)} total · ${e.cells.length} kombinasi${e.parallel > 1 ? ` · ${e.parallel} paralel` : ' · berurutan'}`
     : `${formatDuration(e.longest_s)} per run`
   const wait = e.queue.wait_s > 0 ? `Antrian: ${e.queue.ahead_jobs} job di depan, mulai ${formatDuration(e.queue.wait_s)} lagi.` : 'Slot kosong — langsung jalan.'
+  if (compact && level === 'ok') {
+    return (
+      <p className={cn('flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-muted-foreground', className)} role="status">
+        <Clock className="h-4 w-4 shrink-0" aria-hidden="true" />
+        <span className="num font-semibold text-foreground">Perkiraan {head}</span>
+        <span aria-hidden="true">·</span>
+        <span>{wait}</span>
+      </p>
+    )
+  }
   return (
     <div
       className={cn(
-        'space-y-1.5 rounded-lg border px-3 py-2 text-2xs',
+        'space-y-2 rounded-2xl border px-4 py-3 text-sm',
         level === 'ok' && 'border-border bg-muted/30 text-muted-foreground',
         level === 'long' && 'border-warn/30 bg-warn/[0.07] text-muted-foreground',
         (level === 'danger' || level === 'over') && 'border-warn/50 bg-warn/10 text-warn',
@@ -51,8 +64,8 @@ export function RuntimeEstimate({
       role="status"
     >
       <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-        <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-        <span className="num text-xs font-semibold text-foreground">Perkiraan {head}</span>
+        <Clock className="h-4 w-4 shrink-0" aria-hidden="true" />
+        <span className="num text-sm font-semibold text-foreground">Perkiraan {head}</span>
         {scan && tfParts.length > 0 && <span className="num">({tfParts.join(', ')} per koin)</span>}
         {!e.calibrated && <span title="Belum cukup run selesai di server ini untuk kalibrasi">· dari tarif terukur</span>}
       </p>
@@ -63,14 +76,14 @@ export function RuntimeEstimate({
       {(level === 'danger' || level === 'over') && (
         <div className="space-y-1.5">
           <p className="flex items-start gap-1.5 font-medium">
-            <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             {level === 'over'
               ? `Perkiraan melewati batas waktu job (${e.exceeds_timeout.slice(0, 3).join(', ')}${e.exceeds_timeout.length > 3 ? '…' : ''}) — kemungkinan besar dihentikan sebelum selesai. Perpendek periode atau kurangi percobaan.`
               : 'Perkiraan mendekati batas waktu job — bisa dihentikan sebelum selesai. Perpendek periode atau kurangi percobaan.'}
           </p>
           {needsAck(level) && (
-            <label className="flex cursor-pointer items-center gap-2 text-foreground">
-              <input type="checkbox" checked={ack} onChange={(ev) => onAck(ev.target.checked)} className="h-3.5 w-3.5 accent-current" />
+            <label className="flex cursor-pointer items-center gap-2.5 text-sm text-foreground">
+              <input type="checkbox" checked={ack} onChange={(ev) => onAck(ev.target.checked)} className="h-5 w-5 accent-current" />
               Saya paham, tetap jalankan
             </label>
           )}

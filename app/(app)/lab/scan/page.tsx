@@ -14,7 +14,7 @@ export default function LabScanPage() {
     <PageContainer>
       <LabHeader
         title="Uji strategi"
-        subtitle="Banyak koin: satu strategi diuji di banyak koin × timeframe sekaligus, lalu rapornya dilihat di satu peta."
+        subtitle="Banyak koin: satu strategi di banyak koin × timeframe, rapornya di satu peta."
         status={<StatusPill kind="riset" />}
         help={{
           apaIni: 'Menjawab: di koin dan timeframe mana strategi ini Lolos di data baru?',
@@ -26,7 +26,7 @@ export default function LabScanPage() {
           istilah: ['scan', 'validate', 'holdout', 'data_snooping'],
         }}
       />
-      <Suspense fallback={<Skeleton className="h-96 w-full rounded-xl" />}>
+      <Suspense fallback={<Skeleton className="h-96 w-full rounded-3xl" />}>
         <ScanView />
       </Suspense>
     </PageContainer>

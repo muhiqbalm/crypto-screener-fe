@@ -34,7 +34,7 @@ export function missingDataCount(symbols: readonly LabSymbol[], selected: readon
 export function lowerTfHint(tfs: readonly string[]): string | null {
   const low = tfs.filter((tf) => LOWER_TFS.has(tf))
   if (low.length === 0) return null
-  return `${low.join(' / ')}: biaya (komisi + slippage) memakan porsi jauh lebih besar dari tiap candle, dan run-nya lebih lama (validasi 15m ±15 mnt per koin untuk 2 tahun data, ±40 mnt sejak 2020). Cek angka "beban biaya" di hasil.`
+  return `${low.join(' / ')}: biaya memakan porsi besar tiap candle dan ujinya lebih lama. Cek "beban biaya" di hasil.`
 }
 
 function n(v: unknown): number | null {

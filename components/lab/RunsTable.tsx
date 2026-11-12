@@ -3,15 +3,17 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Archive, FlaskConical, Grid3x3, RefreshCw, Search } from 'lucide-react'
+import { Activity, Archive, CheckCircle2, FlaskConical, Grid3x3, ListChecks, RefreshCw, Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { VerdictBadge } from '@/components/ui/verdict-badge'
+import { KpiTile } from '@/components/ui/kpi'
+import { CoinAvatar } from '@/components/ui/coin-avatar'
 import { ResponsiveTable, type ResponsiveColumn } from '@/components/ui/responsive-table'
 import { EmptyState, ErrorState, LoadingState } from '@/components/shell/states'
 import { Chip } from '@/components/lab/Section'
 import { CompareCheckbox, CompareTray } from '@/components/lab/compare/CompareTray'
 import { MODE_COPY, STATUS_COPY } from '@/components/lab/run/copy'
+import { StrategyChip, VerdictPill } from '@/components/lab/run/v2-ui'
 import { MAX_COMPARE, toggleId } from '@/lib/lab/planning'
 import { formatAge, formatTime } from '@/lib/utils/time'
 import { formatPct, signClass } from '@/lib/utils/format'
@@ -89,27 +91,29 @@ function ResultCell({ e }: { e: HistoryEntry }) {
   if (e.kind === 'scan') {
     const c = scanCounts(e.scan)
     return (
-      <span className="inline-flex flex-wrap items-center gap-1.5 text-xs">
-        <span className={cn('num font-semibold', c.pass > 0 ? 'text-bullish' : 'text-muted-foreground')}>{c.pass} Lolos</span>
-        <span className="num text-muted-foreground">dari {c.total}</span>
+      <span className="inline-flex flex-wrap items-baseline gap-1.5 text-sm">
+        <span className={cn('num display text-lg font-extrabold', c.pass > 0 ? 'text-bullish' : 'text-muted-foreground')}>{c.pass}</span>
+        <span className="text-muted-foreground">
+          Lolos dari <span className="num">{c.total}</span>
+        </span>
         {status !== 'done' && <span className="text-2xs text-info">· {STATUS_COPY[status]}</span>}
       </span>
     )
   }
   const r = e.run
   if (r.status !== 'done') {
-    return <span className={cn('text-xs font-medium', r.status === 'error' ? 'text-bearish' : r.status === 'running' ? 'text-info' : 'text-muted-foreground')}>{STATUS_COPY[r.status]}</span>
+    return <span className={cn('text-sm font-semibold', r.status === 'error' ? 'text-bearish' : r.status === 'running' ? 'text-info' : 'text-muted-foreground')}>{STATUS_COPY[r.status]}</span>
   }
-  if (r.verdict) return <VerdictBadge verdict={r.verdict} />
+  if (r.verdict) return <VerdictPill verdict={r.verdict} />
   if (r.mode === 'backtest') {
     return (
-      <span className="text-xs">
-        <span className={cn('num font-medium', signClass(r.net_return_pct))}>{formatPct(r.net_return_pct, { signed: true })}</span>
+      <span className="text-sm">
+        <span className={cn('num font-semibold', signClass(r.net_return_pct))}>{formatPct(r.net_return_pct, { signed: true })}</span>
         <span className="text-muted-foreground"> tanpa rapor</span>
       </span>
     )
   }
-  return <span className="text-xs text-muted-foreground">Tanpa rapor</span>
+  return <span className="text-sm text-muted-foreground">Tanpa rapor</span>
 }
 
 const KINDS: [Kind, string][] = [
@@ -142,8 +146,11 @@ export function RunsTable() {
   const all = useMemo(() => historyEntries(runsQ.data ?? [], scansQ.data ?? []), [runsQ.data, scansQ.data])
   const rows = useMemo(() => all.filter((e) => matches(e, { q, tpl, kind, outcome })), [all, q, tpl, kind, outcome])
   const active = all.filter((e) => isActiveStatus(entryStatus(e))).length
+  const withReport = all.filter((e) => matches(e, { q: '', tpl: '', kind: 'all', outcome: 'PASS' }) || matches(e, { q: '', tpl: '', kind: 'all', outcome: 'FAIL' })).length
+  const passed = all.filter((e) => matches(e, { q: '', tpl: '', kind: 'all', outcome: 'PASS' })).length
   const templates = templatesQ.data ?? []
   const nameOf = (id: string) => templateShort(id, templates.find((t) => t.id === id)?.name)
+  const fullName = (id: string) => templates.find((t) => t.id === id)?.name
   const hrefOf = (e: HistoryEntry) =>
     e.kind === 'run' ? `/lab/runs/${encodeURIComponent(String(e.run.id))}` : `/lab/scan?id=${encodeURIComponent(String(e.scan.id))}`
 
@@ -170,12 +177,15 @@ export function RunsTable() {
       mobile: 'title',
       cell: (e) =>
         e.kind === 'run' ? (
-          <span className="num font-semibold">
-            {e.run.symbol} <span className="font-normal text-muted-foreground">{e.run.timeframe}</span>
+          <span className="inline-flex items-center gap-2.5">
+            <CoinAvatar symbol={e.run.symbol} size="sm" />
+            <span className="num text-base font-semibold">
+              {e.run.symbol.replace(/USDT$/, '')} <span className="font-normal text-muted-foreground">{e.run.timeframe}</span>
+            </span>
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1.5 font-semibold">
-            <Grid3x3 className="h-3.5 w-3.5 shrink-0 text-lab" aria-hidden="true" />
+          <span className="inline-flex items-center gap-2 text-base font-semibold">
+            <Grid3x3 className="h-4 w-4 shrink-0 text-lab" aria-hidden="true" />
             <span className="num">
               {scanCounts(e.scan).coins} koin × {scanCounts(e.scan).tfs.join(', ') || '—'}
             </span>
@@ -183,13 +193,18 @@ export function RunsTable() {
         ),
     },
     { key: 'result', header: 'Hasil', mobile: 'badge', cell: (e) => <ResultCell e={e} /> },
-    { key: 'strategy', header: 'Strategi', mobile: 'field', cell: (e) => <span className="text-xs">{nameOf(e.templateId)}</span> },
+    {
+      key: 'strategy',
+      header: 'Strategi',
+      mobile: 'field',
+      cell: (e) => (e.templateId ? <StrategyChip templateId={e.templateId} name={fullName(e.templateId)} /> : <span className="text-muted-foreground">—</span>),
+    },
     {
       key: 'kind',
       header: 'Jenis',
       mobile: 'field',
       cell: (e) => (
-        <span className="text-xs text-muted-foreground">
+        <span className="text-sm text-muted-foreground">
           {e.kind === 'run' ? MODE_COPY[e.run.mode] : `Banyak koin · ${e.scan.mode === 'optimize' ? MODE_COPY.optimize : MODE_COPY.validate}`}
         </span>
       ),
@@ -200,7 +215,7 @@ export function RunsTable() {
       mobile: 'field',
       align: 'right',
       cell: (e) => (
-        <span className="whitespace-nowrap text-xs text-muted-foreground" title={formatTime(e.at, { year: true })}>
+        <span className="whitespace-nowrap text-sm text-muted-foreground" title={formatTime(e.at, { year: true })}>
           {formatAge(e.at)}
         </span>
       ),
@@ -211,36 +226,41 @@ export function RunsTable() {
   const error = runsQ.error ?? scansQ.error
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center">
-        <div className="relative lg:w-44">
-          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari koin" aria-label="Cari koin" className="h-8 pl-8 font-mono text-xs" />
+    <div className="space-y-6">
+      {!loading && !error && all.length > 0 && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:gap-5">
+          <KpiTile label="Uji tercatat" value={all.length} icon={ListChecks} tone="brand" hint="uji banyak koin dihitung satu" />
+          <KpiTile label="Ada yang Lolos" value={passed} icon={CheckCircle2} tone="bullish" toneValue hint={`dari ${withReport} uji yang punya rapor`} />
+          <KpiTile label="Sedang berjalan" value={active} icon={Activity} tone="info" toneValue={active > 0} hint={active > 0 ? 'daftar memperbarui diri' : 'tidak ada antrian'} />
+        </div>
+      )}
+
+      <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
+        <div className="relative lg:w-52">
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari koin" aria-label="Cari koin" className="h-11 pl-10 text-base" />
         </div>
         {templates.length > 1 && (
-          <select aria-label="Strategi" value={tpl} onChange={(e) => setTpl(e.target.value)} className="h-8 rounded-md border border-input bg-transparent px-2 text-xs">
+          <select aria-label="Strategi" value={tpl} onChange={(e) => setTpl(e.target.value)} className="h-11 rounded-xl border border-input bg-transparent px-3 text-sm">
             <option value="" className="bg-popover">Semua strategi</option>
             {templates.map((t) => <option key={t.id} value={t.id} className="bg-popover">{nameOf(t.id)}</option>)}
           </select>
         )}
-        <select aria-label="Jenis uji" value={kind} onChange={(e) => setKind(e.target.value as Kind)} className="h-8 rounded-md border border-input bg-transparent px-2 text-xs">
+        <select aria-label="Jenis uji" value={kind} onChange={(e) => setKind(e.target.value as Kind)} className="h-11 rounded-xl border border-input bg-transparent px-3 text-sm">
           {KINDS.map(([v, l]) => <option key={v} value={v} className="bg-popover">{l}</option>)}
         </select>
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter hasil">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter hasil">
           {OUTCOMES.map(([v, l]) => (
-            <Chip key={v} active={outcome === v} onClick={() => setOutcome(v)} className="h-7 px-2.5">{l}</Chip>
+            <Chip key={v} active={outcome === v} onClick={() => setOutcome(v)} className="h-10 px-4 text-sm">{l}</Chip>
           ))}
         </div>
-        <Button variant="ghost" size="sm" onClick={() => { void runsQ.refetch(); void scansQ.refetch() }} disabled={runsQ.isFetching || scansQ.isFetching} className="h-8 gap-1.5 text-xs lg:ml-auto">
-          <RefreshCw className={cn('h-3.5 w-3.5', (runsQ.isFetching || scansQ.isFetching) && 'animate-spin')} aria-hidden="true" />
+        <Button variant="ghost" onClick={() => { void runsQ.refetch(); void scansQ.refetch() }} disabled={runsQ.isFetching || scansQ.isFetching} className="h-10 gap-2 rounded-full px-4 text-sm lg:ml-auto">
+          <RefreshCw className={cn('h-4 w-4', (runsQ.isFetching || scansQ.isFetching) && 'animate-spin')} aria-hidden="true" />
           Muat ulang
         </Button>
       </div>
 
-      <p className="text-2xs text-muted-foreground">
-        {active > 0 ? `${active} uji masih berjalan; daftar ini memperbarui diri. ` : ''}
-        Dari 200 uji terakhir; uji banyak koin (20 terakhir) tampil sebagai satu baris. Klik baris untuk detail; centang 2–4 uji untuk dibandingkan.
-      </p>
+      <p className="text-sm text-muted-foreground">Klik baris untuk rapornya. Centang 2–4 uji untuk dibandingkan.</p>
 
       {loading ? (
         <LoadingState rows={6} />
@@ -272,8 +292,8 @@ export function RunsTable() {
         />
       )}
 
-      <p className="flex items-center gap-1.5 text-2xs text-muted-foreground">
-        <Archive className="h-3.5 w-3.5" aria-hidden="true" />
+      <p className="flex items-center gap-2 text-2xs text-muted-foreground">
+        <Archive className="h-4 w-4" aria-hidden="true" />
         Arsip:{' '}
         <Link href="/lab/universal" className="font-medium text-info hover:underline">Universal v0</Link>
         (strategi multi-koin yang sudah dihentikan).

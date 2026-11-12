@@ -68,3 +68,15 @@ describe('verdictSentence', () => {
     expect(err.text).toMatch(/^Uji gagal dijalankan\. Uji dihentikan karena melewati batas waktu/)
   })
 })
+
+describe('verdictHeadline (hero)', () => {
+  it('big word + one line, no numbers repeated from the KPIs', async () => {
+    const { verdictHeadline } = await import('./copy')
+    expect(verdictHeadline(run({ verdict: 'PASS' }))).toEqual({ tone: 'pass', word: 'Lolos', line: 'Untung di data baru setelah biaya, dan semua syarat rapor terpenuhi.' })
+    const fail = verdictHeadline(run({ verdict: 'FAIL', checks: [check('min_oos_trades', 18, false, '>= 30'), check('cost_stress', -2, false, '> 0')] }))
+    expect(fail.word).toBe('Gagal')
+    expect(fail.line).toBe('18 trade di data baru (minimal 30 supaya hasilnya bermakna) (+1 syarat lain).')
+    expect(verdictHeadline(run({ mode: 'backtest' })).word).toBe('Uji cepat')
+    expect(verdictHeadline(run({ status: 'error', error: 'timeout after 3600s' })).line).toMatch(/batas waktu/)
+  })
+})

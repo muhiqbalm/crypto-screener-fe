@@ -1,8 +1,8 @@
 import { cn } from '@/lib/utils/cn'
 
 /**
- * One numbered step of the "Uji strategi" form: number + title + one-line description, then the
- * step's content. Server-safe (no hooks).
+ * One numbered step of "Uji strategi" (design v2): a big rounded card, a 40px number tile,
+ * a 20–24px title and at most one line under it. Server-safe (no hooks).
  */
 export function Step({
   n,
@@ -23,26 +23,26 @@ export function Step({
   id?: string
 }) {
   return (
-    <section id={id} aria-labelledby={`step-${n}-title`} className={cn('rounded-xl border border-border bg-card text-card-foreground shadow-sm', className)}>
-      <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-4 pt-4 sm:px-5">
-        <div className="flex min-w-0 items-start gap-3">
+    <section id={id} aria-labelledby={`step-${n}-title`} className={cn('rounded-3xl border border-border bg-card text-card-foreground', className)}>
+      <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2 px-5 pt-5 sm:px-8 sm:pt-7">
+        <div className="flex min-w-0 items-center gap-4">
           <span
-            className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-lab/40 bg-lab/10 text-xs font-bold text-lab"
+            className="display inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand/15 text-xl font-extrabold text-brand"
             aria-hidden="true"
           >
             {n}
           </span>
-          <div className="min-w-0 space-y-0.5">
-            <h2 id={`step-${n}-title`} className="text-sm font-semibold tracking-tight">
+          <div className="min-w-0">
+            <h2 id={`step-${n}-title`} className="text-xl font-bold tracking-tight sm:text-2xl">
               <span className="sr-only">Langkah {n}: </span>
               {title}
             </h2>
-            {description && <p className="text-xs text-muted-foreground">{description}</p>}
+            {description && <p className="line-clamp-1 text-base text-muted-foreground">{description}</p>}
           </div>
         </div>
-        {aside && <div className="min-w-0 text-2xs text-muted-foreground sm:max-w-[50%] sm:text-right">{aside}</div>}
+        {aside && <div className="min-w-0 text-sm text-muted-foreground sm:pt-2">{aside}</div>}
       </header>
-      <div className="px-4 pb-4 pt-3 sm:px-5 sm:pb-5">{children}</div>
+      <div className="px-5 pb-6 pt-5 sm:px-8 sm:pb-8">{children}</div>
     </section>
   )
 }

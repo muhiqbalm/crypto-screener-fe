@@ -18,7 +18,7 @@ export function ParamDiffTable({ rows, emptyText, live = false }: { rows: { key:
             <tr key={r.key}>
               <td className="px-3 py-2">
                 <div className="text-sm">{r.label}</div>
-                <div className="font-mono text-3xs text-muted-foreground">{r.key}</div>
+                <div className="font-mono text-2xs text-muted-foreground">{r.key}</div>
               </td>
               <td className="px-3 py-2 text-right font-mono text-xs text-muted-foreground">{fmtVal(r.def)}</td>
               <td className="px-3 py-2 text-right font-mono text-sm font-semibold text-warn">{fmtVal(r.value)}</td>

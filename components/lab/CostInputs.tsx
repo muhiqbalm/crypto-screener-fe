@@ -28,7 +28,7 @@ export function CostInputs({ value, errors, onChange }: CostInputsProps) {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {FIELDS.map(([key, label, help]) => (
           <div key={key} className="space-y-1">
-            <label htmlFor={`cost-${key}`} className="text-xs font-medium">{label}</label>
+            <label htmlFor={`cost-${key}`} className="text-sm font-medium">{label}</label>
             <Input
               id={`cost-${key}`}
               type="number"
@@ -40,20 +40,20 @@ export function CostInputs({ value, errors, onChange }: CostInputsProps) {
               onChange={(e) => onChange({ ...value, [key]: e.target.value })}
               aria-invalid={Boolean(errors[key])}
               aria-describedby={`cost-${key}-hint`}
-              className={cn('h-8 font-mono text-xs tabular-nums', errors[key] && 'border-bearish')}
+              className={cn('h-10 rounded-xl px-3 font-mono text-sm tabular-nums', errors[key] && 'border-bearish')}
             />
             {errors[key] ? (
               <p id={`cost-${key}-hint`} className="text-2xs text-bearish">{errors[key]}</p>
             ) : (
-              <p id={`cost-${key}-hint`} className="text-3xs text-muted-foreground">{help} Maksimal {COST_LIMITS[key]}%.</p>
+              <p id={`cost-${key}-hint`} className="text-2xs text-muted-foreground">{help} Maksimal {COST_LIMITS[key]}%.</p>
             )}
           </div>
         ))}
       </div>
-      <div className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2">
-        <label htmlFor="cost-funding" className="text-xs font-medium">
+      <div className="flex items-center justify-between gap-3 rounded-2xl border border-border px-4 py-3">
+        <label htmlFor="cost-funding" className="text-sm font-medium">
           Hitung funding
-          <span className="block text-3xs font-normal text-muted-foreground">Biaya berkala antara long dan short di perpetual.</span>
+          <span className="block text-2xs font-normal text-muted-foreground">Biaya berkala antara long dan short di perpetual.</span>
         </label>
         <Switch id="cost-funding" checked={value.funding} onCheckedChange={(c) => onChange({ ...value, funding: c })} />
       </div>
@@ -65,15 +65,15 @@ export function CostInputs({ value, errors, onChange }: CostInputsProps) {
 export function CostDisclosure(props: CostInputsProps) {
   const hasError = Boolean(props.errors.commission_pct || props.errors.slippage_pct)
   return (
-    <details className="group rounded-lg border border-border" open={hasError || undefined}>
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 [&::-webkit-details-marker]:hidden">
+    <details className="group rounded-2xl border border-border" open={hasError || undefined}>
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 [&::-webkit-details-marker]:hidden">
         <span className="min-w-0">
-          <span className="block text-xs font-medium">Biaya</span>
+          <span className="block text-sm font-medium">Biaya</span>
           <span className="block truncate text-2xs text-muted-foreground">{costSummary(props.value)}</span>
         </span>
         <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
       </summary>
-      <div className="px-3 pb-3">
+      <div className="px-4 pb-4">
         <CostInputs {...props} />
       </div>
     </details>

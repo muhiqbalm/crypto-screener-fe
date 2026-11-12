@@ -48,7 +48,7 @@ export function OptimizePanel({ template, value, errors, onChange, importance, i
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <div className="text-xs font-medium">Jumlah percobaan</div>
+        <div className="text-sm font-medium">Jumlah percobaan</div>
         <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Jumlah percobaan">
           {TRIAL_OPTIONS.map((n) => (
             <Chip key={n} active={value.nTrials === n} onClick={() => onChange({ ...value, nTrials: n })}>
@@ -64,7 +64,7 @@ export function OptimizePanel({ template, value, errors, onChange, importance, i
       {main.length > 0 && (
         <div className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-xs font-medium">Parameter yang dicari &amp; rentangnya</span>
+            <span className="text-sm font-medium">Parameter yang dicari &amp; rentangnya</span>
             <span className="flex flex-wrap gap-3">
               {importantKeys && importantKeys.size > 0 && (
                 <button type="button" className="cursor-pointer text-2xs text-lab hover:underline" onClick={() => onChange(onlyKeys(template, value, importantKeys))}>
@@ -83,25 +83,25 @@ export function OptimizePanel({ template, value, errors, onChange, importance, i
               </button>
             </span>
           </div>
-          <ul className="divide-y divide-border/50 rounded-lg border border-border">
+          <ul className="divide-y divide-border/50 rounded-2xl border border-border">
             {main.map((p) => {
               const r = value.ranges[p.key] ?? { enabled: false, min: String(p.min ?? ''), max: String(p.max ?? '') }
               const err = errors[`search.${p.key}`]
               const plateau = plateauText(importance?.get(p.key))
               return (
-                <li key={p.key} className="px-3 py-2">
+                <li key={p.key} className="px-4 py-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <input
                       id={`opt-${p.key}`}
                       type="checkbox"
                       checked={r.enabled}
                       onChange={(e) => setRange(p.key, { enabled: e.target.checked })}
-                      className="h-4 w-4 shrink-0 cursor-pointer accent-lab"
+                      className="h-5 w-5 shrink-0 cursor-pointer accent-lab"
                     />
-                    <label htmlFor={`opt-${p.key}`} className="min-w-0 flex-1 text-xs">
+                    <label htmlFor={`opt-${p.key}`} className="min-w-0 flex-1 text-sm">
                       {paramLabel(p)}
-                      {importantKeys?.has(p.key) && <span className="ml-1.5 rounded-full bg-lab/10 px-1.5 py-px text-3xs font-medium text-lab">penting</span>}
-                      {plateau && <span className="num block text-3xs text-muted-foreground">rentang stabil di riset: {plateau}</span>}
+                      {importantKeys?.has(p.key) && <span className="ml-1.5 rounded-full bg-lab/10 px-1.5 py-px text-2xs font-medium text-lab">penting</span>}
+                      {plateau && <span className="num block text-2xs text-muted-foreground">rentang stabil di riset: {plateau}</span>}
                     </label>
                     <span className="flex items-center gap-1">
                       <Input
@@ -111,9 +111,9 @@ export function OptimizePanel({ template, value, errors, onChange, importance, i
                         value={r.min}
                         disabled={!r.enabled}
                         onChange={(e) => setRange(p.key, { min: e.target.value })}
-                        className={cn('h-7 w-16 px-1.5 text-right font-mono text-2xs', err && 'border-bearish')}
+                        className={cn('h-10 w-20 rounded-xl px-2 text-right font-mono text-2xs', err && 'border-bearish')}
                       />
-                      <span className="text-3xs text-muted-foreground">–</span>
+                      <span className="text-2xs text-muted-foreground">–</span>
                       <Input
                         type="number"
                         step="any"
@@ -121,7 +121,7 @@ export function OptimizePanel({ template, value, errors, onChange, importance, i
                         value={r.max}
                         disabled={!r.enabled}
                         onChange={(e) => setRange(p.key, { max: e.target.value })}
-                        className={cn('h-7 w-16 px-1.5 text-right font-mono text-2xs', err && 'border-bearish')}
+                        className={cn('h-10 w-20 rounded-xl px-2 text-right font-mono text-2xs', err && 'border-bearish')}
                       />
                     </span>
                   </div>

@@ -1,10 +1,8 @@
 'use client'
 
 import { AlertTriangle, Coins } from 'lucide-react'
-import { Section } from '@/components/lab/Section'
-import { StatTile } from '@/components/ui/stat-tile'
-import { signClass } from '@/components/lab/LabBadges'
-import { formatPercent, formatScore } from '@/lib/utils/format'
+import { Panel } from '@/components/lab/run/v2-ui'
+import { formatNumber, formatPct, signClass } from '@/lib/utils/format'
 import { cn } from '@/lib/utils/cn'
 import { costBurdenLevel, costProfile, snoopingWarning } from '@/lib/lab/timeframes'
 import type { LabRunDetail } from '@/lib/api/types/lab'
@@ -15,10 +13,20 @@ const BURDEN = {
   low: { label: 'ringan', cls: 'text-bullish' },
 } as const
 
+function Tile({ label, value, valueClassName, hint }: { label: string; value: string; valueClassName?: string; hint?: React.ReactNode }) {
+  return (
+    <div className="min-w-0 rounded-2xl bg-muted/30 p-4">
+      <div className="eyebrow truncate">{label}</div>
+      <div className={cn('num mt-1 truncate text-2xl font-bold tracking-tight', valueClassName)}>{value}</div>
+      {hint && <div className="mt-0.5 truncate text-2xs text-muted-foreground">{hint}</div>}
+    </div>
+  )
+}
+
 /**
- * Fee + slippage drag for this run's timeframe: the same window re-run with
- * zero costs, the 2x stress, and round-trip cost vs the average candle range.
- * Shown for the holdout (validate/optimize) or the full range (backtest).
+ * What costs eat on this timeframe: the same window re-run without costs, the double-cost
+ * stress, and the round-trip cost against the average candle range. Holdout for a validated run,
+ * the whole period for a quick test.
  */
 export function CostDragSection({ run }: { run: LabRunDetail }) {
   const ho = run.oos_metrics
@@ -31,54 +39,31 @@ export function CostDragSection({ run }: { run: LabRunDetail }) {
   const pct = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null)
 
   return (
-    <Section
-      title={`Beban biaya · ${run.timeframe}`}
-      icon={<Coins className="h-4 w-4" />}
-      description={ho ? 'Dihitung di periode holdout.' : 'Dihitung di seluruh periode backtest.'}
-    >
+    <Panel title={`Beban biaya · ${run.timeframe}`} icon={Coins} aside={<span className="text-2xs">{ho ? 'di data baru' : 'seluruh periode'}</span>}>
       {c && (
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatTile
-            label="Biaya bolak-balik vs range candle"
-            value={c.cost_to_bar_range === null ? '—' : `${formatScore(c.cost_to_bar_range * 100, 0)}%`}
+          <Tile
+            label="Biaya vs gerak candle"
+            value={c.cost_to_bar_range === null ? '—' : `${formatNumber(c.cost_to_bar_range * 100, { digits: 0 })}%`}
             valueClassName={level ? BURDEN[level].cls : undefined}
-            hint={
-              <>
-                {formatScore(c.round_trip_cost_pct, 2)}% per trade vs rata-rata range {formatScore(c.avg_bar_range_pct, 2)}%
-                {level && <> · {BURDEN[level].label}</>}
-              </>
-            }
+            hint={level ? `${BURDEN[level].label} · ${formatNumber(c.round_trip_cost_pct)}% per trade` : undefined}
           />
-          <StatTile
-            label="Return tanpa biaya"
-            value={formatPercent(c.zero_cost_net_return_pct, 1)}
-            valueClassName={signClass(c.zero_cost_net_return_pct)}
-            hint={<>PF tanpa biaya {c.zero_cost_profit_factor === null ? '—' : formatScore(c.zero_cost_profit_factor)}</>}
-          />
-          <StatTile
-            label="Return setelah biaya"
-            value={formatPercent(pct(net), 1)}
+          <Tile label="Hasil tanpa biaya" value={formatPct(c.zero_cost_net_return_pct, { signed: true })} valueClassName={signClass(c.zero_cost_net_return_pct)} />
+          <Tile
+            label="Hasil setelah biaya"
+            value={formatPct(pct(net), { signed: true })}
             valueClassName={signClass(pct(net))}
-            hint={
-              <>
-                Tergerus {c.cost_drag_pct === null ? '—' : `${formatScore(c.cost_drag_pct, 1)} poin %`}
-                {pct(stress) !== null && <> · biaya 2×: {formatPercent(pct(stress), 1)}</>}
-              </>
-            }
+            hint={pct(stress) !== null ? `biaya dobel: ${formatPct(pct(stress), { signed: true })}` : undefined}
           />
-          <StatTile
-            label="Trade per bulan"
-            value={c.trades_per_month === null ? '—' : formatScore(c.trades_per_month, 1)}
-            hint="Makin sering trade, makin besar porsi biaya."
-          />
+          <Tile label="Trade per bulan" value={formatNumber(c.trades_per_month, { digits: 1 })} />
         </div>
       )}
       {warn && (
-        <p className={cn('flex items-start gap-2 rounded-md border border-warn/30 bg-warn/10 px-3 py-2 text-2xs text-warn', c && 'mt-3')}>
-          <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          <span>{warn}</span>
+        <p className={cn('flex items-start gap-2 text-2xs text-warn', c && 'mt-4')}>
+          <AlertTriangle className="mt-px h-4 w-4 shrink-0" aria-hidden="true" />
+          <span className="line-clamp-2">{warn}</span>
         </p>
       )}
-    </Section>
+    </Panel>
   )
 }

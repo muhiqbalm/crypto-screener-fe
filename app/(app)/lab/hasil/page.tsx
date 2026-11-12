@@ -10,7 +10,7 @@ export default function LabHasilPage() {
     <PageContainer>
       <LabHeader
         title="Hasil uji"
-        subtitle="Semua uji yang pernah dijalankan, dengan strateginya. Uji banyak koin tampil sebagai satu baris."
+        subtitle="Semua uji dan rapornya, terbaru di atas."
         status={<StatusPill kind="riset" />}
         help={{
           apaIni: 'Riwayat semua uji: apa yang diuji, kapan, dan hasilnya Lolos atau Gagal di data baru.',

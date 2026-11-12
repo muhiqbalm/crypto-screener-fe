@@ -12,7 +12,7 @@ export default function LabComparePage() {
     <PageContainer width="wide">
       <LabHeader
         title="Hasil uji"
-        subtitle="Bandingkan 2–4 uji berdampingan: angka seluruh periode dan data baru, rapor, dan kurva modal."
+        subtitle="2–4 uji berdampingan: angka, rapor, dan kurva modal."
         status={<StatusPill kind="riset" />}
         help={{ apaIni: 'Menjawab: dari beberapa uji, mana yang lebih bagus di data baru?', istilah: ['holdout', 'rapor', 'cost_drag'] }}
       />

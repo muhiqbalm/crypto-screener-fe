@@ -22,7 +22,7 @@ export function PresetSelect({
       id={id}
       value={value ?? ''}
       onChange={(e) => onChange(presets.find((p) => String(p.id) === e.target.value) ?? null)}
-      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 font-mono text-sm shadow-sm"
+      className="flex h-11 w-full rounded-xl border border-input bg-transparent px-4 text-base shadow-sm"
     >
       <option value="" className="bg-popover">{emptyLabel}</option>
       {coins.map((c) => (

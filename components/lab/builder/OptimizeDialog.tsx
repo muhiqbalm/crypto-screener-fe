@@ -67,8 +67,8 @@ export function OptimizeDialog({
             Lab mencoba {search.nTrials} kombinasi di data latih, lalu menguji pemenangnya sekali di data baru (holdout). Rapornya tetap jujur.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <div className="space-y-3 text-xs">
-          <div className="flex items-start gap-2 rounded-lg border border-warn/40 bg-warn/10 px-3 py-2 text-warn">
+        <div className="space-y-3 text-sm">
+          <div className="flex items-start gap-2 rounded-2xl border border-warn/40 bg-warn/10 px-3 py-2 text-warn">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             <p>
               Mencari setting sering hanya menemukan kebetulan masa lalu. Di riset {RESEARCH.date}, setting hasil pencarian rata-rata lebih
@@ -88,7 +88,7 @@ export function OptimizeDialog({
                   const r = search.ranges[p.key]
                   const plateau = plateauText(importance.get(p.key))
                   return (
-                    <li key={p.key} className="flex flex-wrap justify-between gap-x-3 rounded-md bg-muted/40 px-2.5 py-1.5">
+                    <li key={p.key} className="flex flex-wrap justify-between gap-x-3 rounded-xl bg-muted/40 px-3 py-2">
                       <span>{paramLabel(p)}</span>
                       <span className="num text-muted-foreground">
                         {r.min}–{r.max}

@@ -16,7 +16,7 @@ export default function LabPage() {
     <PageContainer>
       <LabHeader
         title="Uji strategi"
-        subtitle="Pilih strategi dan koin, sesuaikan parameter yang memang berpengaruh, lalu uji jujur di data baru yang dikunci. Bot live dan TradingView tidak tersentuh."
+        subtitle="Uji satu strategi di data baru yang dikunci. Bot live tidak tersentuh."
         status={<StatusPill kind="riset" />}
         help={{
           apaIni: 'Halaman ini menjawab: apakah setting strategi ini untung di data yang belum pernah dipakai untuk menyetelnya?',
@@ -31,7 +31,7 @@ export default function LabPage() {
       <Suspense fallback={<BuilderSkeleton />}>
         <RunBuilder />
       </Suspense>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-sm text-muted-foreground">
         Semua hasil uji ada di{' '}
         <Link href="/lab/hasil" className="font-medium text-info hover:underline">
           Hasil uji
