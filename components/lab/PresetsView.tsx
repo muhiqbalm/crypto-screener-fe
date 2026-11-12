@@ -420,8 +420,8 @@ export function PresetsView() {
 
   return (
     <div className="space-y-8">
-      <div className="grid gap-5 lg:grid-cols-4">
-        <DeckCard hero fill icon={Layers} iconTone={heroTone} eyebrow={`${rows.length} preset`} className="lg:col-span-2 lg:row-span-2">
+      <div className="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
+        <DeckCard hero fill icon={Layers} iconTone={heroTone} eyebrow={`${rows.length} preset`} className="col-span-2 lg:row-span-2">
           <p className="text-xl font-semibold leading-snug tracking-tight sm:text-2xl">{answer}</p>
           <div className="mt-auto space-y-3 pt-6">
             <p className="text-[15px] text-muted-foreground">Lolos/Gagal = rapor saat disimpan. Paper dinilai setelah {reviewN} transaksi.</p>

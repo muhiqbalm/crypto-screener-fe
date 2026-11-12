@@ -480,8 +480,8 @@ export function LedgerView() {
       ) : summary.isError ? (
         <ErrorState error={summary.error} onRetry={() => summary.refetch()} title="Rekam jejak tidak bisa dimuat" />
       ) : (
-        <div className="grid gap-5 lg:grid-cols-4">
-          <DeckCard hero fill icon={Radar} iconTone={heroTone} eyebrow={`Dicek setelah ${HORIZON_LABEL[horizon]}${filtered ? ' · filter aktif' : ''}`} className="lg:col-span-2 lg:row-span-2">
+        <div className="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
+          <DeckCard hero fill icon={Radar} iconTone={heroTone} eyebrow={`Dicek setelah ${HORIZON_LABEL[horizon]}${filtered ? ' · filter aktif' : ''}`} className="col-span-2 lg:row-span-2">
             <p className="text-xl font-semibold leading-snug tracking-tight sm:text-2xl">
               {answer.proven.length
                 ? `${answer.proven.length} jenis sinyal terbukti benar arahnya.`
@@ -513,7 +513,7 @@ export function LedgerView() {
           <DeckCard icon={XCircle} iconTone="bearish" title="Negatif">
             <BigNumber label="Salah arah" value={<CountUp value={answer.negative.length} format={(v) => formatCount(Math.round(v))} />} tone={answer.negative.length ? 'bearish' : undefined} size="lg" />
           </DeckCard>
-          <DeckCard icon={HelpCircle} iconTone="warn" title="Belum terbukti" className="lg:col-span-2">
+          <DeckCard icon={HelpCircle} iconTone="warn" title="Belum terbukti" className="col-span-2">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <BigNumber label="Jenis sinyal" value={formatCount(rest)} size="lg" hint={answer.insufficient.length ? `${answer.insufficient.length} masih menunggu cukup data` : 'belum bisa dibedakan dari kebetulan'} />
               <CardLink href="#kartu">Lihat semua</CardLink>

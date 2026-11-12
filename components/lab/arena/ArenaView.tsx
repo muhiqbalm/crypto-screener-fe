@@ -44,7 +44,7 @@ function LeaderRow({ row, rank, reviewN, spark, highlighted, onOpen }: { row: Ar
   const outline = row.drift.status === 'menyimpang' ? 'warn' : undefined
   return (
     <DeckCard onClick={onOpen} ariaLabel={`Detail ${row.preset.name}`} outline={outline} highlighted={highlighted} bodyClassName="p-5 sm:p-6">
-      <div className="grid items-center gap-x-6 gap-y-4 lg:grid-cols-[minmax(0,1.7fr)_140px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.3fr)_20px]">
+      <div className="grid items-center gap-x-6 gap-y-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)_minmax(0,1fr)_140px_minmax(0,1.3fr)_20px]">
         <div className="flex min-w-0 items-center gap-3">
           <RankBadge rank={rank} />
           <CoinAvatar coin={row.preset.coin} />
@@ -60,14 +60,17 @@ function LeaderRow({ row, rank, reviewN, spark, highlighted, onOpen }: { row: Ar
             </div>
           </div>
         </div>
-        <Spark values={spark} width={140} height={44} label={`Kurva modal ${row.preset.name}`} className="hidden lg:block" />
-        <BigNumber label="Hasil" value={<CountUp value={s.return_pct ?? 0} format={pct2} />} tone={signTone(s.return_pct)} size="sm" />
-        <BigNumber
-          label="Drawdown"
-          value={s.max_dd_pct === null ? '—' : formatPct(-Math.abs(s.max_dd_pct), { digits: 1 })}
-          tone={s.max_dd_pct ? 'bearish' : 'muted'}
-          size="sm"
-        />
+        {/* phones: Hasil · Drawdown · sparkline side by side; ≥ lg: three columns of the row grid */}
+        <div className="grid grid-cols-[1fr_1fr_auto] items-end gap-4 lg:contents">
+          <BigNumber label="Hasil" value={<CountUp value={s.return_pct ?? 0} format={pct2} />} tone={signTone(s.return_pct)} size="sm" />
+          <BigNumber
+            label="Drawdown"
+            value={s.max_dd_pct === null ? '—' : formatPct(-Math.abs(s.max_dd_pct), { digits: 1 })}
+            tone={s.max_dd_pct ? 'bearish' : 'muted'}
+            size="sm"
+          />
+          <Spark values={spark} width={120} height={44} label={`Kurva modal ${row.preset.name}`} className="lg:w-[140px]" />
+        </div>
         <div className="min-w-0 space-y-2">
           <div className="flex items-baseline justify-between gap-2">
             <span className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Transaksi</span>
@@ -201,14 +204,14 @@ export function ArenaView() {
       ) : (
         <>
           {/* bento: answer (hero) + three numbers */}
-          <div className="grid gap-5 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
             <DeckCard
               hero
               icon={a.drifting.length ? AlertTriangle : Activity}
               iconTone={tone}
               eyebrow="Jawaban"
               action={<StatusPill kind="paper" />}
-              className="lg:col-span-2 lg:row-span-2"
+              className="col-span-2 lg:row-span-2"
               fill
             >
               <p className="text-xl font-semibold leading-snug tracking-tight sm:text-2xl">{a.text}</p>
@@ -234,7 +237,7 @@ export function ArenaView() {
                 hint={a.drifting.length ? a.drifting.map((x) => x.preset.name).join(', ') : 'semua masih dalam rentang'}
               />
             </DeckCard>
-            <DeckCard icon={Trophy} iconTone="info" title="Transaksi tertutup" className="lg:col-span-2">
+            <DeckCard icon={Trophy} iconTone="info" title="Transaksi tertutup" className="col-span-2">
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <BigNumber label="Semua preset" value={<CountUp value={a.closedTotal} format={(v) => formatCount(Math.round(v))} />} size="lg" />
                 <div className="min-w-[200px] flex-1 space-y-2">

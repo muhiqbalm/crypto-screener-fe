@@ -57,14 +57,14 @@ function answerOf(s: JournalStats, live: boolean): string {
 function Numbers({ s, live, perAccount }: { s: JournalStats; live: boolean; perAccount: boolean }) {
   const wr = winratePct(s.winrate)
   return (
-    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
       <DeckCard
         hero
         icon={Wallet}
         iconTone={live ? 'warn' : 'lab'}
         eyebrow={live ? 'Hasil bersih · uang asli' : 'Hasil bersih · simulasi'}
         action={<StatusPill kind={live ? 'live' : 'paper'} />}
-        className="sm:col-span-2 lg:row-span-2"
+        className="col-span-2 lg:row-span-2"
       >
         <div className={cn('font-display text-[48px] font-bold leading-none tracking-tight tabular-nums sm:text-[56px]', signClass(s.net_pnl))}>
           <CountUp value={s.net_pnl ?? 0} format={(v) => formatUsdSigned(v)} />

@@ -109,20 +109,20 @@ export function DeckCard({
     <div className="mb-4 flex items-start justify-between gap-3">
       <div className="flex min-w-0 items-center gap-3">
         {Icon && (
-          <span className={cn('inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border', TINT[iconTone])}>
+          <span className={cn('inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border sm:h-10 sm:w-10', TINT[iconTone])}>
             <Icon className="h-5 w-5" aria-hidden="true" />
           </span>
         )}
         <div className="min-w-0">
           {eyebrow && <div className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">{eyebrow}</div>}
-          {title && <h3 className="truncate text-[17px] font-semibold leading-snug tracking-tight">{title}</h3>}
+          {title && <h3 className="text-base font-semibold leading-snug tracking-tight [overflow-wrap:anywhere] sm:text-[17px]">{title}</h3>}
         </div>
       </div>
       {action && <div className="flex shrink-0 items-center gap-2">{action}</div>}
     </div>
   )
   const inner = (
-    <div className={cn('relative h-full rounded-3xl p-6', hero ? 'bg-card/90 backdrop-blur' : 'bg-card', bodyClassName)}>
+    <div className={cn('relative h-full rounded-3xl p-5 sm:p-6', hero ? 'bg-card/90 backdrop-blur' : 'bg-card', bodyClassName)}>
       {hero && (
         <span
           aria-hidden="true"
@@ -220,10 +220,10 @@ export function CountUp({ value, format, duration = 700 }: { value: number; form
 }
 
 const VALUE_SIZE = {
-  sm: 'text-2xl',
-  md: 'text-[30px] leading-9',
-  lg: 'text-[40px] leading-[2.75rem]',
-  xl: 'text-[48px] leading-none sm:text-[56px]',
+  sm: 'text-[22px] leading-8 sm:text-2xl',
+  md: 'text-[26px] leading-8 sm:text-[30px] sm:leading-9',
+  lg: 'text-[32px] leading-10 sm:text-[40px] sm:leading-[2.75rem]',
+  xl: 'text-[40px] leading-none sm:text-[56px]',
 } as const
 
 /** Uppercase label → big number → one hint line. */
