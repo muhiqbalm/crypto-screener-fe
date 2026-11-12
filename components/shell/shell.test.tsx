@@ -34,10 +34,11 @@ describe('SidebarNav', () => {
     expect(screen.getByRole('link', { name: 'Beranda' })).toHaveAttribute('aria-current', 'page')
   })
 
-  it('member sees 7 items; a failed admin check is explained, not silent', () => {
+  it('member sees 8 items; a failed admin check is explained, not silent', () => {
     mockPath = '/beranda'
     render(<SidebarNav isAdmin={false} adminCheck="error" onRetryAdmin={() => {}} />)
-    expect(screen.getAllByRole('link')).toHaveLength(7)
+    expect(screen.getAllByRole('link')).toHaveLength(8)
+    expect(screen.getByRole('link', { name: 'Laporan mingguan' })).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('tidak bisa dicek')
     expect(screen.getByRole('button', { name: /Coba lagi/ })).toBeInTheDocument()
   })

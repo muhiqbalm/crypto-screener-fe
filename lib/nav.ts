@@ -35,8 +35,9 @@ import {
  *                    Preset → Paper berjalan → Rekam jejak sinyal → Laporan mingguan
  *   USER HUB         (components/shell/UserHub.tsx)
  *
- * Admin sees 14 items, everyone else 7. `access` is a UI hint only: the
- * backend enforces every permission.
+ * Admin sees 14 items, everyone else 8 (Laporan mingguan is readable by all,
+ * CEO decision). `access` is a UI hint only: the backend enforces every
+ * permission.
  */
 
 export type NavAccess = 'all' | 'admin'
@@ -148,9 +149,9 @@ export const NAV_CLUSTERS: NavCluster[] = [
             access: 'admin',
           },
           { href: '/lab/signals', label: 'Rekam jejak sinyal', hint: 'Sinyal mana yang terbukti', icon: ListChecks, access: 'admin' },
-          // Readable by every logged-in user (CEO decision), but kept out of the
-          // non-admin menu (7 items); non-admins reach it from Beranda.
-          { href: '/lab/report', label: 'Laporan mingguan', hint: 'Ringkasan minggu: paper, sinyal, bot', icon: FileText, access: 'admin' },
+          // Readable by every logged-in account (CEO decision K1), so it is in
+          // everyone's menu; actions inside stay admin-only in the backend.
+          { href: '/lab/report', label: 'Laporan mingguan', hint: 'Ringkasan minggu: paper, sinyal, bot', icon: FileText },
         ],
       },
     ],
@@ -172,7 +173,7 @@ export function navForRole(isAdmin: boolean): { home: NavItem; clusters: NavClus
   return { home: HOME_ITEM, clusters }
 }
 
-/** Every menu item a role sees, Beranda first (admin 14, others 7). */
+/** Every menu item a role sees, Beranda first (admin 14, others 8). */
 export function navItemsForRole(isAdmin: boolean): NavItem[] {
   const { home, clusters } = navForRole(isAdmin)
   return [home, ...clusters.flatMap((c) => c.sections.flatMap((s) => s.items))]
