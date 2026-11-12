@@ -9,6 +9,10 @@ export async function getMock(method: string, path: string, body?: unknown): Pro
   // Resolve on next microtask to simulate async
   await Promise.resolve()
 
+  // Market pages + Status bot (intel, live-check, shadow, bot status)
+  const pasarBot = (await import('./pasar-bot')).pasarBotMock(method, path)
+  if (pasarBot) return pasarBot.value
+
   if (path.startsWith('/api/v1/lab/')) {
     const { getLabMock } = await import('./lab')
     return getLabMock(method, path, body)

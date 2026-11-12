@@ -5,8 +5,10 @@ export function useIntelWhales() {
   return useQuery({
     queryKey: ['intel-whales'],
     queryFn: ({ signal }) => api.getIntelWhales(signal),
-    refetchInterval: 30000, // auto refetch every 30 seconds
-    staleTime: 20000,
+    // The backend caches Binance data for 60 s (intel_service CACHE_TTL_SECONDS), so asking
+    // more often only returns the same snapshot.
+    refetchInterval: 60000,
+    staleTime: 30000,
   })
 }
 
