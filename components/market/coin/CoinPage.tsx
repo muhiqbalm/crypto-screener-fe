@@ -18,6 +18,7 @@ import { StatTile } from '@/components/ui/stat-tile'
 import { ErrorState } from '@/components/shell/states'
 import { PageHeader } from '@/components/shell/page'
 import { AssistantSlot } from '@/components/shell/AssistantSlot'
+import { AiFactorCard } from '@/components/ai/AiFactorSummary'
 import { VerdictBadge } from '@/components/ui/verdict-badge'
 import { AnswerCard } from '@/components/ui/answer-card'
 import { Freshness } from '@/components/ui/freshness'
@@ -454,6 +455,8 @@ export function CoinPage({ symbol }: { symbol: string }) {
           </TitledPanel>
 
           <Plan d={d} />
+
+          <AiFactorCard symbol={d.symbol} />
 
           <Factors d={d} asset={asset} allAssets={scr.data?.assets ?? []} loadingAsset={scr.isPending} />
 

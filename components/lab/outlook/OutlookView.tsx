@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState, ErrorState } from '@/components/shell/states'
 import { Chip } from '@/components/lab/Section'
 import { OutlookTrackRecord } from '@/components/lab/outlook/OutlookTrackRecord'
+import { AiFactorLine } from '@/components/ai/AiFactorSummary'
 import { Fold } from '@/components/market/shared'
 import { BentoGrid, BigStat, bigUsd, CoinAvatar, ConfidenceDots, CountUp, DirectionChip, EvidenceBar, HeroCard, Panel, Pill, TitledPanel } from '@/components/market/ui'
 import { IconChip, IconTitle } from '@/components/ui/icon-title'
@@ -96,6 +97,7 @@ function PeluangCard({ r, hero = false }: { r: OutlookRow; hero?: boolean }) {
           </div>
         )}
         {note && <p className="mt-3 text-2xs text-warn">{note}</p>}
+        {hero && <AiFactorLine symbol={r.symbol} />}
         <span className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-info">
           Lihat rencana <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
         </span>
