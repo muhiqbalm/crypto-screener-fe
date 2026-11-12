@@ -6,6 +6,7 @@
  */
 import type { OutlookResponse, OutlookRow, Keyakinan } from '@/lib/api/types/outlook'
 import type { ArenaReport } from '@/lib/api/types/arena'
+import type { LiveCheckReport } from '@/lib/api/types/livecheck'
 import type { LabNotification, ReportWeek, WeeklyReport } from '@/lib/api/types/report'
 import type { AssetSummary, ScreenerResponse } from '@/lib/api/types/screener'
 import { coinHref } from '@/lib/nav'
@@ -64,6 +65,10 @@ export interface WatchCoin {
   /** v2 "peluang" label in words, e.g. "Terbukti positif". */
   peluang: string | null
   peluangPositive: boolean
+  /** Net dollars at the target / stop for the projection's capital (fees in, funding out). */
+  tpUsd: number | null
+  slUsd: number | null
+  capital: number | null
 }
 
 export interface WatchList {
@@ -119,7 +124,33 @@ function toWatchCoin(r: RowV2, now?: number): WatchCoin | null {
     reason: r.explanation?.summary?.trim() || null,
     peluang: label ? (PELUANG_LABEL[label] ?? null) : null,
     peluangPositive: label === 'positif',
+    tpUsd: num(r.projection?.at_tp?.net),
+    slUsd: num(r.projection?.at_sl?.net),
+    capital: num(r.projection?.capital),
   }
+}
+
+/**
+ * "Peluang terbaik" (CEO decision K8: only calls with positive evidence).
+ * v2: first coin labelled "terbukti positif"; none → null. v1 (no evidence
+ * labels): the top coin, flagged as `basis: 'teratas'` so the UI does not
+ * call it proven.
+ */
+export function bestCoin(w: WatchList | null): { coin: WatchCoin; basis: 'positif' | 'teratas' } | null {
+  if (!w) return null
+  const positive = w.coins.find((c) => c.peluangPositive)
+  if (positive) return { coin: positive, basis: 'positif' }
+  if (!w.ranked && w.coins[0]) return { coin: w.coins[0], basis: 'teratas' }
+  return null
+}
+
+/** Donut counts for the live bot, judged like botVerdict (lib/bot/status.ts): expected signals, not waiting / without log. */
+export function liveDonut(live: LiveCheckReport | undefined): { ok: number; warn: number; bad: number; judged: number } | null {
+  if (!live) return null
+  const rows = (live.rows ?? []).filter((r) => r.expected && r.status !== 'menunggu' && r.status !== 'tanpa_log')
+  const ok = rows.filter((r) => r.status === 'cocok').length
+  const bad = rows.filter((r) => r.status === 'gagal' || r.status === 'tidak_terkirim').length
+  return { ok, bad, warn: rows.length - ok - bad, judged: rows.length }
 }
 
 /**

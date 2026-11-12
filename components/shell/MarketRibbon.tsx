@@ -75,7 +75,7 @@ function CoinRegime({ coin, word, days }: { coin: string; word: string | null; d
   return (
     <div className="flex items-center gap-3">
       <CoinAvatar symbol={coin} size="md" />
-      <span className="w-10 text-base font-bold">{coin}</span>
+      <span className="sr-only">{coin}</span>
       {word ? (
         <span className={cn('inline-flex items-center gap-1 text-xl font-extrabold display', TONE_TEXT[v.tone])}>
           <v.Icon className="h-5 w-5" aria-hidden="true" />
@@ -84,7 +84,7 @@ function CoinRegime({ coin, word, days }: { coin: string; word: string | null; d
       ) : (
         <span className="text-base text-muted-foreground">tidak tersedia</span>
       )}
-      {days ? <span className="ml-auto text-sm text-muted-foreground">{days} hari</span> : null}
+      {days ? <span className="ml-auto whitespace-nowrap text-sm text-muted-foreground">{days} hari</span> : null}
     </div>
   )
 }

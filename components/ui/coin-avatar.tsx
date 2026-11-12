@@ -35,8 +35,9 @@ export function CoinAvatar({ symbol, size = 'md', className }: { symbol: string;
         'inline-flex shrink-0 select-none items-center justify-center rounded-full font-display font-extrabold tracking-tight',
         // light text on dark, dark text on light (same hue)
         'text-[hsl(var(--coin-h)_90%_76%)] [.light_&]:text-[hsl(var(--coin-h)_70%_34%)]',
-        initials.length > 3 && size !== 'lg' && 'tracking-tighter',
         SIZE[size],
+        // four letters (DOGE, PEPE) must stay inside the circle
+        initials.length > 3 && (size === 'lg' ? 'text-xs tracking-tighter' : size === 'md' ? 'text-[9.5px] tracking-tighter' : 'text-[8px] tracking-tighter'),
         className,
       )}
       style={

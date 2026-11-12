@@ -4,6 +4,36 @@ Short guide for building pages that look and read like the rest of the app.
 Dark is the default theme; light is `html.light` (next-themes). Users are the
 CEO and a small team of traders, not quants: plain Indonesian, answer first.
 
+## 0. Look v2: like a presentation deck (docs/riset-2026-11-12/06-desain-v2.md)
+
+- **Theme:** night navy dark by default (`docs/bmtm-briefing.html`); light
+  stays available in the User Hub. Colours only through tokens:
+  `brand` blue #5b8cff, `bullish` #3ccf7f, `bearish` #ff6464, `warn` #f4ad42,
+  `lab` violet (simulation), `info`, `faint` (meta text).
+- **Type:** Inter for text, Plus Jakarta Sans (`display` utility, all h1–h3)
+  for titles and big numbers; `num` = tabular digits (no mono for numbers).
+  Scale: `text-3xs` 12px (uppercase labels only), `2xs` 13px (smallest body),
+  `xs` 14, `sm` 15, `base` 16, `lg` 18 (card titles), `xl` 20 (sections),
+  `2xl` 24 (answers), `3xl`–`4xl` 30–36 (page titles, KPI), `5xl`–`6xl`
+  48–56 (hero numbers). Never 10–12px for body text.
+- **Space:** page padding 32px (16px on phones), 32px between sections,
+  24px card padding, 20–24px grid gaps, table rows ≥ 52px.
+- **Cards:** `rounded-3xl`, thin border, no nested cards; one card = one
+  message, max 3–4 numbers: icon + short title → big number/status → one
+  line → small chart → one "Lihat …" link. Buttons and pills are `rounded-full`.
+- **Bento:** one hero card (`HeroCard`, gradient border `ring-gradient`,
+  `glass`, soft `glow`) spans 2 columns, supporting cards (`Panel`) are smaller.
+  Max 3–4 KPI tiles and max 2 content cards per row on desktop.
+- **Motion:** `lift` on clickable cards, `CountUp` for hero numbers,
+  `LiveDot` pulse for things that are live, pill tab transitions. All of it
+  stops under `prefers-reduced-motion`.
+- **Building blocks:** `KpiTile`, `Sparkline`, `ProgressBar`, `Donut`,
+  `Gauge` (+ `FNG_GAUGE_ZONES`), `IconTitle`/`IconChip`, `HeroCard`/`Panel`/
+  `BentoGrid`, `CoinAvatar` (stable colour per coin), `ConfidenceDots`
+  (keyakinan 1–3), `LiveDot`, `CountUp`, tone helpers in `components/ui/tone.ts`.
+- **Not allowed:** emoji as section markers, gradients over the whole
+  background, animation that gets in the way of reading, low contrast.
+
 ## 1. Text & display rules
 
 1. **Language.** Bahasa Indonesia, addressing the user as "kamu". English
@@ -105,9 +135,10 @@ Only use semantic colours. Don't use raw palette classes like `emerald-400`.
 LIVE uses the inverted foreground pill (not a status colour) so it never
 reads as good/bad. Tint pattern: `border-x/30 bg-x/10 text-x` (or `<Badge variant="x">`).
 
-Type scale: `text-3xs` (10px, the minimum), `text-2xs` (11px), then the
-Tailwind defaults. Utilities: `num` (mono + tabular digits, for every number),
-`eyebrow` (small uppercase label). Charts get colours from
+Type scale: see section 0 (12px minimum, labels only). Utilities: `num`
+(tabular digits, for every number), `display` (heading font), `eyebrow`
+(uppercase label), `kicker` (accent label), `ring-gradient`, `glass`,
+`text-glow`, `lift`, `animate-live-pulse`. Charts get colours from
 `getChartTheme(isDark)` in `lib/chart-theme.ts`.
 
 ## 4. Components
@@ -115,6 +146,11 @@ Tailwind defaults. Utilities: `num` (mono + tabular digits, for every number),
 | Need | Use |
 |---|---|
 | Page frame / header (+ help fold, status pills) | `PageContainer`, `PageHeader`, `SectionHeading` (`components/shell/page.tsx`) |
+| Hero card / normal card / bento grid | `HeroCard`, `Panel`, `BentoGrid` (`components/ui/hero-card.tsx`) |
+| Card header with icon | `IconTitle`, `IconChip` (`components/ui/icon-title.tsx`) |
+| Big KPI with delta + sparkline | `KpiTile` (`components/ui/kpi.tsx`), or `StatTile` with `delta` / `sparkline` |
+| Small charts | `Sparkline`, `ProgressBar`, `Donut`, `Gauge` (`components/ui/`) |
+| Coin identity / keyakinan / live dot | `CoinAvatar`, `ConfidenceDots`, `LiveDot` (`components/ui/`) |
 | Sub-tabs (max 3) | `HubTabs` (`components/shell/HubTabs.tsx`) |
 | The answer first | `AnswerCard` (`components/ui/answer-card.tsx`) |
 | What to do next (one primary button) | `NextStep` (`components/ui/next-step.tsx`) |
