@@ -131,6 +131,23 @@ describe('ResponsiveTable', () => {
     expect(within(items[0]).getByRole('link')).toHaveAttribute('href', '/koin/ETH')
   })
 
+  it('the desktop scroll box is positioned, so sr-only cells cannot widen the page', () => {
+    const { container } = render(
+      <ResponsiveTable
+        rows={rows}
+        rowKey={(r) => r.id}
+        rowHref={(r) => `/koin/${r.coin}`}
+        columns={[{ key: 'coin', header: 'Koin', cell: (r) => r.coin }]}
+      />,
+    )
+    const scroll = container.querySelector('[data-rt-scroll]') as HTMLElement
+    expect(scroll.className).toMatch(/\boverflow-x-auto\b/)
+    expect(scroll.className).toMatch(/\brelative\b/)
+    // every sr-only element inside the table sits under that positioned box
+    for (const el of scroll.querySelectorAll('.sr-only')) expect(scroll.contains(el)).toBe(true)
+    expect(scroll.querySelectorAll('.sr-only').length).toBeGreaterThan(0)
+  })
+
   it('shows the empty state when there are no rows', () => {
     render(<ResponsiveTable rows={[]} rowKey={() => 1} columns={[]} empty={<p>Belum ada data</p>} />)
     expect(screen.getByText('Belum ada data')).toBeInTheDocument()
